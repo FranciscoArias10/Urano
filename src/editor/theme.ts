@@ -5,51 +5,57 @@ import { tags as t } from '@lezer/highlight';
 export const obsidianTheme = EditorView.theme(
   {
     '&': {
-      color: '#dedede',
-      backgroundColor: '#161618',
-      fontSize: '15px',
+      color: '#dcddde',
+      backgroundColor: 'transparent',
+      fontSize: '16px',
+      lineHeight: '1.75',
+      height: '100%',
+    },
+    '.cm-scroller': {
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      padding: '2.5rem 3rem 50vh 3rem', // 50vh enables Obsidian scroll-past-end
+      overflow: 'auto',
     },
     '.cm-content': {
-      caretColor: '#8b5cf6',
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+      maxWidth: '780px',
+      margin: '0 auto',
+      caretColor: '#a78bfa',
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    },
+    '.cm-line': {
+      padding: '0.1rem 0',
+    },
+    '&.cm-focused': {
+      outline: 'none !important',
     },
     '&.cm-focused .cm-cursor': {
-      borderLeftColor: '#8b5cf6',
+      borderLeftColor: '#a78bfa',
       borderLeftWidth: '2px',
     },
     '&.cm-focused .cm-selectionBackground, ::selection': {
       backgroundColor: 'rgba(124, 58, 237, 0.3) !important',
     },
+    // Hide code editor gutters & line numbers completely for authentic Obsidian note feel
     '.cm-gutters': {
-      backgroundColor: '#161618',
-      color: '#4e4e58',
-      border: 'none',
+      display: 'none !important',
     },
     '.cm-activeLine': {
-      backgroundColor: 'rgba(255, 255, 255, 0.02)',
+      backgroundColor: 'transparent !important',
     },
     '.cm-activeLineGutter': {
-      backgroundColor: 'transparent',
-      color: '#9e9eb0',
+      display: 'none !important',
     },
   },
   { dark: true }
 );
 
 export const obsidianHighlightStyle = HighlightStyle.define([
-  { tag: t.heading1, fontSize: '1.85em', fontWeight: 'bold', color: '#ffffff' },
-  { tag: t.heading2, fontSize: '1.45em', fontWeight: 'bold', color: '#f4f4f8' },
-  { tag: t.heading3, fontSize: '1.2em', fontWeight: '600', color: '#e2e2e8' },
-  { tag: t.strong, fontWeight: 'bold', color: '#f3f4f6' },
-  { tag: t.emphasis, fontStyle: 'italic', color: '#d1d5db' },
+  { tag: t.strong, fontWeight: '700', color: '#ffffff' },
+  { tag: t.emphasis, fontStyle: 'italic', color: '#e2e2e8' },
   { tag: t.link, color: '#a78bfa', textDecoration: 'underline' },
   { tag: t.url, color: '#818cf8' },
-  { tag: t.monospace, color: '#f472b6', backgroundColor: '#212128', borderRadius: '3px' },
+  { tag: t.monospace, color: '#f472b6', backgroundColor: '#1e1e24', borderRadius: '4px', padding: '1px 5px', fontFamily: "'JetBrains Mono', monospace" },
   { tag: t.comment, color: '#6b7280', fontStyle: 'italic' },
-  { tag: t.keyword, color: '#c084fc' },
-  { tag: t.atom, color: '#fb923c' },
-  { tag: t.number, color: '#38bdf8' },
-  { tag: t.definition(t.name), color: '#a3e635' },
   { tag: t.quote, color: '#9ca3af', fontStyle: 'italic' },
 ]);
 

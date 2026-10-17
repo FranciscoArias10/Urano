@@ -33,78 +33,104 @@
   }
 }
 
-/* CodeMirror 6 custom styling for Urano */
-.cm-editor {
-  height: 100%;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 15px;
-  line-height: 1.7;
-  color: #dedede;
-  background-color: transparent !important;
+/* ========================================================
+   Obsidian Live Document Typography & Elements
+   ======================================================== */
+
+/* Heading Lines */
+.cm-h1-line {
+  font-size: 2.15rem !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.025em !important;
+  padding-top: 1.6rem !important;
+  padding-bottom: 0.5rem !important;
 }
 
-.cm-editor.cm-focused {
-  outline: none !important;
+.cm-h2-line {
+  font-size: 1.65rem !important;
+  font-weight: 600 !important;
+  color: #f4f4f8 !important;
+  line-height: 1.35 !important;
+  letter-spacing: -0.015em !important;
+  padding-top: 1.35rem !important;
+  padding-bottom: 0.4rem !important;
 }
 
-.cm-scroller {
-  font-family: inherit;
-  padding: 1rem 2rem;
-  overflow: auto;
+.cm-h3-line {
+  font-size: 1.35rem !important;
+  font-weight: 600 !important;
+  color: #e4e4eb !important;
+  line-height: 1.4 !important;
+  padding-top: 1.1rem !important;
+  padding-bottom: 0.3rem !important;
 }
 
-.cm-content {
-  max-width: 860px;
-  margin: 0 auto;
-  caret-color: #8b5cf6;
+.cm-h4-line {
+  font-size: 1.18rem !important;
+  font-weight: 600 !important;
+  color: #dddee4 !important;
+  padding-top: 0.85rem !important;
 }
 
-.cm-line {
-  padding: 0 4px;
+.cm-h5-line, .cm-h6-line {
+  font-size: 1.05rem !important;
+  font-weight: 600 !important;
+  color: #cbccd4 !important;
+  padding-top: 0.6rem !important;
 }
 
-/* Headings in CodeMirror */
-.cm-heading-1 {
-  font-size: 1.85rem;
-  font-weight: 700;
-  color: #ffffff;
-  line-height: 2.2rem;
-  margin-top: 1.2rem;
-  margin-bottom: 0.5rem;
+/* Dimmed markdown syntax markers (#, ##, >, etc.) so headers read cleanly */
+.cm-heading-marker {
+  color: #5d5d6c !important;
+  font-weight: 400 !important;
+  font-size: 0.82em !important;
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
 }
 
-.cm-heading-2 {
-  font-size: 1.45rem;
-  font-weight: 600;
-  color: #f3f3f6;
-  line-height: 1.8rem;
-  margin-top: 1rem;
-  margin-bottom: 0.4rem;
+.cm-line:hover .cm-heading-marker {
+  opacity: 0.9;
 }
 
-.cm-heading-3 {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #e4e4e7;
-  line-height: 1.5rem;
-  margin-top: 0.8rem;
-  margin-bottom: 0.3rem;
+.cm-blockquote-marker {
+  color: #7c3aed !important;
+  font-weight: 700 !important;
+  margin-right: 0.4rem !important;
+  opacity: 0.8;
 }
 
-/* Wikilinks [[...]] */
+.cm-blockquote-line {
+  border-left: 3px solid #7c3aed !important;
+  padding-left: 1rem !important;
+  color: #a1a1aa !important;
+  font-style: italic !important;
+  margin: 0.6rem 0 !important;
+}
+
+.cm-hr-line {
+  border-bottom: 1px solid #2e2e38 !important;
+  color: transparent !important;
+  height: 1px !important;
+  margin: 2rem 0 !important;
+}
+
+/* Wikilinks [[...]] Obsidian Style */
 .cm-wikilink {
   color: #a78bfa !important;
   background-color: rgba(124, 58, 237, 0.12);
-  padding: 2px 5px;
+  padding: 1px 6px;
   border-radius: 4px;
   text-decoration: underline;
   text-decoration-color: rgba(167, 139, 250, 0.4);
   cursor: pointer;
   transition: all 0.15s ease;
+  font-weight: 500;
 }
 
 .cm-wikilink:hover {
-  background-color: rgba(124, 58, 237, 0.25);
+  background-color: rgba(124, 58, 237, 0.28);
   text-decoration-color: #a78bfa;
 }
 
@@ -114,6 +140,6 @@
   font-size: 13.5px;
   background-color: #1e1e24;
   border-radius: 4px;
-  padding: 1px 4px;
+  padding: 2px 6px;
   color: #f472b6;
 }
