@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    border-color: #2e2e34;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Custom minimal dark scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #2e2e34;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3e3e46;
+  }
+}
+
+/* CodeMirror 6 custom styling for Urano */
+.cm-editor {
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #dedede;
+  background-color: transparent !important;
+}
+
+.cm-editor.cm-focused {
+  outline: none !important;
+}
+
+.cm-scroller {
+  font-family: inherit;
+  padding: 1rem 2rem;
+  overflow: auto;
+}
+
+.cm-content {
+  max-width: 860px;
+  margin: 0 auto;
+  caret-color: #8b5cf6;
+}
+
+.cm-line {
+  padding: 0 4px;
+}
+
+/* Headings in CodeMirror */
+.cm-heading-1 {
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 2.2rem;
+  margin-top: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.cm-heading-2 {
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: #f3f3f6;
+  line-height: 1.8rem;
+  margin-top: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.cm-heading-3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #e4e4e7;
+  line-height: 1.5rem;
+  margin-top: 0.8rem;
+  margin-bottom: 0.3rem;
+}
+
+/* Wikilinks [[...]] */
+.cm-wikilink {
+  color: #a78bfa !important;
+  background-color: rgba(124, 58, 237, 0.12);
+  padding: 2px 5px;
+  border-radius: 4px;
+  text-decoration: underline;
+  text-decoration-color: rgba(167, 139, 250, 0.4);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cm-wikilink:hover {
+  background-color: rgba(124, 58, 237, 0.25);
+  text-decoration-color: #a78bfa;
+}
+
+/* Code blocks inside CodeMirror */
+.cm-codeblock {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 13.5px;
+  background-color: #1e1e24;
+  border-radius: 4px;
+  padding: 1px 4px;
+  color: #f472b6;
+}
