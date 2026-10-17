@@ -38,7 +38,7 @@ export const SyncConfigModal: React.FC = () => {
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-obsidian-border bg-obsidian-bg/50">
           <div className="flex items-center gap-2">
-            <FolderSync className="w-5 h-5 text-purple-400" />
+            <FolderSync className="w-5 h-5 text-orange-400" />
             <h2 className="text-base font-semibold text-white">Configuración de Google Drive</h2>
           </div>
           <button
@@ -75,12 +75,12 @@ export const SyncConfigModal: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-obsidian-text flex items-start gap-2.5">
-              <ShieldCheck className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+            <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg text-obsidian-text flex items-start gap-2.5">
+              <ShieldCheck className="w-5 h-5 text-orange-400 shrink-0 mt-0.5" />
               <div>
                 <span className="font-medium text-white">Privacidad 100% Garantizada:</span>
                 <p className="text-[11px] text-obsidian-muted mt-0.5">
-                  Urano utiliza exclusivamente el permiso <code className="text-purple-300 bg-purple-950/40 px-1 py-0.5 rounded">drive.file</code>. La aplicación solo tiene acceso a las notas y carpetas que ella misma crea en tu cuenta personal de Google Drive.
+                  Urano utiliza exclusivamente el permiso <code className="text-orange-300 bg-orange-950/40 px-1 py-0.5 rounded">drive.file</code>. La aplicación solo tiene acceso a las notas y carpetas que ella misma crea en tu cuenta personal de Google Drive.
                 </p>
               </div>
             </div>
@@ -89,13 +89,13 @@ export const SyncConfigModal: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-obsidian-text font-medium flex items-center gap-1.5">
-                <Key className="w-3.5 h-3.5 text-purple-400" />
+                <Key className="w-3.5 h-3.5 text-orange-400" />
                 Google Client ID (OAuth 2.0)
               </label>
               <button
                 type="button"
                 onClick={() => setShowHelp(!showHelp)}
-                className="text-purple-400 hover:text-purple-300 flex items-center gap-1 text-[11px]"
+                className="text-orange-400 hover:text-orange-300 flex items-center gap-1 text-[11px]"
               >
                 <HelpCircle className="w-3 h-3" />
                 ¿Cómo obtenerlo?
@@ -107,7 +107,7 @@ export const SyncConfigModal: React.FC = () => {
               value={localClientId}
               onChange={(e) => setLocalClientId(e.target.value)}
               required
-              className="w-full bg-obsidian-bg border border-obsidian-border focus:border-purple-500 rounded-lg px-3 py-2 text-white outline-none font-mono text-[11px]"
+              className="w-full bg-obsidian-bg border border-obsidian-border focus:border-orange-500 rounded-lg px-3 py-2 text-white outline-none font-mono text-[11px]"
             />
           </div>
 
@@ -120,7 +120,7 @@ export const SyncConfigModal: React.FC = () => {
               placeholder="GOCSPX-xxxxxxxxxxxxxxxx"
               value={localClientSecret}
               onChange={(e) => setLocalClientSecret(e.target.value)}
-              className="w-full bg-obsidian-bg border border-obsidian-border focus:border-purple-500 rounded-lg px-3 py-2 text-white outline-none font-mono text-[11px]"
+              className="w-full bg-obsidian-bg border border-obsidian-border focus:border-orange-500 rounded-lg px-3 py-2 text-white outline-none font-mono text-[11px]"
             />
           </div>
 
@@ -133,7 +133,7 @@ export const SyncConfigModal: React.FC = () => {
               placeholder="UranoVault"
               value={localFolderName}
               onChange={(e) => setLocalFolderName(e.target.value)}
-              className="w-full bg-obsidian-bg border border-obsidian-border focus:border-purple-500 rounded-lg px-3 py-2 text-white outline-none text-xs"
+              className="w-full bg-obsidian-bg border border-obsidian-border focus:border-orange-500 rounded-lg px-3 py-2 text-white outline-none text-xs"
             />
           </div>
 
@@ -146,7 +146,7 @@ export const SyncConfigModal: React.FC = () => {
                   href="https://console.cloud.google.com/apis/credentials"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-purple-400 hover:underline flex items-center gap-0.5 ml-1"
+                  className="text-orange-400 hover:underline flex items-center gap-0.5 ml-1"
                 >
                   Abrir consola <ExternalLink className="w-2.5 h-2.5" />
                 </a>
@@ -172,7 +172,7 @@ export const SyncConfigModal: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium transition-colors shadow-lg shadow-purple-600/20"
+              className="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-medium transition-colors shadow-lg shadow-orange-600/20"
             >
               {isAuthenticated ? 'Guardar Cambios' : 'Guardar y Conectar con Google'}
             </button>

@@ -4,13 +4,14 @@
 
 @layer base {
   * {
-    border-color: #2e2e34;
+    border-color: #2c2723;
   }
 
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     user-select: none;
     -webkit-user-select: none;
+    background-color: #141312;
   }
 
   /* Custom minimal dark scrollbars */
@@ -24,17 +25,17 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #2e2e34;
+    background: #2c2723;
     border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #3e3e46;
+    background: #443c36;
   }
 }
 
 /* ========================================================
-   Obsidian Live Document Typography & Elements
+   Obsidian Live Document Typography & Elements (Uranium Theme)
    ======================================================== */
 
 /* Heading Lines */
@@ -51,7 +52,7 @@
 .cm-h2-line {
   font-size: 1.65rem !important;
   font-weight: 600 !important;
-  color: #f4f4f8 !important;
+  color: #f7f5f2 !important;
   line-height: 1.35 !important;
   letter-spacing: -0.015em !important;
   padding-top: 1.35rem !important;
@@ -61,7 +62,7 @@
 .cm-h3-line {
   font-size: 1.35rem !important;
   font-weight: 600 !important;
-  color: #e4e4eb !important;
+  color: #ede9e3 !important;
   line-height: 1.4 !important;
   padding-top: 1.1rem !important;
   padding-bottom: 0.3rem !important;
@@ -70,20 +71,20 @@
 .cm-h4-line {
   font-size: 1.18rem !important;
   font-weight: 600 !important;
-  color: #dddee4 !important;
+  color: #e2ded7 !important;
   padding-top: 0.85rem !important;
 }
 
 .cm-h5-line, .cm-h6-line {
   font-size: 1.05rem !important;
   font-weight: 600 !important;
-  color: #cbccd4 !important;
+  color: #d1cbc2 !important;
   padding-top: 0.6rem !important;
 }
 
 /* Dimmed markdown syntax markers (#, ##, >, etc.) so headers read cleanly */
 .cm-heading-marker {
-  color: #5d5d6c !important;
+  color: #635b54 !important;
   font-weight: 400 !important;
   font-size: 0.82em !important;
   opacity: 0.55;
@@ -95,51 +96,100 @@
 }
 
 .cm-blockquote-marker {
-  color: #7c3aed !important;
+  color: #ea580c !important;
   font-weight: 700 !important;
   margin-right: 0.4rem !important;
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 .cm-blockquote-line {
-  border-left: 3px solid #7c3aed !important;
+  border-left: 3px solid #ea580c !important;
   padding-left: 1rem !important;
-  color: #a1a1aa !important;
+  color: #a8a29e !important;
   font-style: italic !important;
   margin: 0.6rem 0 !important;
 }
 
 .cm-hr-line {
-  border-bottom: 1px solid #2e2e38 !important;
+  border-bottom: 1px solid #2c2723 !important;
   color: transparent !important;
   height: 1px !important;
   margin: 2rem 0 !important;
 }
 
-/* Wikilinks [[...]] Obsidian Style */
+/* Wikilinks [[...]] Obsidian Style with Uranium Glow */
 .cm-wikilink {
-  color: #a78bfa !important;
-  background-color: rgba(124, 58, 237, 0.12);
+  color: #fb923c !important;
+  background-color: rgba(234, 88, 12, 0.14);
   padding: 1px 6px;
   border-radius: 4px;
   text-decoration: underline;
-  text-decoration-color: rgba(167, 139, 250, 0.4);
+  text-decoration-color: rgba(251, 146, 60, 0.45);
   cursor: pointer;
   transition: all 0.15s ease;
   font-weight: 500;
 }
 
 .cm-wikilink:hover {
-  background-color: rgba(124, 58, 237, 0.28);
-  text-decoration-color: #a78bfa;
+  background-color: rgba(234, 88, 12, 0.28);
+  text-decoration-color: #fb923c;
+  color: #ffedd5 !important;
+}
+
+/* Obsidian Text Highlight ==text== */
+.cm-highlight-text {
+  background-color: rgba(249, 115, 22, 0.25) !important;
+  color: #ffedd5 !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  border-bottom: 2px solid #ea580c !important;
+  font-weight: 500 !important;
+}
+
+/* Obsidian Math / LaTeX Styling $x^2$ and $$...$$ */
+.cm-math-text {
+  color: #fed7aa !important;
+  font-family: 'KaTeX_Main', 'Cambria Math', 'Times New Roman', serif !important;
+  font-style: italic !important;
+  background-color: rgba(194, 65, 12, 0.15) !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(234, 88, 12, 0.25) !important;
+}
+
+.cm-mathblock-line {
+  font-family: 'KaTeX_Main', 'Cambria Math', 'Times New Roman', serif !important;
+  text-align: center !important;
+  color: #ffedd5 !important;
+  background-color: rgba(194, 65, 12, 0.08) !important;
+  padding: 0.5rem 0 !important;
+  border-radius: 6px !important;
+  margin: 0.5rem 0 !important;
+}
+
+/* Strikethrough ~~text~~ */
+.cm-strikethrough {
+  text-decoration: line-through !important;
+  color: #78716c !important;
+}
+
+/* Inline Code `code` */
+.cm-inline-code {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 13.5px !important;
+  background-color: #24211d !important;
+  border-radius: 4px !important;
+  padding: 1px 5px !important;
+  color: #fb923c !important;
+  border: 1px solid #36302a !important;
 }
 
 /* Code blocks inside CodeMirror */
 .cm-codeblock {
   font-family: 'JetBrains Mono', monospace !important;
   font-size: 13.5px;
-  background-color: #1e1e24;
+  background-color: #1c1a18;
   border-radius: 4px;
   padding: 2px 6px;
-  color: #f472b6;
+  color: #fdba74;
 }

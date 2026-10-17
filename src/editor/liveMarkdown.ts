@@ -16,10 +16,15 @@ const h5Line = Decoration.line({ class: 'cm-h5-line' });
 const h6Line = Decoration.line({ class: 'cm-h6-line' });
 const blockquoteLine = Decoration.line({ class: 'cm-blockquote-line' });
 const hrLine = Decoration.line({ class: 'cm-hr-line' });
+const mathBlockLine = Decoration.line({ class: 'cm-mathblock-line' });
 
-// Inline marker decorations (dims the markdown syntax tokens like #, >, ---)
+// Inline marker decorations (dims markdown tokens so text reads cleanly)
 const headingMarker = Decoration.mark({ class: 'cm-heading-marker' });
 const blockquoteMarker = Decoration.mark({ class: 'cm-blockquote-marker' });
+const highlightMark = Decoration.mark({ class: 'cm-highlight-text' });
+const mathMark = Decoration.mark({ class: 'cm-math-text' });
+const strikeMark = Decoration.mark({ class: 'cm-strikethrough' });
+const codeInlineMark = Decoration.mark({ class: 'cm-inline-code' });
 
 export const liveMarkdownExtension = ViewPlugin.fromClass(
   class {
@@ -45,6 +50,7 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
           const text = line.text;
           const trimmed = text.trim();
 
+          // 1. Headings (H1 to H6)
           if (/^#\s/.test(text)) {
             widgets.push(h1Line.range(line.from));
             widgets.push(headingMarker.range(line.from, line.from + 2));
@@ -69,6 +75,44 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
             widgets.push(blockquoteMarker.range(line.from, line.from + markLen));
           } else if (/^(---|\*\*\*|___)$/.test(trimmed)) {
             widgets.push(hrLine.range(line.from));
+          } else if (trimmed.startsWith('$$') || trimmed.endsWith('$$')) {
+            widgets.push(mathBlockLine.range(line.from));
+          }
+
+          // 2. Obsidian Highlight syntax ==text==
+          const highlightRegex = /==([^=]+)==/g;
+          let hMatch: RegExpExecArray | null;
+          while ((hMatch = highlightRegex.exec(text)) !== null) {
+            const start = line.from + hMatch.index;
+            const end = start + hMatch[0].length;
+            widgets.push(highlightMark.range(start, end));
+          }
+
+          // 3. Strikethrough ~~text~~
+          const strikeRegex = /~~([^~]+)~~/g;
+          let sMatch: RegExpExecArray | null;
+          while ((sMatch = strikeRegex.exec(text)) !== null) {
+            const start = line.from + sMatch.index;
+            const end = start + sMatch[0].length;
+            widgets.push(strikeMark.range(start, end));
+          }
+
+          // 4. Inline Math $x^2$
+          const mathRegex = /(?<!\$)\$([^\$\n]+)\$(?!\$)/g;
+          let mMatch: RegExpExecArray | null;
+          while ((mMatch = mathRegex.exec(text)) !== null) {
+            const start = line.from + mMatch.index;
+            const end = start + mMatch[0].length;
+            widgets.push(mathMark.range(start, end));
+          }
+
+          // 5. Inline Code `code`
+          const codeRegex = /(?<!`)`([^`\n]+)`(?!`)/g;
+          let cMatch: RegExpExecArray | null;
+          while ((cMatch = codeRegex.exec(text)) !== null) {
+            const start = line.from + cMatch.index;
+            const end = start + cMatch[0].length;
+            widgets.push(codeInlineMark.range(start, end));
           }
 
           pos = line.to + 1;

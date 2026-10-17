@@ -9,6 +9,7 @@ import { Editor } from './components/editor/Editor';
 import { GraphView } from './components/graph/GraphView';
 import { SyncConfigModal } from './components/sync/SyncConfigModal';
 import { SyncLogsModal } from './components/sync/SyncLogsModal';
+import { UranoLogo } from './components/common/UranoLogo';
 import {
   FolderOpen,
   FilePlus,
@@ -192,18 +193,16 @@ export const App: React.FC = () => {
         ) : (
           /* Empty / Welcome State when no vault is opened */
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-obsidian-bg">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-xl shadow-purple-600/20 mb-6">
-              <Sparkles className="w-8 h-8 text-white" />
-            </div>
+            <UranoLogo size={88} className="mb-6 drop-shadow-[0_0_24px_rgba(234,88,12,0.45)] animate-pulse" />
 
             <h1 className="text-2xl font-bold text-white mb-2">Bienvenido a Urano</h1>
             <p className="text-sm text-obsidian-muted max-w-md mb-8">
-              Tu espacio de notas Markdown <span className="text-purple-400 font-medium">Local-First</span> de alto rendimiento con sincronización directa en tu cuenta personal de Google Drive.
+              Tu espacio de notas Markdown <span className="text-orange-400 font-medium">Local-First</span> de alto rendimiento con sincronización directa en tu cuenta personal de Google Drive.
             </p>
 
             <button
               onClick={handleOpenFolderDialog}
-              className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm px-6 py-3 rounded-xl shadow-lg shadow-purple-600/30 transition-all hover:scale-105 active:scale-95"
+              className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white font-medium text-sm px-6 py-3 rounded-xl shadow-lg shadow-orange-600/30 transition-all hover:scale-105 active:scale-95"
             >
               <FolderOpen className="w-4 h-4" />
               <span>Abrir o Crear Bóveda Local</span>
@@ -212,7 +211,7 @@ export const App: React.FC = () => {
             {/* Feature Highlights */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mt-12 text-left">
               <div className="p-4 rounded-xl bg-obsidian-sidebar border border-obsidian-border">
-                <div className="flex items-center gap-2 text-purple-400 mb-1">
+                <div className="flex items-center gap-2 text-orange-400 mb-1">
                   <Zap className="w-4 h-4" />
                   <span className="font-semibold text-xs text-white">Ultra Ligero</span>
                 </div>
@@ -232,7 +231,7 @@ export const App: React.FC = () => {
               </div>
 
               <div className="p-4 rounded-xl bg-obsidian-sidebar border border-obsidian-border">
-                <div className="flex items-center gap-2 text-blue-400 mb-1">
+                <div className="flex items-center gap-2 text-amber-400 mb-1">
                   <Sparkles className="w-4 h-4" />
                   <span className="font-semibold text-xs text-white">Google Drive Sync</span>
                 </div>

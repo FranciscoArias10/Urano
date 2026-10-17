@@ -2,6 +2,7 @@ import React from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useSyncStore } from '../../stores/syncStore';
+import { UranoLogo } from '../common/UranoLogo';
 import {
   FolderOpen,
   Cloud,
@@ -58,7 +59,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
   // Sync button status visuals
   const renderSyncIcon = () => {
     if (isSyncing) {
-      return <RefreshCw className="w-3.5 h-3.5 text-blue-400 animate-spin" />;
+      return <RefreshCw className="w-3.5 h-3.5 text-orange-400 animate-spin" />;
     }
     switch (status) {
       case 'synced':
@@ -88,11 +89,13 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
 
   return (
     <header className="h-11 bg-obsidian-sidebar border-b border-obsidian-border flex items-center justify-between px-3 select-none z-30">
-      {/* Left: Brand & Vault Picker */}
+      {/* Left: Urano Logo & Vault Picker */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5 font-bold text-sm tracking-wider text-white">
-          <span className="w-2 h-2 rounded-full bg-purple-500 shadow-sm shadow-purple-500/50" />
-          <span>URANO</span>
+        <div className="flex items-center gap-2 font-bold text-sm tracking-wider text-white">
+          <UranoLogo size={22} className="shrink-0 drop-shadow-[0_0_8px_rgba(234,88,12,0.4)]" />
+          <span className="bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 bg-clip-text text-transparent font-black tracking-widest">
+            URANO
+          </span>
         </div>
 
         <div className="h-4 w-px bg-obsidian-border" />
@@ -113,9 +116,9 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
       <div className="flex items-center bg-obsidian-bg p-0.5 rounded-lg border border-obsidian-border text-xs">
         <button
           onClick={() => onToggleView('editor')}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-colors ${
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
             currentView === 'editor'
-              ? 'bg-purple-600 text-white font-medium shadow-sm'
+              ? 'bg-orange-600 text-white font-medium shadow-sm shadow-orange-600/30'
               : 'text-obsidian-muted hover:text-white'
           }`}
         >
@@ -124,9 +127,9 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
         </button>
         <button
           onClick={() => onToggleView('graph')}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-colors ${
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
             currentView === 'graph'
-              ? 'bg-purple-600 text-white font-medium shadow-sm'
+              ? 'bg-orange-600 text-white font-medium shadow-sm shadow-orange-600/30'
               : 'text-obsidian-muted hover:text-white'
           }`}
         >
@@ -149,6 +152,8 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
                 ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
                 : status === 'error'
                 ? 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20'
+                : isSyncing
+                ? 'bg-orange-500/10 border-orange-500/40 text-orange-300 animate-pulse'
                 : 'bg-obsidian-bg border-obsidian-border text-obsidian-text hover:bg-obsidian-hover'
             }`}
             title="Sincronizar bóveda con Google Drive"

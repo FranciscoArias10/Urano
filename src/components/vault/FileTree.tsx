@@ -108,7 +108,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
         style={{ paddingLeft: `${depth * 14 + 10}px` }}
         className={`group flex items-center justify-between pr-2 py-1 text-xs cursor-pointer rounded-md transition-colors relative ${
           isSelected
-            ? 'bg-purple-600/20 text-purple-200 font-medium'
+            ? 'bg-orange-500/20 text-orange-200 font-medium'
             : 'text-obsidian-text hover:bg-obsidian-hover'
         }`}
       >
@@ -137,7 +137,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           ) : (
             <>
               <span className="w-3.5" />
-              <FileText className="w-3.5 h-3.5 text-purple-400/80 shrink-0" />
+              <FileText className="w-3.5 h-3.5 text-orange-400/90 shrink-0" />
             </>
           )}
 
@@ -149,7 +149,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
                 value={renameValue}
                 onChange={(e) => setRenameValue(e.target.value)}
                 onBlur={() => setIsRenaming(false)}
-                className="w-full bg-obsidian-active text-white px-1.5 py-0.5 rounded outline-none border border-purple-500"
+                className="w-full bg-obsidian-active text-white px-1.5 py-0.5 rounded outline-none border border-orange-500"
               />
             </form>
           ) : (
@@ -170,7 +170,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
                   setIsCreatingFolder(false);
                 }}
                 title="Nueva nota aquí"
-                className="hover:text-purple-300 p-0.5"
+                className="hover:text-orange-300 p-0.5"
               >
                 <Plus className="w-3 h-3" />
               </button>
@@ -217,7 +217,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
             value={newItemName}
             onChange={(e) => setNewItemName(e.target.value)}
             onBlur={() => setIsCreatingNote(false)}
-            className="w-full bg-obsidian-active text-xs text-white px-2 py-1 rounded outline-none border border-purple-500"
+            className="w-full bg-obsidian-active text-xs text-white px-2 py-1 rounded outline-none border border-orange-500"
           />
         </form>
       )}

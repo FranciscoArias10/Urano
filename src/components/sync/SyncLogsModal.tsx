@@ -18,7 +18,7 @@ export const SyncLogsModal: React.FC<SyncLogsModalProps> = ({ isOpen, onClose })
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-obsidian-border bg-obsidian-bg/50">
           <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-purple-400" />
+            <Activity className="w-5 h-5 text-orange-400" />
             <h2 className="text-base font-semibold text-white">Registro de Sincronización</h2>
           </div>
           <button

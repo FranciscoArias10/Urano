@@ -5,7 +5,7 @@ import { tags as t } from '@lezer/highlight';
 export const obsidianTheme = EditorView.theme(
   {
     '&': {
-      color: '#dcddde',
+      color: '#e2dfda',
       backgroundColor: 'transparent',
       fontSize: '16px',
       lineHeight: '1.75',
@@ -19,21 +19,21 @@ export const obsidianTheme = EditorView.theme(
     '.cm-content': {
       maxWidth: '780px',
       margin: '0 auto',
-      caretColor: '#a78bfa',
+      caretColor: '#f97316',
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     },
     '.cm-line': {
-      padding: '0.1rem 0',
+      padding: '0.12rem 0',
     },
     '&.cm-focused': {
       outline: 'none !important',
     },
     '&.cm-focused .cm-cursor': {
-      borderLeftColor: '#a78bfa',
+      borderLeftColor: '#f97316',
       borderLeftWidth: '2px',
     },
     '&.cm-focused .cm-selectionBackground, ::selection': {
-      backgroundColor: 'rgba(124, 58, 237, 0.3) !important',
+      backgroundColor: 'rgba(234, 88, 12, 0.28) !important',
     },
     // Hide code editor gutters & line numbers completely for authentic Obsidian note feel
     '.cm-gutters': {
@@ -51,12 +51,13 @@ export const obsidianTheme = EditorView.theme(
 
 export const obsidianHighlightStyle = HighlightStyle.define([
   { tag: t.strong, fontWeight: '700', color: '#ffffff' },
-  { tag: t.emphasis, fontStyle: 'italic', color: '#e2e2e8' },
-  { tag: t.link, color: '#a78bfa', textDecoration: 'underline' },
-  { tag: t.url, color: '#818cf8' },
-  { tag: t.monospace, color: '#f472b6', backgroundColor: '#1e1e24', borderRadius: '4px', padding: '1px 5px', fontFamily: "'JetBrains Mono', monospace" },
-  { tag: t.comment, color: '#6b7280', fontStyle: 'italic' },
-  { tag: t.quote, color: '#9ca3af', fontStyle: 'italic' },
+  { tag: t.emphasis, fontStyle: 'italic', color: '#e8e5df' },
+  { tag: t.link, color: '#fb923c', textDecoration: 'underline' },
+  { tag: t.url, color: '#fdba74' },
+  { tag: t.monospace, color: '#fba160', backgroundColor: '#24211d', borderRadius: '4px', padding: '1px 5px', fontFamily: "'JetBrains Mono', monospace" },
+  { tag: t.comment, color: '#78716c', fontStyle: 'italic' },
+  { tag: t.quote, color: '#a8a29e', fontStyle: 'italic' },
+  { tag: t.heading, fontWeight: '700', color: '#ffffff' },
 ]);
 
 export const obsidianSyntax = syntaxHighlighting(obsidianHighlightStyle);

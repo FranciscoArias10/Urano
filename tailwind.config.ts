@@ -7,18 +7,32 @@ export default {
     extend: {
       colors: {
         obsidian: {
-          bg: '#161618',
-          sidebar: '#1c1c1f',
-          active: '#242429',
-          border: '#2e2e34',
-          hover: '#28282e',
-          text: '#dedede',
-          muted: '#8b8b96',
-          accent: '#7c3aed', // Purple accent like Obsidian
-          accentHover: '#8b5cf6',
-          conflict: '#f97316', // Orange for conflicts
-          synced: '#10b981',   // Emerald for in-sync
-          syncing: '#3b82f6',  // Blue for syncing
+          bg: '#141312',
+          sidebar: '#1a1816',
+          active: '#24211d',
+          border: '#2c2723',
+          hover: '#26221e',
+          text: '#e2dfda',
+          muted: '#928c84',
+          accent: '#ea580c',      // Uranium brick-orange
+          accentHover: '#f97316', // Glowing amber-orange
+          uraniumGlow: '#fb923c',
+          conflict: '#f59e0b',    // Warning amber
+          synced: '#10b981',      // Emerald
+          syncing: '#f97316',     // Active pulsing uranium orange
+        },
+        uranium: {
+          50: '#fff7ed',
+          100: '#ffedd5',
+          200: '#fed7aa',
+          300: '#fdba74',
+          400: '#fb923c',
+          500: '#f97316',
+          600: '#ea580c',
+          700: '#c2410c',
+          800: '#9a3412',
+          900: '#7c2d12',
+          950: '#431407',
         },
       },
       fontFamily: {

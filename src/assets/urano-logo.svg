@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <!-- Uranium radiant linear gradients -->
+    <linearGradient id="facetTop" x1="50" y1="8" x2="32" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ff8c42" />
+      <stop offset="100%" stop-color="#ea580c" />
+    </linearGradient>
+    <linearGradient id="facetRight" x1="50" y1="8" x2="78" y2="38" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fba160" />
+      <stop offset="100%" stop-color="#d9480f" />
+    </linearGradient>
+    <linearGradient id="facetCenterGlow" x1="32" y1="42" x2="68" y2="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffd166" />
+      <stop offset="50%" stop-color="#f97316" />
+      <stop offset="100%" stop-color="#c2410c" />
+    </linearGradient>
+    <linearGradient id="facetLeft" x1="16" y1="48" x2="42" y2="78" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ea580c" />
+      <stop offset="100%" stop-color="#9a3412" />
+    </linearGradient>
+    <linearGradient id="facetBottomRight" x1="78" y1="38" x2="52" y2="92" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#d9480f" />
+      <stop offset="100%" stop-color="#7c2d12" />
+    </linearGradient>
+    <linearGradient id="facetBottom" x1="42" y1="78" x2="52" y2="92" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#9a3412" />
+      <stop offset="100%" stop-color="#431407" />
+    </linearGradient>
+
+    <!-- Ambient glow filter -->
+    <filter id="uraniumGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Ambient Uranium Core Aura -->
+  <circle cx="50" cy="50" r="28" fill="#f97316" opacity="0.15" filter="url(#uraniumGlow)" />
+
+  <!-- Faceted Crystal (Obsidian-inspired geometric mineral shards) -->
+  <g filter="url(#uraniumGlow)">
+    <!-- Top-Left Facet -->
+    <polygon points="50,8 24,34 35,46 50,38" fill="url(#facetTop)" stroke="#ffb27d" stroke-width="0.8" stroke-linejoin="round" />
+    
+    <!-- Top-Right Facet -->
+    <polygon points="50,8 50,38 72,42 80,26" fill="url(#facetRight)" stroke="#ffc49b" stroke-width="0.8" stroke-linejoin="round" />
+
+    <!-- Center Radiant Core Facet -->
+    <polygon points="50,38 35,46 44,66 65,60 72,42" fill="url(#facetCenterGlow)" stroke="#ffe49e" stroke-width="0.8" stroke-linejoin="round" />
+
+    <!-- Mid-Left Outer Facet -->
+    <polygon points="24,34 14,56 30,70 35,46" fill="url(#facetLeft)" stroke="#f97316" stroke-width="0.8" stroke-linejoin="round" />
+
+    <!-- Mid-Right Outer Facet -->
+    <polygon points="80,26 72,42 86,60 88,44" fill="#c2410c" stroke="#f97316" stroke-width="0.8" stroke-linejoin="round" />
+
+    <!-- Lower-Right Facet -->
+    <polygon points="72,42 65,60 52,92 86,60" fill="url(#facetBottomRight)" stroke="#ea580c" stroke-width="0.8" stroke-linejoin="round" />
+
+    <!-- Lower-Left Facet -->
+    <polygon points="35,46 30,70 52,92 44,66" fill="#9a3412" stroke="#ea580c" stroke-width="0.8" stroke-linejoin="round" />
+
+    <!-- Bottom Point Tip -->
+    <polygon points="44,66 52,92 65,60" fill="url(#facetBottom)" stroke="#ea580c" stroke-width="0.8" stroke-linejoin="round" />
+
+    <!-- Inner Core Refraction Sparkle -->
+    <polygon points="50,42 42,48 48,58 56,52" fill="#fff7ed" opacity="0.6" />
+  </g>
+</svg>

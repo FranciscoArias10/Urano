@@ -32,7 +32,7 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
           id,
           name: baseName,
           val: 1,
-          color: activeFile === filePath ? '#a855f7' : '#818cf8',
+          color: activeFile === filePath ? '#ea580c' : '#fb923c',
         });
       }
 
@@ -47,7 +47,7 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
             id: targetId,
             name: target,
             val: 0.8,
-            color: '#64748b', // Grey for ghost/uncreated notes
+            color: '#78716c', // Grey for ghost/uncreated notes
           });
         }
 
@@ -73,19 +73,19 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Initialize ForceGraph
+    // Initialize ForceGraph with Uranium amber theme
     const fg = (ForceGraph as any)()(containerRef.current)
       .graphData(graphData)
-      .backgroundColor('#161618')
+      .backgroundColor('#141312')
       .nodeId('id')
       .nodeLabel('name')
       .nodeVal('val')
       .nodeColor('color')
-      .linkColor(() => '#2e2e38')
+      .linkColor(() => '#2c2723')
       .linkWidth(1.2)
       .linkDirectionalParticles(2)
       .linkDirectionalParticleWidth(1.5)
-      .linkDirectionalParticleColor(() => '#a78bfa')
+      .linkDirectionalParticleColor(() => '#ea580c')
       .nodeCanvasObject((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const label = node.name;
         const fontSize = 12 / globalScale;
@@ -93,23 +93,23 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
         
         const r = Math.sqrt(Math.max(0, node.val || 1)) * 4;
 
-        // Outer glow
+        // Outer Uranium Glow
         ctx.beginPath();
         ctx.arc(node.x, node.y, r + 2, 0, 2 * Math.PI, false);
-        ctx.fillStyle = node.color ? `${node.color}33` : '#7c3aed33';
+        ctx.fillStyle = node.color ? `${node.color}33` : '#ea580c33';
         ctx.fill();
 
         // Node circle
         ctx.beginPath();
         ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
-        ctx.fillStyle = node.color || '#a855f7';
+        ctx.fillStyle = node.color || '#ea580c';
         ctx.fill();
 
         // Label
         if (globalScale > 1.2 || node.val > 2) {
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillStyle = '#dedede';
+          ctx.fillStyle = '#e2dfda';
           ctx.fillText(label, node.x, node.y + r + fontSize);
         }
       })
@@ -167,7 +167,7 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
     <div className="flex-1 flex flex-col h-full bg-obsidian-bg relative overflow-hidden select-none">
       {/* Graph Toolbar */}
       <div className="absolute top-4 left-6 z-10 flex items-center gap-2 bg-obsidian-sidebar/80 backdrop-blur px-3 py-1.5 rounded-lg border border-obsidian-border text-xs text-obsidian-text shadow-lg">
-        <Network className="w-4 h-4 text-purple-400" />
+        <Network className="w-4 h-4 text-orange-400" />
         <span className="font-medium">Grafo de Conexiones</span>
         <span className="text-obsidian-muted">({graphData.nodes.length} notas, {graphData.links.length} enlaces)</span>
       </div>
