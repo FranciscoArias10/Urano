@@ -1,3 +1,4 @@
+@import 'katex/dist/katex.min.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -146,25 +147,51 @@
   font-weight: 500 !important;
 }
 
-/* Obsidian Math / LaTeX Styling $x^2$ and $$...$$ */
-.cm-math-text {
-  color: #fed7aa !important;
-  font-family: 'KaTeX_Main', 'Cambria Math', 'Times New Roman', serif !important;
-  font-style: italic !important;
-  background-color: rgba(194, 65, 12, 0.15) !important;
-  padding: 1px 5px !important;
-  border-radius: 4px !important;
+/* KaTeX Rendered Widgets (Obsidian & Word Math Equation Feel) */
+.cm-katex-block-widget {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 1.25rem 1rem !important;
+  margin: 1.25rem 0 !important;
+  background-color: rgba(234, 88, 12, 0.04) !important;
   border: 1px solid rgba(234, 88, 12, 0.25) !important;
+  border-radius: 8px !important;
+  font-size: 1.25em !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  color: #fff7ed !important;
+  user-select: text !important;
 }
 
-.cm-mathblock-line {
-  font-family: 'KaTeX_Main', 'Cambria Math', 'Times New Roman', serif !important;
-  text-align: center !important;
+.cm-katex-block-widget:hover {
+  background-color: rgba(234, 88, 12, 0.09) !important;
+  border-color: rgba(234, 88, 12, 0.5) !important;
+  box-shadow: 0 4px 20px rgba(234, 88, 12, 0.15) !important;
+}
+
+.cm-katex-inline-widget {
+  display: inline-flex !important;
+  padding: 0.1rem 0.4rem !important;
+  margin: 0 0.15rem !important;
+  background-color: rgba(234, 88, 12, 0.08) !important;
+  border: 1px solid rgba(234, 88, 12, 0.25) !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  font-size: 1.05em !important;
   color: #ffedd5 !important;
-  background-color: rgba(194, 65, 12, 0.08) !important;
-  padding: 0.5rem 0 !important;
-  border-radius: 6px !important;
-  margin: 0.5rem 0 !important;
+  vertical-align: middle !important;
+  transition: all 0.15s ease !important;
+}
+
+.cm-katex-inline-widget:hover {
+  background-color: rgba(234, 88, 12, 0.18) !important;
+  border-color: #ea580c !important;
+}
+
+.cm-katex-error {
+  color: #f87171 !important;
+  font-family: monospace !important;
 }
 
 /* Strikethrough ~~text~~ */
@@ -184,12 +211,58 @@
   border: 1px solid #36302a !important;
 }
 
-/* Code blocks inside CodeMirror */
-.cm-codeblock {
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 13.5px;
-  background-color: #1c1a18;
-  border-radius: 4px;
-  padding: 2px 6px;
-  color: #fdba74;
+/* Code Block Card Styling */
+.cm-codeblock-line {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+  font-size: 13.5px !important;
+  background-color: #171513 !important;
+  padding-left: 1.25rem !important;
+  padding-right: 1.25rem !important;
+  border-left: 2px solid #ea580c !important;
+  border-right: 1px solid #282420 !important;
+  color: #fed7aa !important;
+}
+
+.cm-codeblock-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background-color: #221f1c !important;
+  border-top-left-radius: 8px !important;
+  border-top-right-radius: 8px !important;
+  border: 1px solid #363029 !important;
+  border-bottom: none !important;
+  padding: 0.45rem 1rem !important;
+  margin-top: 1.25rem !important;
+  max-width: 780px !important;
+}
+
+.cm-codeblock-lang {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  color: #ea580c !important;
+  background-color: rgba(234, 88, 12, 0.15) !important;
+  padding: 1px 6px !important;
+  border-radius: 4px !important;
+}
+
+.cm-codeblock-copy-btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  font-size: 11px !important;
+  color: #928c84 !important;
+  background-color: #171513 !important;
+  border: 1px solid #2c2723 !important;
+  padding: 0.2rem 0.5rem !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.cm-codeblock-copy-btn:hover {
+  color: #ffffff !important;
+  background-color: #26221e !important;
+  border-color: #ea580c !important;
 }

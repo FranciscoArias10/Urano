@@ -107,11 +107,14 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
 
   const applyMathBlock = () => {
     const selection = view.state.selection.main;
-    const selectedText = view.state.sliceDoc(selection.from, selection.to) || 'f(x) = \\int_{-\\infty}^{\\infty} e^{-x^2} dx';
-    const mathBlock = `\n$$\n${selectedText}\n$$\n`;
+    const line = view.state.doc.lineAt(selection.from);
+    const selectedText = view.state.sliceDoc(selection.from, selection.to) || 'E = mc^2';
+    const prefix = line.text.trim().length > 0 ? '\n$$\n' : '$$\n';
+    const mathBlock = `${prefix}${selectedText}\n$$\n`;
 
     view.dispatch({
       changes: { from: selection.from, to: selection.to, insert: mathBlock },
+      selection: { anchor: selection.from + prefix.length, head: selection.from + prefix.length + selectedText.length },
     });
     view.focus();
     onClose();
@@ -119,11 +122,14 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
 
   const applyCodeBlock = () => {
     const selection = view.state.selection.main;
+    const line = view.state.doc.lineAt(selection.from);
     const selectedText = view.state.sliceDoc(selection.from, selection.to) || '// escribe tu código aquí';
-    const codeBlock = `\n\`\`\`javascript\n${selectedText}\n\`\`\`\n`;
+    const prefix = line.text.trim().length > 0 ? '\n```javascript\n' : '```javascript\n';
+    const codeBlock = `${prefix}${selectedText}\n\`\`\`\n`;
 
     view.dispatch({
       changes: { from: selection.from, to: selection.to, insert: codeBlock },
+      selection: { anchor: selection.from + prefix.length, head: selection.from + prefix.length + selectedText.length },
     });
     view.focus();
     onClose();

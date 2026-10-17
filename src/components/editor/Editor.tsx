@@ -5,6 +5,8 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
 import { obsidianTheme, obsidianSyntax } from '../../editor/theme';
 import { liveMarkdownExtension } from '../../editor/liveMarkdown';
+import { mathExtension } from '../../editor/mathExtension';
+import { codeBlockExtension } from '../../editor/codeBlockExtension';
 import { createWikilinksExtension } from '../../editor/wikilinks';
 import { useVaultStore } from '../../stores/vaultStore';
 import { EditorFormattingMenu } from './EditorFormattingMenu';
@@ -32,6 +34,9 @@ interface EditorProps {
 export const Editor: React.FC<EditorProps> = ({ onWikilinkClick }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const currentPathRef = useRef<string | null>(null);
+  const renameTimerRef = useRef<any>(null);
+
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
 
   const {
@@ -41,12 +46,25 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick }) => {
     updateContent,
     isDirty,
     saveCurrentFile,
+    renameCurrentNoteByFirstLine,
     isLoading,
   } = useVaultStore();
 
-  // Create or re-init editor when activeFile changes
+  // Create or switch editor document
   useEffect(() => {
     if (!editorRef.current || !activeFile) return;
+
+    // If activeFile changed solely because of auto-renaming, preserve view & cursor!
+    if (
+      viewRef.current &&
+      currentPathRef.current &&
+      viewRef.current.state.doc.toString() === fileContent
+    ) {
+      currentPathRef.current = activeFile;
+      return;
+    }
+
+    currentPathRef.current = activeFile;
 
     if (viewRef.current) {
       viewRef.current.destroy();
@@ -56,7 +74,6 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick }) => {
     const state = EditorState.create({
       doc: fileContent,
       extensions: [
-        // Clean Obsidian writing canvas (no line numbers, no IDE gutters)
         history(),
         keymap.of([
           ...defaultKeymap,
@@ -73,6 +90,8 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick }) => {
         obsidianTheme,
         obsidianSyntax,
         liveMarkdownExtension,
+        mathExtension,        // Real KaTeX math equations (Word/LaTeX feel)
+        codeBlockExtension,   // Code blocks with language badges & copy button
         EditorView.lineWrapping,
         createWikilinksExtension({
           onWikilinkClick,
@@ -81,6 +100,17 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick }) => {
           if (update.docChanged) {
             const newDoc = update.state.doc.toString();
             updateContent(newDoc);
+
+            // Automatically derive note name from the first line (debounced)
+            const firstLine = newDoc.split('\n')[0] || '';
+            const title = firstLine.replace(/^#+\s*/, '').trim();
+
+            if (title) {
+              if (renameTimerRef.current) clearTimeout(renameTimerRef.current);
+              renameTimerRef.current = setTimeout(() => {
+                renameCurrentNoteByFirstLine(title);
+              }, 700);
+            }
           }
         }),
       ],
@@ -96,6 +126,7 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick }) => {
     return () => {
       view.destroy();
       viewRef.current = null;
+      if (renameTimerRef.current) clearTimeout(renameTimerRef.current);
     };
   }, [activeFile]);
 
@@ -142,16 +173,46 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick }) => {
     view.focus();
   };
 
+  const handleInsertMath = () => {
+    const view = viewRef.current;
+    if (!view) return;
+    const sel = view.state.selection.main;
+    const line = view.state.doc.lineAt(sel.from);
+    const text = view.state.sliceDoc(sel.from, sel.to) || 'E = mc^2';
+    const prefix = line.text.trim().length > 0 ? '\n$$\n' : '$$\n';
+    const insertText = `${prefix}${text}\n$$\n`;
+    view.dispatch({
+      changes: { from: sel.from, to: sel.to, insert: insertText },
+      selection: { anchor: sel.from + prefix.length, head: sel.from + prefix.length + text.length },
+    });
+    view.focus();
+  };
+
+  const handleInsertCode = () => {
+    const view = viewRef.current;
+    if (!view) return;
+    const sel = view.state.selection.main;
+    const line = view.state.doc.lineAt(sel.from);
+    const text = view.state.sliceDoc(sel.from, sel.to) || '// escribe tu código aquí';
+    const prefix = line.text.trim().length > 0 ? '\n```javascript\n' : '```javascript\n';
+    const insertText = `${prefix}${text}\n\`\`\`\n`;
+    view.dispatch({
+      changes: { from: sel.from, to: sel.to, insert: insertText },
+      selection: { anchor: sel.from + prefix.length, head: sel.from + prefix.length + text.length },
+    });
+    view.focus();
+  };
+
   if (!activeFile) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-obsidian-muted p-8 text-center bg-obsidian-bg">
         <FileText className="w-16 h-16 mb-4 text-obsidian-border stroke-1" />
         <h2 className="text-xl font-medium text-obsidian-text mb-2">Ninguna nota seleccionada</h2>
         <p className="text-sm max-w-sm text-obsidian-muted">
-          Selecciona una nota del explorador lateral o crea una nueva para comenzar a escribir.
+          Crea una nueva nota haciendo clic en el botón '+' o selecciona una existente.
         </p>
         <div className="mt-6 flex items-center gap-3 text-xs text-obsidian-muted bg-obsidian-sidebar px-4 py-2 rounded-lg border border-obsidian-border">
-          <span>Tip: Usa <kbd className="bg-obsidian-active px-1.5 py-0.5 rounded text-orange-400">[[Nombre Nota]]</kbd> para enlazar ideas</span>
+          <span>El nombre de la nota se define automáticamente en la primera línea que escribas</span>
         </div>
       </div>
     );
@@ -227,32 +288,14 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick }) => {
           </button>
           <div className="w-px h-3 bg-obsidian-border mx-0.5" />
           <button
-            onClick={() => {
-              const view = viewRef.current;
-              if (!view) return;
-              const sel = view.state.selection.main;
-              const text = view.state.sliceDoc(sel.from, sel.to) || 'E = mc^2';
-              view.dispatch({
-                changes: { from: sel.from, to: sel.to, insert: `\n$$\n${text}\n$$\n` },
-              });
-              view.focus();
-            }}
-            title="Ecuación Matemática ($$)"
-            className="p-1.5 hover:bg-obsidian-hover hover:text-amber-300 rounded transition-colors"
+            onClick={handleInsertMath}
+            title="Ecuación Matemática KaTeX ($$)"
+            className="p-1.5 hover:bg-orange-500/20 hover:text-orange-300 text-orange-400 rounded transition-colors"
           >
             <Sigma className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => {
-              const view = viewRef.current;
-              if (!view) return;
-              const sel = view.state.selection.main;
-              const text = view.state.sliceDoc(sel.from, sel.to) || '// código';
-              view.dispatch({
-                changes: { from: sel.from, to: sel.to, insert: `\n\`\`\`javascript\n${text}\n\`\`\`\n` },
-              });
-              view.focus();
-            }}
+            onClick={handleInsertCode}
             title="Bloque de Código (```)"
             className="p-1.5 hover:bg-obsidian-hover hover:text-orange-300 rounded transition-colors"
           >

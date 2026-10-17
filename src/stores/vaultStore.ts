@@ -20,6 +20,8 @@ interface VaultState {
   updateContent: (content: string) => void;
   saveCurrentFile: () => Promise<void>;
   createNote: (parentPath: string, name: string) => Promise<string>;
+  createUntitledNote: (parentPath?: string) => Promise<string>;
+  renameCurrentNoteByFirstLine: (newTitle: string) => Promise<void>;
   createFolder: (parentPath: string, name: string) => Promise<void>;
   deleteItem: (path: string) => Promise<void>;
   renameItem: (oldPath: string, newPath: string) => Promise<void>;
@@ -58,7 +60,6 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         isLoading: false,
       });
 
-      // Load all notes content for graph
       get().loadAllNotesContent();
     } catch (err) {
       set({ isLoading: false });
@@ -139,6 +140,72 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     return fullPath;
   },
 
+  // Creates a note immediately without asking, ready for the user to type the title on line 1
+  createUntitledNote: async (parentPath?: string): Promise<string> => {
+    const { activeVault, fileTree, refreshTree, selectFile } = get();
+    const targetDir = parentPath || activeVault;
+    if (!targetDir) return '';
+
+    const existingNames = new Set<string>();
+    const collectNames = (items: FileItem[]) => {
+      for (const item of items) {
+        existingNames.add(item.name.toLowerCase());
+        if (item.children) collectNames(item.children);
+      }
+    };
+    collectNames(fileTree);
+
+    let candidate = 'Sin título.md';
+    let counter = 1;
+    while (existingNames.has(candidate.toLowerCase())) {
+      candidate = `Sin título ${counter}.md`;
+      counter++;
+    }
+
+    const fullPath = `${targetDir}/${candidate}`.replace(/\/+/g, '/');
+    const initialContent = `# ${candidate.replace(/\.md$/, '')}\n\n`;
+
+    await invoke('create_file', { filePath: fullPath });
+    await invoke('write_file', { filePath: fullPath, content: initialContent });
+    await refreshTree();
+    await selectFile(fullPath);
+    return fullPath;
+  },
+
+  // Dynamically renames the active note based on its first line
+  renameCurrentNoteByFirstLine: async (newTitle: string) => {
+    const { activeFile, activeFileName, renameItem, fileTree } = get();
+    if (!activeFile || !activeFileName) return;
+
+    const sanitized = newTitle
+      .replace(/^#+\s*/, '')
+      .replace(/[/\\:*?"<>|]/g, '')
+      .trim()
+      .slice(0, 80);
+
+    if (!sanitized) return;
+
+    const currentBase = activeFileName.replace(/\.md$/i, '');
+    if (sanitized.toLowerCase() === currentBase.toLowerCase()) return;
+
+    const parent = activeFile.substring(0, activeFile.lastIndexOf('/'));
+    const newName = `${sanitized}.md`;
+
+    // Prevent collision with existing file
+    const exists = fileTree.some(
+      (item) => item.path.toLowerCase() === `${parent}/${newName}`.toLowerCase()
+    );
+    if (exists) return;
+
+    const newPath = `${parent}/${newName}`;
+
+    try {
+      await renameItem(activeFile, newPath);
+    } catch (err) {
+      console.warn('No se pudo renombrar la nota desde la primera línea:', err);
+    }
+  },
+
   createFolder: async (parentPath: string, name: string) => {
     const fullPath = `${parentPath}/${name}`.replace(/\/+/g, '/');
     await invoke('create_folder', { folderPath: fullPath });
@@ -168,7 +235,6 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     const { activeVault, fileTree, selectFile, createNote } = get();
     if (!activeVault) return;
 
-    // Helper to search recursively in fileTree
     const findNote = (items: FileItem[]): string | null => {
       for (const item of items) {
         if (!item.isDir) {
@@ -188,7 +254,6 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     if (existingPath) {
       await selectFile(existingPath);
     } else {
-      // Create new note in vault root
       const newPath = await createNote(activeVault, `${noteName}.md`);
       const initialContent = `# ${noteName}\n\n`;
       await invoke('write_file', { filePath: newPath, content: initialContent });

@@ -21,6 +21,7 @@
     "@tauri-apps/plugin-fs": "^2.2.0",
     "clsx": "^2.1.1",
     "force-graph": "^1.44.4",
+    "katex": "^0.19.0",
     "lucide-react": "^0.475.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.2.0",
+    "@types/katex": "^0.16.8",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",

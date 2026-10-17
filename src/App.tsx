@@ -31,7 +31,7 @@ export const App: React.FC = () => {
     fileTree,
     setVault,
     refreshTree,
-    createNote,
+    createUntitledNote,
     createFolder,
     selectFile,
     openOrCreateWikilink,
@@ -67,10 +67,7 @@ export const App: React.FC = () => {
 
   const handleCreateRootNote = async () => {
     if (!activeVault) return;
-    const name = prompt('Nombre de la nueva nota:');
-    if (name && name.trim()) {
-      await createNote(activeVault, name.trim());
-    }
+    await createUntitledNote(activeVault);
   };
 
   const handleCreateRootFolder = async () => {

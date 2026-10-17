@@ -45,6 +45,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
     activeFile,
     selectFile,
     createNote,
+    createUntitledNote,
     createFolder,
     deleteItem,
     renameItem,
@@ -165,9 +166,9 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           {item.isDir && (
             <>
               <button
-                onClick={() => {
-                  setIsCreatingNote(true);
-                  setIsCreatingFolder(false);
+                onClick={async () => {
+                  await createUntitledNote(item.path);
+                  setIsOpen(true);
                 }}
                 title="Nueva nota aquí"
                 className="hover:text-orange-300 p-0.5"
