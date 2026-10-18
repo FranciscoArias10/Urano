@@ -57,6 +57,12 @@ interface EditorProps {
   onStatsChange?: (stats: { words: number; chars: number }) => void;
 }
 
+// Module-level reference to the active EditorView
+let globalActiveEditorView: EditorView | null = null;
+export const getActiveEditorView = (): EditorView | null => {
+  return globalActiveEditorView || (window as any).__uranoEditorView || null;
+};
+
 export const Editor: React.FC<EditorProps> = ({
   onWikilinkClick,
   onOpenInNewTab,
@@ -67,6 +73,7 @@ export const Editor: React.FC<EditorProps> = ({
   const viewRef = useRef<EditorView | null>(null);
   const currentPathRef = useRef<string | null>(null);
   const inlineTitleRef = useRef<HTMLDivElement>(null);
+  const lastDispatchedDocRef = useRef<string>('');
 
   const [editorMode, setEditorMode] = useState<'live-preview' | 'reading'>('live-preview');
   const [contextMenu, setContextMenu] = useState<{
@@ -234,6 +241,7 @@ export const Editor: React.FC<EditorProps> = ({
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const newDoc = update.state.doc.toString();
+            lastDispatchedDocRef.current = newDoc;
             updateContent(newDoc);
           }
 
@@ -272,8 +280,17 @@ export const Editor: React.FC<EditorProps> = ({
     });
 
     viewRef.current = view;
+    globalActiveEditorView = view;
+    (window as any).__uranoEditorView = view;
+    lastDispatchedDocRef.current = fileContent;
 
     return () => {
+      if (globalActiveEditorView === view) {
+        globalActiveEditorView = null;
+      }
+      if ((window as any).__uranoEditorView === view) {
+        (window as any).__uranoEditorView = null;
+      }
       view.destroy();
       viewRef.current = null;
     };
@@ -283,7 +300,8 @@ export const Editor: React.FC<EditorProps> = ({
   useEffect(() => {
     if (viewRef.current && activeFile) {
       const currentDoc = viewRef.current.state.doc.toString();
-      if (currentDoc !== fileContent) {
+      if (currentDoc !== fileContent && lastDispatchedDocRef.current !== fileContent) {
+        lastDispatchedDocRef.current = fileContent;
         viewRef.current.dispatch({
           changes: { from: 0, to: currentDoc.length, insert: fileContent },
         });
@@ -403,7 +421,8 @@ export const Editor: React.FC<EditorProps> = ({
 
   // Intelligent Obsidian-like toggle formatting
   const toggleInlineFormatting = (delimiter: string, altDelimiter?: string) => {
-    const view = viewRef.current;
+    console.log('[Urano Menu] Ejecutando comando: Formato', delimiter);
+    const view = viewRef.current || getActiveEditorView();
     if (!view) return;
 
     const sel = view.state.selection.main;
@@ -431,6 +450,9 @@ export const Editor: React.FC<EditorProps> = ({
           changes: { from: sel.from, to: sel.to, insert: unwrapped },
           selection: { anchor: sel.from, head: sel.from + unwrapped.length },
         });
+        const newDoc = view.state.doc.toString();
+        lastDispatchedDocRef.current = newDoc;
+        updateContent(newDoc);
         view.focus();
         return;
       }
@@ -442,6 +464,9 @@ export const Editor: React.FC<EditorProps> = ({
           changes: { from: sel.from, to: sel.to, insert: unwrapped },
           selection: { anchor: sel.from, head: sel.from + unwrapped.length },
         });
+        const newDoc = view.state.doc.toString();
+        lastDispatchedDocRef.current = newDoc;
+        updateContent(newDoc);
         view.focus();
         return;
       }
@@ -458,6 +483,9 @@ export const Editor: React.FC<EditorProps> = ({
           ],
           selection: { anchor: sel.from - len, head: sel.to - len },
         });
+        const newDoc = view.state.doc.toString();
+        lastDispatchedDocRef.current = newDoc;
+        updateContent(newDoc);
         view.focus();
         return;
       }
@@ -478,6 +506,9 @@ export const Editor: React.FC<EditorProps> = ({
             ],
             selection: { anchor: sel.from - altLen, head: sel.to - altLen },
           });
+          const newDoc = view.state.doc.toString();
+          lastDispatchedDocRef.current = newDoc;
+          updateContent(newDoc);
           view.focus();
           return;
         }
@@ -488,6 +519,9 @@ export const Editor: React.FC<EditorProps> = ({
         changes: { from: sel.from, to: sel.to, insert: `${delimiter}${selectedText}${delimiter}` },
         selection: { anchor: sel.from + len, head: sel.to + len },
       });
+      const newDoc = view.state.doc.toString();
+      lastDispatchedDocRef.current = newDoc;
+      updateContent(newDoc);
       view.focus();
     } else {
       // 2. Empty selection (cursor at single position)
@@ -506,6 +540,9 @@ export const Editor: React.FC<EditorProps> = ({
           changes: { from: pos - len, to: pos + len, insert: '' },
           selection: { anchor: pos - len },
         });
+        const newDoc = view.state.doc.toString();
+        lastDispatchedDocRef.current = newDoc;
+        updateContent(newDoc);
         view.focus();
         return;
       }
@@ -546,6 +583,9 @@ export const Editor: React.FC<EditorProps> = ({
           changes: { from: foundPair.start, to: foundPair.end, insert: innerContent },
           selection: { anchor: Math.max(foundPair.start, pos - foundPair.len) },
         });
+        const newDoc = view.state.doc.toString();
+        lastDispatchedDocRef.current = newDoc;
+        updateContent(newDoc);
         view.focus();
         return;
       }
@@ -555,12 +595,15 @@ export const Editor: React.FC<EditorProps> = ({
         changes: { from: pos, insert: `${delimiter}${delimiter}` },
         selection: { anchor: pos + len },
       });
+      const newDoc = view.state.doc.toString();
+      lastDispatchedDocRef.current = newDoc;
+      updateContent(newDoc);
       view.focus();
     }
   };
 
   const wrapSelection = (prefix: string, suffix: string, placeholder = 'Nota') => {
-    const view = viewRef.current;
+    const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     const sel = view.state.selection.main;
     const text = view.state.sliceDoc(sel.from, sel.to) || placeholder;
@@ -568,11 +611,14 @@ export const Editor: React.FC<EditorProps> = ({
       changes: { from: sel.from, to: sel.to, insert: `${prefix}${text}${suffix}` },
       selection: { anchor: sel.from + prefix.length, head: sel.to + prefix.length },
     });
+    const newDoc = view.state.doc.toString();
+    lastDispatchedDocRef.current = newDoc;
+    updateContent(newDoc);
     view.focus();
   };
 
   const handleToolbarLine = (prefix: string) => {
-    const view = viewRef.current;
+    const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     const sel = view.state.selection.main;
     const line = view.state.doc.lineAt(sel.from);
@@ -580,11 +626,14 @@ export const Editor: React.FC<EditorProps> = ({
     view.dispatch({
       changes: { from: line.from, to: line.to, insert: `${prefix}${cleaned}` },
     });
+    const newDoc = view.state.doc.toString();
+    lastDispatchedDocRef.current = newDoc;
+    updateContent(newDoc);
     view.focus();
   };
 
   const handleInsertMath = () => {
-    const view = viewRef.current;
+    const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     const sel = view.state.selection.main;
     const line = view.state.doc.lineAt(sel.from);
@@ -595,38 +644,38 @@ export const Editor: React.FC<EditorProps> = ({
       changes: { from: sel.from, to: sel.to, insert: insertText },
       selection: { anchor: sel.from + prefix.length, head: sel.from + prefix.length + text.length },
     });
+    const newDoc = view.state.doc.toString();
+    lastDispatchedDocRef.current = newDoc;
+    updateContent(newDoc);
     view.focus();
   };
 
   const handleInsertCode = () => {
-    const view = viewRef.current;
-    if (!view) return;
-    const sel = view.state.selection.main;
-    const selected = view.state.sliceDoc(sel.from, sel.to);
-
-    if (selected) {
-      const line = view.state.doc.lineAt(sel.from);
-      const prefix = line.from === sel.from ? '' : '\n';
-      const insert = `${prefix}\`\`\`\n${selected}\n\`\`\`\n`;
-      view.dispatch({
-        changes: { from: sel.from, to: sel.to, insert },
-        selection: { anchor: sel.from + prefix.length + 3 },
-      });
-    } else {
-      const line = view.state.doc.lineAt(sel.from);
-      const prefix = line.text.trim().length > 0 ? '\n' : '';
-      const insert = `${prefix}\`\`\`\n\n\`\`\`\n`;
-      const targetPos = sel.from + prefix.length + 3;
-      view.dispatch({
-        changes: { from: sel.from, to: sel.to, insert },
-        selection: { anchor: targetPos },
-      });
+    console.log('[Urano Menu] Ejecutando comando: Bloque de código');
+    const view = viewRef.current || getActiveEditorView();
+    if (!view) {
+      console.warn('[Urano Menu] EditorView no disponible');
+      return;
     }
+    const sel = view.state.selection.main;
+    const selectedText = view.state.sliceDoc(sel.from, sel.to);
+    const insertText = selectedText ? `\`\`\`\n${selectedText}\n\`\`\`` : '```\n\n```';
+    const targetAnchor = sel.from + 4;
+
+    view.dispatch({
+      changes: { from: sel.from, to: sel.to, insert: insertText },
+      selection: { anchor: targetAnchor },
+    });
+
+    const newDoc = view.state.doc.toString();
+    lastDispatchedDocRef.current = newDoc;
+    updateContent(newDoc);
     view.focus();
   };
 
   const handleInsertTable = () => {
-    const view = viewRef.current;
+    console.log('[Urano Menu] Ejecutando comando: Tabla');
+    const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     const sel = view.state.selection.main;
     const line = view.state.doc.lineAt(sel.from);
@@ -639,11 +688,15 @@ export const Editor: React.FC<EditorProps> = ({
         head: sel.from + prefix.length + 14,
       },
     });
+    const newDoc = view.state.doc.toString();
+    lastDispatchedDocRef.current = newDoc;
+    updateContent(newDoc);
     view.focus();
   };
 
   const handleInsertCallout = () => {
-    const view = viewRef.current;
+    console.log('[Urano Menu] Ejecutando comando: Callout');
+    const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     const sel = view.state.selection.main;
     const line = view.state.doc.lineAt(sel.from);
@@ -657,11 +710,15 @@ export const Editor: React.FC<EditorProps> = ({
       changes: { from: sel.from, to: sel.to, insert },
       selection: { anchor: titleStart, head: titleEnd },
     });
+    const newDoc = view.state.doc.toString();
+    lastDispatchedDocRef.current = newDoc;
+    updateContent(newDoc);
     view.focus();
   };
 
   const handleInsertWikilink = () => {
-    const view = viewRef.current;
+    console.log('[Urano Menu] Ejecutando comando: Enlace interno');
+    const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     const sel = view.state.selection.main;
     const insert = '[[]]';
@@ -669,6 +726,9 @@ export const Editor: React.FC<EditorProps> = ({
       changes: { from: sel.from, to: sel.to, insert },
       selection: { anchor: sel.from + 2 },
     });
+    const newDoc = view.state.doc.toString();
+    lastDispatchedDocRef.current = newDoc;
+    updateContent(newDoc);
     view.focus();
 
     // Trigger autocompletion popup immediately
@@ -685,29 +745,35 @@ export const Editor: React.FC<EditorProps> = ({
   };
 
   const handleInsertHr = () => {
-    const view = viewRef.current;
+    const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     const sel = view.state.selection.main;
     view.dispatch({
       changes: { from: sel.from, to: sel.to, insert: '\n---\n' },
     });
+    const newDoc = view.state.doc.toString();
+    lastDispatchedDocRef.current = newDoc;
+    updateContent(newDoc);
     view.focus();
   };
 
   const handleCut = () => {
-    const view = viewRef.current;
+    const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     const sel = view.state.selection.main;
     const text = view.state.sliceDoc(sel.from, sel.to);
     if (text) {
       navigator.clipboard.writeText(text);
       view.dispatch({ changes: { from: sel.from, to: sel.to, insert: '' } });
+      const newDoc = view.state.doc.toString();
+      lastDispatchedDocRef.current = newDoc;
+      updateContent(newDoc);
       view.focus();
     }
   };
 
   const handleCopy = () => {
-    const view = viewRef.current;
+    const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     const sel = view.state.selection.main;
     const text = view.state.sliceDoc(sel.from, sel.to);
@@ -717,12 +783,15 @@ export const Editor: React.FC<EditorProps> = ({
   };
 
   const handlePaste = async () => {
-    const view = viewRef.current;
+    const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     try {
       const text = await navigator.clipboard.readText();
       const sel = view.state.selection.main;
       view.dispatch({ changes: { from: sel.from, to: sel.to, insert: text } });
+      const newDoc = view.state.doc.toString();
+      lastDispatchedDocRef.current = newDoc;
+      updateContent(newDoc);
       view.focus();
     } catch (err) {
       console.error('Clipboard paste failed:', err);
@@ -730,13 +799,16 @@ export const Editor: React.FC<EditorProps> = ({
   };
 
   const handlePastePlainText = async () => {
-    const view = viewRef.current;
+    const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     try {
       const text = await navigator.clipboard.readText();
       const plain = text.replace(/\r\n/g, '\n');
       const sel = view.state.selection.main;
       view.dispatch({ changes: { from: sel.from, to: sel.to, insert: plain } });
+      const newDoc = view.state.doc.toString();
+      lastDispatchedDocRef.current = newDoc;
+      updateContent(newDoc);
       view.focus();
     } catch (err) {
       console.error('Clipboard paste plain text failed:', err);
@@ -744,7 +816,7 @@ export const Editor: React.FC<EditorProps> = ({
   };
 
   const handleSelectAll = () => {
-    const view = viewRef.current;
+    const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     view.dispatch({
       selection: { anchor: 0, head: view.state.doc.length },
