@@ -43,3 +43,21 @@ export interface GraphData {
   nodes: GraphNode[];
   links: GraphLink[];
 }
+
+export type SortOrder =
+  | 'name-asc'
+  | 'name-desc'
+  | 'mtime-desc'
+  | 'mtime-asc'
+  | 'ctime-desc'
+  | 'ctime-asc';
+
+export interface BookmarkItem {
+  id: string;
+  type: 'file' | 'folder' | 'search';
+  path: string;
+  title: string;
+  query?: string;
+  createdAt?: number;
+}
+

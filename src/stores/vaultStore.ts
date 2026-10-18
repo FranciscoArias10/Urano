@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
-import { FileItem } from '../types';
+import { FileItem, SortOrder, BookmarkItem } from '../types';
 
 // Prohibited characters matching Obsidian specification: \ / : * ? " < > | # ^ [ ]
 export const ILLEGAL_FILENAME_CHARS = /[\\/:*?"<>|#^[\]]/;
@@ -19,6 +19,44 @@ export const validateFileName = (name: string): { valid: boolean; error?: string
   return { valid: true };
 };
 
+export function sortFileTree(items: FileItem[], order: SortOrder): FileItem[] {
+  const sorted = [...items].map((item) => {
+    if (item.children) {
+      return {
+        ...item,
+        children: sortFileTree(item.children, order),
+      };
+    }
+    return item;
+  });
+
+  sorted.sort((a, b) => {
+    // Folders always first
+    if (a.isDir !== b.isDir) {
+      return a.isDir ? -1 : 1;
+    }
+
+    switch (order) {
+      case 'name-asc':
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+      case 'name-desc':
+        return b.name.localeCompare(a.name, undefined, { numeric: true, sensitivity: 'base' });
+      case 'mtime-desc':
+        return (b.mtime || 0) - (a.mtime || 0);
+      case 'mtime-asc':
+        return (a.mtime || 0) - (b.mtime || 0);
+      case 'ctime-desc':
+        return (b.mtime || 0) - (a.mtime || 0);
+      case 'ctime-asc':
+        return (a.mtime || 0) - (b.mtime || 0);
+      default:
+        return a.name.localeCompare(b.name, undefined, { numeric: true });
+    }
+  });
+
+  return sorted;
+}
+
 interface VaultState {
   activeVault: string | null;
   vaultName: string | null;
@@ -31,6 +69,20 @@ interface VaultState {
   notesContentMap: Record<string, string>; // path -> content for graph & backlinks
   autoFocusTitle: boolean;
 
+  // Bookmarks
+  bookmarks: BookmarkItem[];
+  toggleBookmark: (item: { type: 'file' | 'folder' | 'search'; path: string; title: string; query?: string }) => void;
+  removeBookmark: (path: string) => void;
+  isBookmarked: (path: string) => boolean;
+
+  // Sorting
+  sortOrder: SortOrder;
+  setSortOrder: (order: SortOrder) => void;
+
+  // Auto-reveal
+  autoReveal: boolean;
+  setAutoReveal: (reveal: boolean) => void;
+
   // Actions
   setVault: (vaultPath: string) => Promise<void>;
   refreshTree: () => Promise<void>;
@@ -39,7 +91,11 @@ interface VaultState {
   saveCurrentFile: () => Promise<void>;
   createNote: (parentPath: string, name: string) => Promise<string>;
   createUntitledNote: (parentPath?: string) => Promise<{ path: string; name: string }>;
+  createUntitledCanvas: (parentPath?: string) => Promise<{ path: string; name: string }>;
+  createUntitledBase: (parentPath?: string) => Promise<{ path: string; name: string }>;
+  openDailyNote: () => Promise<string>;
   createUntitledFolder: (parentPath?: string) => Promise<string>;
+  moveItem: (sourcePath: string, targetFolderPath: string) => Promise<void>;
   duplicateNote: (filePath: string) => Promise<string>;
   renameNoteWithLinkRefactor: (
     oldPath: string,
@@ -65,6 +121,48 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   notesContentMap: {},
   autoFocusTitle: false,
 
+  // Bookmarks
+  bookmarks: JSON.parse(localStorage.getItem('urano_bookmarks') || '[]'),
+  toggleBookmark: (item) => {
+    const { bookmarks } = get();
+    const exists = bookmarks.some((b) => b.path === item.path);
+    let updated: BookmarkItem[];
+    if (exists) {
+      updated = bookmarks.filter((b) => b.path !== item.path);
+    } else {
+      updated = [
+        ...bookmarks,
+        { ...item, id: `${item.type}-${item.path}-${Date.now()}`, createdAt: Date.now() },
+      ];
+    }
+    localStorage.setItem('urano_bookmarks', JSON.stringify(updated));
+    set({ bookmarks: updated });
+  },
+  removeBookmark: (path) => {
+    const { bookmarks } = get();
+    const updated = bookmarks.filter((b) => b.path !== path);
+    localStorage.setItem('urano_bookmarks', JSON.stringify(updated));
+    set({ bookmarks: updated });
+  },
+  isBookmarked: (path) => {
+    return get().bookmarks.some((b) => b.path === path);
+  },
+
+  // Sorting
+  sortOrder: (localStorage.getItem('urano_sort_order') as SortOrder) || 'name-asc',
+  setSortOrder: (order: SortOrder) => {
+    localStorage.setItem('urano_sort_order', order);
+    const { fileTree } = get();
+    set({ sortOrder: order, fileTree: sortFileTree(fileTree, order) });
+  },
+
+  // Auto-reveal
+  autoReveal: localStorage.getItem('urano_auto_reveal') !== 'false',
+  setAutoReveal: (reveal: boolean) => {
+    localStorage.setItem('urano_auto_reveal', String(reveal));
+    set({ autoReveal: reveal });
+  },
+
   setAutoFocusTitle: (focus: boolean) => set({ autoFocusTitle: focus }),
 
   setVault: async (vaultPath: string) => {
@@ -79,7 +177,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       set({
         activeVault: vaultPath,
         vaultName,
-        fileTree: tree,
+        fileTree: sortFileTree(tree, get().sortOrder),
         activeFile: null,
         activeFileName: null,
         fileContent: '',
@@ -96,11 +194,11 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   },
 
   refreshTree: async () => {
-    const { activeVault } = get();
+    const { activeVault, sortOrder } = get();
     if (!activeVault) return;
     try {
       const tree = await invoke<FileItem[]>('list_vault_files', { vaultPath: activeVault });
-      set({ fileTree: tree });
+      set({ fileTree: sortFileTree(tree, sortOrder) });
       get().loadAllNotesContent();
     } catch (err) {
       console.error('Error al refrescar árbol:', err);
@@ -204,6 +302,164 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     set({ autoFocusTitle: true });
 
     return { path: fullPath, name: candidateName.replace(/\.md$/, '') };
+  },
+
+  // Obsidian Canvas creation (.canvas JSON format)
+  createUntitledCanvas: async (parentPath?: string): Promise<{ path: string; name: string }> => {
+    const { activeVault, fileTree, refreshTree, selectFile } = get();
+    const targetDir = parentPath || activeVault;
+    if (!targetDir) return { path: '', name: '' };
+
+    const existingNames = new Set<string>();
+    const collectInDir = (items: FileItem[]) => {
+      for (const item of items) {
+        if (item.path.startsWith(targetDir)) {
+          existingNames.add(item.name.toLowerCase());
+        }
+        if (item.children) collectInDir(item.children);
+      }
+    };
+    collectInDir(fileTree);
+
+    let candidateName = 'Sin título.canvas';
+    let counter = 1;
+    while (existingNames.has(candidateName.toLowerCase())) {
+      candidateName = `Sin título ${counter}.canvas`;
+      counter++;
+    }
+
+    const fullPath = `${targetDir}/${candidateName}`.replace(/\/+/g, '/');
+    const initialCanvas = JSON.stringify(
+      {
+        nodes: [
+          {
+            id: 'node-1',
+            type: 'text',
+            text: '# Mi Lienzo Canvas\n\nHaz doble clic para editar o usa los botones para añadir tarjetas.',
+            x: 100,
+            y: 100,
+            width: 320,
+            height: 180,
+            color: '1',
+          },
+        ],
+        edges: [],
+      },
+      null,
+      2
+    );
+
+    await invoke('create_file', { filePath: fullPath });
+    await invoke('write_file', { filePath: fullPath, content: initialCanvas });
+
+    await refreshTree();
+    await selectFile(fullPath);
+    set({ autoFocusTitle: true });
+
+    return { path: fullPath, name: candidateName.replace(/\.canvas$/, '') };
+  },
+
+  // Obsidian Base creation (.base format)
+  createUntitledBase: async (parentPath?: string): Promise<{ path: string; name: string }> => {
+    const { activeVault, fileTree, refreshTree, selectFile } = get();
+    const targetDir = parentPath || activeVault;
+    if (!targetDir) return { path: '', name: '' };
+
+    const existingNames = new Set<string>();
+    const collectInDir = (items: FileItem[]) => {
+      for (const item of items) {
+        if (item.path.startsWith(targetDir)) {
+          existingNames.add(item.name.toLowerCase());
+        }
+        if (item.children) collectInDir(item.children);
+      }
+    };
+    collectInDir(fileTree);
+
+    let candidateName = 'Sin título.base';
+    let counter = 1;
+    while (existingNames.has(candidateName.toLowerCase())) {
+      candidateName = `Sin título ${counter}.base`;
+      counter++;
+    }
+
+    const fullPath = `${targetDir}/${candidateName}`.replace(/\/+/g, '/');
+    const initialBase = JSON.stringify(
+      {
+        title: candidateName.replace(/\.base$/, ''),
+        filters: [],
+        sort: [{ field: 'name', order: 'asc' }],
+        columns: ['name', 'folder', 'tags', 'mtime', 'size'],
+      },
+      null,
+      2
+    );
+
+    await invoke('create_file', { filePath: fullPath });
+    await invoke('write_file', { filePath: fullPath, content: initialBase });
+
+    await refreshTree();
+    await selectFile(fullPath);
+    set({ autoFocusTitle: true });
+
+    return { path: fullPath, name: candidateName.replace(/\.base$/, '') };
+  },
+
+  // Open or create today's daily note (YYYY-MM-DD.md)
+  openDailyNote: async (): Promise<string> => {
+    const { activeVault, fileTree, refreshTree, selectFile } = get();
+    if (!activeVault) return '';
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    const targetFileName = `${dateStr}.md`;
+
+    // Search anywhere in vault
+    const findFile = (items: FileItem[]): string | null => {
+      for (const item of items) {
+        if (!item.isDir && (item.name === targetFileName || item.name === `${dateStr}.markdown`)) {
+          return item.path;
+        }
+        if (item.children) {
+          const res = findFile(item.children);
+          if (res) return res;
+        }
+      }
+      return null;
+    };
+
+    const existingPath = findFile(fileTree);
+    if (existingPath) {
+      await selectFile(existingPath);
+      return existingPath;
+    }
+
+    // Create daily note in root
+    const fullPath = `${activeVault}/${targetFileName}`.replace(/\/+/g, '/');
+    const initialContent = `# ${dateStr}\n\n## Objetivos del día\n- [ ] \n\n## Notas\n\n`;
+    await invoke('create_file', { filePath: fullPath });
+    await invoke('write_file', { filePath: fullPath, content: initialContent });
+
+    await refreshTree();
+    await selectFile(fullPath);
+    return fullPath;
+  },
+
+  // Move item (drag and drop into folder)
+  moveItem: async (sourcePath: string, targetFolderPath: string) => {
+    const fileName = sourcePath.substring(sourcePath.lastIndexOf('/') + 1);
+    const newPath = `${targetFolderPath}/${fileName}`.replace(/\/+/g, '/');
+    if (sourcePath === newPath) return;
+
+    await invoke('rename_item', { oldPath: sourcePath, newPath });
+    const { activeFile } = get();
+    if (activeFile === sourcePath) {
+      set({ activeFile: newPath, activeFileName: fileName });
+    }
+    await get().refreshTree();
   },
 
   // Obsidian prompt-free folder creation

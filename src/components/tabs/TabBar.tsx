@@ -1,10 +1,20 @@
 import React, { useState } from 'react';
-import { FileText, GitFork, X, Plus, XCircle, ArrowRight, Copy } from 'lucide-react';
+import {
+  FileText,
+  GitFork,
+  X,
+  Plus,
+  XCircle,
+  ArrowRight,
+  Copy,
+  LayoutDashboard,
+  LayoutList,
+} from 'lucide-react';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 
 export interface TabItem {
   id: string;
-  type: 'note' | 'graph';
+  type: 'note' | 'graph' | 'canvas' | 'base';
   filePath?: string;
   title: string;
   isDirty?: boolean;
@@ -86,6 +96,10 @@ export const TabBar: React.FC<TabBarProps> = ({
           >
             {tab.type === 'graph' ? (
               <GitFork size={13} className={isActive ? 'text-orange-500' : 'text-stone-400'} />
+            ) : tab.type === 'canvas' ? (
+              <LayoutDashboard size={13} className={isActive ? 'text-orange-500' : 'text-stone-400'} />
+            ) : tab.type === 'base' ? (
+              <LayoutList size={13} className={isActive ? 'text-orange-500' : 'text-stone-400'} />
             ) : (
               <FileText size={13} className={isActive ? 'text-orange-500' : 'text-stone-400'} />
             )}
