@@ -7,19 +7,19 @@ export default {
     extend: {
       colors: {
         obsidian: {
-          bg: '#141312',
-          sidebar: '#1a1816',
-          active: '#24211d',
-          border: '#2c2723',
-          hover: '#26221e',
-          text: '#e2dfda',
-          muted: '#928c84',
-          accent: '#ea580c',      // Uranium brick-orange
+          bg: '#1e1e1e',          // Obsidian neutral dark primary canvas
+          sidebar: '#181818',     // Obsidian neutral dark sidebar
+          active: '#262626',
+          border: 'rgba(255, 255, 255, 0.08)',
+          hover: '#262626',
+          text: '#dcddde',
+          muted: '#888888',
+          accent: '#e06c1b',      // Urano official brick-orange
           accentHover: '#f97316', // Glowing amber-orange
           uraniumGlow: '#fb923c',
-          conflict: '#f59e0b',    // Warning amber
-          synced: '#10b981',      // Emerald
-          syncing: '#f97316',     // Active pulsing uranium orange
+          conflict: '#f59e0b',
+          synced: '#10b981',
+          syncing: '#f97316',
         },
         uranium: {
           50: '#fff7ed',
@@ -28,7 +28,7 @@ export default {
           300: '#fdba74',
           400: '#fb923c',
           500: '#f97316',
-          600: '#ea580c',
+          600: '#e06c1b',
           700: '#c2410c',
           800: '#9a3412',
           900: '#7c2d12',

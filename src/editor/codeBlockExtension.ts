@@ -8,32 +8,24 @@ import {
 } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/state';
 
-class CodeFlairWidget extends WidgetType {
-  constructor(readonly language: string, readonly getCode: () => string) {
+class CodeCopyWidget extends WidgetType {
+  constructor(readonly getCode: () => string) {
     super();
   }
 
   toDOM(): HTMLElement {
     const wrap = document.createElement('div');
-    wrap.className = 'cm-codeblock-flair select-none';
-
-    if (this.language) {
-      const langBadge = document.createElement('span');
-      langBadge.className = 'cm-codeblock-lang-badge';
-      langBadge.textContent = this.language.toLowerCase();
-      wrap.appendChild(langBadge);
-    }
+    wrap.className = 'cm-codeblock-copy-flair select-none';
 
     const copyBtn = document.createElement('button');
     copyBtn.className = 'copy-code-button';
     copyBtn.type = 'button';
     copyBtn.title = 'Copiar código';
     copyBtn.innerHTML = `
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
-        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="13" height="13" x="9" y="9" rx="2" ry="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
       </svg>
-      <span>Copiar</span>
     `;
 
     copyBtn.addEventListener('mousedown', (e) => {
@@ -41,19 +33,19 @@ class CodeFlairWidget extends WidgetType {
       e.stopPropagation();
       const code = this.getCode();
       navigator.clipboard.writeText(code).then(() => {
+        copyBtn.classList.add('copied');
         copyBtn.innerHTML = `
-          <svg width="12" height="12" fill="none" stroke="#22c55e" stroke-width="2" viewBox="0 0 24 24">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e06c1b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"/>
           </svg>
-          <span style="color: #22c55e">¡Copiado!</span>
         `;
         setTimeout(() => {
+          copyBtn.classList.remove('copied');
           copyBtn.innerHTML = `
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
-              <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="13" height="13" x="9" y="9" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
             </svg>
-            <span>Copiar</span>
           `;
         }, 2000);
       });
@@ -63,8 +55,8 @@ class CodeFlairWidget extends WidgetType {
     return wrap;
   }
 
-  eq(other: CodeFlairWidget): boolean {
-    return other.language === this.language;
+  eq(): boolean {
+    return true;
   }
 
   ignoreEvent(): boolean {
@@ -212,13 +204,13 @@ export const codeBlockExtension = ViewPlugin.fromClass(
             }
           }
 
-          // Top-right corner flair widget on the opening line
+          // Top-right corner copy button on the opening line
           if (lineNum === block.startLine) {
             builder.add(
               line.to,
               line.to,
               Decoration.widget({
-                widget: new CodeFlairWidget(block.language, block.getCode),
+                widget: new CodeCopyWidget(block.getCode),
                 side: 1,
               })
             );
