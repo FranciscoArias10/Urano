@@ -12,7 +12,8 @@ import { StatusBar } from './components/layout/StatusBar';
 import { SyncConfigModal } from './components/sync/SyncConfigModal';
 import { SyncLogsModal } from './components/sync/SyncLogsModal';
 import { UranoLogo } from './components/common/UranoLogo';
-import { NoticeContainer } from './components/common/Notice';
+import { NoticeContainer, useNoticeStore } from './components/common/Notice';
+import { ObsidianMenu, MenuItemData } from './components/common/ObsidianMenu';
 import {
   FolderOpen,
   FilePlus,
@@ -26,6 +27,10 @@ import {
   PanelLeft,
   ArrowLeftRight,
   RefreshCw,
+  ChevronDown,
+  HelpCircle,
+  HardDrive,
+  Cloud,
 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -63,6 +68,13 @@ export const App: React.FC = () => {
   } = useVaultStore();
 
   const { checkAuthStatus, triggerSync, isSyncing, setShowConfigModal } = useSyncStore();
+  const { showNotice } = useNoticeStore();
+
+  const [vaultMenu, setVaultMenu] = useState<{
+    x: number;
+    y: number;
+    items: MenuItemData[];
+  } | null>(null);
 
   // On mount: restore previous vault and Google auth status
   useEffect(() => {
@@ -177,6 +189,54 @@ export const App: React.FC = () => {
   const handleCreateRootFolder = async () => {
     if (!activeVault) return;
     await createUntitledFolder(activeVault);
+  };
+
+  const handleVaultSwitcherClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const items: MenuItemData[] = [
+      {
+        title: `Bóveda actual: ${vaultName || 'prueba'}`,
+        disabled: true,
+      },
+      { type: 'separator' },
+      {
+        title: 'Bóveda Local',
+        icon: <HardDrive size={14} className="text-orange-500" />,
+        action: handleOpenFolderDialog,
+      },
+      {
+        title: 'Google Drive',
+        icon: <Cloud size={14} className="text-sky-400" />,
+        action: () => setShowConfigModal(true),
+      },
+      { type: 'separator' },
+      {
+        title: 'Abrir otra carpeta de bóveda...',
+        icon: <FolderOpen size={14} />,
+        action: handleOpenFolderDialog,
+      },
+      {
+        title: 'Registros de sincronización...',
+        icon: <RefreshCw size={14} />,
+        action: () => setShowLogs(true),
+      },
+    ];
+
+    setVaultMenu({
+      x: rect.left,
+      y: Math.max(10, rect.top - 180),
+      items,
+    });
+  };
+
+  const handleHelpClick = () => {
+    showNotice(
+      'Atajos: Ctrl+N (Nota nueva) • Ctrl+O (Buscar) • Ctrl+P (Comandos) • Ctrl+B (Barra lateral) • Ctrl+G (Grafo)',
+      5000,
+      'info'
+    );
   };
 
   // Close other tabs
@@ -532,7 +592,7 @@ export const App: React.FC = () => {
 
             {/* Quick Filter Search Input */}
             <div className="p-2 border-b border-obsidian-border">
-              <div className="flex items-center gap-2 bg-[#161412] px-2.5 py-1.5 rounded-md border border-stone-800 text-xs text-obsidian-text">
+              <div className="flex items-center gap-2 bg-[#161616] px-2.5 py-1.5 rounded-md border border-stone-800/80 text-xs text-obsidian-text">
                 <Search className="w-3.5 h-3.5 text-stone-500 shrink-0" />
                 <input
                   type="text"
@@ -547,6 +607,35 @@ export const App: React.FC = () => {
             {/* File Tree Component */}
             <div className="flex-1 overflow-y-auto p-2">
               <FileTree items={filteredTree} onOpenInNewTab={handleOpenInNewTab} />
+            </div>
+
+            {/* Obsidian Bottom Vault Switcher (⌄ prueba) & Action Icons (? y ⚙) */}
+            <div className="p-2 border-t border-obsidian-border bg-obsidian-sidebar flex items-center justify-between text-xs text-stone-400">
+              <button
+                onClick={handleVaultSwitcherClick}
+                className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 hover:text-stone-200 text-stone-300 font-medium max-w-[145px] truncate transition-colors text-left"
+                title="Bóveda actual / Cambiar entre Local y Google Drive"
+              >
+                <ChevronDown size={14} className="text-orange-500 shrink-0" />
+                <span className="truncate">{vaultName || 'prueba'}</span>
+              </button>
+
+              <div className="flex items-center gap-0.5 text-stone-400">
+                <button
+                  onClick={handleHelpClick}
+                  title="Ayuda y atajos de teclado"
+                  className="p-1.5 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
+                >
+                  <HelpCircle size={15} />
+                </button>
+                <button
+                  onClick={() => setShowConfigModal(true)}
+                  title="Ajustes y sincronización"
+                  className="p-1.5 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
+                >
+                  <Settings size={15} />
+                </button>
+              </div>
             </div>
           </aside>
         )}
@@ -650,6 +739,16 @@ export const App: React.FC = () => {
         isOpen={showLogs}
         onClose={() => setShowLogs(false)}
       />
+
+      {/* Obsidian Vault Switcher Menu */}
+      {vaultMenu && (
+        <ObsidianMenu
+          x={vaultMenu.x}
+          y={vaultMenu.y}
+          items={vaultMenu.items}
+          onClose={() => setVaultMenu(null)}
+        />
+      )}
 
       {/* Obsidian Floating Notices */}
       <NoticeContainer />

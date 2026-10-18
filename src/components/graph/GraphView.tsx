@@ -32,7 +32,7 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
           id,
           name: baseName,
           val: 1,
-          color: activeFile === filePath ? '#ea580c' : '#fb923c',
+          color: activeFile === filePath ? '#e06c1b' : '#f97316',
         });
       }
 
@@ -73,19 +73,19 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Initialize ForceGraph with Uranium amber theme
+    // Initialize ForceGraph with Obsidian dark neutral theme and Urano orange accent
     const fg = (ForceGraph as any)()(containerRef.current)
       .graphData(graphData)
-      .backgroundColor('#141312')
+      .backgroundColor('#1e1e1e')
       .nodeId('id')
       .nodeLabel('name')
       .nodeVal('val')
       .nodeColor('color')
-      .linkColor(() => '#2c2723')
+      .linkColor(() => '#2e2e2e')
       .linkWidth(1.2)
       .linkDirectionalParticles(2)
       .linkDirectionalParticleWidth(1.5)
-      .linkDirectionalParticleColor(() => '#ea580c')
+      .linkDirectionalParticleColor(() => '#e06c1b')
       .nodeCanvasObject((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
         const label = node.name;
         const fontSize = 12 / globalScale;
@@ -93,23 +93,23 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
         
         const r = Math.sqrt(Math.max(0, node.val || 1)) * 4;
 
-        // Outer Uranium Glow
+        // Outer Urano Orange Glow
         ctx.beginPath();
         ctx.arc(node.x, node.y, r + 2, 0, 2 * Math.PI, false);
-        ctx.fillStyle = node.color ? `${node.color}33` : '#ea580c33';
+        ctx.fillStyle = node.color ? `${node.color}33` : '#e06c1b33';
         ctx.fill();
 
         // Node circle
         ctx.beginPath();
         ctx.arc(node.x, node.y, r, 0, 2 * Math.PI, false);
-        ctx.fillStyle = node.color || '#ea580c';
+        ctx.fillStyle = node.color || '#e06c1b';
         ctx.fill();
 
         // Label
         if (globalScale > 1.2 || node.val > 2) {
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillStyle = '#e2dfda';
+          ctx.fillStyle = '#dcddde';
           ctx.fillText(label, node.x, node.y + r + fontSize);
         }
       })

@@ -251,10 +251,10 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth, onOpenInNewTab
         onClick={handleSelect}
         onContextMenu={handleContextMenu}
         style={{ paddingLeft: `${depth * 14 + 10}px` }}
-        className={`group flex items-center justify-between pr-2 py-1 text-xs cursor-pointer rounded-md transition-colors relative outline-none ${
+        className={`group flex items-center justify-between pr-2 py-1 text-xs cursor-pointer transition-colors relative outline-none ${
           isSelected
-            ? 'bg-orange-500/20 text-orange-200 font-medium'
-            : 'text-obsidian-text hover:bg-obsidian-hover'
+            ? 'bg-orange-500/15 text-orange-400 font-medium border-l-2 border-orange-500 rounded-none rounded-r-md'
+            : 'text-obsidian-text hover:bg-obsidian-hover rounded-md'
         }`}
       >
         <div className="flex items-center gap-1.5 flex-1 min-w-0 mr-1">
@@ -282,7 +282,11 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth, onOpenInNewTab
           ) : (
             <>
               <span className="w-3.5" />
-              <FileText className="w-3.5 h-3.5 text-orange-400/90 shrink-0" />
+              <FileText
+                className={`w-3.5 h-3.5 shrink-0 ${
+                  isSelected ? 'text-orange-500' : 'text-stone-400/80 group-hover:text-stone-300'
+                }`}
+              />
             </>
           )}
 
@@ -298,7 +302,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth, onOpenInNewTab
                 value={renameValue}
                 onChange={(e) => setRenameValue(e.target.value)}
                 onBlur={() => handleRenameSubmit()}
-                className="w-full bg-[#1e1b18] text-white px-1.5 py-0.5 rounded outline-none border border-orange-500"
+                className="w-full bg-[#161616] text-white px-1.5 py-0.5 rounded outline-none border border-orange-500"
               />
             </form>
           ) : (
