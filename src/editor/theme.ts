@@ -13,7 +13,7 @@ export const obsidianTheme = EditorView.theme(
     },
     '.cm-scroller': {
       fontFamily: "var(--font-interface, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif)",
-      padding: '2rem 3rem 40vh 3rem',
+      padding: '0.75rem 3rem 40vh 3rem',
       overflow: 'auto',
     },
     '.cm-content': {

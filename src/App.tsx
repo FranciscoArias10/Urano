@@ -12,6 +12,7 @@ import { StatusBar } from './components/layout/StatusBar';
 import { SyncConfigModal } from './components/sync/SyncConfigModal';
 import { SyncLogsModal } from './components/sync/SyncLogsModal';
 import { UranoLogo } from './components/common/UranoLogo';
+import { NoticeContainer } from './components/common/Notice';
 import {
   FolderOpen,
   FilePlus,
@@ -57,7 +58,7 @@ export const App: React.FC = () => {
     refreshTree,
     selectFile,
     createUntitledNote,
-    createFolder,
+    createUntitledFolder,
     openOrCreateWikilink,
   } = useVaultStore();
 
@@ -167,18 +168,93 @@ export const App: React.FC = () => {
   // Create untitled note immediately without prompt
   const handleCreateUntitledNote = async () => {
     if (!activeVault) return;
-    const newPath = await createUntitledNote(activeVault);
-    if (newPath) {
-      setActiveTabId(newPath);
+    const newNote = await createUntitledNote(activeVault);
+    if (newNote?.path) {
+      setActiveTabId(newNote.path);
     }
   };
 
   const handleCreateRootFolder = async () => {
     if (!activeVault) return;
-    const name = prompt('Nombre de la nueva carpeta:');
-    if (name && name.trim()) {
-      await createFolder(activeVault, name.trim());
+    await createUntitledFolder(activeVault);
+  };
+
+  // Close other tabs
+  const handleCloseOtherTabs = (tabId: string) => {
+    setTabs((prev) => prev.filter((t) => t.id === tabId));
+    setActiveTabId(tabId);
+    const tab = tabs.find((t) => t.id === tabId);
+    if (tab?.filePath) {
+      selectFile(tab.filePath);
     }
+  };
+
+  // Close tabs to right
+  const handleCloseTabsToRight = (tabId: string) => {
+    setTabs((prev) => {
+      const idx = prev.findIndex((t) => t.id === tabId);
+      if (idx === -1) return prev;
+      const newTabs = prev.slice(0, idx + 1);
+      if (!newTabs.some((t) => t.id === activeTabId)) {
+        setActiveTabId(tabId);
+        const tab = prev.find((t) => t.id === tabId);
+        if (tab?.filePath) {
+          selectFile(tab.filePath);
+        }
+      }
+      return newTabs;
+    });
+  };
+
+  // Duplicate tab
+  const handleDuplicateTab = (tabId: string) => {
+    const tab = tabs.find((t) => t.id === tabId);
+    if (!tab) return;
+    const newTabId = `${tab.id}_dup_${Date.now()}`;
+    const newTab: TabItem = {
+      ...tab,
+      id: newTabId,
+    };
+    setTabs((prev) => [...prev, newTab]);
+    setActiveTabId(newTabId);
+  };
+
+  // Open note in a new tab (or to the right)
+  const handleOpenInNewTab = (filePathOrName: string) => {
+    let targetPath = filePathOrName;
+    if (!targetPath.endsWith('.md')) {
+      const findInTree = (items: typeof fileTree): string | null => {
+        for (const item of items) {
+          if (
+            !item.isDir &&
+            item.name.replace(/\.md$/i, '').toLowerCase() === filePathOrName.toLowerCase()
+          ) {
+            return item.path;
+          }
+          if (item.children) {
+            const f = findInTree(item.children);
+            if (f) return f;
+          }
+        }
+        return null;
+      };
+      const found = findInTree(fileTree);
+      targetPath =
+        found || (activeVault ? `${activeVault}/${filePathOrName}.md` : `${filePathOrName}.md`);
+    }
+
+    const title =
+      targetPath.replace(/\\/g, '/').split('/').pop()?.replace(/\.md$/i, '') || 'Nota';
+    const tabId = `${targetPath}_tab_${Date.now()}`;
+    const newTab: TabItem = {
+      id: tabId,
+      type: 'note',
+      filePath: targetPath,
+      title,
+    };
+    setTabs((prev) => [...prev, newTab]);
+    setActiveTabId(tabId);
+    selectFile(targetPath);
   };
 
   // Open Graph View Tab
@@ -470,7 +546,7 @@ export const App: React.FC = () => {
 
             {/* File Tree Component */}
             <div className="flex-1 overflow-y-auto p-2">
-              <FileTree items={filteredTree} />
+              <FileTree items={filteredTree} onOpenInNewTab={handleOpenInNewTab} />
             </div>
           </aside>
         )}
@@ -485,6 +561,9 @@ export const App: React.FC = () => {
             activeTabId={activeTabId}
             onSelectTab={handleSelectTab}
             onCloseTab={handleCloseTab}
+            onCloseOtherTabs={handleCloseOtherTabs}
+            onCloseTabsToRight={handleCloseTabsToRight}
+            onDuplicateTab={handleDuplicateTab}
             onNewTab={handleCreateUntitledNote}
           />
 
@@ -495,6 +574,8 @@ export const App: React.FC = () => {
             ) : activeFile ? (
               <Editor
                 onWikilinkClick={(name) => openOrCreateWikilink(name)}
+                onOpenInNewTab={handleOpenInNewTab}
+                onOpenToRight={handleOpenInNewTab}
               />
             ) : (
               <div className="flex-1 h-full flex flex-col items-center justify-center text-obsidian-muted p-8 text-center bg-obsidian-bg">
@@ -569,6 +650,9 @@ export const App: React.FC = () => {
         isOpen={showLogs}
         onClose={() => setShowLogs(false)}
       />
+
+      {/* Obsidian Floating Notices */}
+      <NoticeContainer />
     </div>
   );
 };

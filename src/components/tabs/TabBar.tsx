@@ -1,5 +1,6 @@
-import React from 'react';
-import { FileText, GitFork, X, Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { FileText, GitFork, X, Plus, XCircle, ArrowRight, Copy } from 'lucide-react';
+import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 
 export interface TabItem {
   id: string;
@@ -14,6 +15,9 @@ interface TabBarProps {
   activeTabId: string;
   onSelectTab: (tabId: string) => void;
   onCloseTab: (tabId: string) => void;
+  onCloseOtherTabs?: (tabId: string) => void;
+  onCloseTabsToRight?: (tabId: string) => void;
+  onDuplicateTab?: (tabId: string) => void;
   onNewTab: () => void;
 }
 
@@ -22,8 +26,51 @@ export const TabBar: React.FC<TabBarProps> = ({
   activeTabId,
   onSelectTab,
   onCloseTab,
+  onCloseOtherTabs,
+  onCloseTabsToRight,
+  onDuplicateTab,
   onNewTab,
 }) => {
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    items: MenuItemData[];
+  } | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent, tab: TabItem) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const items: MenuItemData[] = [
+      {
+        title: 'Cerrar',
+        shortcut: 'Ctrl+W',
+        icon: <X size={14} />,
+        action: () => onCloseTab(tab.id),
+      },
+      {
+        title: 'Cerrar las demás pestañas',
+        icon: <XCircle size={14} />,
+        disabled: tabs.length <= 1,
+        action: () => onCloseOtherTabs?.(tab.id),
+      },
+      {
+        title: 'Cerrar pestañas a la derecha',
+        icon: <ArrowRight size={14} />,
+        disabled: tabs.findIndex((t) => t.id === tab.id) === tabs.length - 1,
+        action: () => onCloseTabsToRight?.(tab.id),
+      },
+      { type: 'separator' },
+      {
+        title: 'Duplicar en nueva pestaña',
+        icon: <Copy size={14} />,
+        action: () => onDuplicateTab?.(tab.id),
+      },
+    ];
+
+    setContextMenu({ x: e.clientX, y: e.clientY, items });
+  };
+
   return (
     <div className="workspace-tab-header-container select-none">
       {tabs.map((tab) => {
@@ -33,6 +80,7 @@ export const TabBar: React.FC<TabBarProps> = ({
           <div
             key={tab.id}
             onClick={() => onSelectTab(tab.id)}
+            onContextMenu={(e) => handleContextMenu(e, tab)}
             className={`workspace-tab-header ${isActive ? 'is-active' : ''}`}
             title={tab.filePath || tab.title}
           >
@@ -42,12 +90,15 @@ export const TabBar: React.FC<TabBarProps> = ({
               <FileText size={13} className={isActive ? 'text-orange-500' : 'text-stone-400'} />
             )}
 
-            <span className="workspace-tab-header-title">
+            <span className="workspace-tab-header-title truncate max-w-[140px]">
               {tab.title}
             </span>
 
             {tab.isDirty && (
-              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" title="Cambios sin guardar" />
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0"
+                title="Cambios sin guardar"
+              />
             )}
 
             <button
@@ -72,6 +123,16 @@ export const TabBar: React.FC<TabBarProps> = ({
       >
         <Plus size={14} />
       </button>
+
+      {/* Obsidian Context Menu for Tabs */}
+      {contextMenu && (
+        <ObsidianMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={contextMenu.items}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   );
 };

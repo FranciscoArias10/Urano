@@ -10,7 +10,8 @@ import { mathExtension } from '../../editor/mathExtension';
 import { codeBlockExtension } from '../../editor/codeBlockExtension';
 import { createWikilinksExtension } from '../../editor/wikilinks';
 import { useVaultStore } from '../../stores/vaultStore';
-import { EditorFormattingMenu } from './EditorFormattingMenu';
+import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
+import { useNoticeStore } from '../common/Notice';
 import { FileItem } from '../../types';
 import {
   FileText,
@@ -19,38 +20,67 @@ import {
   Highlighter,
   Bold,
   Italic,
+  Strikethrough,
+  Code,
+  MessageSquare,
   Heading1,
   Heading2,
   List,
   CheckSquare,
   Sigma,
-  Code,
   Link,
   Quote,
   BookOpen,
   Edit3,
   ChevronRight,
+  ExternalLink,
+  PlusCircle,
+  Columns,
+  Copy,
+  Scissors,
+  Clipboard,
+  Terminal,
+  Table,
+  AlertCircle,
+  Minus,
+  Type,
+  PlusSquare,
+  FilePlus,
 } from 'lucide-react';
 
 interface EditorProps {
   onWikilinkClick: (noteName: string) => void;
+  onOpenInNewTab?: (noteName: string) => void;
+  onOpenToRight?: (noteName: string) => void;
   onStatsChange?: (stats: { words: number; chars: number }) => void;
 }
 
-export const Editor: React.FC<EditorProps> = ({ onWikilinkClick, onStatsChange }) => {
+export const Editor: React.FC<EditorProps> = ({
+  onWikilinkClick,
+  onOpenInNewTab,
+  onOpenToRight,
+  onStatsChange,
+}) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const currentPathRef = useRef<string | null>(null);
-  const renameTimerRef = useRef<any>(null);
+  const inlineTitleRef = useRef<HTMLDivElement>(null);
 
   const [editorMode, setEditorMode] = useState<'live-preview' | 'reading'>('live-preview');
-  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    items: MenuItemData[];
+  } | null>(null);
 
   // Floating [[ Wikilink suggestion autocompletion state
   const [showSuggest, setShowSuggest] = useState(false);
   const [suggestQuery, setSuggestQuery] = useState('');
   const [suggestIndex, setSuggestIndex] = useState(0);
-  const [suggestCoords, setSuggestCoords] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const [suggestCoords, setSuggestCoords] = useState<{ top: number; left: number }>({
+    top: 0,
+    left: 0,
+  });
 
   const {
     activeFile,
@@ -60,9 +90,15 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick, onStatsChange }
     updateContent,
     isDirty,
     saveCurrentFile,
-    renameCurrentNoteByFirstLine,
+    renameNoteWithLinkRefactor,
+    autoFocusTitle,
+    setAutoFocusTitle,
     isLoading,
   } = useVaultStore();
+
+  const { showNotice } = useNoticeStore();
+
+  const cleanTitle = activeFileName ? activeFileName.replace(/\.md$/i, '') : 'Sin título';
 
   // Compute available notes for autocompletion
   const availableNotes = useMemo(() => {
@@ -88,11 +124,31 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick, onStatsChange }
     onStatsChange?.({ words, chars });
   }, [fileContent, onStatsChange]);
 
+  // Synchronize inline-title innerText when note changes
+  useEffect(() => {
+    if (inlineTitleRef.current && document.activeElement !== inlineTitleRef.current) {
+      inlineTitleRef.current.innerText = cleanTitle;
+    }
+  }, [cleanTitle]);
+
+  // Auto-focus and select all text in .inline-title when a note is newly created
+  useEffect(() => {
+    if (autoFocusTitle && inlineTitleRef.current) {
+      inlineTitleRef.current.focus();
+      const range = document.createRange();
+      range.selectNodeContents(inlineTitleRef.current);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+      setAutoFocusTitle(false);
+    }
+  }, [autoFocusTitle, setAutoFocusTitle]);
+
   // Create or switch editor document
   useEffect(() => {
     if (!editorRef.current || !activeFile) return;
 
-    // If activeFile changed solely because of auto-renaming from line 1, preserve view & cursor!
+    // If activeFile path changed due to inline renaming, preserve editor state & cursor
     if (
       viewRef.current &&
       currentPathRef.current &&
@@ -129,8 +185,8 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick, onStatsChange }
         obsidianTheme,
         obsidianSyntax,
         liveMarkdownExtension,
-        mathExtension,        // KaTeX LaTeX math equations
-        codeBlockExtension,   // Code blocks with syntax highlighting & copy button
+        mathExtension, // KaTeX LaTeX math equations
+        codeBlockExtension, // Code blocks with syntax highlighting & copy button
         EditorView.lineWrapping,
         createWikilinksExtension({
           onWikilinkClick,
@@ -139,17 +195,6 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick, onStatsChange }
           if (update.docChanged) {
             const newDoc = update.state.doc.toString();
             updateContent(newDoc);
-
-            // Automatically derive note name from the first line (debounced)
-            const firstLine = newDoc.split('\n')[0] || '';
-            const title = firstLine.replace(/^#+\s*/, '').trim();
-
-            if (title) {
-              if (renameTimerRef.current) clearTimeout(renameTimerRef.current);
-              renameTimerRef.current = setTimeout(() => {
-                renameCurrentNoteByFirstLine(title);
-              }, 700);
-            }
           }
 
           // Check [[ wikilink autocompletion
@@ -191,11 +236,10 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick, onStatsChange }
     return () => {
       view.destroy();
       viewRef.current = null;
-      if (renameTimerRef.current) clearTimeout(renameTimerRef.current);
     };
   }, [activeFile]);
 
-  // Synchronize doc if file content was changed externally or on initial load
+  // Synchronize doc if file content was changed externally
   useEffect(() => {
     if (viewRef.current && activeFile) {
       const currentDoc = viewRef.current.state.doc.toString();
@@ -242,7 +286,9 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick, onStatsChange }
         setSuggestIndex((prev) => (prev + 1) % Math.max(1, availableNotes.length));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setSuggestIndex((prev) => (prev - 1 + availableNotes.length) % Math.max(1, availableNotes.length));
+        setSuggestIndex(
+          (prev) => (prev - 1 + availableNotes.length) % Math.max(1, availableNotes.length)
+        );
       } else if (e.key === 'Enter' || e.key === 'Tab') {
         if (availableNotes.length > 0) {
           e.preventDefault();
@@ -257,13 +303,63 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick, onStatsChange }
     return () => window.removeEventListener('keydown', handleSuggestKeys, true);
   }, [showSuggest, availableNotes, suggestIndex]);
 
-  // Right-click context menu handler
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setContextMenuPos({ x: e.clientX, y: e.clientY });
+  // Handle .inline-title keyboard events (Enter / Escape)
+  const handleTitleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const newTitle = inlineTitleRef.current?.innerText.trim() || '';
+
+      if (newTitle && newTitle !== cleanTitle && activeFile) {
+        const result = await renameNoteWithLinkRefactor(activeFile, newTitle);
+        if (!result.success) {
+          showNotice(result.error || 'Nombre de archivo inválido', 4000, 'error');
+          if (inlineTitleRef.current) {
+            inlineTitleRef.current.innerText = cleanTitle;
+          }
+          return;
+        }
+      }
+
+      // Smoothly transition focus to beginning of CodeMirror 6 editor
+      if (viewRef.current) {
+        viewRef.current.focus();
+        viewRef.current.dispatch({
+          selection: { anchor: 0, head: 0 },
+          scrollIntoView: true,
+        });
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      if (inlineTitleRef.current) {
+        inlineTitleRef.current.innerText = cleanTitle;
+        inlineTitleRef.current.blur();
+      }
+    }
   };
 
-  // Quick toolbar action helpers
+  // Handle .inline-title onBlur (auto-commit rename)
+  const handleTitleBlur = async () => {
+    const newTitle = inlineTitleRef.current?.innerText.trim() || '';
+    if (!newTitle) {
+      if (inlineTitleRef.current) {
+        inlineTitleRef.current.innerText = cleanTitle;
+      }
+      showNotice('El nombre de archivo no puede estar vacío.', 3500, 'error');
+      return;
+    }
+
+    if (newTitle !== cleanTitle && activeFile) {
+      const result = await renameNoteWithLinkRefactor(activeFile, newTitle);
+      if (!result.success) {
+        showNotice(result.error || 'Nombre de archivo inválido', 4000, 'error');
+        if (inlineTitleRef.current) {
+          inlineTitleRef.current.innerText = cleanTitle;
+        }
+      }
+    }
+  };
+
+  // Quick formatting helpers
   const handleToolbarWrap = (prefix: string, suffix: string, placeholder = 'texto') => {
     const view = viewRef.current;
     if (!view) return;
@@ -318,22 +414,275 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick, onStatsChange }
     view.focus();
   };
 
+  const handleInsertTable = () => {
+    const view = viewRef.current;
+    if (!view) return;
+    const sel = view.state.selection.main;
+    const tableTemplate = `\n| Encabezado 1 | Encabezado 2 |\n| ------------ | ------------ |\n| Elemento 1   | Dato 1       |\n| Elemento 2   | Dato 2       |\n`;
+    view.dispatch({
+      changes: { from: sel.from, to: sel.to, insert: tableTemplate },
+    });
+    view.focus();
+  };
+
+  const handleInsertCallout = () => {
+    const view = viewRef.current;
+    if (!view) return;
+    const sel = view.state.selection.main;
+    const calloutTemplate = `\n> [!NOTE]\n> Contenido del aviso\n`;
+    view.dispatch({
+      changes: { from: sel.from, to: sel.to, insert: calloutTemplate },
+    });
+    view.focus();
+  };
+
+  const handleInsertHr = () => {
+    const view = viewRef.current;
+    if (!view) return;
+    const sel = view.state.selection.main;
+    view.dispatch({
+      changes: { from: sel.from, to: sel.to, insert: '\n---\n' },
+    });
+    view.focus();
+  };
+
+  const handleCut = () => {
+    const view = viewRef.current;
+    if (!view) return;
+    const sel = view.state.selection.main;
+    const text = view.state.sliceDoc(sel.from, sel.to);
+    if (text) {
+      navigator.clipboard.writeText(text);
+      view.dispatch({ changes: { from: sel.from, to: sel.to, insert: '' } });
+      view.focus();
+    }
+  };
+
+  const handleCopy = () => {
+    const view = viewRef.current;
+    if (!view) return;
+    const sel = view.state.selection.main;
+    const text = view.state.sliceDoc(sel.from, sel.to);
+    if (text) {
+      navigator.clipboard.writeText(text);
+    }
+  };
+
+  const handlePaste = async () => {
+    const view = viewRef.current;
+    if (!view) return;
+    try {
+      const text = await navigator.clipboard.readText();
+      const sel = view.state.selection.main;
+      view.dispatch({ changes: { from: sel.from, to: sel.to, insert: text } });
+      view.focus();
+    } catch (err) {
+      console.error('Clipboard paste failed:', err);
+    }
+  };
+
+  const handlePastePlainText = async () => {
+    const view = viewRef.current;
+    if (!view) return;
+    try {
+      const text = await navigator.clipboard.readText();
+      const plain = text.replace(/\r\n/g, '\n');
+      const sel = view.state.selection.main;
+      view.dispatch({ changes: { from: sel.from, to: sel.to, insert: plain } });
+      view.focus();
+    } catch (err) {
+      console.error('Clipboard paste plain text failed:', err);
+    }
+  };
+
+  const handleSelectAll = () => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      selection: { anchor: 0, head: view.state.doc.length },
+    });
+    view.focus();
+  };
+
+  // Right-click context menu handler matching Obsidian specification
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const target = e.target as HTMLElement;
+
+    // Check if right-clicked on [[Wikilink]]
+    let clickedWikilink: string | null = null;
+    const wikilinkEl = target.closest('.cm-wikilink');
+    if (wikilinkEl && viewRef.current) {
+      const pos = viewRef.current.posAtDOM(wikilinkEl);
+      const line = viewRef.current.state.doc.lineAt(pos);
+      const regex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(line.text)) !== null) {
+        const start = line.from + match.index;
+        const end = start + match[0].length;
+        if (pos >= start && pos <= end) {
+          clickedWikilink = match[1].trim();
+          break;
+        }
+      }
+    }
+
+    const items: MenuItemData[] = [];
+
+    // 1. Wikilink Options if clicked on [[Wikilink]]
+    if (clickedWikilink) {
+      items.push(
+        {
+          title: 'Abrir enlace',
+          icon: <ExternalLink size={14} />,
+          action: () => onWikilinkClick(clickedWikilink!),
+        },
+        {
+          title: 'Abrir en una pestaña nueva',
+          icon: <PlusCircle size={14} />,
+          action: () => onOpenInNewTab?.(clickedWikilink!),
+        },
+        {
+          title: 'Abrir a la derecha',
+          icon: <Columns size={14} />,
+          action: () => onOpenToRight?.(clickedWikilink!),
+        },
+        {
+          title: 'Copiar enlace de Urano',
+          icon: <Copy size={14} />,
+          action: () => {
+            navigator.clipboard.writeText(`[[${clickedWikilink}]]`);
+            showNotice('Enlace copiado al portapapeles', 2500, 'success');
+          },
+        },
+        { type: 'separator' }
+      );
+    }
+
+    // 2. Submenús desplegables: Formato ▸ & Insertar ▸
+    items.push(
+      {
+        title: 'Formato',
+        icon: <Type size={14} />,
+        submenu: [
+          {
+            title: 'Negrita',
+            shortcut: 'Ctrl+B',
+            icon: <Bold size={14} />,
+            action: () => handleToolbarWrap('**', '**', 'negrita'),
+          },
+          {
+            title: 'Cursiva',
+            shortcut: 'Ctrl+I',
+            icon: <Italic size={14} />,
+            action: () => handleToolbarWrap('*', '*', 'cursiva'),
+          },
+          {
+            title: 'Tachado',
+            icon: <Strikethrough size={14} />,
+            action: () => handleToolbarWrap('~~', '~~', 'tachado'),
+          },
+          {
+            title: 'Código en línea',
+            icon: <Code size={14} />,
+            action: () => handleToolbarWrap('`', '`', 'código'),
+          },
+          {
+            title: 'Resaltado (==)',
+            icon: <Highlighter size={14} />,
+            action: () => handleToolbarWrap('==', '==', 'resaltado'),
+          },
+          {
+            title: 'Comentario (%%)',
+            icon: <MessageSquare size={14} />,
+            action: () => handleToolbarWrap('%%', '%%', 'comentario'),
+          },
+        ],
+      },
+      {
+        title: 'Insertar',
+        icon: <PlusSquare size={14} />,
+        submenu: [
+          {
+            title: 'Enlace interno [[]]',
+            icon: <Link size={14} />,
+            action: () => handleToolbarWrap('[[', ']]', 'Nota'),
+          },
+          {
+            title: 'Nota incrustada ! [[]]',
+            icon: <FilePlus size={14} />,
+            action: () => handleToolbarWrap('![[', ']]', 'Nota'),
+          },
+          {
+            title: 'Bloque de código',
+            icon: <Terminal size={14} />,
+            action: handleInsertCode,
+          },
+          {
+            title: 'Tabla Markdown',
+            icon: <Table size={14} />,
+            action: handleInsertTable,
+          },
+          {
+            title: 'Callout (> [!NOTE])',
+            icon: <AlertCircle size={14} />,
+            action: handleInsertCallout,
+          },
+          {
+            title: 'Línea horizontal (---)',
+            icon: <Minus size={14} />,
+            action: handleInsertHr,
+          },
+        ],
+      },
+      { type: 'separator' },
+      {
+        title: 'Cortar',
+        shortcut: 'Ctrl+X',
+        icon: <Scissors size={14} />,
+        action: handleCut,
+      },
+      {
+        title: 'Copiar',
+        shortcut: 'Ctrl+C',
+        icon: <Copy size={14} />,
+        action: handleCopy,
+      },
+      {
+        title: 'Pegar',
+        shortcut: 'Ctrl+V',
+        icon: <Clipboard size={14} />,
+        action: handlePaste,
+      },
+      {
+        title: 'Pegar sin formato',
+        shortcut: 'Ctrl+Shift+V',
+        icon: <FileText size={14} />,
+        action: handlePastePlainText,
+      },
+      {
+        title: 'Seleccionar todo',
+        shortcut: 'Ctrl+A',
+        icon: <CheckSquare size={14} />,
+        action: handleSelectAll,
+      }
+    );
+
+    setContextMenu({ x: e.clientX, y: e.clientY, items });
+  };
+
   if (!activeFile) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-obsidian-muted p-8 text-center bg-obsidian-bg">
         <FileText className="w-16 h-16 mb-4 text-obsidian-border stroke-1" />
         <h2 className="text-xl font-medium text-obsidian-text mb-2">Ninguna nota seleccionada</h2>
         <p className="text-sm max-w-sm text-obsidian-muted">
-          Crea una nueva nota haciendo clic en '+' o presiona Ctrl+O para buscar en la bóveda.
+          Crea una nueva nota haciendo clic en '+' o presiona Ctrl+N.
         </p>
-        <div className="mt-6 flex items-center gap-3 text-xs text-obsidian-muted bg-obsidian-sidebar px-4 py-2 rounded-lg border border-obsidian-border">
-          <span>El nombre de la nota se define automáticamente en la primera línea que escribas</span>
-        </div>
       </div>
     );
   }
 
-  const cleanTitle = activeFileName ? activeFileName.replace(/\.md$/i, '') : 'Nota';
   const pathParts = activeFile ? activeFile.replace(/\\/g, '/').split('/') : [];
   const folderParts = pathParts.slice(0, -1);
 
@@ -444,7 +793,9 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick, onStatsChange }
         <div className="flex items-center gap-2">
           {/* Mode Switch: Live Preview vs Reading View */}
           <button
-            onClick={() => setEditorMode(editorMode === 'live-preview' ? 'reading' : 'live-preview')}
+            onClick={() =>
+              setEditorMode(editorMode === 'live-preview' ? 'reading' : 'live-preview')
+            }
             title={
               editorMode === 'live-preview'
                 ? 'Cambiar a Vista de Lectura'
@@ -474,7 +825,7 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick, onStatsChange }
       </div>
 
       {/* Clean Document Canvas */}
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-hidden relative flex flex-col">
         {isLoading && (
           <div className="absolute inset-0 bg-obsidian-bg/50 backdrop-blur-[1px] flex items-center justify-center z-20">
             <div className="animate-spin rounded-full h-6 w-6 border-2 border-orange-500 border-t-transparent" />
@@ -482,7 +833,25 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick, onStatsChange }
         )}
 
         {editorMode === 'live-preview' ? (
-          <div ref={editorRef} className="h-full" />
+          <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+            {/* Inline Title (.inline-title) directly above the CodeMirror 6 canvas */}
+            <div className="w-full max-w-[820px] mx-auto px-12 pt-6 shrink-0">
+              <div
+                ref={inlineTitleRef}
+                className="inline-title"
+                contentEditable="true"
+                suppressContentEditableWarning
+                spellCheck={false}
+                onKeyDown={handleTitleKeyDown}
+                onBlur={handleTitleBlur}
+              >
+                {cleanTitle}
+              </div>
+            </div>
+
+            {/* CodeMirror 6 Editor Canvas */}
+            <div ref={editorRef} className="flex-1 min-h-0" />
+          </div>
         ) : (
           /* Reading View Mode */
           <div className="h-full overflow-y-auto px-12 py-10 max-w-[820px] mx-auto text-stone-200 leading-relaxed font-sans">
@@ -515,7 +884,10 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick, onStatsChange }
                     : 'text-stone-300 hover:bg-stone-800/50'
                 }`}
               >
-                <FileText size={12} className={idx === suggestIndex ? 'text-orange-400' : 'text-stone-500'} />
+                <FileText
+                  size={12}
+                  className={idx === suggestIndex ? 'text-orange-400' : 'text-stone-500'}
+                />
                 <span className="truncate">{name}</span>
               </div>
             ))}
@@ -523,13 +895,15 @@ export const Editor: React.FC<EditorProps> = ({ onWikilinkClick, onStatsChange }
         </div>
       )}
 
-      {/* Right-click Context Menu */}
-      <EditorFormattingMenu
-        view={viewRef.current}
-        isOpen={Boolean(contextMenuPos)}
-        position={contextMenuPos}
-        onClose={() => setContextMenuPos(null)}
-      />
+      {/* Obsidian Right-click Context Menu */}
+      {contextMenu && (
+        <ObsidianMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={contextMenu.items}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   );
 };
