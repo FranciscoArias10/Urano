@@ -71,9 +71,13 @@ impl VaultService {
                     size,
                 });
             } else {
-                // Include markdown files (.md, .markdown)
+                // Include markdown files (.md, .markdown), canvas files (.canvas), and base files (.base)
                 let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-                if ext.eq_ignore_ascii_case("md") || ext.eq_ignore_ascii_case("markdown") {
+                if ext.eq_ignore_ascii_case("md")
+                    || ext.eq_ignore_ascii_case("markdown")
+                    || ext.eq_ignore_ascii_case("canvas")
+                    || ext.eq_ignore_ascii_case("base")
+                {
                     items.push(FileItem {
                         path: path.to_string_lossy().to_string(),
                         name: file_name,
