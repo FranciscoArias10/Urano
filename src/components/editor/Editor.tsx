@@ -8,6 +8,8 @@ import { obsidianTheme, obsidianSyntax } from '../../editor/theme';
 import { liveMarkdownExtension } from '../../editor/liveMarkdown';
 import { mathExtension } from '../../editor/mathExtension';
 import { codeBlockExtension } from '../../editor/codeBlockExtension';
+import { calloutExtension } from '../../editor/calloutExtension';
+import { tableExtension } from '../../editor/tableExtension';
 import { createWikilinksExtension } from '../../editor/wikilinks';
 import { useVaultStore } from '../../stores/vaultStore';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
@@ -201,6 +203,8 @@ export const Editor: React.FC<EditorProps> = ({
         liveMarkdownExtension,
         mathExtension, // KaTeX LaTeX math equations
         codeBlockExtension, // Code blocks with syntax highlighting & copy button
+        calloutExtension, // Obsidian Callout boxes in Live Preview
+        tableExtension, // Obsidian Markdown Tables in Live Preview
         EditorView.lineWrapping,
         createWikilinksExtension({
           onWikilinkClick,
@@ -590,9 +594,15 @@ export const Editor: React.FC<EditorProps> = ({
     const view = viewRef.current;
     if (!view) return;
     const sel = view.state.selection.main;
-    const tableTemplate = `\n| Encabezado 1 | Encabezado 2 |\n| ------------ | ------------ |\n| Elemento 1   | Dato 1       |\n| Elemento 2   | Dato 2       |\n`;
+    const line = view.state.doc.lineAt(sel.from);
+    const prefix = line.text.trim().length > 0 ? '\n\n' : '';
+    const insert = `${prefix}| Encabezado 1 | Encabezado 2 |\n| ------------ | ------------ |\n| Elemento 1   | Dato 1       |\n| Elemento 2   | Dato 2       |\n`;
     view.dispatch({
-      changes: { from: sel.from, to: sel.to, insert: tableTemplate },
+      changes: { from: sel.from, to: sel.to, insert },
+      selection: {
+        anchor: sel.from + prefix.length + 2,
+        head: sel.from + prefix.length + 14,
+      },
     });
     view.focus();
   };
@@ -601,11 +611,42 @@ export const Editor: React.FC<EditorProps> = ({
     const view = viewRef.current;
     if (!view) return;
     const sel = view.state.selection.main;
-    const calloutTemplate = `\n> [!NOTE]\n> Contenido del aviso\n`;
+    const line = view.state.doc.lineAt(sel.from);
+    const prefix = line.text.trim().length > 0 ? '\n' : '';
+    const selected = view.state.sliceDoc(sel.from, sel.to);
+    const content = selected ? selected : 'Contenido del aviso';
+    const insert = `${prefix}> [!note] Título\n> ${content}\n`;
+    const titleStart = sel.from + prefix.length + 10;
+    const titleEnd = titleStart + 6;
     view.dispatch({
-      changes: { from: sel.from, to: sel.to, insert: calloutTemplate },
+      changes: { from: sel.from, to: sel.to, insert },
+      selection: { anchor: titleStart, head: titleEnd },
     });
     view.focus();
+  };
+
+  const handleInsertWikilink = () => {
+    const view = viewRef.current;
+    if (!view) return;
+    const sel = view.state.selection.main;
+    const insert = '[[]]';
+    view.dispatch({
+      changes: { from: sel.from, to: sel.to, insert },
+      selection: { anchor: sel.from + 2 },
+    });
+    view.focus();
+
+    // Trigger autocompletion popup immediately
+    setSuggestQuery('');
+    setSuggestIndex(0);
+    setShowSuggest(true);
+    const coords = view.coordsAtPos(sel.from + 2);
+    if (coords) {
+      setSuggestCoords({
+        top: coords.bottom + 6,
+        left: Math.max(20, Math.min(coords.left, window.innerWidth - 280)),
+      });
+    }
   };
 
   const handleInsertHr = () => {
@@ -791,7 +832,7 @@ export const Editor: React.FC<EditorProps> = ({
           {
             title: 'Enlace interno [[]]',
             icon: <Link size={14} />,
-            action: () => wrapSelection('[[', ']]', 'Nota'),
+            action: handleInsertWikilink,
           },
           {
             title: 'Nota incrustada ! [[]]',
@@ -959,7 +1000,7 @@ export const Editor: React.FC<EditorProps> = ({
             <Code className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => wrapSelection('[[', ']]', 'Nota')}
+            onClick={handleInsertWikilink}
             title="Enlace Bidireccional [[...]]"
             className="p-1 hover:bg-orange-500/20 hover:text-orange-300 text-orange-400 rounded transition-colors"
           >

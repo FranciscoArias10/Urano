@@ -653,3 +653,135 @@
   }
 }
 
+/* ========================================================
+   Obsidian Live Preview Callouts (.callout)
+   ======================================================== */
+.callout {
+  border-radius: 8px;
+  margin: 1.25rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left-width: 4px;
+  background-color: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transition: all 0.15s ease;
+}
+
+.callout:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.callout-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+  margin-bottom: 0.35rem;
+}
+
+.callout-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.callout-content {
+  color: var(--text-muted);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  margin-left: 1.6rem;
+}
+
+/* Callout Themes by type matching Obsidian */
+.callout[data-callout="note"],
+.callout[data-callout="info"] {
+  border-left-color: #38bdf8;
+  background-color: rgba(56, 189, 248, 0.06);
+}
+.callout[data-callout="note"] .callout-title,
+.callout[data-callout="info"] .callout-title {
+  color: #7dd3fc;
+}
+
+.callout[data-callout="tip"],
+.callout[data-callout="hint"],
+.callout[data-callout="important"] {
+  border-left-color: #22c55e;
+  background-color: rgba(34, 197, 94, 0.06);
+}
+.callout[data-callout="tip"] .callout-title,
+.callout[data-callout="hint"] .callout-title {
+  color: #86efac;
+}
+
+.callout[data-callout="warning"],
+.callout[data-callout="caution"],
+.callout[data-callout="attention"] {
+  border-left-color: #eab308;
+  background-color: rgba(234, 179, 8, 0.06);
+}
+.callout[data-callout="warning"] .callout-title,
+.callout[data-callout="caution"] .callout-title {
+  color: #fde047;
+}
+
+.callout[data-callout="danger"],
+.callout[data-callout="error"],
+.callout[data-callout="bug"] {
+  border-left-color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.07);
+}
+.callout[data-callout="danger"] .callout-title,
+.callout[data-callout="error"] .callout-title {
+  color: #fca5a5;
+}
+
+.callout[data-callout="example"] {
+  border-left-color: #a855f7;
+  background-color: rgba(168, 85, 247, 0.06);
+}
+.callout[data-callout="example"] .callout-title {
+  color: #d8b4fe;
+}
+
+.callout[data-callout="quote"] {
+  border-left-color: #a8a29e;
+  background-color: rgba(168, 162, 158, 0.06);
+}
+.callout[data-callout="quote"] .callout-title {
+  color: #d6d3d1;
+}
+
+.cm-callout-line-hidden,
+.cm-table-line-hidden {
+  height: 0px !important;
+  min-height: 0px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  line-height: 0 !important;
+  font-size: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ========================================================
+   Obsidian Live Preview Tables (.cm-table-widget)
+   ======================================================== */
+.cm-table-widget {
+  background-color: #161412;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.cm-table-widget:hover {
+  border-color: rgba(234, 88, 12, 0.35);
+}
+
