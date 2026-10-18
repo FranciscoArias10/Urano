@@ -180,6 +180,20 @@ export const Editor: React.FC<EditorProps> = ({
               return true;
             },
           },
+          {
+            key: 'Mod-b',
+            run: () => {
+              toggleInlineFormatting('**', '__');
+              return true;
+            },
+          },
+          {
+            key: 'Mod-i',
+            run: () => {
+              toggleInlineFormatting('*', '_');
+              return true;
+            },
+          },
         ]),
         markdown({ codeLanguages: languages }),
         obsidianTheme,
@@ -359,8 +373,154 @@ export const Editor: React.FC<EditorProps> = ({
     }
   };
 
-  // Quick formatting helpers
-  const handleToolbarWrap = (prefix: string, suffix: string, placeholder = 'texto') => {
+  // Intelligent Obsidian-like toggle formatting
+  const toggleInlineFormatting = (delimiter: string, altDelimiter?: string) => {
+    const view = viewRef.current;
+    if (!view) return;
+
+    const sel = view.state.selection.main;
+    const len = delimiter.length;
+
+    if (!sel.empty) {
+      // 1. Text is selected
+      const selectedText = view.state.sliceDoc(sel.from, sel.to);
+
+      // Check if selectedText itself starts and ends with delimiter
+      const isWrappedDirectly =
+        selectedText.length >= len * 2 &&
+        selectedText.startsWith(delimiter) &&
+        selectedText.endsWith(delimiter);
+
+      const isWrappedDirectlyAlt =
+        altDelimiter &&
+        selectedText.length >= altDelimiter.length * 2 &&
+        selectedText.startsWith(altDelimiter) &&
+        selectedText.endsWith(altDelimiter);
+
+      if (isWrappedDirectly) {
+        const unwrapped = selectedText.slice(len, -len);
+        view.dispatch({
+          changes: { from: sel.from, to: sel.to, insert: unwrapped },
+          selection: { anchor: sel.from, head: sel.from + unwrapped.length },
+        });
+        view.focus();
+        return;
+      }
+
+      if (isWrappedDirectlyAlt && altDelimiter) {
+        const altLen = altDelimiter.length;
+        const unwrapped = selectedText.slice(altLen, -altLen);
+        view.dispatch({
+          changes: { from: sel.from, to: sel.to, insert: unwrapped },
+          selection: { anchor: sel.from, head: sel.from + unwrapped.length },
+        });
+        view.focus();
+        return;
+      }
+
+      // Check if immediately surrounding characters in document match delimiter
+      const before = view.state.sliceDoc(Math.max(0, sel.from - len), sel.from);
+      const after = view.state.sliceDoc(sel.to, Math.min(view.state.doc.length, sel.to + len));
+
+      if (before === delimiter && after === delimiter) {
+        view.dispatch({
+          changes: [
+            { from: sel.to, to: sel.to + len, insert: '' },
+            { from: sel.from - len, to: sel.from, insert: '' },
+          ],
+          selection: { anchor: sel.from - len, head: sel.to - len },
+        });
+        view.focus();
+        return;
+      }
+
+      // Check altDelimiter surrounding
+      if (altDelimiter) {
+        const altLen = altDelimiter.length;
+        const beforeAlt = view.state.sliceDoc(Math.max(0, sel.from - altLen), sel.from);
+        const afterAlt = view.state.sliceDoc(
+          sel.to,
+          Math.min(view.state.doc.length, sel.to + altLen)
+        );
+        if (beforeAlt === altDelimiter && afterAlt === altDelimiter) {
+          view.dispatch({
+            changes: [
+              { from: sel.to, to: sel.to + altLen, insert: '' },
+              { from: sel.from - altLen, to: sel.from, insert: '' },
+            ],
+            selection: { anchor: sel.from - altLen, head: sel.to - altLen },
+          });
+          view.focus();
+          return;
+        }
+      }
+
+      // Not formatted -> wrap with delimiter
+      view.dispatch({
+        changes: { from: sel.from, to: sel.to, insert: `${delimiter}${selectedText}${delimiter}` },
+        selection: { anchor: sel.from + len, head: sel.to + len },
+      });
+      view.focus();
+    } else {
+      // 2. Empty selection (cursor at single position)
+      const pos = sel.head;
+      const line = view.state.doc.lineAt(pos);
+      const lineText = line.text;
+      const relPos = pos - line.from;
+
+      // Check if cursor is right inside delimiter (e.g., `|` or **|**)
+      const beforeChar = view.state.sliceDoc(Math.max(0, pos - len), pos);
+      const afterChar = view.state.sliceDoc(pos, Math.min(view.state.doc.length, pos + len));
+
+      if (beforeChar === delimiter && afterChar === delimiter) {
+        // Toggle off: remove empty delimiter pair
+        view.dispatch({
+          changes: { from: pos - len, to: pos + len, insert: '' },
+          selection: { anchor: pos - len },
+        });
+        view.focus();
+        return;
+      }
+
+      // Check if cursor is inside a formatted token on this line (e.g. `foo` or **bold**)
+      let foundPair: { start: number; end: number } | null = null;
+      let searchIdx = 0;
+      while (searchIdx < lineText.length) {
+        const openIdx = lineText.indexOf(delimiter, searchIdx);
+        if (openIdx === -1) break;
+        const closeIdx = lineText.indexOf(delimiter, openIdx + len);
+        if (closeIdx === -1) break;
+
+        // Is relPos inside this pair?
+        if (relPos > openIdx && relPos <= closeIdx + len) {
+          foundPair = { start: line.from + openIdx, end: line.from + closeIdx + len };
+          break;
+        }
+        searchIdx = closeIdx + len;
+      }
+
+      if (foundPair) {
+        // Unwrap this existing token
+        const fullToken = view.state.sliceDoc(foundPair.start, foundPair.end);
+        const innerContent = fullToken.slice(len, -len);
+        view.dispatch({
+          changes: { from: foundPair.start, to: foundPair.end, insert: innerContent },
+          selection: { anchor: Math.max(foundPair.start, pos - len) },
+        });
+        view.focus();
+        return;
+      }
+
+      // Otherwise insert pair and place cursor in the middle
+      view.dispatch({
+        changes: { from: pos, insert: `${delimiter}${delimiter}` },
+        selection: { anchor: pos + len },
+      });
+      view.focus();
+    }
+  };
+
+  const wrapSelection = (prefix: string, suffix: string, placeholder = 'Nota') => {
     const view = viewRef.current;
     if (!view) return;
     const sel = view.state.selection.main;
@@ -582,33 +742,33 @@ export const Editor: React.FC<EditorProps> = ({
             title: 'Negrita',
             shortcut: 'Ctrl+B',
             icon: <Bold size={14} />,
-            action: () => handleToolbarWrap('**', '**', 'negrita'),
+            action: () => toggleInlineFormatting('**', '__'),
           },
           {
             title: 'Cursiva',
             shortcut: 'Ctrl+I',
             icon: <Italic size={14} />,
-            action: () => handleToolbarWrap('*', '*', 'cursiva'),
+            action: () => toggleInlineFormatting('*', '_'),
           },
           {
             title: 'Tachado',
             icon: <Strikethrough size={14} />,
-            action: () => handleToolbarWrap('~~', '~~', 'tachado'),
+            action: () => toggleInlineFormatting('~~'),
           },
           {
             title: 'Código en línea',
             icon: <Code size={14} />,
-            action: () => handleToolbarWrap('`', '`', 'código'),
+            action: () => toggleInlineFormatting('`'),
           },
           {
             title: 'Resaltado (==)',
             icon: <Highlighter size={14} />,
-            action: () => handleToolbarWrap('==', '==', 'resaltado'),
+            action: () => toggleInlineFormatting('=='),
           },
           {
             title: 'Comentario (%%)',
             icon: <MessageSquare size={14} />,
-            action: () => handleToolbarWrap('%%', '%%', 'comentario'),
+            action: () => toggleInlineFormatting('%%'),
           },
         ],
       },
@@ -619,12 +779,12 @@ export const Editor: React.FC<EditorProps> = ({
           {
             title: 'Enlace interno [[]]',
             icon: <Link size={14} />,
-            action: () => handleToolbarWrap('[[', ']]', 'Nota'),
+            action: () => wrapSelection('[[', ']]', 'Nota'),
           },
           {
             title: 'Nota incrustada ! [[]]',
             icon: <FilePlus size={14} />,
-            action: () => handleToolbarWrap('![[', ']]', 'Nota'),
+            action: () => wrapSelection('![[', ']]', 'Nota'),
           },
           {
             title: 'Bloque de código',
@@ -721,21 +881,21 @@ export const Editor: React.FC<EditorProps> = ({
         {/* Center: Obsidian Formatting Toolbar */}
         <div className="hidden lg:flex items-center gap-0.5 bg-[#1a1714] px-1 py-0.5 rounded-lg border border-stone-800 text-stone-400">
           <button
-            onClick={() => handleToolbarWrap('==', '==', 'resaltado')}
+            onClick={() => toggleInlineFormatting('==')}
             title="Resaltar (==texto==)"
             className="p-1 hover:bg-orange-500/20 hover:text-orange-300 text-orange-400 rounded transition-colors"
           >
             <Highlighter className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => handleToolbarWrap('**', '**', 'negrita')}
+            onClick={() => toggleInlineFormatting('**', '__')}
             title="Negrita (**texto**)"
             className="p-1 hover:bg-stone-800 hover:text-white rounded transition-colors"
           >
             <Bold className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => handleToolbarWrap('*', '*', 'cursiva')}
+            onClick={() => toggleInlineFormatting('*', '_')}
             title="Cursiva (*texto*)"
             className="p-1 hover:bg-stone-800 hover:text-white rounded transition-colors"
           >
@@ -787,7 +947,7 @@ export const Editor: React.FC<EditorProps> = ({
             <Code className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => handleToolbarWrap('[[', ']]', 'Nota')}
+            onClick={() => wrapSelection('[[', ']]', 'Nota')}
             title="Enlace Bidireccional [[...]]"
             className="p-1 hover:bg-orange-500/20 hover:text-orange-300 text-orange-400 rounded transition-colors"
           >
