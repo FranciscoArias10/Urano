@@ -172,6 +172,28 @@ export const Editor: React.FC<EditorProps> = ({
       extensions: [
         history(),
         keymap.of([
+          {
+            key: 'Enter',
+            run: (v) => {
+              const sel = v.state.selection.main;
+              if (sel.empty) {
+                const line = v.state.doc.lineAt(sel.head);
+                if (line.text.startsWith('```') && sel.head === line.to) {
+                  if (line.number < v.state.doc.lines) {
+                    const nextLine = v.state.doc.line(line.number + 1);
+                    if (nextLine.text === '') {
+                      v.dispatch({
+                        selection: { anchor: nextLine.from, head: nextLine.from },
+                        scrollIntoView: true,
+                      });
+                      return true;
+                    }
+                  }
+                }
+              }
+              return false;
+            },
+          },
           indentWithTab,
           ...defaultKeymap,
           ...historyKeymap,
@@ -281,7 +303,9 @@ export const Editor: React.FC<EditorProps> = ({
 
     if (openIdx !== -1) {
       const from = line.from + openIdx + 2;
-      const to = pos;
+      const textAfter = line.text.slice(pos - line.from);
+      const closeOffset = textAfter.startsWith(']]') ? 2 : 0;
+      const to = pos + closeOffset;
       const insert = `${noteName}]]`;
 
       view.dispatch({
@@ -486,30 +510,41 @@ export const Editor: React.FC<EditorProps> = ({
         return;
       }
 
-      // Check if cursor is inside a formatted token on this line (e.g. `foo` or **bold**)
-      let foundPair: { start: number; end: number } | null = null;
-      let searchIdx = 0;
-      while (searchIdx < lineText.length) {
-        const openIdx = lineText.indexOf(delimiter, searchIdx);
-        if (openIdx === -1) break;
-        const closeIdx = lineText.indexOf(delimiter, openIdx + len);
-        if (closeIdx === -1) break;
+      // Check pairs on current line for primary delimiter and altDelimiter
+      const checkPairs = (d: string) => {
+        const dLen = d.length;
+        let sIdx = 0;
+        while (sIdx < lineText.length) {
+          const open = lineText.indexOf(d, sIdx);
+          if (open === -1) break;
+          if (dLen === 1 && (lineText[open - 1] === d || lineText[open + 1] === d)) {
+            sIdx = open + 1;
+            continue;
+          }
+          const close = lineText.indexOf(d, open + dLen);
+          if (close === -1) break;
+          if (dLen === 1 && (lineText[close - 1] === d || lineText[close + 1] === d)) {
+            sIdx = close + 1;
+            continue;
+          }
 
-        // Is relPos inside this pair?
-        if (relPos > openIdx && relPos <= closeIdx + len) {
-          foundPair = { start: line.from + openIdx, end: line.from + closeIdx + len };
-          break;
+          if (relPos >= open && relPos <= close + dLen) {
+            return { start: line.from + open, end: line.from + close + dLen, len: dLen };
+          }
+          sIdx = close + dLen;
         }
-        searchIdx = closeIdx + len;
-      }
+        return null;
+      };
+
+      const foundPair = checkPairs(delimiter) || (altDelimiter ? checkPairs(altDelimiter) : null);
 
       if (foundPair) {
         // Unwrap this existing token
         const fullToken = view.state.sliceDoc(foundPair.start, foundPair.end);
-        const innerContent = fullToken.slice(len, -len);
+        const innerContent = fullToken.slice(foundPair.len, -foundPair.len);
         view.dispatch({
           changes: { from: foundPair.start, to: foundPair.end, insert: innerContent },
-          selection: { anchor: Math.max(foundPair.start, pos - len) },
+          selection: { anchor: Math.max(foundPair.start, pos - foundPair.len) },
         });
         view.focus();
         return;
@@ -722,12 +757,12 @@ export const Editor: React.FC<EditorProps> = ({
     e.preventDefault();
     const target = e.target as HTMLElement;
 
-    // If no text is selected, move cursor to the right-clicked position
+    // If no text is selected or right-click is outside active selection, move cursor
     if (viewRef.current) {
       const sel = viewRef.current.state.selection.main;
-      if (sel.empty) {
-        const clickPos = viewRef.current.posAtCoords({ x: e.clientX, y: e.clientY });
-        if (clickPos !== null) {
+      const clickPos = viewRef.current.posAtCoords({ x: e.clientX, y: e.clientY });
+      if (clickPos !== null) {
+        if (sel.empty || clickPos < sel.from || clickPos > sel.to) {
           viewRef.current.dispatch({
             selection: { anchor: clickPos, head: clickPos },
           });
