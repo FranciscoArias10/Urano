@@ -212,60 +212,9 @@
 }
 
 /* ========================================================
-   Obsidian Code Blocks (Clean Cards with Syntax Colors)
+   Obsidian HyperMD Code Blocks (.cm-hypermd-codeblock)
    ======================================================== */
-.cm-codeblock-header {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  background-color: #191613 !important;
-  border-top-left-radius: 8px !important;
-  border-top-right-radius: 8px !important;
-  border: 1px solid rgba(234, 88, 12, 0.25) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-  padding: 0.35rem 0.85rem !important;
-  margin-top: 1.2rem !important;
-  max-width: 820px !important;
-}
-
-.cm-codeblock-lang {
-  font-family: var(--font-monospace) !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.06em !important;
-  color: #ea580c !important;
-  background-color: rgba(234, 88, 12, 0.15) !important;
-  padding: 1px 6px !important;
-  border-radius: 4px !important;
-}
-
-.cm-codeblock-copy-btn {
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.35rem !important;
-  font-size: 11px !important;
-  color: #a8a29e !important;
-  background-color: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  padding: 0.15rem 0.5rem !important;
-  border-radius: 4px !important;
-  cursor: pointer !important;
-  opacity: 0 !important;
-  transition: opacity 0.15s ease, background-color 0.15s ease !important;
-}
-
-.cm-codeblock-header:hover .cm-codeblock-copy-btn {
-  opacity: 1 !important;
-}
-
-.cm-codeblock-copy-btn:hover {
-  color: #ffffff !important;
-  background-color: rgba(234, 88, 12, 0.2) !important;
-  border-color: #ea580c !important;
-}
-
-/* Code block lines: DO NOT override token colors with color:!important */
-.cm-codeblock-line {
+.cm-hypermd-codeblock {
   font-family: var(--font-monospace) !important;
   font-size: 13.5px !important;
   background-color: #161412 !important;
@@ -274,46 +223,86 @@
   border-left: 1px solid rgba(234, 88, 12, 0.25) !important;
   border-right: 1px solid rgba(234, 88, 12, 0.25) !important;
   max-width: 820px !important;
+  position: relative !important;
 }
 
-.cm-codeblock-fence-hidden {
-  height: 0px !important;
-  min-height: 0px !important;
-  overflow: hidden !important;
-  padding-top: 0px !important;
-  padding-bottom: 0px !important;
-  margin: 0px !important;
-  border: none !important;
-  line-height: 0px !important;
-  font-size: 0px !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-.cm-codeblock-first-content {
-  border-top: none !important;
+.cm-hypermd-codeblock-begin {
+  border-top: 1px solid rgba(234, 88, 12, 0.25) !important;
+  border-top-left-radius: 8px !important;
+  border-top-right-radius: 8px !important;
   padding-top: 0.5rem !important;
+  margin-top: 1rem !important;
 }
 
-.cm-codeblock-last-content {
+.cm-hypermd-codeblock-end {
   border-bottom: 1px solid rgba(234, 88, 12, 0.25) !important;
   border-bottom-left-radius: 8px !important;
   border-bottom-right-radius: 8px !important;
-  padding-bottom: 0.6rem !important;
-  margin-bottom: 1.2rem !important;
+  padding-bottom: 0.5rem !important;
+  margin-bottom: 1rem !important;
 }
 
-.cm-codeblock-begin {
-  border-top: none !important;
-  padding-top: 0.3rem !important;
+/* Corner flair widget (Language badge + Copy button) */
+.cm-codeblock-flair {
+  position: absolute;
+  top: 4px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  z-index: 10;
+  pointer-events: auto;
 }
 
-.cm-codeblock-end {
-  border-bottom: 1px solid rgba(234, 88, 12, 0.25) !important;
-  border-bottom-left-radius: 8px !important;
-  border-bottom-right-radius: 8px !important;
-  padding-bottom: 0.4rem !important;
-  margin-bottom: 1.2rem !important;
+.cm-codeblock-lang-badge {
+  font-family: var(--font-monospace);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #ea580c;
+  background-color: rgba(234, 88, 12, 0.15);
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.copy-code-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 11px;
+  color: #a8a29e;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 2px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.cm-hypermd-codeblock:hover .copy-code-button,
+.cm-codeblock-flair:hover .copy-code-button {
+  opacity: 1;
+}
+
+.copy-code-button:hover {
+  color: #ffffff;
+  background-color: rgba(234, 88, 12, 0.25);
+  border-color: #ea580c;
+}
+
+/* Visually hide opening & closing ``` fence text when cursor is outside */
+.cm-codeblock-delimiter-hidden {
+  display: inline-block !important;
+  font-size: 0px !important;
+  line-height: 0px !important;
+  height: 0px !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  overflow: hidden !important;
+  user-select: none !important;
+  pointer-events: none !important;
 }
 
 /* ========================================================

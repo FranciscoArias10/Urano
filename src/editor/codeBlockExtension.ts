@@ -8,21 +8,25 @@ import {
 } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/state';
 
-class CodeHeaderWidget extends WidgetType {
+class CodeFlairWidget extends WidgetType {
   constructor(readonly language: string, readonly getCode: () => string) {
     super();
   }
 
   toDOM(): HTMLElement {
-    const header = document.createElement('div');
-    header.className = 'cm-codeblock-header select-none';
+    const wrap = document.createElement('div');
+    wrap.className = 'cm-codeblock-flair select-none';
 
-    const langBadge = document.createElement('span');
-    langBadge.className = 'cm-codeblock-lang';
-    langBadge.textContent = (this.language || 'código').toUpperCase();
+    if (this.language) {
+      const langBadge = document.createElement('span');
+      langBadge.className = 'cm-codeblock-lang-badge';
+      langBadge.textContent = this.language.toLowerCase();
+      wrap.appendChild(langBadge);
+    }
 
     const copyBtn = document.createElement('button');
-    copyBtn.className = 'cm-codeblock-copy-btn';
+    copyBtn.className = 'copy-code-button';
+    copyBtn.type = 'button';
     copyBtn.title = 'Copiar código';
     copyBtn.innerHTML = `
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -32,16 +36,16 @@ class CodeHeaderWidget extends WidgetType {
       <span>Copiar</span>
     `;
 
-    copyBtn.addEventListener('click', (e) => {
+    copyBtn.addEventListener('mousedown', (e) => {
       e.preventDefault();
       e.stopPropagation();
       const code = this.getCode();
       navigator.clipboard.writeText(code).then(() => {
         copyBtn.innerHTML = `
-          <svg width="12" height="12" fill="none" stroke="#4ade80" stroke-width="2" viewBox="0 0 24 24">
+          <svg width="12" height="12" fill="none" stroke="#22c55e" stroke-width="2" viewBox="0 0 24 24">
             <polyline points="20 6 9 17 4 12"/>
           </svg>
-          <span style="color: #4ade80">¡Copiado!</span>
+          <span style="color: #22c55e">¡Copiado!</span>
         `;
         setTimeout(() => {
           copyBtn.innerHTML = `
@@ -55,12 +59,11 @@ class CodeHeaderWidget extends WidgetType {
       });
     });
 
-    header.appendChild(langBadge);
-    header.appendChild(copyBtn);
-    return header;
+    wrap.appendChild(copyBtn);
+    return wrap;
   }
 
-  eq(other: CodeHeaderWidget): boolean {
+  eq(other: CodeFlairWidget): boolean {
     return other.language === this.language;
   }
 
@@ -69,15 +72,16 @@ class CodeHeaderWidget extends WidgetType {
   }
 }
 
-// Decorations for visible fence editing state
-const codeLineBegin = Decoration.line({ class: 'cm-codeblock-line cm-codeblock-begin' });
-const codeLineMid = Decoration.line({ class: 'cm-codeblock-line' });
-const codeLineEnd = Decoration.line({ class: 'cm-codeblock-line cm-codeblock-end' });
+// Line decorations matching Obsidian's .HyperMD-codeblock specifications
+const codeblockBegin = Decoration.line({ class: 'cm-hypermd-codeblock cm-hypermd-codeblock-begin' });
+const codeblockMid = Decoration.line({ class: 'cm-hypermd-codeblock' });
+const codeblockEnd = Decoration.line({ class: 'cm-hypermd-codeblock cm-hypermd-codeblock-end' });
+const codeblockSingle = Decoration.line({
+  class: 'cm-hypermd-codeblock cm-hypermd-codeblock-begin cm-hypermd-codeblock-end',
+});
 
-// Decorations for collapsed fence Live Preview state
-const codeLineFenceHidden = Decoration.line({ class: 'cm-codeblock-fence-hidden' });
-const codeLineFirstContent = Decoration.line({ class: 'cm-codeblock-line cm-codeblock-first-content' });
-const codeLineLastContent = Decoration.line({ class: 'cm-codeblock-line cm-codeblock-last-content' });
+// Mark decoration to visually hide ``` delimiter text when cursor is outside
+const delimiterHiddenMark = Decoration.mark({ class: 'cm-codeblock-delimiter-hidden' });
 
 export const codeBlockExtension = ViewPlugin.fromClass(
   class {
@@ -99,9 +103,11 @@ export const codeBlockExtension = ViewPlugin.fromClass(
       const selection = view.state.selection.main;
 
       interface CodeBlockInfo {
-        startLineNum: number;
-        endLineNum: number;
+        startLine: number;
+        endLine: number;
         language: string;
+        isCursorInside: boolean;
+        getCode: () => string;
       }
 
       const blocks: CodeBlockInfo[] = [];
@@ -109,6 +115,7 @@ export const codeBlockExtension = ViewPlugin.fromClass(
       let startLine = 1;
       let lang = '';
 
+      // 1. Detect code blocks between opening and closing ```
       for (let i = 1; i <= doc.lines; i++) {
         const line = doc.line(i);
         const trimmed = line.text.trim();
@@ -120,95 +127,101 @@ export const codeBlockExtension = ViewPlugin.fromClass(
             lang = trimmed.slice(3).trim();
           } else {
             inBlock = false;
+            const s = startLine;
+            const e = i;
+            const currentLang = lang;
+            const startObj = doc.line(s);
+            const endObj = doc.line(e);
+            const isInside = selection.from <= endObj.to && selection.to >= startObj.from;
+
+            const getCode = () => {
+              const lines: string[] = [];
+              for (let l = s + 1; l < e; l++) {
+                lines.push(doc.line(l).text);
+              }
+              return lines.join('\n');
+            };
+
             blocks.push({
-              startLineNum: startLine,
-              endLineNum: i,
-              language: lang,
+              startLine: s,
+              endLine: e,
+              language: currentLang,
+              isCursorInside: isInside,
+              getCode,
             });
           }
         }
       }
 
-      // If document ends with unclosed code fence
       if (inBlock) {
-        blocks.push({
-          startLineNum: startLine,
-          endLineNum: doc.lines,
-          language: lang,
-        });
-      }
-
-      // Add decorations strictly in ascending line order
-      for (const block of blocks) {
-        const startLineObj = doc.line(block.startLineNum);
-        const endLineObj = doc.line(block.endLineNum);
-
-        // Check if cursor/selection is anywhere inside this code block
-        const isCursorInside =
-          selection.from <= endLineObj.to && selection.to >= startLineObj.from;
+        const s = startLine;
+        const e = doc.lines;
+        const currentLang = lang;
+        const startObj = doc.line(s);
+        const endObj = doc.line(e);
+        const isInside = selection.from <= endObj.to && selection.to >= startObj.from;
 
         const getCode = () => {
           const lines: string[] = [];
-          for (let l = block.startLineNum + 1; l < block.endLineNum; l++) {
+          for (let l = s + 1; l <= e; l++) {
             lines.push(doc.line(l).text);
           }
           return lines.join('\n');
         };
 
-        // Header widget displayed above code block
-        builder.add(
-          startLineObj.from,
-          startLineObj.from,
-          Decoration.widget({
-            widget: new CodeHeaderWidget(block.language, getCode),
-            side: -1,
-            block: true,
-          })
-        );
+        blocks.push({
+          startLine: s,
+          endLine: e,
+          language: currentLang,
+          isCursorInside: isInside,
+          getCode,
+        });
+      }
 
-        if (isCursorInside) {
-          // Cursor is inside: show full fences for editing
-          builder.add(startLineObj.from, startLineObj.from, codeLineBegin);
+      // 2. Map line numbers to block info
+      const lineMap = new Map<number, CodeBlockInfo>();
+      for (const b of blocks) {
+        for (let l = b.startLine; l <= b.endLine; l++) {
+          lineMap.set(l, b);
+        }
+      }
 
-          for (let l = block.startLineNum + 1; l < block.endLineNum; l++) {
-            const midLine = doc.line(l);
-            builder.add(midLine.from, midLine.from, codeLineMid);
-          }
+      // 3. Emit decorations strictly in ascending line order
+      for (let lineNum = 1; lineNum <= doc.lines; lineNum++) {
+        const block = lineMap.get(lineNum);
+        if (!block) continue;
 
-          if (block.endLineNum > block.startLineNum) {
-            builder.add(endLineObj.from, endLineObj.from, codeLineEnd);
-          }
+        const line = doc.line(lineNum);
+
+        // A. Line decoration first at line.from
+        if (block.startLine === block.endLine) {
+          builder.add(line.from, line.from, codeblockSingle);
+        } else if (lineNum === block.startLine) {
+          builder.add(line.from, line.from, codeblockBegin);
+        } else if (lineNum === block.endLine) {
+          builder.add(line.from, line.from, codeblockEnd);
         } else {
-          // Cursor is outside: Live Preview hides the ``` fence lines
-          builder.add(startLineObj.from, startLineObj.from, codeLineFenceHidden);
+          builder.add(line.from, line.from, codeblockMid);
+        }
 
-          const totalContentLines = block.endLineNum - block.startLineNum - 1;
-
-          for (let l = block.startLineNum + 1; l < block.endLineNum; l++) {
-            const midLine = doc.line(l);
-            const isFirst = l === block.startLineNum + 1;
-            const isLast = l === block.endLineNum - 1;
-
-            if (isFirst && isLast) {
-              builder.add(
-                midLine.from,
-                midLine.from,
-                Decoration.line({ class: 'cm-codeblock-line cm-codeblock-first-content cm-codeblock-last-content' })
-              );
-            } else if (isFirst) {
-              builder.add(midLine.from, midLine.from, codeLineFirstContent);
-            } else if (isLast) {
-              builder.add(midLine.from, midLine.from, codeLineLastContent);
-            } else {
-              builder.add(midLine.from, midLine.from, codeLineMid);
+        // B. Delimiter hiding marks & header flair widget when cursor is outside
+        if (!block.isCursorInside) {
+          if (lineNum === block.startLine || lineNum === block.endLine) {
+            if (line.to > line.from) {
+              builder.add(line.from, line.to, delimiterHiddenMark);
             }
           }
 
-          // If there are no inner content lines (e.g. ```\n```), show empty line
-          if (totalContentLines <= 0) {
-            builder.add(endLineObj.from, endLineObj.from, codeLineEnd);
-          } else {
-            builder.add(endLineObj.from, endLineObj.from, codeLineFenceHidden);
+          // Top-right corner flair widget on the opening line
+          if (lineNum === block.startLine) {
+            builder.add(
+              line.to,
+              line.to,
+              Decoration.widget({
+                widget: new CodeFlairWidget(block.language, block.getCode),
+                side: 1,
+              })
+            );
           }
         }
       }
