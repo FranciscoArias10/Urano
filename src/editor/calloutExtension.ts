@@ -170,7 +170,13 @@ export const calloutExtension = ViewPlugin.fromClass(
           selection.from <= endLineObj.to && selection.to >= startLineObj.from;
 
         if (!isCursorInside) {
-          // Render Live Preview Callout Widget
+          // 1. Hide raw markdown quote lines first (Line decorations must precede point decorations at same line.from)
+          for (let l = callout.startLine; l <= callout.endLine; l++) {
+            const lineObj = doc.line(l);
+            builder.add(lineObj.from, lineObj.from, calloutLineHidden);
+          }
+
+          // 2. Render Live Preview Callout Widget
           builder.add(
             startLineObj.from,
             startLineObj.from,
@@ -194,12 +200,6 @@ export const calloutExtension = ViewPlugin.fromClass(
               block: true,
             })
           );
-
-          // Hide raw markdown quote lines
-          for (let l = callout.startLine; l <= callout.endLine; l++) {
-            const lineObj = doc.line(l);
-            builder.add(lineObj.from, lineObj.from, calloutLineHidden);
-          }
         }
       }
 

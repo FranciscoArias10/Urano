@@ -5,6 +5,7 @@ import { useSyncStore } from './stores/syncStore';
 import { TabBar, TabItem } from './components/tabs/TabBar';
 import { FileTree } from './components/vault/FileTree';
 import { Editor, getActiveEditorView } from './components/editor/Editor';
+import { EditorErrorBoundary } from './components/editor/EditorErrorBoundary';
 import { GraphView } from './components/graph/GraphView';
 import { CanvasView } from './components/canvas/CanvasView';
 import { BaseView } from './components/base/BaseView';
@@ -836,11 +837,13 @@ export const App: React.FC = () => {
             ) : activeFile?.endsWith('.base') ? (
               <BaseView filePath={activeFile} />
             ) : activeFile ? (
-              <Editor
-                onWikilinkClick={(name) => openOrCreateWikilink(name)}
-                onOpenInNewTab={handleOpenInNewTab}
-                onOpenToRight={handleOpenInNewTab}
-              />
+              <EditorErrorBoundary noteName={activeFileName || 'Nota'}>
+                <Editor
+                  onWikilinkClick={(name) => openOrCreateWikilink(name)}
+                  onOpenInNewTab={handleOpenInNewTab}
+                  onOpenToRight={handleOpenInNewTab}
+                />
+              </EditorErrorBoundary>
             ) : (
               <div className="flex-1 h-full flex flex-col items-center justify-center text-obsidian-muted p-8 text-center bg-obsidian-bg">
                 <UranoLogo size={56} className="mb-4 opacity-80" />

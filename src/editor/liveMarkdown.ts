@@ -44,6 +44,7 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
       for (const { from, to } of view.visibleRanges) {
         let pos = from;
         while (pos <= to) {
+          if (pos > view.state.doc.length) break;
           const line = view.state.doc.lineAt(pos);
           const text = line.text;
           const trimmed = text.trim();
