@@ -36,13 +36,13 @@ export interface ParsedTable {
 }
 
 let pendingTableFocus: {
-  tableFrom: number;
+  tableIndex: number;
   row: number;
   col: number;
 } | null = null;
 
 export function setPendingTableFocus(
-  focus: { tableFrom: number; row: number; col: number } | null
+  focus: { tableIndex: number; row: number; col: number } | null
 ) {
   pendingTableFocus = focus;
 }
@@ -155,6 +155,14 @@ export function findAllTables(doc: Text): ParsedTable[] {
 
       for (let r = i + 2; r <= lineCount; r++) {
         const nextText = doc.line(r).text;
+        // If this row is followed by a separator, it is the start of another table!
+        if (
+          r < lineCount &&
+          isTableRow(nextText) &&
+          isTableSeparator(doc.line(r + 1).text)
+        ) {
+          break;
+        }
         if (isTableRow(nextText) && !isTableSeparator(nextText)) {
           rows.push(parseTableRowCells(nextText, colCount));
           endLine = r;
@@ -231,23 +239,26 @@ class TableWidget extends WidgetType {
       return true;
     }
     const activeEl = document.activeElement;
-    const isEditingCell = Boolean(
-      activeEl && activeEl.classList.contains('urano-table-cell-content')
-    );
-    if (
-      isEditingCell &&
-      this.tableData.headers.length === other.tableData.headers.length &&
-      this.tableData.rows.length === other.tableData.rows.length &&
-      JSON.stringify(this.tableData.alignments) ===
-        JSON.stringify(other.tableData.alignments)
-    ) {
-      return true;
+    if (activeEl && activeEl.classList.contains('urano-table-cell-content')) {
+      const widgetEl = activeEl.closest('.cm-table-widget');
+      const editingFrom = widgetEl?.getAttribute('data-table-from');
+      const isEditingThisTable = editingFrom === String(this.tableData.from);
+
+      if (
+        isEditingThisTable &&
+        this.tableData.headers.length === other.tableData.headers.length &&
+        this.tableData.rows.length === other.tableData.rows.length &&
+        JSON.stringify(this.tableData.alignments) ===
+          JSON.stringify(other.tableData.alignments)
+      ) {
+        return true;
+      }
     }
     return false;
   }
 
   updateDOM(): boolean {
-    return true;
+    return false;
   }
 
   ignoreEvent(): boolean {
@@ -305,7 +316,7 @@ class TableWidget extends WidgetType {
 
       if (immediateFocus) {
         pendingTableFocus = {
-          tableFrom: tbl.from,
+          tableIndex: this.tableIndex,
           row: immediateFocus.row,
           col: immediateFocus.col,
         };
@@ -895,9 +906,13 @@ class TableWidget extends WidgetType {
     addColBtn.innerHTML =
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
 
+    let lastAddColTime = 0;
     const handleAddCol = (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      const now = Date.now();
+      if (now - lastAddColTime < 250) return;
+      lastAddColTime = now;
       console.log('[Urano Table] Añadir columna clicada');
       currentHeaders.push('');
       currentAlignments.push('left');
@@ -918,9 +933,13 @@ class TableWidget extends WidgetType {
     addRowBtn.innerHTML =
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
 
+    let lastAddRowTime = 0;
     const handleAddRow = (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      const now = Date.now();
+      if (now - lastAddRowTime < 250) return;
+      lastAddRowTime = now;
       console.log('[Urano Table] Añadir fila clicada');
       const newRow = new Array(currentHeaders.length).fill('');
       currentRows.push(newRow);
@@ -933,8 +952,9 @@ class TableWidget extends WidgetType {
     container.appendChild(wrapper);
 
     // Handle auto-focus if this table has pendingFocus
-    if (pendingTableFocus) {
+    if (pendingTableFocus && pendingTableFocus.tableIndex === this.tableIndex) {
       const target = pendingTableFocus;
+      pendingTableFocus = null;
       setTimeout(() => {
         const targetCell = container.querySelector(
           `[data-row="${target.row}"][data-col="${target.col}"].urano-table-cell-content`
@@ -942,8 +962,7 @@ class TableWidget extends WidgetType {
         if (targetCell) {
           targetCell.focus();
         }
-        pendingTableFocus = null;
-      }, 30);
+      }, 40);
     }
 
     return container;

@@ -9,7 +9,7 @@ import { liveMarkdownExtension } from '../../editor/liveMarkdown';
 import { mathExtension } from '../../editor/mathExtension';
 import { codeBlockExtension } from '../../editor/codeBlockExtension';
 import { calloutExtension } from '../../editor/calloutExtension';
-import { tableExtension, setPendingTableFocus } from '../../editor/tableExtension';
+import { tableExtension, setPendingTableFocus, findAllTables } from '../../editor/tableExtension';
 import { createWikilinksExtension } from '../../editor/wikilinks';
 import { useVaultStore } from '../../stores/vaultStore';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
@@ -691,31 +691,57 @@ export const Editor: React.FC<EditorProps> = ({
     const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     const sel = view.state.selection.main;
-    const line = view.state.doc.lineAt(sel.from);
-    const prefix = line.text.trim().length > 0 ? '\n\n' : '';
-    const insert = `${prefix}|  |  |\n| --- | --- |\n|  |  |\n`;
-    const targetPos = sel.from + prefix.length;
 
-    setPendingTableFocus({ tableFrom: targetPos, row: 0, col: 0 });
+    const currentTables = findAllTables(view.state.doc);
+    const enclosingTable = currentTables.find(
+      (t) => sel.from >= t.from && sel.from <= t.to
+    );
+
+    let insertFrom = sel.from;
+    let insertTo = sel.to;
+    if (enclosingTable) {
+      // If cursor was inside an existing table, insert cleanly after it
+      insertFrom = enclosingTable.to;
+      insertTo = enclosingTable.to;
+    }
+
+    const textBefore = view.state.sliceDoc(0, insertFrom);
+    const textAfter = view.state.sliceDoc(insertTo);
+
+    let prefix = '';
+    if (textBefore.length > 0) {
+      if (textBefore.endsWith('\n\n')) {
+        prefix = '';
+      } else if (textBefore.endsWith('\n')) {
+        prefix = '\n';
+      } else {
+        prefix = '\n\n';
+      }
+    }
+
+    let suffix = '\n';
+    if (!textAfter.startsWith('\n')) {
+      suffix = '\n\n';
+    }
+
+    const tableMarkdown = '|   |   |\n| --- | --- |\n|   |   |';
+    const insert = `${prefix}${tableMarkdown}${suffix}`;
+    const targetPos = insertFrom + prefix.length;
+
+    const prevTables = currentTables.filter((t) => t.from < insertFrom);
+    const targetTableIndex = prevTables.length;
+
+    setPendingTableFocus({ tableIndex: targetTableIndex, row: 0, col: 0 });
 
     view.dispatch({
-      changes: { from: sel.from, to: sel.to, insert },
-      selection: { anchor: targetPos + 2 },
+      changes: { from: insertFrom, to: insertTo, insert },
+      selection: { anchor: targetPos },
     });
 
     const newDoc = view.state.doc.toString();
     lastDispatchedDocRef.current = newDoc;
     updateContent(newDoc);
     view.focus();
-
-    setTimeout(() => {
-      const firstCell = document.querySelector(
-        `.urano-table-editor [data-row="0"][data-col="0"].urano-table-cell-content`
-      ) as HTMLElement;
-      if (firstCell) {
-        firstCell.focus();
-      }
-    }, 40);
   };
 
   const handleInsertCallout = () => {
@@ -859,7 +885,10 @@ export const Editor: React.FC<EditorProps> = ({
     // If no text is selected or right-click is outside active selection, move cursor
     if (viewRef.current) {
       const sel = viewRef.current.state.selection.main;
-      const clickPos = viewRef.current.posAtCoords({ x: e.clientX, y: e.clientY });
+      let clickPos = viewRef.current.posAtCoords({ x: e.clientX, y: e.clientY });
+      if (clickPos === null) {
+        clickPos = viewRef.current.state.doc.length;
+      }
       if (clickPos !== null) {
         if (sel.empty || clickPos < sel.from || clickPos > sel.to) {
           viewRef.current.dispatch({
