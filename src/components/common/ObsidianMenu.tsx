@@ -73,6 +73,7 @@ export const ObsidianMenu: React.FC<ObsidianMenuProps> = ({ x, y, items, onClose
         top: `${coords.y}px`,
       }}
       onContextMenu={(e) => e.preventDefault()}
+      onMouseDown={(e) => e.preventDefault()}
     >
       <div className="menu-scroll">
         {items.map((item, idx) => {
@@ -96,6 +97,7 @@ export const ObsidianMenu: React.FC<ObsidianMenuProps> = ({ x, y, items, onClose
                   setActiveSubmenuIndex(null);
                 }
               }}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={(e) => {
                 e.stopPropagation();
                 if (item.disabled) return;
@@ -120,6 +122,7 @@ export const ObsidianMenu: React.FC<ObsidianMenuProps> = ({ x, y, items, onClose
               {hasSubmenu && isSubmenuOpen && item.submenu && (
                 <div
                   className="menu absolute top-0 left-full -ml-1 min-w-[180px] shadow-2xl animate-fadeIn"
+                  onMouseDown={(e) => e.preventDefault()}
                   onMouseEnter={() => setActiveSubmenuIndex(idx)}
                 >
                   <div className="menu-scroll">
@@ -134,6 +137,7 @@ export const ObsidianMenu: React.FC<ObsidianMenuProps> = ({ x, y, items, onClose
                           className={`menu-item ${subItem.isWarning ? 'is-warning' : ''} ${
                             subItem.disabled ? 'is-disabled' : ''
                           }`}
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={(e) => {
                             e.stopPropagation();
                             if (subItem.disabled) return;

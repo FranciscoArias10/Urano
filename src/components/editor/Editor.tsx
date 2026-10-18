@@ -509,6 +509,19 @@ export const Editor: React.FC<EditorProps> = ({
     e.preventDefault();
     const target = e.target as HTMLElement;
 
+    // If no text is selected, move cursor to the right-clicked position
+    if (viewRef.current) {
+      const sel = viewRef.current.state.selection.main;
+      if (sel.empty) {
+        const clickPos = viewRef.current.posAtCoords({ x: e.clientX, y: e.clientY });
+        if (clickPos !== null) {
+          viewRef.current.dispatch({
+            selection: { anchor: clickPos, head: clickPos },
+          });
+        }
+      }
+    }
+
     // Check if right-clicked on [[Wikilink]]
     let clickedWikilink: string | null = null;
     const wikilinkEl = target.closest('.cm-wikilink');
