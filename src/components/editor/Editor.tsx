@@ -17,24 +17,17 @@ import { useNoticeStore } from '../common/Notice';
 import { FileItem } from '../../types';
 import {
   FileText,
-  Save,
-  CheckCircle2,
   Highlighter,
   Bold,
   Italic,
   Strikethrough,
   Code,
   MessageSquare,
-  Heading1,
-  Heading2,
-  List,
   CheckSquare,
   Sigma,
   Link,
-  Quote,
   BookOpen,
   Edit3,
-  ChevronRight,
   ExternalLink,
   PlusCircle,
   Columns,
@@ -48,6 +41,9 @@ import {
   Type,
   PlusSquare,
   FilePlus,
+  ArrowLeft,
+  ArrowRight,
+  MoreVertical,
 } from 'lucide-react';
 
 interface EditorProps {
@@ -132,6 +128,15 @@ export const Editor: React.FC<EditorProps> = ({
     const chars = fileContent.length;
     onStatsChange?.({ words, chars });
   }, [fileContent, onStatsChange]);
+
+  // Silent automatic save with 1.2s debounce (Obsidian 1:1)
+  useEffect(() => {
+    if (!isDirty || !activeFile) return;
+    const timer = setTimeout(() => {
+      saveCurrentFile();
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [fileContent, isDirty, activeFile, saveCurrentFile]);
 
   // Synchronize inline-title innerText when note changes
   useEffect(() => {
@@ -617,21 +622,6 @@ export const Editor: React.FC<EditorProps> = ({
     view.focus();
   };
 
-  const handleToolbarLine = (prefix: string) => {
-    const view = viewRef.current || getActiveEditorView();
-    if (!view) return;
-    const sel = view.state.selection.main;
-    const line = view.state.doc.lineAt(sel.from);
-    const cleaned = line.text.replace(/^(#{1,6}\s+|-\s+\[[ x]\]\s+|-\s+|\d+\.\s+|>\s+)/, '');
-    view.dispatch({
-      changes: { from: line.from, to: line.to, insert: `${prefix}${cleaned}` },
-    });
-    const newDoc = view.state.doc.toString();
-    lastDispatchedDocRef.current = newDoc;
-    updateContent(newDoc);
-    view.focus();
-  };
-
   const handleInsertMath = () => {
     const view = viewRef.current || getActiveEditorView();
     if (!view) return;
@@ -962,6 +952,11 @@ export const Editor: React.FC<EditorProps> = ({
             action: handleInsertCallout,
           },
           {
+            title: 'Ecuación matemática ($$)',
+            icon: <Sigma size={14} />,
+            action: handleInsertMath,
+          },
+          {
             title: 'Línea horizontal (---)',
             icon: <Minus size={14} />,
             action: handleInsertHr,
@@ -1017,114 +1012,100 @@ export const Editor: React.FC<EditorProps> = ({
   }
 
   const pathParts = activeFile ? activeFile.replace(/\\/g, '/').split('/') : [];
-  const folderParts = pathParts.slice(0, -1);
+
+  const handleHeaderMoreMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const items: MenuItemData[] = [
+      {
+        title: editorMode === 'live-preview' ? 'Cambiar a Vista de Lectura' : 'Cambiar a Vista de Edición',
+        icon: <BookOpen size={14} />,
+        action: () => setEditorMode(editorMode === 'live-preview' ? 'reading' : 'live-preview'),
+      },
+      {
+        title: 'Copiar enlace de Urano',
+        icon: <Copy size={14} />,
+        action: () => {
+          navigator.clipboard.writeText(`[[${cleanTitle}]]`);
+          showNotice('Enlace copiado al portapapeles', 2000, 'success');
+        },
+      },
+      {
+        title: 'Copiar ruta de archivo',
+        icon: <Link size={14} />,
+        action: () => {
+          if (activeFile) {
+            navigator.clipboard.writeText(activeFile);
+            showNotice('Ruta copiada al portapapeles', 2000, 'success');
+          }
+        },
+      },
+      { type: 'separator' },
+      {
+        title: 'Renombrar nota',
+        icon: <Edit3 size={14} />,
+        action: () => {
+          if (inlineTitleRef.current) {
+            inlineTitleRef.current.focus();
+            const range = document.createRange();
+            range.selectNodeContents(inlineTitleRef.current);
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+          }
+        },
+      },
+    ];
+    setContextMenu({ x: Math.max(8, rect.left - 180), y: rect.bottom + 6, items });
+  };
 
   return (
     <div
       onContextMenu={handleContextMenu}
       className="flex-1 flex flex-col h-full bg-obsidian-bg overflow-hidden relative"
     >
-      {/* Obsidian Note View Header (.view-header) with Breadcrumbs & Action Ribbon */}
-      <div className="flex items-center justify-between px-5 py-1.5 border-b border-obsidian-border/50 bg-[#151311] z-10 select-none">
-        {/* Left: Breadcrumbs */}
-        <div className="flex items-center gap-1.5 text-obsidian-muted text-xs truncate max-w-[280px]">
-          <FileText className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-          {folderParts.slice(-2).map((folder, idx) => (
-            <React.Fragment key={idx}>
-              <span className="truncate">{folder}</span>
-              <ChevronRight size={11} className="text-stone-600 shrink-0" />
-            </React.Fragment>
-          ))}
-          <span className="font-semibold text-stone-200 truncate">{cleanTitle}</span>
+      {/* Obsidian Note View Header (.view-header) 1:1 Clean */}
+      <div className="flex items-center justify-between px-4 py-1.5 border-b border-obsidian-border bg-obsidian-sidebar z-10 select-none h-[40px]">
+        {/* Left: Minimalist Navigation Arrows & Breadcrumbs */}
+        <div className="flex items-center gap-2.5 text-xs truncate min-w-0">
+          <div className="flex items-center gap-0.5 text-stone-500 shrink-0">
+            <button
+              onClick={() => window.history.back()}
+              title="Atrás"
+              className="p-1 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
+            >
+              <ArrowLeft size={14} />
+            </button>
+            <button
+              onClick={() => window.history.forward()}
+              title="Adelante"
+              className="p-1 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
+            >
+              <ArrowRight size={14} />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-stone-400 text-xs truncate">
+            {pathParts.map((part, idx) => (
+              <React.Fragment key={idx}>
+                {idx > 0 && <span className="text-stone-600 font-sans">›</span>}
+                <span
+                  className={
+                    idx === pathParts.length - 1
+                      ? 'font-medium text-stone-200 truncate'
+                      : 'truncate text-stone-400 hover:text-stone-200 transition-colors'
+                  }
+                >
+                  {idx === pathParts.length - 1 ? cleanTitle : part}
+                </span>
+              </React.Fragment>
+            ))}
+          </div>
         </div>
 
-        {/* Center: Obsidian Formatting Toolbar */}
-        <div className="hidden lg:flex items-center gap-0.5 bg-[#1a1714] px-1 py-0.5 rounded-lg border border-stone-800 text-stone-400">
-          <button
-            onClick={() => toggleInlineFormatting('==')}
-            title="Resaltar (==texto==)"
-            className="p-1 hover:bg-orange-500/20 hover:text-orange-300 text-orange-400 rounded transition-colors"
-          >
-            <Highlighter className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => toggleInlineFormatting('**', '__')}
-            title="Negrita (**texto**)"
-            className="p-1 hover:bg-stone-800 hover:text-white rounded transition-colors"
-          >
-            <Bold className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => toggleInlineFormatting('*', '_')}
-            title="Cursiva (*texto*)"
-            className="p-1 hover:bg-stone-800 hover:text-white rounded transition-colors"
-          >
-            <Italic className="w-3.5 h-3.5" />
-          </button>
-          <div className="w-px h-3 bg-stone-800 mx-0.5" />
-          <button
-            onClick={() => handleToolbarLine('# ')}
-            title="Título 1 (# )"
-            className="p-1 hover:bg-stone-800 hover:text-orange-300 rounded transition-colors"
-          >
-            <Heading1 className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => handleToolbarLine('## ')}
-            title="Título 2 (## )"
-            className="p-1 hover:bg-stone-800 hover:text-orange-300 rounded transition-colors"
-          >
-            <Heading2 className="w-3.5 h-3.5" />
-          </button>
-          <div className="w-px h-3 bg-stone-800 mx-0.5" />
-          <button
-            onClick={() => handleToolbarLine('- ')}
-            title="Lista con viñetas"
-            className="p-1 hover:bg-stone-800 hover:text-white rounded transition-colors"
-          >
-            <List className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => handleToolbarLine('- [ ] ')}
-            title="Lista de tareas"
-            className="p-1 hover:bg-stone-800 hover:text-white rounded transition-colors"
-          >
-            <CheckSquare className="w-3.5 h-3.5" />
-          </button>
-          <div className="w-px h-3 bg-stone-800 mx-0.5" />
-          <button
-            onClick={handleInsertMath}
-            title="Ecuación Matemática KaTeX ($$)"
-            className="p-1 hover:bg-orange-500/20 hover:text-orange-300 text-orange-400 rounded transition-colors"
-          >
-            <Sigma className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={handleInsertCode}
-            title="Bloque de Código (```)"
-            className="p-1 hover:bg-stone-800 hover:text-orange-300 rounded transition-colors"
-          >
-            <Code className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={handleInsertWikilink}
-            title="Enlace Bidireccional [[...]]"
-            className="p-1 hover:bg-orange-500/20 hover:text-orange-300 text-orange-400 rounded transition-colors"
-          >
-            <Link className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => handleToolbarLine('> ')}
-            title="Cita en bloque"
-            className="p-1 hover:bg-stone-800 hover:text-white rounded transition-colors"
-          >
-            <Quote className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Right: Mode Switcher & Save Status */}
-        <div className="flex items-center gap-2">
-          {/* Mode Switch: Live Preview vs Reading View */}
+        {/* Right: Book Mode Switcher & 3-dots Menu */}
+        <div className="flex items-center gap-1 shrink-0 text-stone-400">
           <button
             onClick={() =>
               setEditorMode(editorMode === 'live-preview' ? 'reading' : 'live-preview')
@@ -1134,26 +1115,18 @@ export const Editor: React.FC<EditorProps> = ({
                 ? 'Cambiar a Vista de Lectura'
                 : 'Cambiar a Vista de Edición (Live Preview)'
             }
-            className="p-1.5 text-stone-400 hover:text-orange-400 hover:bg-stone-800/60 rounded transition-colors"
+            className="p-1.5 hover:text-orange-400 hover:bg-white/5 rounded transition-colors"
           >
-            {editorMode === 'live-preview' ? <BookOpen size={14} /> : <Edit3 size={14} />}
+            <BookOpen size={15} />
           </button>
 
-          {isDirty ? (
-            <button
-              onClick={() => saveCurrentFile()}
-              className="flex items-center gap-1 text-[11px] bg-orange-600/20 text-orange-300 hover:bg-orange-600/30 px-2 py-0.5 rounded transition-colors border border-orange-500/30"
-              title="Guardar cambios (Ctrl+S)"
-            >
-              <Save className="w-3 h-3" />
-              <span>Guardar</span>
-            </button>
-          ) : (
-            <div className="flex items-center gap-1 text-[11px] text-emerald-400/80">
-              <CheckCircle2 className="w-3 h-3" />
-              <span>Guardado</span>
-            </div>
-          )}
+          <button
+            onClick={handleHeaderMoreMenu}
+            title="Más opciones de la nota"
+            className="p-1.5 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
+          >
+            <MoreVertical size={15} />
+          </button>
         </div>
       </div>
 
