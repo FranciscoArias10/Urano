@@ -43,10 +43,11 @@ export const ObsidianMenu: React.FC<ObsidianMenuProps> = ({ x, y, items, onClose
 
   // Click outside and Escape key dismissal
   useEffect(() => {
-    const handlePointerDown = (e: PointerEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
+    const handlePointerDown = (e: MouseEvent | PointerEvent) => {
+      if (menuRef.current && menuRef.current.contains(e.target as Node)) {
+        return;
       }
+      onClose();
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -56,13 +57,26 @@ export const ObsidianMenu: React.FC<ObsidianMenuProps> = ({ x, y, items, onClose
     };
 
     window.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('mousedown', handlePointerDown);
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('mousedown', handlePointerDown);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
+
+  const handleItemTrigger = (targetItem: MenuItemData, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (targetItem.disabled) return;
+    console.log('[Urano Menu] Ejecutando comando:', targetItem.title || 'Sin nombre');
+    if (targetItem.action) {
+      targetItem.action();
+      onClose();
+    }
+  };
 
   return (
     <div
@@ -97,13 +111,20 @@ export const ObsidianMenu: React.FC<ObsidianMenuProps> = ({ x, y, items, onClose
                   setActiveSubmenuIndex(null);
                 }
               }}
-              onMouseDown={(e) => e.preventDefault()}
+              onMouseDown={(e) => {
+                if (hasSubmenu) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setActiveSubmenuIndex(idx);
+                } else {
+                  handleItemTrigger(item, e);
+                }
+              }}
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
-                if (item.disabled) return;
-                if (item.action) {
-                  item.action();
-                  onClose();
+                if (!hasSubmenu) {
+                  handleItemTrigger(item, e);
                 }
               }}
             >
@@ -122,7 +143,10 @@ export const ObsidianMenu: React.FC<ObsidianMenuProps> = ({ x, y, items, onClose
               {hasSubmenu && isSubmenuOpen && item.submenu && (
                 <div
                   className="menu absolute top-0 left-full -ml-1 min-w-[180px] shadow-2xl animate-fadeIn"
-                  onMouseDown={(e) => e.preventDefault()}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
                   onMouseEnter={() => setActiveSubmenuIndex(idx)}
                 >
                   <div className="menu-scroll">
@@ -137,14 +161,13 @@ export const ObsidianMenu: React.FC<ObsidianMenuProps> = ({ x, y, items, onClose
                           className={`menu-item ${subItem.isWarning ? 'is-warning' : ''} ${
                             subItem.disabled ? 'is-disabled' : ''
                           }`}
-                          onMouseDown={(e) => e.preventDefault()}
+                          onMouseDown={(e) => {
+                            handleItemTrigger(subItem, e);
+                          }}
                           onClick={(e) => {
+                            e.preventDefault();
                             e.stopPropagation();
-                            if (subItem.disabled) return;
-                            if (subItem.action) {
-                              subItem.action();
-                              onClose();
-                            }
+                            handleItemTrigger(subItem, e);
                           }}
                         >
                           {subItem.icon && <span className="menu-item-icon">{subItem.icon}</span>}
