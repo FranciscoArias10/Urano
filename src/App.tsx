@@ -4,8 +4,14 @@ import { useVaultStore } from './stores/vaultStore';
 import { useSyncStore } from './stores/syncStore';
 import { TabBar, TabItem } from './components/tabs/TabBar';
 import { FileTree } from './components/vault/FileTree';
-import { Editor } from './components/editor/Editor';
+import { Editor, getActiveEditorView } from './components/editor/Editor';
 import { GraphView } from './components/graph/GraphView';
+import { CanvasView } from './components/canvas/CanvasView';
+import { BaseView } from './components/base/BaseView';
+import { TemplateModal } from './components/templates/TemplateModal';
+import { GlobalSearchPanel } from './components/search/GlobalSearchPanel';
+import { BookmarksPanel } from './components/bookmarks/BookmarksPanel';
+import { Tooltip } from './components/common/Tooltip';
 import { BacklinksPanel } from './components/backlinks/BacklinksPanel';
 import { CommandPalette, CommandItem } from './components/palette/CommandPalette';
 import { StatusBar } from './components/layout/StatusBar';
@@ -21,7 +27,6 @@ import {
   RotateCw,
   Search,
   GitFork,
-  Command,
   Settings,
   PanelLeftClose,
   PanelLeft,
@@ -31,6 +36,14 @@ import {
   HelpCircle,
   HardDrive,
   Cloud,
+  FileSearch,
+  Grid2X2,
+  Calendar,
+  Copy,
+  Terminal,
+  LayoutList,
+  Folder,
+  Bookmark,
 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -38,8 +51,11 @@ export const App: React.FC = () => {
   const [tabs, setTabs] = useState<TabItem[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>('');
 
-  // UI Panels Toggles
+  // Left Sidebar State (Toggle + 3 Tabs: files, search, bookmarks)
   const [showLeftSidebar, setShowLeftSidebar] = useState(true);
+  const [sidebarTab, setSidebarTab] = useState<'files' | 'search' | 'bookmarks'>('files');
+
+  // UI Panels Toggles
   const [showBacklinks, setShowBacklinks] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
 
@@ -47,8 +63,8 @@ export const App: React.FC = () => {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteMode, setPaletteMode] = useState<'commands' | 'files'>('commands');
 
-  // File tree search
-  const [searchQuery, setSearchQuery] = useState('');
+  // Template Picker Modal
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   const {
     activeVault,
@@ -62,7 +78,12 @@ export const App: React.FC = () => {
     setVault,
     refreshTree,
     selectFile,
+    updateContent,
+    saveCurrentFile,
     createUntitledNote,
+    createUntitledCanvas,
+    createUntitledBase,
+    openDailyNote,
     createUntitledFolder,
     openOrCreateWikilink,
   } = useVaultStore();
@@ -91,24 +112,35 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (!activeFile) return;
 
-    const fileName = activeFileName ? activeFileName.replace(/\.md$/i, '') : 'Nota';
+    let type: TabItem['type'] = 'note';
+    let ext = '.md';
+    if (activeFile.endsWith('.canvas')) {
+      type = 'canvas';
+      ext = '.canvas';
+    } else if (activeFile.endsWith('.base')) {
+      type = 'base';
+      ext = '.base';
+    }
+
+    const fileName = activeFileName
+      ? activeFileName.replace(new RegExp(`\\${ext}$`, 'i'), '')
+      : 'Archivo';
 
     setTabs((prev) => {
       const existingIdx = prev.findIndex((t) => t.filePath === activeFile);
       if (existingIdx !== -1) {
-        // Update title and isDirty if changed
         const updated = [...prev];
         updated[existingIdx] = {
           ...updated[existingIdx],
           title: fileName,
+          type,
           isDirty,
         };
         return updated;
       } else {
-        // Add new tab
         const newTab: TabItem = {
           id: activeFile,
-          type: 'note',
+          type,
           filePath: activeFile,
           title: fileName,
           isDirty,
@@ -184,6 +216,62 @@ export const App: React.FC = () => {
     if (newNote?.path) {
       setActiveTabId(newNote.path);
     }
+  };
+
+  // Create canvas
+  const handleCreateCanvas = async () => {
+    if (!activeVault) return;
+    const { path } = await createUntitledCanvas(activeVault);
+    if (path) {
+      setActiveTabId(path);
+      showNotice('Lienzo canvas creado', 2500, 'info');
+    }
+  };
+
+  // Create base
+  const handleCreateBase = async () => {
+    if (!activeVault) return;
+    const { path } = await createUntitledBase(activeVault);
+    if (path) {
+      setActiveTabId(path);
+      showNotice('Base de datos creada', 2500, 'info');
+    }
+  };
+
+  // Open daily note
+  const handleOpenDailyNote = async () => {
+    if (!activeVault) return;
+    const path = await openDailyNote();
+    if (path) {
+      setActiveTabId(path);
+    }
+  };
+
+  // Insert template into note
+  const handleInsertTemplate = async (templateContent: string) => {
+    const view = getActiveEditorView();
+    if (view && activeFile && !activeFile.endsWith('.canvas') && !activeFile.endsWith('.base')) {
+      const tr = view.state.update({
+        changes: {
+          from: view.state.selection.main.from,
+          to: view.state.selection.main.to,
+          insert: templateContent,
+        },
+        selection: { anchor: view.state.selection.main.from + templateContent.length },
+        userEvent: 'input.template',
+      });
+      view.dispatch(tr);
+      view.focus();
+      showNotice('Plantilla insertada correctamente', 2500, 'info');
+    } else {
+      const newNote = await createUntitledNote(activeVault || undefined);
+      if (newNote?.path) {
+        updateContent(templateContent);
+        await saveCurrentFile();
+        showNotice('Nueva nota creada con la plantilla', 2500, 'info');
+      }
+    }
+    setShowTemplateModal(false);
   };
 
   const handleCreateRootFolder = async () => {
@@ -282,12 +370,12 @@ export const App: React.FC = () => {
   // Open note in a new tab (or to the right)
   const handleOpenInNewTab = (filePathOrName: string) => {
     let targetPath = filePathOrName;
-    if (!targetPath.endsWith('.md')) {
+    if (!targetPath.endsWith('.md') && !targetPath.endsWith('.canvas') && !targetPath.endsWith('.base')) {
       const findInTree = (items: typeof fileTree): string | null => {
         for (const item of items) {
           if (
             !item.isDir &&
-            item.name.replace(/\.md$/i, '').toLowerCase() === filePathOrName.toLowerCase()
+            item.name.replace(/\.(md|canvas|base)$/i, '').toLowerCase() === filePathOrName.toLowerCase()
           ) {
             return item.path;
           }
@@ -303,12 +391,22 @@ export const App: React.FC = () => {
         found || (activeVault ? `${activeVault}/${filePathOrName}.md` : `${filePathOrName}.md`);
     }
 
+    let type: TabItem['type'] = 'note';
+    let ext = '.md';
+    if (targetPath.endsWith('.canvas')) {
+      type = 'canvas';
+      ext = '.canvas';
+    } else if (targetPath.endsWith('.base')) {
+      type = 'base';
+      ext = '.base';
+    }
+
     const title =
-      targetPath.replace(/\\/g, '/').split('/').pop()?.replace(/\.md$/i, '') || 'Nota';
+      targetPath.replace(/\\/g, '/').split('/').pop()?.replace(new RegExp(`\\${ext}$`, 'i'), '') || 'Nota';
     const tabId = `${targetPath}_tab_${Date.now()}`;
     const newTab: TabItem = {
       id: tabId,
-      type: 'note',
+      type,
       filePath: targetPath,
       title,
     };
@@ -354,34 +452,10 @@ export const App: React.FC = () => {
     }
   };
 
-  // Filter file tree by search query
-  const filteredTree = useMemo(() => {
-    if (!searchQuery.trim()) return fileTree;
-    const q = searchQuery.toLowerCase();
-
-    const filterItems = (items: typeof fileTree): typeof fileTree => {
-      return items
-        .map((item) => {
-          if (item.isDir && item.children) {
-            const children = filterItems(item.children);
-            if (children.length > 0 || item.name.toLowerCase().includes(q)) {
-              return { ...item, children };
-            }
-          } else if (item.name.toLowerCase().includes(q)) {
-            return item;
-          }
-          return null;
-        })
-        .filter(Boolean) as typeof fileTree;
-    };
-
-    return filterItems(fileTree);
-  }, [fileTree, searchQuery]);
-
   // Compute backlinks count for the active file
   const backlinksCount = useMemo(() => {
     if (!activeFileName) return 0;
-    const base = activeFileName.replace(/\.md$/i, '').toLowerCase();
+    const base = activeFileName.replace(/\.(md|canvas|base)$/i, '').toLowerCase();
     let count = 0;
 
     for (const [path, content] of Object.entries(notesContentMap)) {
@@ -398,63 +472,99 @@ export const App: React.FC = () => {
     return count;
   }, [activeFile, activeFileName, notesContentMap]);
 
-  // Registered commands for Command Palette (Ctrl+P)
+  // Registered commands for Command Palette (Ctrl+P) extracted from Obsidian
   const paletteCommands: CommandItem[] = [
     {
-      id: 'new-note',
-      name: 'Crear nueva nota (sin título)',
+      id: 'file-explorer:new-note',
+      name: 'Explorador de archivos: Crear nueva nota (sin título)',
       shortcut: 'Ctrl+N',
       icon: <FilePlus size={15} />,
       action: handleCreateUntitledNote,
     },
     {
-      id: 'quick-switcher',
-      name: 'Buscar nota en la bóveda (Quick Switcher)',
+      id: 'quick-switcher:open',
+      name: 'Selector rápido: Buscar nota en la bóveda (Quick Switcher)',
       shortcut: 'Ctrl+O',
-      icon: <Search size={15} />,
+      icon: <FileSearch size={15} />,
       action: () => {
         setPaletteMode('files');
         setPaletteOpen(true);
       },
     },
     {
-      id: 'graph-view',
-      name: 'Abrir vista gráfica interactiva',
+      id: 'graph:open',
+      name: 'Vista gráfica: Abrir vista gráfica interactiva (Graph View)',
       shortcut: 'Ctrl+G',
       icon: <GitFork size={15} />,
       action: handleOpenGraphTab,
     },
     {
-      id: 'toggle-sidebar',
-      name: 'Alternar barra lateral izquierda',
+      id: 'canvas:new',
+      name: 'Canvas: Crear nuevo lienzo (.canvas)',
+      icon: <Grid2X2 size={15} />,
+      action: handleCreateCanvas,
+    },
+    {
+      id: 'daily-notes:today',
+      name: 'Notas diarias: Abrir nota de hoy',
+      icon: <Calendar size={15} />,
+      action: handleOpenDailyNote,
+    },
+    {
+      id: 'templates:insert',
+      name: 'Plantillas: Insertar plantilla',
+      icon: <Copy size={15} />,
+      action: () => setShowTemplateModal(true),
+    },
+    {
+      id: 'bases:new',
+      name: 'Bases: Crear nueva base de datos (.base)',
+      icon: <LayoutList size={15} />,
+      action: handleCreateBase,
+    },
+    {
+      id: 'workspace:toggle-left-sidebar',
+      name: 'Espacio de trabajo: Alternar barra lateral izquierda',
       shortcut: 'Ctrl+B',
       icon: <PanelLeft size={15} />,
       action: () => setShowLeftSidebar((prev) => !prev),
     },
     {
-      id: 'toggle-backlinks',
-      name: 'Alternar panel de Backlinks y menciones',
+      id: 'workspace:toggle-backlinks',
+      name: 'Espacio de trabajo: Alternar panel de Backlinks y menciones',
       shortcut: 'Ctrl+Shift+B',
       icon: <ArrowLeftRight size={15} />,
       action: () => setShowBacklinks((prev) => !prev),
     },
     {
-      id: 'sync-now',
-      name: 'Sincronizar ahora con Google Drive',
+      id: 'file-explorer:new-folder',
+      name: 'Explorador de archivos: Nueva carpeta en la raíz',
+      icon: <FolderPlus size={15} />,
+      action: handleCreateRootFolder,
+    },
+    {
+      id: 'file-explorer:refresh',
+      name: 'Explorador de archivos: Recargar archivos de la bóveda',
+      icon: <RotateCw size={15} />,
+      action: () => refreshTree(),
+    },
+    {
+      id: 'sync:now',
+      name: 'Sincronización: Sincronizar ahora con Google Drive',
       icon: <RefreshCw size={15} />,
       action: () => {
         if (activeVault) triggerSync(activeVault);
       },
     },
     {
-      id: 'open-vault',
-      name: 'Abrir otra carpeta de bóveda...',
+      id: 'app:open-vault',
+      name: 'Bóveda: Abrir otra carpeta de bóveda...',
       icon: <FolderOpen size={15} />,
       action: handleOpenFolderDialog,
     },
     {
-      id: 'sync-config',
-      name: 'Configurar cuenta de Google Drive y sincronización',
+      id: 'app:sync-config',
+      name: 'Ajustes: Configurar cuenta de Google Drive y sincronización',
       icon: <Settings size={15} />,
       action: () => setShowConfigModal(true),
     },
@@ -466,151 +576,212 @@ export const App: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* ========================================================
             Obsidian Left Ribbon (.side-dock-ribbon)
+            Section B: Los 7 Iconos en orden exacto con tooltips oscuros
             ======================================================== */}
         <div className="side-dock-ribbon">
           {/* Logo at the top */}
-          <div className="mb-2 p-1">
-            <UranoLogo size={24} className="hover:scale-105 transition-transform" />
+          <div className="mb-2 p-1 flex items-center justify-center">
+            <UranoLogo size={22} className="hover:scale-105 transition-transform" />
           </div>
 
-          {/* Toggle Left Sidebar */}
-          <button
-            onClick={() => setShowLeftSidebar((prev) => !prev)}
-            title={showLeftSidebar ? 'Ocultar barra lateral (Ctrl+B)' : 'Mostrar barra lateral (Ctrl+B)'}
-            className={`side-dock-ribbon-action ${showLeftSidebar ? 'is-active' : ''}`}
-          >
-            {showLeftSidebar ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}
-          </button>
+          {/* Toggle sidebar button if sidebar is currently collapsed */}
+          {!showLeftSidebar && (
+            <Tooltip content="Mostrar barra lateral" shortcut="Ctrl+B" position="right">
+              <button
+                onClick={() => setShowLeftSidebar(true)}
+                className="side-dock-ribbon-action text-stone-400 hover:text-stone-200"
+              >
+                <PanelLeft size={18} />
+              </button>
+            </Tooltip>
+          )}
 
-          {/* Quick Switcher (Ctrl+O) */}
-          <button
-            onClick={() => {
-              setPaletteMode('files');
-              setPaletteOpen(true);
-            }}
-            title="Buscar nota (Ctrl+O)"
-            className="side-dock-ribbon-action"
-          >
-            <Search size={18} />
-          </button>
+          {/* 1. Open quick switcher (Ctrl+O) */}
+          <Tooltip content="Open quick switcher" shortcut="Ctrl+O" position="right">
+            <button
+              onClick={() => {
+                setPaletteMode('files');
+                setPaletteOpen(true);
+              }}
+              className="side-dock-ribbon-action"
+            >
+              <FileSearch size={18} />
+            </button>
+          </Tooltip>
 
-          {/* Command Palette (Ctrl+P) */}
-          <button
-            onClick={() => {
-              setPaletteMode('commands');
-              setPaletteOpen(true);
-            }}
-            title="Paleta de comandos (Ctrl+P)"
-            className="side-dock-ribbon-action"
-          >
-            <Command size={18} />
-          </button>
+          {/* 2. Open graph view (Ctrl+G) */}
+          <Tooltip content="Open graph view" shortcut="Ctrl+G" position="right">
+            <button
+              onClick={handleOpenGraphTab}
+              className={`side-dock-ribbon-action ${activeTabId === 'workspace-graph-view' ? 'is-active' : ''}`}
+            >
+              <GitFork size={18} />
+            </button>
+          </Tooltip>
 
-          {/* Interactive Graph View (Ctrl+G) */}
-          <button
-            onClick={handleOpenGraphTab}
-            title="Vista Gráfica (Ctrl+G)"
-            className={`side-dock-ribbon-action ${activeTabId === 'workspace-graph-view' ? 'is-active' : ''}`}
-          >
-            <GitFork size={18} />
-          </button>
+          {/* 3. Create new canvas */}
+          <Tooltip content="Create new canvas" position="right">
+            <button
+              onClick={handleCreateCanvas}
+              className="side-dock-ribbon-action"
+            >
+              <Grid2X2 size={18} />
+            </button>
+          </Tooltip>
 
-          {/* New Untitled Note (Ctrl+N) */}
-          <button
-            onClick={handleCreateUntitledNote}
-            title="Nueva nota (Ctrl+N)"
-            className="side-dock-ribbon-action text-orange-400 hover:text-orange-300"
-          >
-            <FilePlus size={18} />
-          </button>
+          {/* 4. Open today's daily note */}
+          <Tooltip content="Open today's daily note" position="right">
+            <button
+              onClick={handleOpenDailyNote}
+              className="side-dock-ribbon-action"
+            >
+              <Calendar size={18} />
+            </button>
+          </Tooltip>
 
-          {/* Google Drive Sync Trigger */}
-          <button
-            onClick={() => {
-              if (activeVault) triggerSync(activeVault);
-            }}
-            title={isSyncing ? 'Sincronizando con Google Drive...' : 'Sincronizar ahora con Google Drive'}
-            className="side-dock-ribbon-action hover:text-sky-400"
-          >
-            <RefreshCw size={17} className={isSyncing ? 'animate-spin text-sky-400' : ''} />
-          </button>
+          {/* 5. Insert template */}
+          <Tooltip content="Insert template" position="right">
+            <button
+              onClick={() => setShowTemplateModal(true)}
+              className="side-dock-ribbon-action"
+            >
+              <Copy size={18} />
+            </button>
+          </Tooltip>
+
+          {/* 6. Open command palette (Ctrl+P) */}
+          <Tooltip content="Open command palette" shortcut="Ctrl+P" position="right">
+            <button
+              onClick={() => {
+                setPaletteMode('commands');
+                setPaletteOpen(true);
+              }}
+              className="side-dock-ribbon-action"
+            >
+              <Terminal size={18} />
+            </button>
+          </Tooltip>
+
+          {/* 7. Create new base */}
+          <Tooltip content="Create new base" position="right">
+            <button
+              onClick={handleCreateBase}
+              className="side-dock-ribbon-action"
+            >
+              <LayoutList size={18} />
+            </button>
+          </Tooltip>
 
           <div className="flex-1" />
 
+          {/* Google Drive Sync Trigger */}
+          <Tooltip content="Sincronizar ahora con Google Drive" position="right">
+            <button
+              onClick={() => {
+                if (activeVault) triggerSync(activeVault);
+              }}
+              className="side-dock-ribbon-action hover:text-sky-400"
+            >
+              <RefreshCw size={17} className={isSyncing ? 'animate-spin text-sky-400' : ''} />
+            </button>
+          </Tooltip>
+
           {/* Settings / Google Auth Button at Bottom of Ribbon */}
-          <button
-            onClick={() => setShowConfigModal(true)}
-            title="Configuración de Bóveda y Google Drive"
-            className="side-dock-ribbon-action mb-1 text-stone-400 hover:text-stone-200"
-          >
-            <Settings size={18} />
-          </button>
+          <Tooltip content="Configuración y Google Drive" position="right">
+            <button
+              onClick={() => setShowConfigModal(true)}
+              className="side-dock-ribbon-action mb-1 text-stone-400 hover:text-stone-200"
+            >
+              <Settings size={18} />
+            </button>
+          </Tooltip>
         </div>
 
         {/* ========================================================
-            Obsidian Left Collapsible Sidebar (File Explorer)
+            Obsidian Left Collapsible Sidebar Dock
+            Section A: Fila Superior del Panel Izquierdo (4 botones)
             ======================================================== */}
         {showLeftSidebar && (
           <aside className="w-64 bg-obsidian-sidebar border-r border-obsidian-border flex flex-col shrink-0">
-            {/* Vault Header & Actions */}
-            <div className="px-3 py-2.5 border-b border-obsidian-border flex items-center justify-between">
-              <div
-                onClick={handleOpenFolderDialog}
-                className="flex items-center gap-2 cursor-pointer hover:text-orange-400 transition-colors truncate"
-                title="Haz clic para abrir otra bóveda"
-              >
-                <FolderOpen className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-stone-200 truncate">
-                  {vaultName || 'Bóveda'}
-                </span>
-              </div>
+            {/* A. Fila Superior del Panel Izquierdo (4 botones) */}
+            <div className="h-10 px-2.5 border-b border-obsidian-border flex items-center justify-between bg-obsidian-sidebar shrink-0">
+              {/* 1. Botón "Toggle Left Sidebar" */}
+              <Tooltip content="Ocultar barra lateral" shortcut="Ctrl+B" position="bottom">
+                <button
+                  onClick={() => setShowLeftSidebar(false)}
+                  className="p-1.5 text-stone-400 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
+                >
+                  <PanelLeftClose size={17} />
+                </button>
+              </Tooltip>
 
-              <div className="flex items-center gap-1 text-obsidian-muted">
-                <button
-                  onClick={handleCreateUntitledNote}
-                  title="Nueva nota (Ctrl+N)"
-                  className="p-1 hover:text-orange-400 hover:bg-obsidian-hover rounded transition-colors"
-                >
-                  <FilePlus className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={handleCreateRootFolder}
-                  title="Nueva carpeta en la raíz"
-                  className="p-1 hover:text-white hover:bg-obsidian-hover rounded transition-colors"
-                >
-                  <FolderPlus className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => refreshTree()}
-                  title="Recargar archivos"
-                  className="p-1 hover:text-white hover:bg-obsidian-hover rounded transition-colors"
-                >
-                  <RotateCw className="w-3.5 h-3.5" />
-                </button>
+              {/* 2. Las 3 pestañas superiores del panel lateral */}
+              <div className="flex items-center gap-1">
+                {/* Archivos */}
+                <Tooltip content="Archivos" position="bottom">
+                  <button
+                    onClick={() => setSidebarTab('files')}
+                    className={`p-1.5 rounded transition-colors ${
+                      sidebarTab === 'files'
+                        ? 'text-orange-500 bg-white/10'
+                        : 'text-stone-400 hover:text-stone-200 hover:bg-white/5'
+                    }`}
+                  >
+                    <Folder size={17} />
+                  </button>
+                </Tooltip>
+
+                {/* Buscar */}
+                <Tooltip content="Buscar" position="bottom">
+                  <button
+                    onClick={() => setSidebarTab('search')}
+                    className={`p-1.5 rounded transition-colors ${
+                      sidebarTab === 'search'
+                        ? 'text-orange-500 bg-white/10'
+                        : 'text-stone-400 hover:text-stone-200 hover:bg-white/5'
+                    }`}
+                  >
+                    <Search size={17} />
+                  </button>
+                </Tooltip>
+
+                {/* Marcadores / Bookmarks */}
+                <Tooltip content="Marcadores" position="bottom">
+                  <button
+                    onClick={() => setSidebarTab('bookmarks')}
+                    className={`p-1.5 rounded transition-colors ${
+                      sidebarTab === 'bookmarks'
+                        ? 'text-orange-500 bg-white/10'
+                        : 'text-stone-400 hover:text-stone-200 hover:bg-white/5'
+                    }`}
+                  >
+                    <Bookmark size={17} />
+                  </button>
+                </Tooltip>
               </div>
             </div>
 
-            {/* Quick Filter Search Input */}
-            <div className="p-2 border-b border-obsidian-border">
-              <div className="flex items-center gap-2 bg-[#161616] px-2.5 py-1.5 rounded-md border border-stone-800/80 text-xs text-obsidian-text">
-                <Search className="w-3.5 h-3.5 text-stone-500 shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Filtrar archivos..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-transparent outline-none placeholder:text-stone-500 text-xs"
-                />
-              </div>
-            </div>
-
-            {/* File Tree Component */}
-            <div className="flex-1 overflow-y-auto p-2">
-              <FileTree items={filteredTree} onOpenInNewTab={handleOpenInNewTab} />
+            {/* Panel View Content */}
+            <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+              {sidebarTab === 'files' && (
+                <div className="flex-1 overflow-y-auto">
+                  <FileTree items={fileTree} onOpenInNewTab={handleOpenInNewTab} />
+                </div>
+              )}
+              {sidebarTab === 'search' && (
+                <div className="flex-1 overflow-hidden">
+                  <GlobalSearchPanel />
+                </div>
+              )}
+              {sidebarTab === 'bookmarks' && (
+                <div className="flex-1 overflow-hidden">
+                  <BookmarksPanel />
+                </div>
+              )}
             </div>
 
             {/* Obsidian Bottom Vault Switcher (⌄ prueba) & Action Icons (? y ⚙) */}
-            <div className="p-2 border-t border-obsidian-border bg-obsidian-sidebar flex items-center justify-between text-xs text-stone-400">
+            <div className="p-2 border-t border-obsidian-border bg-obsidian-sidebar flex items-center justify-between text-xs text-stone-400 shrink-0">
               <button
                 onClick={handleVaultSwitcherClick}
                 className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 hover:text-stone-200 text-stone-300 font-medium max-w-[145px] truncate transition-colors text-left"
@@ -641,7 +812,7 @@ export const App: React.FC = () => {
         )}
 
         {/* ========================================================
-            Center Main Workspace (Tabs + Editor / Graph Canvas)
+            Center Main Workspace (Tabs + Editor / Graph / Canvas / Base)
             ======================================================== */}
         <main className="flex-1 flex flex-col overflow-hidden bg-obsidian-bg min-w-0">
           {/* Obsidian TabBar */}
@@ -660,6 +831,10 @@ export const App: React.FC = () => {
           <div className="flex-1 overflow-hidden relative">
             {activeTabId === 'workspace-graph-view' ? (
               <GraphView onSelectNote={(path: string) => selectFile(path)} />
+            ) : activeFile?.endsWith('.canvas') ? (
+              <CanvasView filePath={activeFile} />
+            ) : activeFile?.endsWith('.base') ? (
+              <BaseView filePath={activeFile} />
             ) : activeFile ? (
               <Editor
                 onWikilinkClick={(name) => openOrCreateWikilink(name)}
@@ -729,6 +904,14 @@ export const App: React.FC = () => {
         commands={paletteCommands}
         onClose={() => setPaletteOpen(false)}
         onSelectFile={(path) => selectFile(path)}
+        onOpenInNewTab={handleOpenInNewTab}
+      />
+
+      {/* Template Selection Modal */}
+      <TemplateModal
+        isOpen={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        onInsert={handleInsertTemplate}
       />
 
       {/* Google Drive Sync Configuration Modal */}
