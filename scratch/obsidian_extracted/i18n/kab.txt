@@ -1,0 +1,2602 @@
+Iɣewwaṛen
+Azegrir
+Izegrar igejdanen
+Sken-d deg tebdart n yisiɣzaf
+Iɣewwaṛen n uzegrir
+Amedya: akaram 1/akaram 2
+Amedya: akaram/tazmilt
+Ulac afaylu yettwafernen
+Abeddel n tnefrunt-agi yesra tulsa n usekker iwakken ad yeddu.
+Amḍan arameɣtu
+Azal ilaq ad yili ma ulac {{min}}
+Azal afellay ilaq ad yili {{max}}
+Afaylu ur yettwafa ara.
+Nadi iɣewwaṛen...
+Ulac iɣewwaṛen i yettwafan.
+{{count}} ugar
+Amaẓrag
+Tiddin
+Abeqqeḍ
+Asenqed n teɣdirawt
+Rmed asenqed n teɣdirawt.
+Tutlayin n usenqed n teɣdirawt
+Fren tutlayin i usenqed n teɣdirawt ara yettusqedcen.
+Amseɣtay n teɣdirawt adigan ad d-yaf s wudem awurman tutlayt i yettwasqedcen deg macOS.
+Amawal n eqenqed n teɣdirawt
+Amawal n eqenqed n teɣdirawt d ilem.
+Azwel deg izirig
+Beqqeḍ isem n ufaylu d azwel yettwaẓragen deg izirig akked ugbur n ufaylu.
+Teɣzi n yizirig yettwaɣran
+Eg talast i teɣzi tafellayt n izirig. Drus n ugbur i d-yeffɣen ɣef ugdil, maca iḥedren n uḍris ad ttwaɣren xir.
+Tuɣalin ɣer yizirig qesḥanen
+Isemliyen n Markdown ttezgilent tuɣalin tiḥerfiyin ɣer yizirig deg tmuɣli n tɣuri. Ssens ayagi i wakken ad d-banent tuɣalin tiḥerfiyin ɣer yizirig.
+Iraten deg isemli
+Fren amek ara ttwabeqḍen iraten deg uksawen n tezmilin. Fren "aɣbalu" i waskan n iraten am YAML.
+Uffir
+Yettbanay
+Aɣbalu
+Tiddukla tawurmant n yisenfaf
+Seddukel isenfaf d tacciwin s wudem awurman.
+Tiddukla tawurmant n tseddast Markdown
+Seddukel izmulen s wudem awurman i uzuran, uknan, tangalt, d wayen nniḍen.
+Tibdarin timegza
+Sbadu s wudem awurman asiẓi arnu sers iferdisen n tebdart akken iwata.
+Ḍfes tasenṭit
+Ḍfes akk agbur ddaw n tsenṭit.
+Ḍfes asiẓi
+Ḍfes aḥric seg usiẓi, am tebdarin.
+Taskant tamezwert i yiccaren imaynuten
+Taskant tamezwert anda iccer Markdown amaynut ad yeldi deg-s.
+Taskant usiẓreg
+Taskant n tɣuṛi
+Yal tikkelt asaḍas ɣef yiccaren imaynutin
+Ma teldiḍ-d aseɣwen deg yiccer amaynut, ddu din din ɣur-s.
+Askar n usiẓreg amezwer
+Askar n teẓrigt amezwer ad yebdu s yiccer amaynut.
+Askar n uɣbalu
+Taskant s wudem usrid
+Uṭṭunen n izirigen
+Sken uṭṭunen n izirigen deg yidis.
+Iminigen n usiẓi
+Sken izirigen ibeddayen n wassaɣ gar yiferdisen n tebdart.
+Siẓi s useqdec n yiccaren
+Seqdec iccaren i usiẓi s tuqqna ɣef tqeffalt “Tab”. Ssens ayagi i wakken ad tsiẓiḍ s 4 n tallunin.
+Tehri tawezlant n usiẓi
+Amḍan n tallunin i d-yettbanen am usekkil n yiccer.
+Seg uyeffus ɣer uzelmaḍ  (RTL)
+Sbadu tanila n uḍris amezwer n tezmilin seg uyeffus ɣer uzelmaḍ.
+Sken izenziɣen n Mermaid deg tezmilin
+Sken izenziɣen n usuddem, izenziɣen n tlubbayt, d yizenziɣen-nniḍen seg yiḥedran n tengalt “mermaid”.
+Selket HTML yettwasenṭeḍ ɣer Markdown
+Selket HTML s wudem awurman ɣer Markdown mi ara tsenṭeḍ neɣ mi ara tzuɣreḍ seg isebtar n web. Seqdec Ctrl/Cmd+Shift+V i wusneṭeḍ n HTML war aselket.
+tuqniwin n tsura Vim
+Seqdec tuqniwin n tsura Vim ticki telliḍ seg usiẓreg.
+Deg yiberyan izirazen, aɣewwaṛ-a ibedd ɣef yal ibenk yerna ur yettwamtawa ara s ufaylu n twila.
+Ales asali n tzarkatut n wakaram n weḥrez
+Allus n usali n tzarkatut yezmer ad yeṭṭef kra n tsinin ar kra n tesdatin ɣef leḥsab n tiddi n wammud-ik·im.
+Ales lebni
+Sentem anekcum ɣer uskar Vim
+Askar Vim d win n teẓrigt tamellayt n uḍris maca yezmer ad yili ur yettwassen ara aṭas. Ma yella ur tessineḍ ara Vim, taxtiṛit-a tezmer ad teg amzun Obsidian am akken yeḥbes.
+I wakken ad nessiweḍ ad nẓer belli tessineḍ Vim, ttxil-k·im sekcem taladna i tuffɣa seg Vim war asekles ddaw-a:
+Tiririt-ik·im
+Sekcem taladna...
+Eǧǧ-iyi ad remdeɣ Vim
+Taladna d tameɣtut. Askar Vim yermed tura.
+Taladna mačči d tameɣtut. Askar n Vim ad d-yiqem yensa akken ad yemmesten fell-ak·am.
+Ttxil-k·m sekcem taladna iwakken ad tesremdeḍ askar Vim
+Ifuyla akked iseɣwanen
+Sentem send tukksa n yifuyla
+Ur ttaǧǧa ara ad tekkseḍ ifuyla s leɣlaḍ.
+Iḍummen
+Ifuyla yettwakksen
+D acu ara yeḍrun i ufaylu deffir n tukksa-ines.
+Smutti ɣer yiḍummen n unagraw
+Smutti ɣer yiḍummen n Obsidian (akaram .trash)
+Kkes s wudem imezgi
+Kkes imeddayen mi ara tekkseḍ ifuyla
+Kkes s wudem awurman imeddayen yeqqnen ɣer ufaylu yettwakksen ma yella ur ttuseqdacen ara deg wemkan nniḍen.
+Yal tikkelt
+Seqsi yal tikkelt
+Werǧin
+Afaylu amezwer i welday
+Fren d acu n ufaylu ara yeldin mi ara yekker usnas.
+Aneggaru i yeldin
+Tazmilt tamaynut
+Afaylu uzzig
+Tazmilt n yal ass
+Afaylu ara yeldin
+Fren afaylu uzzig ara yeldin s wudem amezwer.
+Leqqem s wudem awurman isɣewnen idiganen
+Sens-it iwakken ad tettwaɛerḍeḍ ɣef uleqqem n yisɣewnen mi ara tbeddleḍ isem n ufaylu.
+Adig amezwer n tezmiltin timaynutin
+Anda ara ttusrusunt tezmiltin timaynutin ara d-yettwarnan.
+Akaram n weḥraz
+D yiwen ukaram am ufaylu amiran
+Deg wakaram yettunefken ukessar
+Akaram anda ara d-ttwarnant tezmiltin timaynutin
+Tizmiltin timaynutin ara d-yettwarnan ad d-banent deg wakaram-a.
+Seqdec [[Wikilinks]]
+Sirew s wudem awurman Wikilinks i [[Links]] d ![[images]] deg wemkan n iseɣwan d tugniwin n Markdown. Sens tanefrunt-agi iwakken ad tsireweḍ iseɣwan n Markdown deg umkan-is.
+Sken akk tiwsatin n yifuyla
+Sken ifuyla s yal asiɣzef ɣas ma Obsidian ur yezmir ara ad ten-ildi srid, i wakken ad tizemreḍ ad tcuddeḍ aseɣwen ɣur-sen yerna ad ten-twaliḍ deg unaram n yifuyla d usenfal arurad.
+Iseɣwan
+Amasal amaynut n useɣwen
+D acu n yiseɣwan ara tgerreḍ mi ara d-teslaleḍ s wudem awurman iseɣwan igensanen.
+Abrid awezlan ma yezmer wamek
+Abrid seg ufaylu amiran
+Abrid seg ukaram n weḥraz
+Adig amezwer i imeddayen imaynuten
+Anda ara ttwarennan imeddayen imaynuten.
+Imeddayen
+Deg udakaram anaddaw ddaw ukaram amiran
+Abrid n ukaram umedday
+Sers ifuyla imaynuten n imeddayen i d-yettunulfan, am tugniwin i d-yettwarnan s uzuγer d trusi neɣ s usekles n yimesli, deg ukaram-a.
+Isem n ukaram anaddaw
+Ma yella ufaylu-inek·inem deg “vault/folder”, yerna terreḍ isem n udakaram d “attachments”, imeddayen ad ttwaḥerzen deg “vault/folder/attachments”.
+Ifuyla yettwastixren
+Ifuyla yettwastixren ad ttwaferren deg Unadi, Taskant n udlif, d tibdarin war aseɣwen, ad qellenn ad ttbanen drus deg Usenfal Arurad d isumar n yiseɣwan.
+Rnu astixer...
+Ulac istixren yettwarnan.
+{{count}} n walug
+{{count}} n yilugan
+Rnu astixer
+Sekcem abrid neɣ tanfalit talugant, amedya /daily-.*/
+Tastayt ur tezmir ara ad tili d tilemt
+Sireg tiɣṛiwin n tuɣalin URI
+Sermed aseqdec n x-callback-url s x-success neɣ x-error mi ara tsefrekḍ URI n Obsidian.
+Timeẓri
+Azenziɣ n yini azaduran
+Fren azenziɣ n yini amezwer n Obsidian.
+askar uzenziɣ n yini n unagraw n yiḍ ubrik aceɛlal
+Ini n uɣdebbu
+Fren ini n uɣdebbu i yettuseqdacen deg usnas meṛṛa.
+asebrureq n yini agejdan n ticreṭ
+Ubrik
+Aceɛlal
+Sezg ɣer unagraw
+Tasefsit
+Talqayt
+Agrudem
+Tasefsit n ugrudem
+Sers tasefsit n uzadur i Obsidian meṛṛa.
+Aswir n usemɣer
+Issenqad aswir n usemɣer amatu n usnas.
+Tasefsit n weḍris
+Sers tasefsit i teẓrigt d tmeẓriwin n tɣuri.
+Tasefsit n tallunt tasuft
+Sers tasefsit i yidgan am yiḥedran n tengalt d tsenṭit.
+{{count}} n tsefsit
+{{count}} n tisefsiyin
+Sekcem isem n tsefsit...
+Ulac tasefsit yettusagenen i yettwasnasen tura. Rnu yiwet ddaw-a.
+Tasefsit tamezwarut seg tebdart-a yellan deg unagraw-ik·im ad tettwasnes.
+Tasefsit-a ur tettwafa ara deg unagraw-ik·im.
+Tasefsit-a tettwafa deg unagraw-ik·im.
+Isem n tsefsit
+Isental n temɣiwent
+Sken yerna seqdec isental igerrzen i d-yenulfan sɣur umɣiwan.
+Snirem
+Tiddi n tsefsit
+Tiddi n tsefsit s ipiksilen i yettḥazen asiẓreg d tɣuri.
+tiddi n usemɣer n uḍris
+Aseggem arurad n tiddi n tsefsit
+Seggem tiddi n tsefsit s useqdec n Ctrl + Adrurem, neɣ s usmussu n usemɣer deg trackpad.
+Isental
+Sefrek isental yettwasbedden akked isental n umɣiwan.
+amɣiwan snirem sbedd asider 
+Sefrek
+Ulac
+Umuɣen inaṣliyen
+Umuɣen deg usnas meṛṛa ad mṣadan d unagraw n wammud. Ur ttwaḥazen ara s usentel-ik·im.
+Ldi akaram n isental
+Iḥricen CSS
+Sefrek tagrumma-inek·inem n yifuyla CSS i uṣeggem n timeẓri n usnas.
+Ulac iḥricen CSS i yettwafan.
+{{count}} yermed
+Iḥricen CSS ttwaḥerzen deg “{{path}}”.
+Ales asali n yiḥricen
+Ldi akaram n yiḥricen
+Yettwales usali n yiḥricen CSS.
+Nadi iḥricen...
+Isental yettwasbedden
+Tuṭṭfa n ugdil ur tewjid ara
+Amezwer
+Sit i wakken ad tsemɣereḍ
+Mucceḍ
+Urmid
+Aɣanib n ukatar n usfaylu
+Isbadu aɣanib n tfeggagt n uzwel n yisfuyla n Obsidian. Yeḥwaǧ allus n usekker ummid i wakken ad yettwasnes.
+Uffir (amezwer)
+Akatar n Obsidian
+Akatar anaṣli
+Tignit n usnas yugnen
+Sbadu tignit yugnen i usnas
+Fren tignit yettusagenen
+Tawila n umuɣ n tesfift
+Swel tiludna ara d-yebbanen deg umuɣ n tesfift
+Anekcum arurad ɣer ferdis n tesfift
+Fren tikli n tussda ɣef tqeffalt n tesfift deg umuɣ n tunigin. S unezwer, aya ad yeldi amuɣ yeskanayen akk iferdisen-ik·im n tesfift.
+Ldi amuɣ n tesfift
+Swel
+Sken tasfift
+Sken afeggag n yifecka ubdid ɣer yidis n usfaylu.
+Iferdisen-nniḍen n tesfift
+Amuɣ n tesfift
+Fren iferdisen i tebɣiḍ ad ilin remden deg tesfift. Zuɣeṛ yerna sers i wakken ad tbeddleḍ amizzwer.
+Sken afeggag n uzwel n yiccer
+Sken tasenṭit ufella n yal iccer.
+Tunigin yettifliwen
+Tiqeffalin n tunigin yettifliwen sennig ugbur deg wadeg ad ttwasṭefent.
+Ifeggagin idisanen yettecḍen
+Ifeggagin idisanen yettecḍen ɣer yidis n ugbur deg wadeg ad yettifliwen sennig-s.
+Agdil ummid
+Ffer s wudem awurman iferdisen n ugrudem mi ara teqqareḍ.
+Yettwafa {{count}} n usentel i umucceḍ.
+Ttwafan {{count}} n isental i umucceḍ.
+Senqed imuccḍen
+Sken imuccḍen
+Mucceḍ akk
+Isental n umɣiwan imiranen
+Tesɛiḍ tura {{count}} n usentel yettwasbedden.
+Tesɛiḍ tura {{count}} n isental yettwasbedden.
+Ldi iɣewwaṛen deg usfaylu amaynut
+Ldi iɣewwaṛen deg usfaylu-nsen i yiman-nsen deg wemkan ad tteddun deg usnas.
+Agrudem
+Aziraz
+Talqayt
+Tiqeffalin n unegzum
+Nadi tiqeffalin n unegzum
+Yeskanay-d {{count}} tqeffalt n unegzum. 
+Yeskanay-d {{count}} tiqeffalin n unegzum. 
+Tastayt...
+Kkes taqeffalt n unegzum
+Sit ɣef tqeffalt n unegzum...
+Akk
+Ccwal
+Ur yettwasdukel ara
+Yettwasdukel
+Yettwasdukel sɣur nekk
+Ulac igmaḍ i yettwafan.
+Err-d amezwer
+Sagen taladna-a
+Taqeffalt-a n unegzum tesɛa ccwal d “{{command}}”
+Taqeffalt-a n unegzum tesɛa ccwal d {{count}} n tludna-nniḍen
+Ilem
+Azrar n tsura
+Uffiren
+Rnu uffir
+Ẓreg uffir
+Sken uffir
+Ffer uffir
+Asulay
+Uffir
+isem-uffir
+Isekkilen imeẓyanen, imḍanen d yijerriden kan.
+Sekcem uffir-inek·inem.
+Werǧin yettwaddef
+Yecceḍ umucceḍ n uffir.
+Yecceḍ wernuy n uffir.
+Uffir s usulay-a yella yakan.
+Azal n uffir ur yezmir ara ad yili d ilem.
+Asulay n uffir yecceḍ. Seqdec kan isekkilen imeẓyanen, imḍanen d yijerriden. 64 isekkilen s wudem afellay.
+Ulac uffiren i yettwarnan. Uffiren ttuseqdacen i weḥraz n talɣut am tsura API d wawalen n uɛeddi i zemren ad seqdcen yisiɣzaf.
+Fren uffir
+Af-d uffir...
+Rnu uffir...
+Aseɣwen...
+Uffiren ttwaḥerzen war awgelhen acku ulac aḥraz n uffir i yellan deg unagraw-a.
+Uffiren ur ttwagelhenen ara
+Ur skanay ara tikkelt nniḍen
+Awgelhen ur yella ara
+Awgelhen yettunefk-d sɣur weḥraz n uffiren n unagraw n wammud-inek·inem. Mebla aḥraz n uffiren, uffiren-ik·im ad ttwaḥerzen war awgelhen.
+Deg Linux, iḥrazen n uffiren yettusefraken d wi:
+Amatu
+Turagt tamzenzit 
+Tasarut n turagt
+Tasarut-ik·im n turagt...
+Sermed turagt
+Sermed
+Ur yettwassen ara
+Lqem {{version}}
+Lqem n umsebded: {{version}}
+Ɣer aɣmis n yibeddilen.
+I wakken ad isefrek timahilin tineggura daɣen ad d-remseḍ ikemmusen n tɣellist ineggura, Obsidian yeḥwaǧ amucceḍ ameqran n umsebded. Teḥwaǧeḍ ad tsidreḍ yerna ad tesbeddeḍ Obsidian tikkelt nniḍen s ufus.
+Lqem amaynut ihegga i usbeddi. 
+Imuccḍen ttwassensen.
+Ales asekker
+Senqed imuccḍen
+Imuccḍen iwurmanen
+Ssens aya i wakken ad tsewḥeleḍ asnas seg usenqed n yimuccḍen.
+Mel-d ma yella asekker yeṭṭef akud ugar n wayen yetturaǧun
+Eg tawassna i wuguren deg usnas-ik·im s tmuɣli ɣer wayen yettarran asnas yettali-d ẓẓay.
+Senqed tura
+Agrudem n yizirig n tladna
+Sireg timyigawin d Obsidian seg yizirig n tladna.
+Sbedd CLI i wakken ad ixeddem deg yixf
+Jerred "obsidian" deg ubrid (PATH) i wakken ad tsirgeḍ addaf ɣer tladna "obsidian" seg yal amkan deg yixf-ik·im.
+Jerred
+Tallalt
+Lmed amek ara tseqdceḍ Obsidian yerna awi-d tallalt seg umɣiwan.
+Ldi
+Tutlayt
+Beddel tutlayt n uskan.
+Rmes ileqman n waddaf zik
+Mucceḍ s wudem awurman ɣer lqem aneggaru n waddaf zik. Ileqman-a deg-sen timahilin timaynutin maca zemren ur ttarkaden ara aṭas.
+Talqayt
+Asɣiwel n warrum
+Rmed asɣiwel n warrum, ayen iseqdacen GPU-ik·im i wakken ad yerr Obsidian d alqaq (fessus).
+Ma tessenseḍ aya, tamellit n usnas ad xuṣṣ aṭas.
+Semselsi akaram n twila
+Seqdec akaram n twila yemgaraden ɣef win n umezwer. Ilaq ad yebdu s tneqqiṭ.
+Ideg n twila ilaq ad yili d isem ameɣtu n ukaram i yebeddun s tneqqiṭ.
+Turagt
+Tasarut-inek·inem n turagt tamzenzit d “{{key}}”.
+Ijerred ɣef “{{company}}” i {{seats}} n iseqdacen. D ameɣtu ar {{expiry}}.
+Aseɣbel...
+Turagt ur teɣbil ara: 
+Kkes
+Turagt Catalyst
+Tesɛiḍ tura turagt Catalyst n weswir {{tier}}. Tanemmirt ɣef tallalt-inek!
+Ur tesɛiḍ ara turagt Catalyst. Catalyst d tikci n yiwet n tikkelt i yettallalen Obsidian ad yeqqim yettwallel 100% sɣur iseqdacen yerna ad ak-d-yefk addaf zik ɣer tmahilin timaynutin.
+Asnas
+Lmed amek ara ternuḍ tutlayt tamaynut i Obsidian.
+Amiḍan
+Amiḍan-ik·im
+Tkecmeḍ tura s yisem n {{name}} ({{email}}).
+Ur tkicmeḍ ara tura. Amiḍan yettwaḥwaǧ kan i umtawi Obsidian, Tasuffeɣt Obsidian, d yileqman n waddaf zik.
+Sali aswir n leqqem
+Turagt tamzenzit
+Mudd afus i wakken Obsidian ad yeqqim yettwallel 100% sɣur iseqdacen.
+Aɣ
+Ffeɣ
+Kcem
+Kcem ɣer Obsidian
+Jerred
+Imayl
+Imayl-ik·im...
+Isem ummid
+Awal n uɛeddi
+Awal-ik·im n uɛeddi...
+Tettuḍ awal n uɛeddi?
+Kcem
+Imayl ur yezmir ara ad yili d ilem.
+Imayl ur yeɣbil ara.
+Awal n uɛeddi ur yezmir ara ad yili d ilem.
+Anekcum yecceḍ, ttxil-k·m senqed imayl d wawal-ik·im n uɛeddi.
+Yecceḍ ujerred
+Ur tesɛiḍ ara amiḍan? 
+Jerred tura
+Tangalt 2FA n 6 n yizwilen
+Tangalt n usesteb 2FA ilaq ad tesɛu 6 n yizwilen.
+Tangalt 2FA tecceḍ, ttxil-k·m senqed asnas-ik·im n usesteb.
+Tabdart n yisiɣzaf
+Nadi isiɣzaf igejdayen
+Sti isiɣzaf s yisem neɣ aglam.
+Nadi isiɣzaf...
+Isiɣzaf n umɣiwan
+Askar ukrif
+Askar ukrif yensa. Sermed-it i wakken ad tessenseḍ isiɣzaf n umɣiwan.
+Sermed yerna ales asali
+Senqed s wudem awurman imuccḍen n yisiɣzaf
+Senqed s wudem awalan imuccḍen n yisiɣzaf.
+Isiɣzaf n umɣiwan
+Snirem yerna sbedd isiɣzaf n umɣiwan i d-yesnulfa umɣiwan-nneɣ igerrzen.
+Snirem
+Ffeɣ seg Uskar Ukrif
+Isiɣzaf n umɣiwan, am yal aseɣẓan nniḍen ara tesbeddeḍ, zemren ad d-glun s uguren n timmad n yisefka d tɣellist.
+Taɣellist n yisiɣzaf d ayen yesɛan azal ɣur-nneɣ. Atan wayen nxeddem:
+Ɣas akken nxeddem ayen iwumi nezmer, yezmer lḥal kra n usiɣzef n umɣiwan ad yexdem annect ur nelhi.
+Asenqed amezwaru n tengalt
+Isiɣzaf deg ukaram amɣiwan unṣib ttɛeddin ɣef usenqed amezwaru n tengalt sɣur tarbaɛt-nneɣ uqbel ad ttwabedren.
+Aɣbalu yeldin
+Aṭas n yisiɣzaf sɛan aɣbalu yeldin deg GitHub, ihi tzemreḍ ad tsenqdeḍ tangalt s yiman-ik·im.
+Amselken ger iyuganen
+Nesɛa amɣiwan ameqran n yineflayen i yettḥadaren wa ɣef wa.
+Tarrayt n walɣu
+Nettḍafaṛ yerna nettekkes isiɣzaf ixuṣṣen mi ara d-yili walɣu sɣur useqdac.
+Lmed ugar ɣef tɣellist n yisiɣzaf
+Sireg isiɣzaf n umɣiwan
+Isiɣzaf zemren ad selkmen tangalt ur nettwassen ara deg yibenk-ik·im. Nweṣṣa-k·m ad texdmeḍ aḥraz i yisefka-k·im uqbel ad ten-tsermedeḍ.
+Ales asermed n yisiɣzaf yettwasbedden
+Err-d {{count}} n usiɣzef yettwasbedden yakan.
+Err-d {{count}} n yisiɣzaf yettwasbedden yakan.
+Sken talɣut n usiɣzef
+Isiɣzaf yettwasermeden
+Isiɣzaf-a ad ttwasermeden ticki teffɣeḍ seg Uskar Ukrif.
+Tettamneḍ ameskar n ukaram-a n weḥraz?
+Telliḍ akaram-a n weḥraz i tikkelt tamezwarut, yerna yusa-d s kra n yisiɣzaf.
+Ma tewwiḍ-d akaram-a n weḥraz sɣur wemdan nniḍen, ḥṣu belli isiɣzaf i wumi ur yettwassen ara uɣbalu zemren ad d-awin iqemmṛen n tɣellist.
+Ma ur tettamneḍ ara s wudem ummid ameskar n ukaram-a n weḥraz, nweṣṣa-k·m ad teqqimeḍ deg Uskar Ukrif, i wakken isiɣzaf yellan deg ukaram-a n weḥraz ur selkamen ara.
+Amen ameskar yerna sermed isiɣzaf
+Snirem akaram n weḥraz deg Uskar Ukrif
+Nadi isiɣzaf n umɣiwan...
+Yecceḍ usali n yisiɣzaf n umɣiwan.
+Yettwasbedd
+Sbedd
+Sermed
+Ssens
+Nɣel aseɣwen n beṭṭu
+Sken ifatusen
+Ldi asebter n umɣiwan
+Iɣewwaṛen
+Mudd tawsa
+Ulac igmaḍ i yettwafan.
+Ulac ifuyla n melmi kan i yettwafan. Aru i wakken ad tnadiḍ...
+Yecceḍ usali n umeskan n usiɣzef.
+Lqem: {{version}}
+ (yettwasbedd tura: {{version}})
+Sɣur 
+Akufi: 
+Amucceḍ aneggaru: 
+Sken amucceḍ aneggaru
+Asiɣzef-a ur isefrak ara ibenk-ik·im.
+Mucceḍ
+Asiɣzef-a ur d-yefki ara afaylu README.
+Asbeddi n usiɣzef “{{name}}”...
+Yecceḍ usbeddi n usiɣzef “{{name}}”.
+Asbeddi n usiɣzef “{{name}}” yedda.
+Tecceḍ tukksa n usiɣzef “{{id}}”.
+Yecceḍ usensi n usiɣzef “{{id}}”.
+Isiɣzaf yettwasbedden
+Ales asali n yisiɣzaf
+Yettwales usali n yisiɣzaf n wis kraḍ.
+Kkes
+Kkes asiɣzef
+Tebɣiḍ s tidet ad tekksed asiɣzef-a? Aya ad yekkes akaram n usiɣzef.
+Ldi akaram n yisiɣzaf
+Senqed imuccḍen
+Mucceḍ akk
+Isiɣzaf imiranen
+Asenqed n yimuccḍen...
+Tesɛiḍ tura {{count}} n usiɣzef yettwasbedden.
+Tesɛiḍ tura {{count}} n yisiɣzaf yettwasbedden.
+Ulac imuccḍen n yisiɣzaf i yettwafan.
+Yettwafa {{count}} n usiɣzef i umucceḍ.
+Ttwafan {{count}} n yisiɣzaf i umucceḍ.
+Mucceḍ ɣer lqem {{version}}
+Nadi isiɣzaf yettwasbedden
+Sti isiɣzaf yettwasbedden s yisem neɣ s weglam.
+Nadi isiɣzaf yettwasbedden...
+Sken kan wid yettwasbedden
+Ulac isiɣzaf yettwasbedden.
+Mudd tawsa i tallelt n {{name}}
+Ineflayen n yisiɣzaf d iwiziwen n umɣiwan i ixeddmen tiɣawsiwin igerrzen s tayri. Ma yella twalaḍ asiɣzef-a isɛa tanfa, ttxil-k·m xemmem ad tefkeḍ afus n tallalt i usnefli-ines.
+100% n tedrimen-ik·im ad ṛuḥent ɣer uneflay n usiɣzef; Obsidian ur ittekkes ara aḥric-is. Tiɣeṛɣeṛt n tallalt n tedrimen i d-fernen tezmer ad tekkes kran seg tedrimt-a.
+Tanemmirt ɣef tallalt-ik·im igerrzen!
+Mudd tallelt i usiɣzef-a:
+Yeskanay-d {{pluginCount}}
+Wid yettwasidren aṭas
+Yeffeɣ-d melmi kan
+Yettwamucceḍ melmi kan
+S wagemmay
+Yettwamucceḍ {{time}}
+Tafeggagt n yifecka
+Swel tigawt taruradt n tiliɣri
+Swel anta taladna ara tenḍeḥḍ mi ara d-tjebdeḍ seg ufella. Taladna tamirant tettwasbedd ɣef “{{command}}”.
+Tigawt ur tettwaswel ara
+Swel
+Fren Tigawt Taruradt...
+Ulac
+Sefrek tixtiṛiyin n tfeggagt n yifecka
+Rnu aseɣwen agensan
+Rnu aseddu
+Rnu ticṛeṭ
+Senfel tasenṭit
+Senfel ajeṛṛeḍ ɣef weḍris
+Qluqel asebrureq
+Qluqel tangalt
+Qluqel iḥder n ubedder
+Qluqel tusnakt deg yizirig
+Qluqel iḥder n tusnakt
+Rnu aseɣwen Markdown
+Qluqel tabdart s tlilac
+Qluqel tabdart s wuṭṭunen
+Siẓ aferdis n tebdart
+Kkes asiẓi n uferdis n tebdart
+Semmet
+Ales
+Sali taḥnaccaṭ
+Sider taḥnaccaṭ
+Smutti taḥnaccaṭ ɣer zelmeḍ
+Smutti taḥnaccaṭ ɣer yeffus
+Ddu ɣer yizirig amezwaru
+Ddu ɣer yizirig aneggaru
+Qluqel anasiw
+Swel tafeggagt n yifecka n tiliɣri
+Tixtiṛiyin yettwarnan
+Ugar n tixtiṛiyin n tfeggagt n yifecka
+Ger amedday
+Ṭṭef tugna
+Fren afaylu
+Af-d...
+Semselsi...
+Ffeɣ seg unadi
+Uḍfir
+Uzwir
+Af-d akk
+Semselsi
+Semselsi akk
+Aru #
+i useɣwen n tsenṭit
+Aru ^
+i useɣwen n yiḥedran
+Aru |
+i ubeddel n weḍris n uskan
+Aḍris n uskan
+Tasenṭit
+Ulac amṣada i yettwafan
+Tiddi n tugna: {{size}}px di tehri
+i weqbal
+Awennit amaynut n uḍar usebter...
+Ulac isumar...
+Rnu ɣer umawal
+Ẓreg aseɣwen
+Ẓreg ticṛeṭ
+Ẓreg iḥder-a
+Kkes awennit n uḍar ysebter d temselɣut
+Wennez tiddi
+Kkes tugna
+Kkes tugna
+Ulac tasenṭit
+Tasenṭit {{level}}
+Sifeḍ ɣer PDF
+Sifeḍ “{{filename}}” ɣer PDF s yiɣewwaren yellan ddaw-a.
+Tiddi n usebter
+Seddu isem n ufaylu d azwel
+Agama
+Tama
+S umezwer
+Adday
+Ulac
+Afmiḍi n wefnaẓ
+Sifeḍ ɣer PDF
+Ḍfaṛ aseɣwen
+Ldi aseɣwen
+Nadi ticṛeṭ
+Ur yezmir ara ad yaf:
+D awezɣi tifin n “{{subpath}}” deg {{file}}
+Ldi deg usnas amezwer
+Tafeggagt tidisant d tilemt, ɛreḍ ad d-tzuɣṛeḍ iccer ɣer dagi.
+Derrec
+Fneẓ
+Yecceḍ weḥraz n ufaylu “{{filepath}}”. {{message}}. Xdem aḥraz i ugbur n ufaylu-a tura i wakken ur tesṛuḥuyeḍ ara isefka.
+Yecceḍ usali n usiɣzef “{{plugin}}”
+Asiɣzef “{{plugin}}” yemlal-d tuccḍa deg usali
+{{plugin}} ur yuli ara. Asiɣzef-a ur yemsaṣa ara akked Obsidian v{{version}}.
+{{plugin}} ur ixeddem ara tura. Nweṣṣa-k·m ad t-tekkseḍ.
+D awezɣi asali n usiɣzef {{plugin}} v{{version}}. Lqem-a yettwamel-d belli yettawi-d uguren. Ttxil-k·m senqed ma yella lqem amaynut n usiɣzef-a.
+Yecceḍ ulday n “{{filepath}}”
+Asifeḍ n “{{filename}}” ur yeddi ara
+Taskant “{{name}}” temmuger-d tuccḍa mi ara temdel
+D awezɣi ulday n wemkan “{{href}}”
+Ulac afaylu
+“{{file}}” yettwabeddel s wudem uffiɣ, azday n yibeddilen s wudem awurman.
+Sefrek ikaramen n weḥraz...
+Tallalt 
+Iɣewwaṛen
+Zuɣeṛ akken ad talseḍ aseggem 
+Askar n uskan umezwer yettwasenfel ɣer taskant n tɣuri.
+Askar n uskan n umezwer yettwasenfel ɣer taskant n teẓrigt.
+I useqdec n tmahilt-agi, ttxil-k·m ales asbeddi s umsebded aneggaru i yestufan deg usmel-nneɣ Web.
+Akud n usekker aẓayan yettwaf.
+Tamahilt-a tella kan deg usnas n tnarit.
+Err-d iɣewwaren imezwar
+Nɣel ɣer tecfawit
+Nɣel
+Yettwanɣel ɣer tecfawit-ik·im
+{{item}} yettwanɣel ɣer tecfawit-inek·inem
+D awezɣi anɣal ɣer tecfawit-inek·inem
+Tastayt... 
+Tella-d tuccḍa deg ubeggeḍ n yiḥder n tengalt.
+Yeldi ufaylu “{{path}}”
+Afaylu “{{name}}” ur yettwafa ara.
+Tigawt URI ur tettwaɛqel ara: {{action}}
+Kkes 
+Asmiter n ukaram n weḥraz...
+Kra n tmahilin zemrent ur stufant ara alamma yekfa waya.
+Asmiter yekfa.
+Wagi d akaram n weḥraz n tenkult n yijdi.\nIbeddilen ara texdmeḍ deg ukaram-a ad ṛuḥen.
+IndexedDB yettwasra i tamahilt-agi, maca yettwasnes akka tura.
+Ma yella tseqdaceḍ iOS s waskar n usekkweṛ, ttxil-k·m kkes Obsidian seg iɣewwaṛen "Tawila n tunigin ɣef Web" n waskar n usekkweṛ.
+Sekcem iwakken ad d-tesnulfuḍ
+Lqem yewjed
+Talɣut useɣti 
+Lmed ugar
+Mačči tura
+Rnu
+Sefrek 
+Iccer amaynut
+Ffer tasfift
+Iccer-a yecɣel tura, ɛreḍ tikkelt nniḍen ticki
+Amasal
+Taseddaṛt
+Ger
+Amezwer
+Azeggaɣ
+Aččinawi
+Awraɣ
+Azegzaw
+Anili
+Amidadi
+Rnu aseɣwen
+Rnu aseɣwen uffiɣ
+Tiɣṛi
+Izirig aglawan
+Iḥder n tengalt
+Iḥder n tusnakt
+Tafelwit
+Awennit n uḍar usebter
+Azuran
+Tangalt
+Awennit
+Sebrureq
+Uknan
+Yettwajerreḍ
+Tusnakt
+Tabdart s tlilac
+Tabdart n tiwuriwin
+Tabdart s wuṭṭunen
+Tasenṭit {{level}}
+Tafekka
+Sfeḍ amasal
+Abdar
+Ilem
+Ulac afaylu yeldin
+Snulfu-d tazmilt tamaynut
+Ddu ɣer ufaylu
+Wali ifuyla ineggura
+Mdel
+Mdel akk iccaren “{{id}}” ({{count}})
+Asiɣzef dayen ur yermid ara
+Asiɣzef i d-yesnulfan iccer-a ({{type}}) iruḥ.
+Iwenniten n lqem {{version}}
+Ulac iwenniten n lqem yellan i {{version}}.
+Ur yezmir ara ad isali iwenniten n lqem n {{version}}.
+Yeffeɣ-d deg {{date}}
+D acu i d amaynut deg lqem {{version}}
+Askan amiran: taẓrigt
+Askan amiran: taɣuri
+Tasefift
+Agalis n tama tazelmaṭ
+Agalis n tama tayeffust
+Sit iwakken ad tẓergeḍ
+Sit iwakken ad teɣreḍ
+{{key}}+Sit iwakken ad teldiḍ ɣer yeffus
+Tekki ɣef {{key}}+C iwakken ad tenɣeleḍ aɣbalu
+Nadi...
+Semselsi...
+Ẓreg
+Kkes
+Kkes seg tebdart
+Snifel isem
+Azarskan
+Tixtiṛiyin nniḍen
+Mdel
+Mdel akk
+Mdel {{count}} yiccer
+Mdel {{count}} yiccaren
+Mdel wiyiḍ
+Mdel iccaren deffir
+Sbeḍ
+Kkes asbeḍ
+Kkes aseɣwen n yiccer
+Qqen d yiccer...
+Askar n weɣbalu
+Askan n tɣuri
+Rnu arat n ufaylu
+Kkes
+Kkes afaylu
+Snulfu-d afaylu-a
+Ldi aseɣwen
+Ldi deg yiccer amaynut
+Ldi ɣer yeffus
+Nɣel URL
+Nɣel
+Gzem
+Senteḍ
+Nɣel abrid
+Nɣel tugna
+am URL n Obsidian
+seg waẓaṛ n unagraw
+seg ukaram n weḥraz
+Senteḍ am weḍris aḥerfi
+Nadi “{{selection}}”
+Fren akk
+Snifel isem n tsenṭit-a...
+Snifel isem n usulay n yiḥder-a...
+Ldi deg usfaylu amaynut
+Smutti ɣer usfaylu amaynut
+Ldi aseɣwen uffiɣ
+Semnenni iccaren
+Kkes asemnenni n yiccaren
+Ldi askan yeqqnen
+Sit iwakken ad tsimɣureḍ
+Sit iwakken ad fenẓeḍ
+Tazaẓlut
+Ur d-yennulfa ara yakan, fren iwakken ad t-id-tesnulfuḍ
+Lqem
+Snulfu-d akaram n weḥraz adigan
+Ldi akaram am ukaram n weḥraz n Obsidian
+Fren akaram yellan n ifuyla Markdown.
+Snulfu-d akaram n weḥraz amaynut
+Snulfu-d akaram n weḥraz amaynut n Obsidian ddaw ukaram.
+Ldi akaram n weḥraz seg Obsidian Sync
+Sbedd akaram n weḥraz yettwamtawan d ukaram n weḥraz anmeggag yellan.
+Isem n ukaram n weḥraz
+Fren isem i ukaram-ik·im.
+Ideg
+Fren ideg anda ara yers ukaram-ik·im n weḥraz amaynut.
+Akaram-ik·im amaynut ad yers deg: 
+Sken akaram n weḥraz deg unaram n unagraw
+Sken akaram n weḥraz deg Finder
+Beddel isem i ukaram n weḥraz...
+Nɣel asulay n ukaram n weḥraz
+Yella yakan ukaram n weḥraz s yisem-a.
+Ur tezmireḍ ara ad tsiwḍeḍ akaram n weḥraz ɣer ukaram anaddaw n ines.
+Ur tezmireḍ ara ad tbeddleḍ isem i ukaram n weḥraz yeldin akka tura.
+Tuccḍa deg ubeddel n yisem n ukaram n weḥraz.
+Asnifel n yisem n ukaram n weḥraz yedda akken iwata.
+Smutti akaram n weḥraz...
+Fren akaram aɣerwaḍ
+Yella yakan ukaram n weḥraz deg uɣerwaḍ-a.
+Ur tezmireḍ ara ad tsiwḍeḍ akaram n weḥrez yeldin.
+Tuccḍa deg usiweḍ n ukaram.
+Akaram yettwasiweḍ akken iwata.
+Kkes seg tebdart
+Asekker arurad
+Ldi
+Inig
+Qqen
+Snulfu-d 
+Uɣal ɣer deffir
+Isem n ukaram n weḥraz ur yezmir ara ad yili d ilem.
+Isem n ukaram n weḥraz ur yezmir ara ad ifakk s tneqqiṭ. 
+Ttxil-k·m fren akaram ameɣtu. 
+Tuccḍa deg usnulfu n ukaram n weḥraz. 
+Ur yezmir ara ad yesnulfu akaram n weḥraz deg yideg-a. Ttxil-k·m senqed ideg akked turagt. 
+Tuccḍa deg ulday. 
+Ur tezmireḍ ara ad tekksed akaram n weḥraz yeldin tura. 
+Awi-d tallalt 
+Imayl 
+Imayl-ik·im... 
+Awal uffir 
+Awal-ik·im uffir... 
+Anekcum 
+Asbeddi 
+Snulfu-d akaram n weḥraz amtawan deg yibenk-a. 
+Wagi d akaram n weḥraz anmeggag n inek·inem. 
+Wagi d akaram n weḥraz anmeggag yettwabḍa yid-k·m.
+Imektiyen-ik·im d ayla-k·m. 
+yettwamtawa 
+ur yettwamtawa ara 
+Ulac 
+Yettuwelleh
+Obsidian yeḥrez tizmilen-ik·im deg ibenk-ik·im, iwakken ad ten-tafeḍ s urured d tbaḍnit, ula s waskar waruqqin.\nIsefka-inek·inem ttwajmɛen deg ukaram adigan aɣelsan iwumi qqaren **akaram n weḥraz**. 
+Rnu akaram n weḥraz
+Seqdec akaram-iw n weḥraz yellan
+I wakken ad tekcmeḍ ɣer tezwamil-inek deg yibenkan nniḍen, issefk ad tesweleḍ amtawa.
+Imi Obsidian iḥerrez tizwamil-inek ɣef yibenkan-inek, issefk fell-ak ad tesweleḍ amtawa ma tebɣiḍ ad tekcmeḍ ɣer tezwamil-inek deg tiliɣri nniḍen neɣ aselkim.\nTzemreḍ ad tesweleḍ amtawa tura, neɣ ebd kan tira tura ad tesweleḍ amtawa s sakin.
+Swel amtawa
+Kemmel war amtawa
+Zgel
+Swel akaram-inek n weḥraz amaynut.
+Rnu akaram n weḥraz
+Aswel n umtawa
+Rnu akaram n weḥraz yettwamtawan deg umiḍan-ik·im Obsidian i wakken ad tekcmeḍ ɣer isefka-k·m seg yibenkan nniḍen.
+Awgelhen n umtawi
+Awgelhen seg yixef ɣer yixef
+Yettak-d taɣellist i yiǧehden ugar maca issefk fell-ak·am ad tḥerzeḍ awal n uɛeddi n uwgelhen-ik·im s tɣellist
+Awgelhen amezwer
+Yesseqdac tasarut yettusefrken sɣur Obsidian i wakken ad iḥrez isefka-k·m mi tt-ddun d wid yellan ɣef yiqeddacen-nneɣ.
+Iɣewwaṛen n umtawa
+Tebɣiḍ ad testixreḍ kra n ikaramen neɣ ifuyla mi ara txeddmeḍ amtawa ɣer ibenk-a?
+Bdu amtawa
+Rnu amiḍan Obsidian neɣ kcem
+Jerred
+Kcem
+Ales azen n yimayl
+Tesɛiḍ ikaramen n weḥraz yettwamtawan
+Tebɣiḍ ad ternuḍ akaram n weḥraz amaynut neɣ ad teqqneḍ ɣer ukaram yettwamtawan yellan yakan?
+Rnu akaram n weḥraz amaynut n umtawa
+Fren akaram n weḥraz yellan
+Ffeɣ
+Awal n uɛeddi yettwattun
+Isem n ukaram n weḥraz
+Amkan n ukaram n weḥraz
+Asekles n yibenk
+Yettak isirigen i isefka n Obsidian ad ten-kcemen isnasen nniḍen.
+Yesra isirigen nniḍen.
+Asekles n usnas
+Isefka-k·m ur ttwakcamen ara i yisnasen nniḍen.
+Android ad yekkes isefka-k·m ma tekkseḍ Obsidian.
+Akaram-ik·im n weḥraz amaynut ad yettwasres deg {{vaultLocation}}
+Tamnaḍt
+Fren tamnaḍt n uqeddac i d-iqerben ɣuṛ-k·m i wakken ad yiwzil umtawa.
+Tasarut n uwgelhen
+Awal-a n uɛeddi ur yezmir ara ad yettwabeddel sakin. Ma tettuḍ awal-ik·im n uɛeddi, kra n yisefka inmeggagen deg iqeddacen n umtawa ad ilin ṛuḥen i lebda.
+Akaram-iw n weḥraz
+Awurman
+Fren akaram n weḥraz
+Amiḍan-ik·im **{{email}}** yesɛa ikaramen n weḥraz yellan i wumi tzemreḍ ad teqqneḍ.
+Kcem ɣer umiḍan-ik·im Obsidian
+Awal n uɛeddi yettwattun
+Ales asbeddi n wawal n uɛeddi
+Nuzen-d imayl ɣer {{email}} i walsi n usbeddi n wawal-ik·im n uɛeddi.
+Fren amek ara tmataweḍ tizwamil-ik·im
+I wakken ad tseqdceḍ Obsidian ɣef yibenkan-ik·im issefk ad tmataweḍ isefka-ik·im.
+S wudem war asaraf gar yal ibenk d unagraw n wekcam.
+Yettwaḥrez s wawal n uwgelhen s wudem tizeɣt iǧehden seg yixef ɣer yixef.
+Yesra amiḍan Obsidian.
+Ala kan i iOS d macOS.
+Ur yettwawgelhen ara s umezwer.
+Yesra isiɣzaf neɣ ifecka n wis kraḍ.
+Yezmer ur yettwawgelhen ara s umezwer.
+Seqdec Amtawa Obsidian
+Seqdec iCloud
+Seqdec amtawa n wis kraḍ
+Tarrayin nniḍen n umtawa
+Seqdec tarrayin n umtawa yettusefraken
+Anda yezga ukaram-ik·im n weḥraz?
+Nniḍen
+Amtawa n wis kraḍ
+Ɣef yibenk-a
+Qqen ɣer iCloud
+Qqen ɣer umeẓlu n umtawa nniḍen
+Qqen ɣer Umtawa n Obsidian
+Fren akaram
+Tarrayin nniḍen n umtawa
+Obsidian isefrak s wudem unṣib snat n tarrayin n umtawa: **Amtawa n Obsidian** d **iCloud**.\nMaca, imi Obsidian yettak-ak·am asenqed ɣef yisefka-k·m, llan tixtiṛiyin nniḍen n umtawa i tzemreḍ ad tseqdceḍ.\nTixtiṛiyin-a seddunt isiɣzaf n wis kraḍ d yifecka nniḍen i yezmren ad sran asbeddi aleqayan.\nI wakken ad tseqdceḍ tarrayt n umtawa nniḍen, **rnu akaram n weḥraz** yerna ḍfaṛ tinaḍin i d-yettunefken sɣur usiɣzef neɣ imefki n umtawa n wis kraḍ.
+Sekcem imayl-ik·im
+Imayl-ik·im yettuseḥwaǧ i wakken ad ternuḍ amiḍan Obsidian.
+Sekcem isem-ik·im d wawal n uɛeddi
+Qqen ɣer Umtawa n Obsidian
+Ad termesḍ imayl qrib ɣer **{{email}}** s tinaḍin i wakken ad teqqneḍ ɣer Umtawa n Obsidian.
+Akaram-ik·im n weḥraz iCloud ur yettwafa ara. Aya yezmer ad yili ɣef yiwet seg tmentilin-a:
+Akaram-ik·im n weḥraz yella ɣef umiḍan iCloud yemgaraden ɣef win s wayes tkecmeḍ tura deg yibenk-a.
+Akaram-ik·im n weḥraz ur yettwaḥrez ara deg ukaram afellay Obsidian n iCloud Drive-ik·im.
+iCloud ur yettusefrak ara
+Amtawa n iCloud yestufa kan ɣef yibenkan n Apple. Ma yella akaram-ik·im n weḥraz yettmatawa tura s iCloud, lmed amek ara tinigeḍ akaram-ik·im n weḥraz ɣer umeẓlu n umtawa nniḍen.
+Sireg adduf ɣer ufaylu
+Anekcum tura...
+Isem n ukaram n weḥraz yettuseḥwaǧ
+Imayl amaynut n usentem yettwazen.
+Yecceḍ alus n tuzna n yimayl.
+Amkan n ukaram n weḥraz ilaq ad yili d akaram.
+Ansuf
+Wagi d *akaram-inek·inem n weḥraz* amaynut.\n\nXdem tazmilt ɣef kra, [[rnu aseɣwen]], neɣ ɛreḍ [Amaktar](obsidian://show-plugin?id=obsidian-importer)!\n\nMi theggaḍ, kkes tazmilt-a yerna err akaram n weḥraz d ayla-k·m.
+Ger aseɣwen dagi
+Ger iseɣwan dagi
+Smatti ɣer “{{folder}}”
+Err itri i ufaylu-a
+Err itri i yifuyla-a
+Ldi deg yiccer-a
+Ldi d iccer amaynut
+Semɣer
+Semẓi
+Err-d ɣer wadda
+Mdel asfaylu
+Asali n Obsidian...
+Temlal-d tuccḍa deg usali n Obsidian.
+Ales asali n usnas
+Ales asali n usnas deg Uskar Ukrif
+Ldi akaram n weḥraz nniḍen
+Asali n yisiɣzaf...
+Asiɣzef “{{plugin}}” yeṭṭef aṭas n wakud i usali. 
+Asali n ukaram n weḥraz...
+Yecceḍ usali n ukaram n weḥraz: 
+Asali n tzarkatut...
+Asali n tallunt n umahil...
+Kter ɣer ukaram n weḥraz
+Rnu aḍris ɣer ufaylu:
+Fren afaylu...
+
+Ger aseɣwen ɣer “{{filename}}”
+Sken taskant tamatut n yicceran
+Aktar...
+Aktar yedda
+Yecceḍ waktar n ufaylu “{{filename}}”
+Sit ɣef deffir tikkelt nniḍen i wakken ad teffɣeḍ.
+Tasedmirt
+Iɛeǧb-ak·am Obsidian? Allel-aɣ s tikci n wazal.
+Fk azal i usnas
+Kkes
+Ifuyla n twila ttumuccḍen seg iCloud, tulsa usali yettwasera
+Ales asali
+Asmel unṣib n tallalt
+Ɣeṛ isemliyen unṣiben n tallalt n Obsidian, yestufan s waṭas n tutlayin.
+Rzu
+Ameslay Discord
+Discord d amkan yufraren i udiwenni d yiseqdacen nniḍen irmitan n Obsidian seg umaḍal merra.
+Lteɣ
+Anmager unṣib
+Mɛawanet gar-awen, sutar tiseɣnin, mel-d tuccḍiwin, yerna xdemet ameslay lqayen ɣef usefrek n tmusni.
+Akaram n weḥraz n tenkult n yijdi
+Urar yerna ɛreḍ aṭas n tseɣnin. Ttxil-k·m ḥṣu belli ibeddilen-ik·im ur ttwaḥerzen ara.
+Sekles afaylu amiran
+Sider imeddayen i ufaylu amiran 
+Ḍfaṛ aseɣwen ddaw tḥnaccaṭ
+Ldi aseɣwen ddaw tḥnaccaṭ deg yiccer amaynut
+Ldi aseɣwen ddaw tḥnaccaṭ ɣer yeffus 
+Ldi aseɣwen ddaw tḥnaccaṭ deg usfaylu amaynut
+Asaḍas ɣef ugraw n waccaren ɣer ufella 
+Asaḍas ɣef ugraw n waccaren ɣer ddaw-a 
+Asaḍas ɣef ugraw n waccaren ɣer zelmaḍ
+Asaḍas ɣef ugraw n waccaren ɣer yeffus 
+Qluqel amsenṭeḍ
+Bḍu ɣer yeffus 
+Bḍu ɣer wadda
+Senfel icceran isemnennayen 
+Senfel teɣzi n yizirig yettwaɣren 
+Senfel uṭṭunen n yizirigen 
+Uɣal ɣer deffir 
+Ddu ɣer zdat 
+Senfel askar aceɛlal/ubrik
+Beddel asentel...
+Beddel akaram n weḥraz...
+Ldi akaram n weḥraz...
+Ldi afaylu seg berra n ukaram n weḥraz...
+Sefrek ikaramen n weḥraz 
+Nadi deg ufaylu amiran 
+Nadi d usemselsi deg ufaylu amiran 
+Rnu arat n ufaylu 
+Isem (A ar Z) 
+Isem (Z ar A) 
+Rnu tazaẓlut 
+Sfeḍ iraten n ufaylu 
+Ldi iɣewwaren 
+Ldi tallalt 
+Senfel taskant n teẓrigt/tɣuri 
+Senfel taskant srid/askar n uɣbalu
+Kkes afaylu amiran 
+Iccer amaynut
+Asfaylu amaynut 
+Sken iḍumman
+Mdel akk icceran
+Mdel iccer amiran 
+Mdel wiyaḍ deg ugraw n yicceran
+Mdel akk icceran nniḍen
+Mdel agraw-a n yicceran 
+Senfel tafeggagt tidisant ɣer zelmeḍ 
+Senfel tasfift 
+Senfel tafeggagt tidisant ɣer yeffus 
+Senfel askar amezwer i yicceran imaynuten 
+Rnu taḥnaccaṭ ufella 
+Rnu taḥnaccaṭ ddaw-a 
+Asaḍas ɣef tezmilt taneggarut
+Senfel afnaẓ n yiraten deg ufaylu amiran 
+Senfel afnaẓ ɣef yizirig amiran 
+Fneẓ akk tisenṭa d tebdarin 
+Fser akk tisenṭa d tebdarin 
+Fneẓ ugar 
+Fneẓ drus 
+Sali izirig 
+Sider izirig 
+Kkes tasenṭit 
+Sbadu d tasenṭit {{level}}
+Qluqel azuran 
+Qluqel uknan
+Qluqel asebruraq
+Rmed/sens asebrureq {{color, lowercase}}
+Qluqel awennit 
+Sfeḍ amsal 
+Ger aseɣwen Markdown 
+Qluqel asenqed n teɣdirawt
+Kkes taseddart
+Qluqel addad n tenkalt n usenqed 
+Ales tililect/tankalt n usenqed 
+Ger asiwel 
+Ger iḥder n tengalt 
+Ger iḥder n tusnakt 
+Ger alugan aglawan
+Ger tafelwit 
+Ger tazmilt n uḍar usebter
+Beddel isem n ufaylu 
+Nɣel abrid n ufaylu amiran seg ukaram n weḥraz 
+Nɣel abrid n ufaylu amiran seg uẓaṛ n unagraw 
+Nɣel URL n Obsidian i ufaylu amiran 
+Sifeḍ ɣer PDF... 
+Ales asali n usnas war asekles
+Semmet amdal n yiccer 
+Sken amuɣ asatal ddaw tḥnaccaṭ 
+Sken tilɣa n useɣti 
+Ldi akaram n weḥraz n tenkult n yijdi
+Qluqel asfaylu dima ufella 
+Semɣer tiddi n tsefsit
+Semẓi tiddi n tsefsit
+Semɣer
+Semẓi
+Wennez asemɣer 
+Qluqel taskant n tɣuri
+Smutti iccer amiran ɣer usfaylu amaynut 
+Ldi iccer amiran deg usfaylu amaynut 
+Beddel isem n ufaylu amiran 
+Ddu ɣer yiccer uzwir
+Ddu ɣer yiccer uḍfir
+Ddu ɣer yiccer aneggaru 
+Ddu ɣer yiccer #{{n}}
+Sken tizmilin n lqem
+Aya ad iḥaz {{links}} deg {{files}}.
+Aleqqem n {{links}} deg {{files}}. 
+Mucceḍ iseɣwan 
+Tebɣiḍ ad tmucceḍeḍ iseɣwan igensanen i yeqqnen ɣer ufaylu-a? 
+Mucceḍ dima 
+Yiwet n tikkelt kan
+Ur smuccuḍ ara 
+Tebɣiḍ s tidet ad tekksed “{{filename}}”? 
+Ad yettwasmutti ɣer yiḍumman n unagraw-inek·inem. 
+Ad yettwasmutti ɣer yiḍumman-inek·inem n Obsidian, yezgan deg ukaram uffir “.trash” deg ukaram-ik·im n weḥraz. 
+Afaylu ad yettwakkes s wudem imezgi. 
+Akaram-a ur yelli ara d ilem. 
+Ma tkemmleḍ, akk ifuyla yellan deg ukaram-a ad ttwakksen. 
+Kkes akaram 
+Kkes 
+Ur d-steqsay ara tikkelt nniḍen
+Yella tura {{count}} n useɣwen i d-yemmalen ɣer ufaylu-a. 
+Llan tura {{count}} n yiseɣwan i d-yemmalen ɣer ufaylu-a.
+Kkes afaylu
+Sider imeddayen
+Ulac imeddayen uffiɣen deg tezmilt-a.
+Yettwasider {{count}} umedday.
+Ttwasidren {{count}} n yimeddayen.
+Yettwamucceḍ {{count}} ufaylu.
+Ttwamuccḍen {{count}} n yifuyla.
+Ttwassuɣalen yibeddilen ɣer {{count}} ufaylu.
+Ttwassuɣalen yibeddilen ɣer {{count}} n yifuyla.
+Ulac tuqqna ɣer Internet
+Asali...
+Sefrek
+Sken
+Sentem
+Semmet
+Sireg
+Zgel
+Sider
+Ifukk
+Sekles
+Ḥbes
+Beddel
+Kemmel
+Fren
+Ales aɛraḍ
+Mucceḍ
+Semmet
+Aheggi n PDF...
+Azwel n tezmilt
+Isem n ufaylu
+Isem amaynut
+Tuccḍa
+Yettwafren
+Asnifel n yisem n ufaylu yedda akken iwata.
+Yecceḍ wezday n tezmiltin: {{message}}
+Afaylu neɣ akaram “{{path}}” ulac-it.
+Obsidian ur yezmir ara ad yeldi ifuyla “.{{extension}}”.
+Tasenṭit ur tezmir ara ad tili d tilemt
+Asulay n yiḥder ur yezmir ara ad yili d ilem
+Asulay n yiḥder yezmer ad yesɛu kan isekkilen igmumḍinen neɣ ajeṛṛid
+Snifel isem n tsenṭit
+Beddel isem n usulay n yiḥder
+Kkes imeddayen n ufaylu?
+Amedday-a ur yettuseqdac ara dayen deg tezmiltin. Tebɣiḍ ad t-tekkseḍ?
+{{count}} n yimeddayen-a ur ttuseqdacen ara dayen deg tezmiltin. Tebɣiḍ ad ten-tekkseḍ?
+Aseklu n yifuyla
+Agalis n tugniwin
+Tazmilt Tamaynut
+Tazmilt Tamaynut ɣer Yeffus
+Iccer Amaynut
+Asfaylu Amaynut
+Ldi s Urured...
+Ldi afaylu...
+Ldi Akaram n Weḥraz...
+Mdel Iccer
+Mdel Asfaylu
+Nadi
+Semselsi
+Tiɣṛi
+Aseɣwen Markdown
+Aseɣwen
+Tasenṭit {{level}}
+Tafekka
+Abdar
+Sifeḍ ɣer PDF...
+Ger Amedday...
+Iḥder n Tengalt
+Iḥder n Tusnakt
+Tafelwit
+Awennit n uḍar usebter
+Azwel deg izirig
+Uṭṭunen n yizirigen
+Tabdart s Tlilac
+Tabdart s Wuṭṭunen
+Tabdart n Tiwuriwin
+Azuran
+Tangalt
+Awennit
+Uknan
+Tusnakt
+Asebrureq
+Yettwajerreḍ
+Awennit
+Afnaẓ
+Fneẓ Akk
+Fser Akk
+Fneẓ Ugar
+Fneẓ Drus
+Askar n Uɣbalu
+Taskant n Tɣuri
+Sken Talɣut n Useɣti
+Ldi Akaram n Weḥraz n Tenkult n Yijdi
+Smutti ɣer Usfaylu Amaynut
+Uɣal ɣer Deffir
+Ddu ɣer Zdat
+Agalis n Tama Tazelmaṭ
+Agalis n Tama Tayeffust
+Tasfift
+Bḍu ɣer Yeffus
+Bḍu ɣer Wadda
+Iwenniten n Lqem
+Isiɣzaf
+Ifuyla
+Snirem ifuyla d yikaramen deg ukaram-ik n weḥraz.
+Ldi anaram n yifuyla
+Sken anaram n yifuyla
+Snulfu-d tazmilt tamaynut
+Snulfu-d akaram amaynut
+Snulfu-d tazmilt tamaynut deg yiccer amiran
+Snulfu-d tazmilt ɣer yeffus
+Sken s wudem awurman afaylu amiran
+Fneẓ akk
+Semɣer akk
+Tazmilt tamaynut
+Akaram amaynut
+Beddel amizzwer n wefran
+Sken afaylu deg tunigin
+Sken afaylu amiran deg tunigin
+Xdem anɣel n ufaylu amiran
+Sleg afaylu amiran
+Smutti afaylu amiran ɣer ukaram nniḍen
+Akaram amaynut s tefrayt ({{count}} uferdis)
+Akaram amaynut s tefrayt ({{count}} yiferdisen)
+Smutti afaylu ɣer...
+Smutti akaram ɣer...
+Smutti {{count}} yiferdisen ɣer...
+Aru isem n ukaram
+Ulac ikaramen yellan i yettwafan.
+i tunigin
+i usmutti
+i wesnulfu
+i tukksa
+Isem n ufaylu (A ar Z)
+Isem n ufaylu (Z ar A)
+Akud n ubeddel (amaynut ar uqdim)
+Akud n ubeddel (aqdim ar umaynut)
+Akud n wesnulfu (aqdim ar umaynut)
+Akud n wesnulfu (amaynut ar uqdim)
+Tazmilt tamaynut
+Akaram amaynut
+Snifel isem...
+Kkes
+Xdem anɣel
+Sleg
+Isem n ufaylu ur yezmir ara ad yesɛu isekkilen-a: 
+Iseɣwan ur xeddmen ara s yismawen n yifuyla yesɛan isekkilen-a: 
+Yella yakan ufaylu s yisem-a
+Isem n ufaylu ur yezmir ara ad yili d ilem.
+Isem n ufaylu ur yezmir ara ad yebdu s tneqqiṭ.
+Abeddel aneggaru deg {{time}}
+Yennulfa-d deg {{time}}
+War azwel
+War azwel
+Imeddayen ad ttwaḥerzen deg “{{path}}” seg tura d asawen.
+Anadi
+Nadi awalen yufraren deg tezmiltin meṛṛa.
+Nadi deg yifuyla meṛṛa
+Fneẓ igmaḍ
+Qadeṛ isekkilen meqqren/mezziyen
+Ssefhem awalen n unadi
+Sken ugar n usatal
+{{count}} ugmuḍ
+{{count}} yigmaḍ
+Iɣewwaren n unadi
+Nadi...
+Yemṣada d weḍris: 
+Yemṣada d tnfalit tamlugant
+Yesɛa aḍris unṣib: 
+Yugar: 
+Yeqqel: 
+D tidet
+D ucciḍ
+D ilem
+Yesɛa arat:
+Mṣada d wakk: 
+Mṣada d kra seg: 
+Stixeṛ: 
+Qadeṛ isekkilen meqqren/mezziyen
+Ur tqadaṛ ara isekkilen meqqren/mezziyen
+Mṣada d ubrid n ufaylu: 
+Mṣada d yisem n ufaylu: 
+Mṣada d ugbur n ufaylu: 
+Mṣada d twuri: 
+Mṣada d twuri (araxdem): 
+Mṣada d twuri (yettwaxdem): 
+Mṣada d yizirig: 
+Mṣada d yiḥder: 
+Mṣada d tgezmi: 
+Mṣada d tecṛeṭ: 
+Ulac imṣadan i yettwafan.
+... d {{count}} n umṣada nniḍen.
+... d {{count}} n yimṣadan nniḍen.
+Nɣel igmaḍ n unadi
+Nɣel igmaḍ
+Igmaḍ ttwanɣlen ɣer tecfawit-ik.
+Sken abrid
+Sken abrid ummid n ufaylu deg wemkan n yisem-is kan.
+Aɣanib n useɣwen
+Err yal agmuḍ n ufaylu d aseɣwen ma tebɣiḍ.
+Ulac
+
+Aseɣwen Markdown
+Adat n tebdart
+Rnu adat n uferdis n tebdart i yal agmuḍ n ufaylu ma tebɣiḍ.
+Ulac
+Ajeṛṛid (-)
+Itri (*)
+S wuṭṭunen
+Sfeḍ anadi
+Tixtiṛiyin n unadi
+Iraten
+Ticraḍ
+Ɣeṛ ugar
+Azray
+Sfeḍ azray n unadi
+mṣada d ubrid n ufaylu
+mṣada d yisem n ufaylu
+nadi ticraḍ
+nadi awalen yufraren deg yiwen n yizirig
+nadi awalen yufraren ddaw n yiwet n tsenṭit
+mṣada d urat
+Nadi ɣef “{{keyword}}”
+Nadi deg ukaram
+Asenfal arurad
+Ngez ɣer yifuyla nniḍen s unasiw-ik·im.
+Asenfal
+Ldi asenfal arurad
+i tunigin
+i welday
+i welday deg yiccer amaynut
+i welday ɣer yeffus
+i wesnulfu
+i tukksa
+i tefrayt
+Ulac tizmiltin i yettwafan. Sekcem i wesnulfu n yiwet tamaynut.
+Af-d neɣ snulfu-d tazmilt...
+Sekcem i wesnulfu
+Ur yennulfa ara yakan, fren i wesnulfu
+Sken kan wid yellan
+Sken kan igmaḍ seg yifuyla yellan. Iseɣwan ɣer yifuyla ur d-nennulfa ara ad ttwafferren.
+Sken imeddayen
+Sken ifuyla n yimeddayen am tugniwin, tividyutin, d PDF.
+Sken akk tiwsatin n yifuyla
+Sken akk ifuyla ula d wid ur yezmir ara Obsidian ad ten-ildi. Afaylu ad yeldi s usnas amezwer n tewsit-nni n ufaylu.
+Taskant n udlif
+Udlif adigan
+Sken assaɣen gar tezmiltin-ik·im.
+Ldi taskant n udlif
+Ldi adlif adigan
+Nɣel tuṭṭfa n ugdil
+Adlif n {{displayText}}
+Tistayin
+Nadi ifuyla...
+Alqay
+Sken tikerras s wemḍan-a n yiseɣwan
+Iseɣwan inaragen
+Sken iseɣwan gar yinaragen
+Iseɣwan uffiɣen
+Sken iseɣwan ɣer yifuyla nniḍen
+Iseɣwan ikcamen
+Sken iseɣwan seg yifuyla nniḍen
+Ticraḍ
+Ticraḍ qqnent ɣer yifuyla i tent-yesɛan
+Imeddayen
+Sken imeddayen
+Ifuyla yellan kan
+Mi yermed, iseɣwan ɣer yifuyla ur nelli ara ur d-ttbanen ara
+Igujilen
+Sken ifuyla ur neqqin ɣer ula d yiwen ufaylu nniḍen
+Abeqqeḍ
+Tineccabin
+Sken tineccabin mi ara tsemɣereḍ
+Amnaṛ n uswexxeṛ n weḍris
+Tiddi n tkerrist
+Tuzert n useɣwen
+Iɣallen
+Aɣil n tlemmast
+Aɣil n useɣwen
+Ameccaq n useɣwen
+Aɣil n tririt
+Ldi iɣewwaren n udlif
+Tuṭṭfa n ugdil tettwanɣel ɣer tecfawit.
+Igrawen
+Sekcem tuttra...
+Kkes agraw
+Agraw amaynut
+Sit i ubeddel n yini\nZuɣeṛ i walsi n useggem n yigrawen
+Bdu amray n wakud n udlif
+Bdu amray n wakud
+Mru
+Iseɣwan ikcamen
+Sken iseɣwan seg yifuyla nniḍen ɣer ufaylu amiran. Iseɣwan ikcamen zemren ad ttwaskenen deg teskant timziregt neɣ deg wadda n tezmilt.
+Ldi iseɣwan ikcamen
+Iseɣwan ikcamen
+Ldi iseɣwan ikcamen i tezmilt tamirant
+Qluqel iseɣwan ikcamen deg yisemli
+Iseɣwan ikcamen deg yisemli
+Ibdaren yeqqnen
+Ulac iseɣwan ikcamen i yettwafan
+Ibdaren ur neqqin ara
+Sken tastayt n unadi
+Aseɣwen
+Iseɣwan ikcamen i {{displayText}}
+Ulac ibdaren ur neqqin ara i yettwafan
+
+Sken iseɣwan ikcamen deg wadda n tezmiltin
+Err iseɣwan ikcamen d wid yettbanen s umezwer deg yiccaren imaynuten.
+Iseɣwan uffiɣen
+Sken iseɣwan uffiɣen yerna af-d ibdaren ur neqqin ara n tezmiltin nniḍen deg tezmilt tamirant. 
+Ldi iseɣwan uffiɣen
+Sken iseɣwan uffiɣen
+Ldi iseɣwan uffiɣen i ufaylu amiran
+Iseɣwan uffiɣen seg {{displayText}}. 
+Iseɣwan. 
+Ulac iseɣwan i yettwafan. 
+Ibdaren ur neqqin ara
+Sɣewn afaylu-a
+Ur d-yennulfa ara yakan
+Taskant n tecraḍ
+Ticraḍ
+Sken tabdart n wakk ticraḍ akked wemḍan n tikkal i d-ttbanent.
+Sken ticraḍ
+Ulac ticraḍ i yettwafan. 
+Isem n tecṛeṭ (A ar Z)
+Isem n tecṛeṭ (Z ar A)
+Asnagar (afellay ar wadday)
+Asnagar (adday ar ufellay)
+Sken ticraḍ yettwaseddegriren
+Fneẓ akk
+Semɣer akk
+Taskant n yiwenniten n uḍar usebter
+Iwenniten n uḍar usebter
+Sken tabdart n yiwenniten n uḍar usebter n tezmilt tamirant.
+Sken iwenniten n uḍar usebter
+Ulac iwenniten n uḍar usebter i yettwafan.
+Taskant n yiraten
+Sken adfersefka n yifuyla-k·m deg ugalis.
+Akk iraten
+Iraten n ufaylu
+Iraten n ufaylu i {{displayText}}
+Sken akk iraten
+Sken iraten n ufaylu
+Kkes arat
+Kkes iraten
+Awurman
+Awurman ({{type}})
+Ulac iraten i yettwafan.
+Iraten irmeɣta.
+Isem n urat (A ar Z)
+Isem n urat (Z ar A)
+Asnagar (afellay ar wadday)
+Asnagar (adday ar ufellay)
+Zdi arat “{{oldKey}}” d “{{newKey}}”? 
+Deg tegnit n wemgirred, azalen ad ttwezdayen neɣ azal n “{{oldKey}}” ad yettuseqdec. 
+Fneẓ akk. 
+Semɣer akk. 
+Ldi iraten n ufaylu
+Ldi tazmilt n yal ass
+Azarskan n usebter
+Sɛeddi taḥnaccaṭ ɣef useɣwen agensan i wazarskan n ugbur-is. Deg uskar n umaẓrag, sit ɣef Ctrl/Cmd mi ara tsɛeddayeḍ taḥnaccaṭ.
+“{{linktext}}” ur yettwafa ara.
+“{{linktext}}” ur yennulfa ara yakan. Sit i wesnulfu.
+Awennit n uḍar usebter {{id}} ur yettwafa ara. Sit i wesnulfu.
+Taskant n teẓrigt 
+Taskant n tɣuri 
+Anadi, Iseɣwan ikcamen, d Yiseɣwan uffiɣen
+Tasenṭit n yiccer
+Yesra {{key}} i usenḍeḥ n wazarskan n usebter mi ara tesɛeddayeḍ taḥnaccaṭ
+Isɣalen 
+Sekles inegzumen ɣer yifuyla, inadiyen, tisenṭa, d yidlifen.
+Sken isɣalen
+Fneẓ akk 
+Err iccer urmid d asɣal...
+Agraw amaynut 
+Asɣal... 
+Rnu asɣal
+Ẓreg asɣal 
+Err iḥder ddaw n tḥnaccaṭ d asɣal...
+Err tasenṭit ddaw n tḥnaccaṭ d asɣal...
+Err anadi amiran d asɣal...
+Kkes asɣal n ufaylu amiran
+Err {{count}} yiccer d asɣal...
+Err {{count}} yiccaren d isɣalen...
+Err akk iccaren d isɣalen...
+Err adlif-a d asɣal...
+Asɣal 
+Yettwarra d asɣal
+{{count}} usɣal
+{{count}} yisɣalen
+Ulac isɣalen i yettwafan
+Yecceḍ usali n yisɣalen.
+Afaylu n yisefka yexṣer.
+Agraw war azwel
+Adlif war azwel
+Ẓreg...
+Kkes 
+Beddel isem 
+Err iḥder-a d asɣal...
+Err tasenṭit-a d asɣal...
+Ulac tuttra n unadi ɣer usɣal.
+Abrid 
+Tuttra 
+Azwel 
+Agraw n yisɣalen
+Isɣalen 
+CSS Yettusagenen
+Ɣeṛ yerna snes “obsidian.css” deg ukaram n weḥraz.
+Isental n umɣiwan 
+Awi-d isefka n usentel n umɣiwan...
+Tastayt... 
+Isental ibriken kan
+Isental iceɛlalen kan
+Seqdec asentel-a
+Ḥbes aseqdec n usentel-a
+Sbedd yerna seqdec
+Mucceḍ 
+Asentel-a ur d-yefki ara afaylu README.
+Kkes asentel
+Rzu ɣef GitHub 
+Ur yezmir ara ad isali isental n umɣiwan, ttxil-k·m senqed azeṭṭa-inek·inem. 
+Akka tura tseqdaceḍ {{title}} am usentel-ik·im CSS. 
+Asentel {{title}} yettwakkes. 
+Asentel {{title}} yettwamucceḍ. 
+Yettwasbedd 
+Aqbur
+Mucceḍ akk 
+Yecceḍ usali n yisental n umɣiwan. 
+Ulac imuccḍen n yisental i yettwafan. 
+Yettwafa {{count}} n usentel i umucceḍ. 
+Ttwafan {{count}} n isental i umucceḍ. 
+Yecceḍ usbeddi n usentel “{{name}}”. 
+Asbeddi n usentel “{{name}}” yedda akken iwata. 
+Asbeddi n usentel “{{name}}”... 
+Yeskanay-d {{themeCount}} 
+Lqem yewjed 
+Tafelwit n tludna 
+Seqdec Cmd/Ctrl+P yerna bdu tira i usekker n tladna. 
+Ldi tafelwit n tludna 
+i tunigin 
+i useqdec 
+agi
+Ulac tiludna i yettwafan. 
+Rnu taladna...
+Fren taladna...
+Tiludna yettwasbeḍen 
+Aselkat n umasal 
+Tunigin n tsenṭit 
+Sinig ticraḍ n tsenṭit, tizaẓluyin, d tiserkam css ɣer umasal aẓayan i yettusran sɣur Obsidian v1.9+ 
+Ɣur-k·m: aselkat ad iselket akk ifuyla deg ukaram-ik·im n weḥraz, mačči kan afaylu amiran. 
+Ifuyla-k·m ad ttwasemselsin. Xdem aḥraz i wakk ifuyla-k·m uqbel ad tɛerḍeḍ aselket. 
+Bdu aselket 
+Ḥbes 
+Uɣal ɣer deffir 
+Ifukk 
+Asefser... 
+Asemmet... 
+Ifukk! 
+Ifuyla yettwasefsren 
+Ifuyla yettwabeddlen 
+Yecceḍ 
+Tizmiltin n yal ass 
+Snulfu-d neɣ ldi tazmilt n yal ass n wass-a. 
+Ass-a 
+Ldi tazmilt n yal ass n wass-a
+Ldi tazmilt n yal ass tuzwirt
+Ldi tazmilt n yal ass tuḍfirt
+Tazmilt n yal ass n wass-a
+Ger aseɣwen ɣer tezmilt n yal ass 
+Yecceḍ wesnulfu n tezmilt n yal ass. “{{format}}” mačči d amasal ameɣtu.
+Yecceḍ wesnulfu n tezmilt n yal ass. Akaram “{{folderOption}}” ur yettwafa ara.
+Yecceḍ wesnulfu n tezmilt n yal ass. Afaylu n tmudemt “{{template}}” ur yettwafa ara. 
+Ulac tazmilt n yal ass uqbel ta.
+Ulac tazmilt n yal ass deffir ta.
+Amasal n uzemz 
+Fren amek ara ttusemmin tezmiltin n yal ass deg ukaram-ik·im n weḥraz.
+Amasal yettusagenen 
+Sagen 
+Amasal n uzemz d armeɣtu
+Akaram n tezmilt n yal ass ur yettwafa ara.
+I ugar n tseddast, rzu ɣer 
+tamselɣut n umasal 
+Taseddast-ik·im tamirant tettban-d akka:
+Ideg n ufaylu amaynut 
+Tizmiltin n yal ass timaynutin ad ttwasersent dagi.
+Ideg n ufaylu n tmudemt 
+Fren afaylu ara tseqdceḍ am tmudemt.
+Amesnulfu n tezmilt tasuft 
+Snulfu-d tizmiltin s yidaten isufen n uzemzakud, i yikalan n umahil am zettelkasten neɣ slip box. 
+Asuf 
+Snulfu-d tazmilt tasuft tamaynut
+Tazmilt tasuft tamaynut
+Rnu aseɣwen agensan asuf 
+Ideg n ufaylu amaynut 
+Abrid n ukaram anda ara d-tesnulfuḍ tazmilt tasuft tamaynut. 
+Yecceḍ wesnulfu n tezmilt tasuft. Akaram “{{folderOption}}” ur yettwafa ara.
+Ideg n ufaylu n tmudemt 
+Abrid n ufaylu ara yettuseqdec am tmudemt.
+Amedya: akaram1/tazmilt
+Amasal n udat asuf
+Yecceḍ wesnulfu n tezmilt tasuft. Afaylu n tmudemt “{{template}}” ur yettwafa ara.
+Yecceḍ wesirew n tezmilt tasuft s umasal “{{format}}”
+Tazmilt tagacurant 
+Ldi tazmilt tagacurant i wakken ad tt-id-tmuqleḍ neɣ ad tt-tesnekdeḍ.
+Agacuran 
+Ldi tazmilt tagacurant
+Agbur 
+Sken agbur n tezmilt tamirant. 
+Ldi agbur
+Sken agbur
+Ldi agbur n ufaylu amiran
+Agbur n {{displayText}}
+Ulac tisenṭa i yettwafan.
+Adrurem awurman ɣer tgezmi tamirant 
+Amḍan n wawalen 
+Sken amḍan n wawalen deg tfeggagt n waddad.
+Sken idlifen Mermaid deg ukaram-agi n weḥraz?
+Sireg kan ma tettekleḍ ɣef igburen n ukaram-agi n weḥraz.
+Tigriwin 
+Snulfu-d tihawt s useqdec n “---” i ufeṛṛeq n tigriwin. 
+Bdu tihawt 
+Amaklas n yimesli 
+Kles tizmiltin n yimesli yerna ḥrez-itent d imeddayen.
+Bdu aklas n yimesli
+Ḥbes aklas n yimesli
+Bdu/ḥbes aklas
+Adduf ɣer umikṛufun yettwagi, ttxil-k·m sermed-it seg ugalis n yismenyifen.
+Ttxil-k·m mudd asireg n umikṛufun i wakken ad tebduḍ aklas.
+Ulac amikṛufun yeqqnen.
+Ldi deg usnas amezwer
+Rnu taqeffalt i welday n ufaylu amiran deg usnas-is amezwer.
+Ldi deg usnas amezwer
+Bḍu
+Sken deg unaram n unagraw
+Sken deg Finder
+Timudmiwin
+Ger agbur n tmudemt seg ukaram n yifuyla n tmudmiwin.
+Ger tamudemt
+Ger azemz amiran
+Ger akud amiran
+Ideg n ukaram n tmudmiwin
+Ifuyla deg ukaram-a ad stufun am tmudmiwin.
+Amasal n uzemz
+{{date}} deg ufaylu n tmudemt ad yettwasemselsi s wazal-a.
+Tzemreḍ daɣen ad tseqdceḍ {{date:YYYY-MM-DD}} i wakken ad tsemselsiḍ amasal yiwet n tikkelt.
+Amasal n wakud
+{{time}} deg ufaylu n tmudemt ad yettwasemselsi s wazal-a.
+Tzemreḍ daɣen ad tseqdceḍ {{time:HH:mm}} i wakken ad tsemselsiḍ amasal yiwet n tikkelt.
+i tunigin
+i tguri n tmudemt
+i tugin
+Ulac timudmiwin i yettwafan
+Yecceḍ uskan n tmudmiwin. Akaram n tmudmiwin ur yeɣbil ara.
+Yecceḍ uskan n tmudmiwin. Akaram “{{folderOption}}” ur yettwafa ara.
+Ur yezmir ara ad iger tamudemt, iraten deg ufaylu n tmudemt ur gzin ara i tɣuri.
+Yecceḍ uskan n tmudmiwin. Ulac akaram n tmudmiwin yettwaswlen.
+Aru isem n tmudemt...
+Asfaylu amseɣseɣ
+Rmed asemdu n timseɣseɣt i wesnerni n uḥulfu n walqay. Yif-it useqdec-is d waskar ubrik. Ur yettusefrak ara ɣef Linux.
+Tiludna Slash (/)
+Sendeḥ tiludna deg umaẓrag s useqdec n tqeffalt n ujeṛṛid uknan.
+Sken askar n teẓrigt deg tfeggagt n waddad
+Sken aqluqel n waskar n teẓrigt deg tfeggagt n waddad.
+Taɣuri
+Askar n uɣbalu
+Azarskan s wudem usrid
+Tasuffeɣt
+Sers tizmiltin-ik·im n srid am usmel Web, wiki neɣ isemliyen.
+Suffeɣ-d ibeddilen...
+Suffeɣ-d afaylu amiran
+Teḥwaǧeḍ adduf ɣer Internet i wakken ad d-tsuffɣeḍ ibeddilen.
+Tasuffeɣt Obsidian d ameẓlu yettwaxelṣen i k·em-yettaken tagnit ad d-tsuffɣeḍ tizmiltin-ik·im srid seg Obsidian.
+I wakken ad tebduḍ tasuffeɣt, ttxil-k·m kcem neɣ rnu amiḍan amaynut Obsidian.
+Ur tesɛiḍ ara yakan amtawa n Tesuffeɣt Obsidian.
+Aɣ
+Sefrek ismal
+Ur tesɛiḍ ula d yiwen usmel.
+Fren
+Ẓreg asulay n usmel
+Kkes asmel
+Tebɣiḍ s tidet ad tekkseḍ asmel-a?
+Aya ad yekkes asmel-ik·im din din yerna s wudem imezgi.
+Sentem tukksa n usmel “{{site}}”
+Asulay n usmel
+Asmel-ik·im ad yili deg https://publish.obsidian.md/{site id}. Tzemreḍ ad t-tbeddleḍ sakin. Isekkilen imeẓyanen, imḍanen, d yijeṛṛiden kan i yettwasirgen.
+Fren asulay n usmel
+Snulfu-d
+Asulay n usmel yezmer ad yesɛu kan isekkilen imeẓyanen, imḍanen, d yijeṛṛiden.
+Asulay-a n usmel yettuseqdac, ttxil-k·m ɛreḍ wayeḍ.
+Yella-d wugur deg wesnulfu n usmel-ik·im.
+Tixtiṛiyin n usmel
+Amatu
+Isegran
+Timeẓri
+Tirmit n tɣuri
+Iɣewwaṛen nniḍen n usmel
+Isem n usmel
+Isem n usmel-ik·im yettwasuffɣen. Ad d-yeban deg uzwel n usebter n usmel-ik·im.
+Isem n usmel-ik·im
+Afaylu n usebter agejdan
+Asebter amezwaru ara yewali useqdac mi ara d-yekcem ɣer usmel-ik·im yettwasuffɣen.
+Fren afaylu yettwasuffɣen
+Alugu
+Fren afaylu n tugna am ulugo n usmel-ik·im.
+Yal tugna yettwasulin deg ukaram-ik·im n weḥraz...
+Amɛawan deg usmel
+Sefrek imɛawnen i usmel-a.
+Sagen tunigin
+Semselsi amizzwer n yiferdisen n tunigin yerna ffer isebtar neɣ ikaramen i wakken ur d-ttbanen ara.
+Amizzwer n ubeqqeḍ n yiferdisen n tunigin
+Ffer isebtar neɣ ikaramen seg tunigin
+Sit s uyeffus yerna fren "Ffer" i wakken ad tsewḥeleḍ isebtar uzzigen ur d-ttbanen ara deg tunigin n usmel. Isebtar ad qimen stufan s yiseɣwan neɣ s unekcum ɣer URL srid.
+Sken wid yeffren
+Sefrek
+Tunigin
+Zuɣeṛ yerna sers i wakken ad tsageneḍ amizzwer s wayes ara d-banen yiferdisen n tunigin deg usmel-ik·im n Tesuffeɣt.
+Ffer deg tunigin
+Sefrek
+Asentel
+Fren azenziɣ n yini amezwer i usmel-ik·im.
+Sezg ɣer unagraw
+Aqluqel aceɛlal/ubrik
+Eǧǧ inebgawen ad qluqlen gar usentel aceɛlal d ubrik s yiman-nsen.
+Sken tunigin
+Sken tabdart n wakk isebtar yettwasuffɣen ɣef tama tazelmaṭ n usmel-ik·im yettwasuffɣen.
+Sken afeggag n unadi
+Sken afeggag n unadi i yettaken tagnit i yinebgawen ad nadin isebtar, tizaẓluyin, d tsenṭa deg usmel-ik·im.
+Sken taskant n udlif
+Sken adlif adigan ameẓyan deg yal asebter.
+Sken-d tafelwit n igburen
+Sken agbur n tsenṭa deg yal asebter.
+Sken iseɣwan ikcamen
+Sken tgezmi n yiseɣwan ikcamen deg taggara n yal asebter.
+Semnenni isebtar
+Iseɣwan ad ldin zdat n usebter amiran deg yiwen n usfaylu. Drurem s wudem aglawan i wakken ad twaliḍ isebtar yettwasemnennayen.
+Sken azarskan s usɛeddi n tḥnaccaṭ
+Sken azarskan n usebter mi ara tsɛeddayeḍ taḥnaccaṭ ɣef yiseɣwan.
+Ffer azwel n usebter
+Ffer tasenṭit n uzwel n usebter. Yenfaɛ mi ara tesɛuḍ tisenṭa-k·m yakan deg tazwara n yal asebter.
+Teɣzi n yizirig yettwaɣren
+Eg talast i teɣzi tafellayt n yizirig. Drus n ugbur i d-yeffɣen ɣef ugdil, maca yettarra tiseddaṛin tiɣezfanin ad ttwaɣrent xir.
+Awalen n uɛeddi
+Qqen adduf ɣer usmel-ik·im s wawalen n uɛeddi.
+Tangalt n uḍfaṛ n Google Analytics
+Swel Google Analytics i usmel-ik·im. Yewjed kan i yinebgawen seg URL n taɣult-ik·im yettusagenen. Ttxil-k·m senqed isuḍaf-ik d yilugan idiganen uqbel.
+Sefrek
+Sekles iɣewwaṛen n usmel
+Tixtiṛiyin ttumuccḍent i usmel-ik·im.
+Uɣal ɣer deffir 
+Tasuffeɣt ɣer
+Beddel asmel 
+Rnu wid yeqqnen
+Rnu akk ifuyla i yeqqnen sɣur yiferdisen yettwafrenen tura
+Yettwarna {{count}} ufaylu yeqqnen.
+Ttwarnan {{count}} n yifuyla yeqqnen.
+Beddel tixtiṛiyin n usmel 
+Ulac ibeddilen i yettwafan.
+Yettwabeddel 
+Ur yettwabeddel ara (fren i wakken ad tekkseḍ tasuffeɣt) 
+ yettwafren 
+Fren akk 
+Iferdisen n tunigin 
+Kkes akk tafrayt 
+Amaynut 
+Suffeɣ-d
+Ur tesɛiḍ ara isirigen i wakken ad d-tsuffɣeḍ ɣer usmel amiran. 
+Ttxil-k·m fren a ttaqal yiwen ufaylu. 
+Sali ibeddilen 
+Ifukk 
+Ḥbes 
+Asali 
+I tsuffeɣt
+I tukksa 
+Yettwasuffeɣ
+Yettwakkes 
+Yecceḍ 
+Yettwasemmet 
+Beddel 
+Tettaṭṭaf kra n tsedatin i wakken ibeddilen ad d-banen deg usmel-ik·im. Ma yella ur twalaḍ ara ibeddilen-ik ineggura, ɛreḍ ad tesfeḍeḍ tazarkatut deg yiminig-ik·im. 
+Tzemreḍ ad terzuḍ ɣef usmel-ik·im dagi: 
+Yella wugur i d-yeḍran. 
+Temlal-d tuccḍa n uzeṭṭa. 
+Sefrek awalen n uɛeddi 
+Rnu awal n uɛeddi 
+Awal n uɛeddi amaynut 
+Asmel-ik·im akka tura ur yesɛi ula d yiwen wawal n uɛeddi. Yal amdan yezmer ad t-yerzu ɣur-s.
+Asmel-ik·im yettwammesten s wawal n uɛeddi. Ma yella tesɛiḍ aṭas n wawalen n uɛeddi, inebgawen zemren ad kecmen ɣer usmel-ik·im ma sekcmen yiwen seg-sen. 
+Awal n uɛeddi 
+Ageddeḥ n wawal-ik·im n uɛeddi ad yettwaḥrez s tɣellist. Akken kan ara yettwasbedd wawal n uɛeddi, ur yezmir ara ad d-yettban d aḍris aḥerfi.
+Awal-ik·im n uɛeddi
+Tazaẓlut (axetṛan)
+Sbadu tazaẓlut i wakken ad tesmektayeḍ iman-ik·im ɣef wacu neɣ i wumi yettwaxdem wawal n uɛeddi.
+Rnu awal-a n uɛeddi
+Awal n uɛeddi war azwel
+Yennulfa-d deg {{time}}
+Yettwarna wawal n uɛeddi amaynut.
+Taɣult yettusagenen
+Seqdec taɣult-ik·im deg umkan n URL https://publish.obsidian.md/{site id}.
+Agi asmiter n yimsaddayen n unadi
+Sewḥel imsaddayen n unadi seg usmiter n usmel-ik·im.
+Swel
+Swel taɣult yettusagenen
+URL yettusagenen
+Sekcem URL n usmel-ik·im yettusagenen, ur sedduy ara “www.”
+Ales awelleh ɣer taɣult-ik·im yettusagenen
+Ales awelleh n yinebgawen ɣef publish.obsidian.md/id ɣer taɣult-ik·im yettusagenen.
+Mucceḍ tawila n taɣult
+Ttxil-k·m rzu ɣer {{link}} deg usmel-nneɣ n tallalt i wugar n telɣut.
+amnar n usbeddi n taɣult yettusagenen
+Tseqdaceḍ {{site}} seg talast-ik·im n {{limit}}.
+Rnu ugar n yismalen
+Ur tuɣeḍ ula d yiwen usmel.
+Awi-d asmel
+Sefrek beṭṭu i “{{name}}”
+Asmel-a yettwabḍa tura akked yemdanen-a:
+Asmel-a ur yettwabḍa d ula d yiwen tura.
+Yettraǧu
+Kkes aseqdac
+Ɛreḍ aseqdac
+Sekcem imayl-nsen...
+Ttxil-k·m sekcem imayl ameɣtu i wakken ad teɛerḍeḍ amdan.
+Ismal-ik·im
+Ismal i d-yettwabḍan yid-k·m
+Ḥbes amɛawan deg usmel-a
+Sentem aḥbas n umɛawan n usmel
+Aya ad yekkes asmel-a seg tebdart n yismalen i d-yettwabḍan yid-k·m. Tigawt-a ur tezmir ara ad tettwasemmet.
+Ttxil-k·m nermes d bab n usmel ma tebɣiḍ ad tmɛawaneḍ deg usmel-a tikkelt nniḍen.
+Eǧǧ
+Snemhel d lqem amiran
+Seqdec lqem amiran
+Sentem asemselsi n lqem adigan
+Tebɣiḍ s tidet ad tsemselsiḍ lqem adigan?
+Lqem amiran ad yettuseqdec yerna lqem-ik·im adigan ad yettwakkes. Ttxil-k·m· xdem iḥrazen ma yella yewwid.
+Kemmel
+Aseqdec n lqem amiran i usemselsi n lqem-ik·im adigan yedda.
+Ldi deg usmel amiran
+Ldi afaylu
+Sefrek tistayin n tsuffeɣt
+Ikaramen yettwaseddun
+Ifuyla ddaw n yikaramen-a ad ttwafernen s wudem awurman mi ara tesnekdeḍ ibeddilen i tsuffeɣt.
+ Ikaramen-a ttwaseddun tura:
+Ikaramen yettwastixren
+Ifuyla ddaw n yikaramen-a ur d-ttbanen ara mi ara tesnekdeḍ ibeddilen i tsuffeɣt. Tawila-ya tesɛa tazwart ɣef yikaramen yettwaseddun ufella.
+Tasuffeɣt Obsidian tsedday tura {{folders}}.
+Tasuffeɣt Obsidian testixxir tura {{folders}}.
+Sefrek ikaramen yettwaseddun
+Sefrek ikaramen yettwastixren
+Seddu akaram
+Tzemreḍ ad tsedduyḍ ikaramen yellan yakan d yikaramen ur d-nennulfa ara yakan.
+Nermes tallalt
+Azarskan n tunigin
+Tallunin n umahil
+Sekles yerna sali iɣawasen n tallunt n umahil.
+Sali aɣawas n tallunt n umahil
+Sefrek iɣawasen n tallunt n umahil
+Sekles aɣawas
+Sekles yerna sali aɣawas nniḍen
+Sekles aɣawas amiran n tallunt n umahil am...
+Sekles
+Sali
+Kkes aɣawas
+Ttxil-k·m sekcem isem i uɣawas amaynut.
+Asekles n uɣawas “{{name}}” yedda.
+Ulac aɣawas yettwaseklesen i yettwafan.
+Yettwabeddel {{time}}
+Aru isem n uɣawas...
+Amtawa
+Mtawi ifuyla-k·m s Umtawa n Obsidian. 
+Ldi azray n lqem i ufaylu amiran. 
+Swel Amtawa 
+Ldi azray n lqem
+Sken azray n Umtawa
+Ldi aɣmis n warmud
+Sali-d ugar
+Sken ibeddilen
+Nɣel ɣer tecfawit
+Err-d
+Lqem-a d aneggaru yakan.
+Lqem n {{time}} yettwarra-d akken iwata
+Afaylu-a yettwakkes
+Yettwakkes sɣur {{ device }}
+Yettwabeddel isem-is seg “{{from}}”
+Yettwabeddel isem-is seg “{{from}}” ɣer “{{to}}”
+Yettwasmutti seg “{{from}}”
+Yettwasmutti seg “{{from}}” ɣer “{{to}}”
+{{count}} n lqem
+{{count}} n yileqman
+sɣur {{device}}
+Ulac azray n umtawa i ufaylu-a. 
+Agbur ilem
+D awezɣi asider n uzray n yileqman
+Ifuyla n yiɣewwaṛen
+Ifuyla yettwakksen
+Amzray n yileqman
+Sit ɣef ufaylu i wakken ad twaliḍ amezruy-is.
+Rnu akaram n weḥraz anmeggag
+Ttxil-k·m sekcem awal n uɛeddi.
+Isem n ukaram n weḥraz ur yezmir ara ad yili d ilem. 
+Asnulfu n ukaram n weḥraz anmeggag “{{name}}” yedda akken iwata. 
+Ikaramen n weḥraz inmeggagen mtawan akaram-ik·im n weḥraz gar yibenkan s tɣellist. 
+Isem n ukaram n weḥraz
+Ad k-id-yefk tallalt ad tecfuḍ ɣef wacu yettwaxdem ukaram-a n weḥraz. 
+Tamnaḍt
+Awurman
+Fren tamnaḍt n uqeddac i d-iqerben ɣuṛ-k·m i wakken ad teskelseḍ akaram n weḥraz anmeggag. Aya ur yezmir ara ad yettwabeddel ɣer zdat. 
+Akaram-iw n weḥraz igerrzen
+Awgelhen
+Awgelhen seg yixef ɣer yixef yettak-d taɣellist i yiǧehden ugar maca issefk fell-ak·am ad tḥerzeḍ awal n uɛeddi n uwgelhen-ik·im s tɣellist. Awgelhen amezwer yesseqdac tasarut yettusefraken sɣur Obsidian i wakken ad iḥrez isefka-k·m ma ara tt-ddun neɣ ma ara ilin ɣef yiqeddacen-nneɣ. 
+Taxtiṛit-a ur tezmir ara ad tettwabeddel sakin. 
+Awgelhen seg yixef ɣer yixef
+Awgelhen n tizeɣt
+Awal n uɛeddi n uwgelhen
+Awal-a n uɛeddi ur yezmir ara ad yettwabeddel sakin.
+Ma tettuḍ awal-a n uɛeddi, kra n yisefka inmeggagen ur ttezmiren ara ad ttuseqdcen i lebda. 
+Aya ur yettḥaza ara isefka-k·m idiganen.
+Akaram n weḥraz anmeggag “{{name}}” yettwawgelhen tura. Sekcem awal-ik·im n uɛeddi i wesriḥ. 
+Awal-ik·im n uɛeddi
+Serreḥ akaram-ik·im n weḥraz anmeggag
+Serreḥ akaram n weḥraz
+Ikaramen-ik·im n weḥraz inmeggagen
+Yennulfa-d deg {{time}}
+Kkes
+Beddel isem
+Beddel isem n ukaram n weḥraz anmeggag “{{name}}”
+Sekcem isem amaynut i ukaram-a n weḥraz anmeggag.
+Sefrek beṭṭu
+Sentem tukksa n ukaram n weḥraz
+Tebɣiḍ s tidet ad tekkseḍ akaram n weḥraz anmeggag "{{name}}"? 
+Akk isefka ɣef uqeddac-nneɣ, gar-asen amezruy n yileqman, ad ttwakksen. Ifuyla-k·m idiganen ad qqimen akken llan. 
+Tigawt-a d timezgit yerna ur tezmir ara ad tettwasemmet.
+{{name}} yettwakkes. 
+Amtawa n Obsidian: Akaram n weḥraz anmeggag yeqqnen ulac-it dayen. 
+Qqen
+Senser
+Amtawa: {{status}}
+Ur tesɛiḍ ula d yiwen ukaram n weḥraz anmeggag.
+Ur tesɛiḍ ara amtawa n Umtawa Obsidian yermden.
+Ttxil-k·m rzu.
+D awezɣi azarskan n yifuyla n {{type}}. 
+Rnu akaram amaynut n weḥraz
+Aɣmis n umtawa
+Akk
+Tuccḍiwin 
+Yettwazgel
+Imgirrad n wezday 
+Nɣel aɣmis n umtawa 
+Aɣmis n umtawa yettwanɣel s wudem imeɣtu.
+Ales aɛraḍ
+Aɣ [cite: 163]
+Ameẓlu n umtawa n yifuyla s wemgirred yettwaf 
+Ɣur-k·m: akaram-ik·im n weḥraz yettban-d iseqdac {{service}} am umeẓlu n umtawa n wis kraḍ. Ma tseqdaceḍ Amtawa Obsidian d ukaram-a n weḥraz, tzemreḍ ad temlileḍ d yimgirrad, axsaṛ n yifuyla, neɣ asṛuḥu n yisefka. 
+Ma tseqdaceḍ iCloud Drive, ikaramen-ik·im Isemliyen d Tnarit zemren ad ttwamtawan sɣur iCloud. Aya yezmer ad d-yeglu s yimgirrad d Umtawa n Obsidian. 
+Akaram n weḥraz anmeggag 
+Fren 
+Sefrek 
+Yeqqen tura ɣer ukaram n weḥraz anmeggag “{{name}}”. 
+Ur yeqqin ara tura ɣer ula d yiwen ukaram n weḥraz anmeggag.
+Addad n umtawa 
+Amtawa Obsidian yettwaserǧu tura.
+Amtawa Obsidian iteddu tura. 
+Isem n yibenk 
+Isem-a ad d-yettwabeqqeḍ deg uɣmis n warmud. Eǧǧ-it d ilem i useqdec n yisem amezwer. 
+Kemmel 
+Serǧu
+Ifuyla yettwakksen 
+Sken yerna err-d ifuyla yettwakksen. 
+Aɣmis n warmud 
+Sken irmaden n umtawa ineggura i useɣti. 
+Sken 
+Tiririt s ujemmal 
+Err-d ifuyla 
+Err-d {{count}} ufaylu
+Err-d {{count}} n yifuyla
+Tiririt tura... 
+Tiririt tekfa: {{succeeded}} ddan yerna {{failed}} ccḍen. 
+Aseqdec n usekles 
+Tseqdaceḍ {{size}} seg {{limit}}
+D awezɣi asider n tiddi n ukaram-ik·im n weḥraz. 
+Asider n tiddi n ukaram-ik·im n weḥraz...
+Tiddi n ukaram n weḥraz tugar talast 
+Tiddi n ukaram n weḥraz teqṛeb ɣer talast
+Sken ifuyla imeqranen 
+Wigi d ifuyla inmeggagen i yeṭṭfen aṭas n tallunt. Deffir tukksa n yimeddayen, seqdec taqeffalt n usenger i wesriḥ n tallunt n ukaram n weḥraz anmeggag. 
+Snerni asekles 
+Senger
+Ffer ibeddilen-iw
+Senger s wudem imezgi imeddayen yettwakksen seg ukaram n weḥraz anmeggag i wesriḥ n tallunt.
+Asenger yekfa.
+Sewḥel iḍeṣ n yibenk
+Yessewḥal ibenk ad yeṭṭes mi mazal llan yifuyla ara yettwamtawan.
+Amtawa afrayan
+Ikaramen yettwastixren
+Sewḥel kra n yikaramen seg umtawa.
+ Ikaramen-a ttwastixren tura:
+Sefrek
+Mtawi tugniwin
+Mtawi ifuyla n tugniwin s yisiɣzaf-a: {{extensions}}.
+Mtawi imesli
+Mtawi ifuyla n yimesli s yisiɣzaf-a: {{extensions}}.
+Mtawi video
+Mtawi ifuyla n video s yisiɣzaf-a: {{extensions}}.
+Mtawi ifuyla PDF
+Mtawi ifuyla PDF.
+Mtawi akk tiwsatin nniḍen
+Mtawi tiwsatin n yifuyla ur nettusefrak ara.
+Amtawa n twila n ukaram n weḥraz
+Amezruy n yileqman n yiɣewwaṛen
+Sken yerna err-d amezruy n yileqman n yifuyla n yiɣewwaṛen.
+Iɣewwaṛen igejdanen
+Sermed i umtawa n yiɣewwaṛen n umaẓrag, iɣewwaṛen n yifuyla d yiseɣwan, atg.
+Iɣewwaṛen n timeẓri
+Mtawi iɣewwaṛen n timeẓri am waskar ubrik, asentel urmid, d yiḥricen n tengalt yermden.
+Isental d yiḥricen n tengalt
+Mtawi isental d yiḥricen n tengalt yettwasidren. Ma yella remden neɣ ala, yeṭṭef deg uɣewwaṛ yezrin.
+Tiqeffalin n unegzum
+Mtawi tiqeffalin n unegzum yettusagenen.
+Tabdart n yizegrar igejdanen urmiden
+Mtawi anwi izegrar igejdanen i yermden.
+Iɣewwaṛen n yizegrar igejdanen
+Mtawi iɣewwaṛen n yizegrar igejdanen.
+Tabdart n yizegrar n umɣiwan urmiden
+Mtawi anwi izegrar n umɣiwan i yermden.
+Izegrar n umɣiwan yettwasbedden
+Mtawi izegrar n umɣiwan yettwasbedden (ifuyla .js, .css, d manifest.json) d yiɣewwaṛen-nsen.
+Sireg iseɣzaf yemtawin ad leḥun deg ibenk-a?
+Amtawi n Obsidian ur yezmir ara aselken agbur n yisiɣzifen yettwamtawan yer yibenk-a, yerna zemren ad mgarraden yef yisiɣzifen i d-yeffyen deg ukaram n umɣiwan.
+Sermed kan aya ma yella akaram n uḥrez akked yibenkan yettwaqqnen ɣer-sen laman.
+Ih, sermed amtawi n yisiɣzifen
+Amtawa mazal yettali-d, ttxil-k·m ales asali n usebter-a sakin.
+Amtawa n Obsidian d ameẓlu n umtawa yernan n Obsidian s uwgelhen seg yixef ɣer yixef d umezruy n yileqman.
+I wakken ad tebduḍ amtawa, ttxil-k·m kcem neɣ rnu amiḍan amaynut Obsidian.
+Afaylu amiran
+Mtawi ibeddilen
+Ass-a
+Iḍelli
+Imalas-a
+Aqbur
+Amtawa aneggaru
+{{count}} nniḍen
+Jerred
+Kcem
+Sefrek ikaramen yettwastixren
+Amtawa n Obsidian yestixxir tura {{folders}}.
+Stixer akaram
+Tzemreḍ ad testixreḍ ikaramen yellan yakan d yikaramen ur d-nennulfa ara yakan.
+Kkes seg tebdart yettwastixren
+Swel tuqqna
+Tuqqna tura...
+Tecceḍ tuqqna
+Tecceḍ tuqqna ɣer ukaram n weḥraz anmeggag.
+Teqqneḍ tura ɣer “{{name}}”.
+Bdu amtawa
+Sentem azday n ukaram n weḥraz
+Akaram-ik·im n weḥraz adigan yesɛa yakan kra n tezmiltin.
+Ma teqqneḍ ɣer ukaram n weḥraz anmeggag “{{name}}”, tizmiltin deg ukaram-ik·im n weḥraz adigan ad ttwezdayent d tezmiltin seg ukaram-ik·im n weḥraz anmeggag. Deg tegnit n wemgirred, lqem aneggaru n tezmilt ad yettwaḥrez.
+Ttxil-k·m mucceḍ taxtiṛit-a yerna ales asekker n usnas deg wakk ibenkan anda tebɣiḍ ad teddu.
+Akaram-a n weḥraz anmeggag yettwabḍa tura akked yemdanen-a:
+Akaram-a n weḥraz anmeggag ur yettwabḍa d ula d yiwen tura.
+Ikaramen n weḥraz i d-yettwabḍan yid-k·m
+Ḥbes amɛawan deg ukaram-a n weḥraz
+Sentem aḥbas n umɛawan n ukaram n weḥraz
+Aya ad yekkes akaram-a n weḥraz seg tebdart n yikaramen n weḥraz i d-yettwabḍan yid-k·m. Tigawt-a ur tezmir ara ad tettwasemmet.
+Ttxil-k·m meslay d bab n ukaram n weḥraz ma tebɣiḍ ad tmɛawaneḍ deg ukaram-a n weḥraz tikkelt nniḍen.
+Eǧǧ
+Yecceḍ usali n yikaramen n weḥraz inmeggagen.
+Teḥwaǧeḍ amtawa n Umtawa Obsidian i wakken ad teqqneḍ ɣer ukaram-a n weḥraz.
+Nermes tallalt
+Ma temlaleḍ d wuguren d Umtawa Obsidian, ttxil-k·m nermes-aɣ i wakken ad k-nallel! Tzemreḍ ad aɣ-d-tafeḍ ɣef support@obsidian.md.
+Nɣel talɣut n useɣti
+Tallalt s yimayl
+Amtawa ur yeqqin ara ɣer ukaram n weḥraz anmeggag.
+Tesnulfaḍ-d amḍan afellay n yikaramen n weḥraz inmeggagen. I wakken ad tesnulfuḍ akaram n weḥraz anmeggag amaynut, ttxil-k·m sali aswir n umiḍan-ik·im neɣ kkes yiwen yellan.
+Sali aswir n ukaram n weḥraz
+Sali aswir n uwgelhen n ukaram n weḥraz
+Yella lqem amaynut n uwgelhen i yikaramen n weḥraz inmeggagen.
+Sinig akaram n weḥraz anmeggag
+Tawila n ukaram n weḥraz anmeggag
+Sinig
+Aya ad yekkes akaram-ik·im n weḥraz anmeggag yerna ad t-id-yesnulfu tikkelt nniḍen s uwgelhen aneggaru. Ifuyla idiganen ur ttwaḥazen ara, maca azray-ik·im n yileqman ad yeṛuḥ.
+Sentem tunigin n ukaram n weḥraz
+I wakken ad tsaliḍ aswir n uwgelhen-ik·im, akk isefka deg ukaram n weḥraz ad ttwasalin tikkelt nniḍen ɣer yiqeddacen n Umtawa Obsidian s useqdec n tarrayt tamaynut n uwgelhen. Akala-ya ad yekkes s wudem imezgi akk isefka yettwawgelhenen s uwgelhen aqdim, d uzray n yileqman n ukaram-ik·im n weḥraz.
+D axatar: nweṣṣa-k·m aṭas ad txedmeḍ aḥraz n ukaram-ik·im n weḥraz uqbel ad tkemmleḍ i wakken ad tsewḥeleḍ yal asṛuḥu n yisefka yezmren ad d-yili.
+Deffir usali n weswir, ad teḥwaǧeḍ ad talseḍ tuqqna n wakk ibenkan-ik·im ɣer ukaram n weḥraz anmeggag yettwamuccḍen.
+Tunigin n ukaram-ik·im n weḥraz tezmer ad teṭṭef kra n wakud. Ad teḥwaǧeḍ ad teǧǧeḍ Obsidian yermed ɣef yibenk-a i wakken ad talseḍ asali n wakk tizmiltin-ik·im d yimeddayen-ik·im. Yif-it ma txedmeḍ aya ɣef yibenk-ik·im agejdan.
+Tebɣiḍ ad tkemmleḍ?
+Tunigin n ukaram n weḥraz la tteddu.
+Tunigin n ukaram n weḥraz tekfa.
+Ferru n yimgirrad
+Fren amek ara ttwafrun yimgirrad mi ara tettwabeddel tezmilt s wudem iman-is ɣef waṭas n yibenkan.
+Zdi s wudem awurman
+Snulfu-d afaylu n wemgirred
+Tiririt n ufaylu
+Err-d tuṭṭfiwin tineggura i wakken ad d-terreḍ isefka i yeṛuḥen s wudem n tuccḍa. Tuṭṭfiwin ttwaḥerzent kan i yifuyla Markdown.
+Ldi amezruy adigan
+Azilal n tuṭṭfa
+Azilal adday s tesdatin gar snat n tuṭṭfiwin.
+Teɣzi n uzray
+Amḍan n wussan i deg ttwaḥerzent tuṭṭfiwin.
+Tuṭṭfiwin
+Sken yerna err-d tuṭṭfiwin yettwaḥerzen.
+Sken
+Sfeḍ azray
+Kkes akk tuṭṭfiwin.
+Sfeḍ
+Tebɣiḍ s tidet ad tekkseḍ akk tuṭṭfiwin? Ifuyla deg ukaram-ik·im n weḥraz ur ttwaḥazen ara.
+Amezruy adigan yettwasfeḍ.
+Tuṭṭfiwin ttwafent.
+Fren afaylu...
+Ttxil-k·m fren afaylu ɣef zelmeḍ i wakken ad twaliḍ tuṭṭfiwin.
+Amesnulfu n tezmilt
+Zdi snat n tezmiltin neɣ bḍu yiwet ɣef snat.
+Sentem azday n ufaylu
+Suter uqbel ad tezdiḍ sin yifuyla.
+Aḍris deffir n tussfa
+D acu ara d-tsekneḍ deg umkan n weḍris yettwafrenen deffir tussfa-ines.
+Aseɣwen ɣer ufaylu amaynut
+Seddu afaylu amaynut
+Ulac
+Ideg n ufaylu n tmudemt
+Afaylu n tmudemt ara yettuseqdec mi ara tezdiḍ neɣ ad tessefḍeḍ. Imuttiyen yestufan: {{content}}, {{fromTitle}}, {{newTitle}}, {{date:FORMAT}}, amedya {{date:YYYY-MM-DD}}.
+Zdi afaylu amiran akked ufaylu nniḍen...
+Zdi afaylu ummid akked...
+Ulac ifuyla i yettwafan.
+i tunigin
+i wezday
+i wesnulfu amaynut
+i wezday ufella
+i tukksa
+Fren afaylu i wezday deg-s...
+Zdi afaylu
+Tebɣiḍ s tidet ad tezdiḍ “{{file}}” ɣer “{{destination}}”? “{{file}}” ad yettwakkes.
+Zdi
+Ssef tafrayt tamirant...
+Ssef tasenṭit-a...
+i usmutti ɣer wadda
+i usmutti ɣer ufella
+Yecceḍ wawi n ufaylu n tmudemt: “{{template}}” ur yettwafa ara.
+Ur yezmir ara ad yaf tasenṭit
+Ameskan n Web
+Azray n Web
+Ldi iseɣwan uffiɣen ɣer isebtar Web daxel n Obsidian.
+Ldi ameskan n Web
+Sken azray
+Qluqel askar n umeɣri
+Nɣel URL
+Kkes seg uzray
+Sfeḍ azray
+Ldi aseɣwen
+Ldi aseɣwen deg yiccer amaynut
+Ldi aseɣwen ɣer yeffus
+Ldi aseɣwen deg usfaylu amaynut
+Ldi aseɣwen deg yiminig amezwer
+Ldi aseɣwen deg umeskan n Web
+Nɣel tansa n useɣwen
+Err aseɣwen d asɣal
+Nadi ɣef “{{query}}”
+Ssef tafrayt ɣer tezmilt tamaynut
+Nɣel
+Gzem
+Senteḍ
+Kkes
+Fren akk
+Sekles ɣer ukaram n weḥraz
+Sekles tugna ɣer ukaram n weḥraz
+Nɣel aseɣwen n tugna
+Ɣer deffir
+Ɣer zdat
+Ales asali
+Err asebter d asɣal
+Ldi deg yiminig amezwer
+Sers asaḍas ɣef tfeggagt n tansa
+Nadi deg Web
+Sfeḍ isefka
+
+Yezmer ad k-id-yessufeɣ seg yismalen Web.
+Isefka n tzarkatut
+Azray
+Akk isefka n umeskan n Web
+Ad yekkes akk ayen yellan ufella, akked usekles adigan d tiɣimitin urmidin.
+Ameskan amaynut n Web
+D awezɣi asali n usmel.
+Ḍmen belli tesɛiḍ tansa tameɣtut.
+Taskant n tɣuri
+Nadi deg Web
+Isefka n umeskan n Web
+Sfeḍ isefka n umeskan n Web
+Ldi iseɣwan uffiɣen
+Ldi iseɣwan deg Obsidian deg umkan n unagraw amezwer.
+Asebter agejdan
+D acu n usebter ara twaliḍ mi ara yeldi umeskan n Web
+Akaram n isebtar yettwaḥerzen
+Ismal Web yettwaḥerzen am markdown ad ttwasersen dagi.
+Amsadday n unadi
+Amsadday n unadi yettuseqdacen mi ara tnadiḍ seg tfeggagt n tansa.
+Amsadday n unadi yettusagenen
+Seqdec %s deg umkan n tuttra.
+Sagen
+Sermed amsewḥel n udellel
+Ma yermed, tibdarin n tistayin ddaw-a ad ttwasnesent ɣef wakk iccaren n umeskan n Web.
+Ilugan n usewḥel n udellel
+Yiwen n URL n tebdart n usewḥel n udellel i yal izirig. Yettwabḍa sɣur wakk ikaramen n weḥraz.
+Asnagar n umucceḍ n usewḥel n udellel
+Ussan gar imuccḍen n tebdarin n tistayin. 0 yemmal-d yensa. Yettwabḍa sɣur wakk ikaramen n weḥraz.
+Sfeḍ isefka n umeskan n Web
+Tuccḍa ur netturaju ara deg tussfa n ugbur.
+D awezɣi tifin n ugbur i tussfa.
+Abeckil
+Sers yerna qqen tizmiltin ɣef ubeckil war talast.
+Rnu tazmilt seg ukaram n weḥraz
+Rnu amedia seg ukaram n weḥraz
+Rnu takarḍa
+Rnu asebter Web
+Rnu agraw
+Rnu takarḍa s tiddi uzzig
+Selket ɣer ufaylu...
+Zuɣeṛ i wakken ad ternuḍ tazmilt seg ukaram n weḥraz
+Zuɣeṛ i wakken ad ternuḍ amedia seg ukaram n weḥraz
+Zuɣeṛ i wakken ad ternuḍ takarḍa
+Ẓreg tabzimt
+Kkes tabzimt
+Nadi ɣef ufaylu
+Sers ini
+Reyyec
+Reyyec ɣer zelmeḍ
+Reyyec ɣer tlemmast
+Reyyec ɣer yeffus
+Reyyec ɣer ufella
+Reyyec ɣer tlemmast
+Reyyec ɣer wadda
+Zzuzer azilal aglawan
+Zzuzer azilal aratak
+Tarigla s wudem aglawan
+Tarigla s wudem aratak
+Sers deg yizirig
+Sers deg tgejdit
+Sers deg yiẓiki
+Sifeḍ am tugna
+Ngez ɣer ugraw
+Sbadu agilal
+Ẓreg agilal
+Semselsi agilal
+Kkes agilal
+Ulac tugniwin i yettwafan.
+Ulac amedia i yettwafan.
+Sifeḍ “{{title}}” am ufaylu PNG s yiɣewwaṛen ddaw-a.
+Tisektiwin n tugna yettwaṣeḍkḍen: {{dimensions}}
+Zzuzer
+Tarigla
+Sers
+Dima
+Mi tsɛeddaḍ taḥnaccaṭ
+Werǧin
+Ulac tagezmi i yettwafan
+Tikli tamzewert n tjerṛaṛt n tɣerdayt
+Tikli tamzewert n {{key}}
+Sken amuɣ
+Ideg amezwer i yifuyla imaynuten n ubeckil
+Anda ara ttwasersen yifuyla imaynuten n ubeckil.
+Akaram anda ara d-tesnulfuḍ ifuyla imaynuten n ubeckil
+Ifuyla imaynuten n ubeckil ad d-banen ddaw ukaram-a.
+Sken ismawen n tkarḍiwin
+Senteḍ ɣer yiẓiki
+Senteḍ tikarḍiwin ɣer yiẓiki n ugilal mi ara tesmuttiḍ neɣ ara tbeddleḍ tiddi.
+Senteḍ ɣer tɣawsiwin
+Senteḍ tikarḍiwin ɣer tɣawsiwin tiqribin mi ara tesmuttiḍ neɣ ara tbeddleḍ tiddi.
+Amnaṛ n usemɣer i wuffar n ugbur n tkarḍa
+Azalen addayen ad snernin tamellit maca ad ffren agbur n tkarḍa s zreb mi ara tsemẓiḍ.
+Sken alugu
+Aya ad yernu logo n Obsidian ɣer wadda ɣef zelmeḍ.
+Askar n tbaḍnit
+Aya ad yeffer yal aḍris deg ubeckil-ik.
+Semɣeṛ/Semẓi
+Asemɣer afellay ad d-yesnulfu tugna s tbadut tafellayt.
+Annar n tmuɣli
+Fren ad d-tsireweḍ abeckil ummid neɣ kan annar n tmuɣli amiran yettbanen.
+Abeckil ummid
+Annar n tmuɣli kan
+Taduli
+Ḥrez assaɣ n tmuɣli
+Ales
+Abeckil amaynut
+Sleg
+Kkes
+Fneẓ ɣer tsenṭit...
+Fneẓ ɣer yiḥder...
+Sbeḍ taskant...
+Semmeskel afaylu...
+Beddel URL...
+Zoom i usezgi
+Zoom ɣer tefrayt
+Ales asali n usebter
+Ḍfaṛ tuqqna
+Snulfu-d abecki amaynut
+Selket ɣer ufaylu...
+i useddu n tsenṭit
+i useddu n yiḥder
+i tunigin ɣer ugraw
+Aru i wakken ad tafeḍ afaylu, tasenṭit, neɣ iḥder
+Sekcem URL
+“{{linktext}}” ur yettwafa ara.
+Rnu aḍris...
+Aru i wakken ad tnadiḍ...
+Tallalt n ubeckil
+Iɣewwaṛen n ubeckil
+Sken afaylu ummid
+Sken taskant tamzewert
+Taɣuri kan
+Ssens taɣuri kan
+Azuɣer
+Azuɣer aglawan
+
+Fren akk
+Rnu ɣer / kkes seg tefrayt
+Sleg takarḍa
+Ḥreṣ amussu n tkarḍa ɣer ugellus
+Ssens aṭṭaf mi ara tzuɣuṛeḍ
+Kkes takarḍa
+Zuɣeṛ seg wadda neɣ sit snat n tikkal
+Sḍes yerna ṭṭef i wernuy / asmutti / tafrayt
+Zuɣeṛ i tmuɣli
+Qmeḍ i usemɣer
+Tallunt + Zuɣeṛ i tmuɣli
+Drurem i usemɣer
+Agraw war azwel
+Tanila n yizirig
+War tanila
+Tanilayant
+Tasnilant
+Tugna
+Aɣanib
+Ulac igrawen i yettwafan
+D awezɣi asifeḍ n ubeckil ilem
+Abeckil yufa-d isnifelen n yismawen n yifuyla i yettḥazazen {{count}} ufaylu n ubeckil, amucceḍ tura...
+Abeckil yufa-d isnifelen n yismawen n yifuyla i yettḥazazen {{count}} n yifuyla n ubeckil, amucceḍ tura...
+Abeckil imucceḍ {{count}} n tkarḍa yettwaseddun
+Abeckil imucceḍ {{count}} n tkarḍiwin yettwaseddun
+Taffiwin
+Snulfu-d tiskniwin yettusagenen i k-yettaken tagnit ad tẓergeḍ, ad tefreneḍ, yerna ad testayḍ ifuyla s useqdec n yiraten-nsen.
+Taffa tamaynut
+Rnu arat "{{name}}"
+Rnu agzul "{{name}}"
+Rnu talɣa
+Ffer akk
+Qluqel timeẓriwti
+Kkes talɣa
+Taskant tamzewert
+Sleg taskant
+Kkes taskant
+Kkes agzul
+Sifeḍ ɣer CSV...
+Snulfu-d taffa tamaynut
+Ger taffa tamaynut
+Nɣel tafelwit ɣer tecfawit
+Beddel taskant...
+Rnu taskant
+Rnu aferdis
+Rnu taskant
+Rnu tastayt
+Rnu agraw n tistayin
+Sken akk
+Sken akk ({{count}})
+Rnu agzul 
+Ffer agzul 
+Akk tiskanayin
+Taskant-a
+Af-d neɣ snulfu-d...
+Iraten yettwasiḍnen
+Tawsit n urat 
+Ffer arat 
+Sken arat 
+Ẓreg arat 
+Ẓreg {{name}}
+Swel taskant 
+Aɣawas 
+Tistayin imuta
+Tistayin n teskant 
+Isem n teskant
+Taskant
+Tafelwit 
+Isem n ubeqqeḍ
+Isem n ugzul 
+Talɣa
+Tiskniwin
+Smizzwer 
+Tastayt 
+Anadi 
+Iraten 
+Amaynut 
+Yeskanay-d {{count}}
+Afaylu n tmudemt n uferdis amaynut 
+Akaram n uferdis amaynut 
+Kra seg wid-a d tidet
+Akk wid-a d tidet
+Ula d yiwen seg wid-a d tidet
+anda
+neɣ
+d
+Arat 
+War azwel
+afaylu 
+isem n ufaylu 
+isem n uzadur n ufaylu 
+isem ummid n ufaylu 
+abrid n ufaylu 
+akaram 
+asiɣzef n ufaylu 
+akud n wesnulfu
+akud n ubeddel
+tiddi n ufaylu
+iseɣwan ikcamen n ufaylu 
+iseɣwan n ufaylu 
+isedduyen n ufaylu 
+ticraḍ n ufaylu 
+Rnu amizzwer 
+Ssegrew s 
+Agraw
+Askan
+Igmaḍ
+S ufus
+Rnu agraw
+Smizzwer s 
+Eg talast i wemḍan n yigmaḍ
+
+
+Aqbur ar umaynut
+Amaynut ar uqbur
+
+
+Isem n teskant ur yezmir ara ad yesɛu: 
+Isem n teskant yella yakan.
+Isem n teskant ur yezmir ara ad yili d ilem.
+Tastayt-a ur tezmir ara ad tettwagensess sɣur umesnulfu aḥerfi n tistayin.
+Tastayt ur tezmir ara ad tettwasleḍ. Amesnulfu n tistayin n uzadur ur yezmir ara ad yettuseqdec. 
+Tawila n yiraten d tarmeɣtut. 
+Tawila n urat d tarmeɣtut i "{{ name }}". 
+Ur yezmir ara ad yernu taskant tamaynut n Teffiwin "{{ viewId }}". Taskant s usulay-a tella yakan. 
+Ur yezmir ara ad yesleḍ afaylu-k n taffa: 
+Taskant "{{ view }}" ur tettwafa ara
+Tawsit n teskant ur tettwassen ara: {{ viewtype }} 
+Tiskanayin ilaq ad ilint d isirwen 
+Izalen n ubeqqeḍ ilaq ad ilin d izurar. Azal i urat {{ key }} mačči d azrar.
+"{{ key }}" ilaq ad yili d {{ type }}
+"tistayin" ilaq ad ilint d azrar neɣ d taɣawsa 
+Tastayt "{{ conjunction }}" ilaq ad tili d isirew 
+"tistayin" zemrent ad sɛunt kan yiwet seg tsura "and", "or", neɣ "not".
+Yecceḍ uskazal n testayt: {{ message }}
+Izalen n telɣa ilaq ad ilin d izurar. Azal i urat {{ key }} mačči d azrar.
+Yecceḍ usiḍen n wazal n urat "{{ key }}": {{ message }}
+Tuttra tesɛa amasal ur neɣbil ara. Ilaq ad tili d taɣawsa YAML.
+Iferdisen n "taskant" ilaq ad ilin d taɣawsa YAML, maca aferdis {{ index }} ur yelli ara.
+Isem ixuṣ neɣ ur yeɣbil ara deg teskant {{ index }}
+"{{ key }}" yettusra deg teskant "{{ viewName }}"
+"{{ key }}" ilaq ad yili d {{ type }} deg teskant "{{ viewName }}"
+Izalen n "{{ key }}" ilaq merra ad ilin n tewsit {{ type }} deg teskant "{{ viewName }}"
+D awezɣi tasleṭ n tistayin deg teskant "{{ viewName }}": {{ message }}
+Tineddict war taggara tettwaf deg telɣa
+Arat ur neɣbil ara
+Tazmilt-a ad tettwastixeṛ acku ur temṣada ara d tisefrayin-ik·im
+Tastayt talqayt
+amedya. 10
+Tastayt talqayt
+Tastayt taḥerfit
+Kkes tastayt
+Ulac
+Tabdart
+Imcaccalen
+Iraten n usiẓi
+Anabraz n yiraten
+Tililect
+Amḍan
+Ulac
+Tikarḍiwin
+Tiddi n tkarḍa
+Arat n tugna
+Asezgi n tugna
+Taduli
+Eṭṭef
+Assaɣ n tmuɣli n tugna
+
+Ẓreg igrawen...
+Tehri n tgejdit
+Rnu tigejda
+Fren arat i usdukkel.
+Fren arat
+Ulac tigejda
+Fren igrawen ara d-yettwasknen am tigejda.
+Tafelwit
+Ffer tigejdit
+Ẓreg arat...
+Ẓreg talɣa...
+Sfeḍ amizzwer
+Wezzer A → Z
+Smizzwer Z → A
+Tiɣzi n yizirig
+Awezlan
+Alemmas
+Aɣezfan
+Aɣezfan aṭas
+Gzel...
+Ssegrew s urat-a
+Beddel tiddi n tgejdit...
+Ales awennez n tiddi n tgejdit...
+Zuɣer iwakken ad tbeddeleḍ tiddi
+Sfeḍ izalen
+Agzul
+Yecceḍ wesleḍ n telɣa "{{ formula }}"
+Ur yezmir ara ad yaf tasɣent "{{ function }}"
+Ur yezmir ara ad yaf tasɣent "{{ function }}" ɣef tewsit {{ type }}
+Ur yezmir ara ad isiwel i tesɣent "{{ function }}", xuṣṣen ifukal.
+Ur yezmir ara ad isiwel i tesɣent "{{ function }}", aṭas n ifukal.
+Tuccḍa n tewsit deg "{{ function }}", aɣewwaṛ "{{ parameter }}". Yetturaǧu {{ expected }}, yettunefk-d {{ given }}.
+Ur yezmir ara ad yekcem ɣer umatar "{{ index }}" n wazal ur nelli ara d asirew
+Ur yezmir ara ad yaf "{{ index }}" ɣef tewsit {{ type }}
+Sebrureq akk
+Mṣada d yizmulen n ususru
+Awalen ummiden
+Tugniwin tiqmaḍin
+Tafelwit n igburen
+Sken asebter deg tfelwit n ugbur
+Qluqel agalis adisan
+Asebter uqbel
+Asebter uḍfir
+Sezg tehri
+Sezg tiɣzi
+Sekles ideg amiran deg yisemli
+Nɣel awennit
+Nɣel am ubdar
+Nɣel aseɣwen ɣer tefrayt
+Nɣel aseɣwen ɣer uwennit
+Nɣel aseɣwen ɣer tgezmi
+Nɣel aseɣwen ɣer “{{title}}”
+Nɣel aseɣwen ɣer usebter {{page}}
+{{current}} ɣef wugar n {{limit}} n yimṣadan
+{{current}} ɣef {{total}} umṣada
+{{current}} ɣef {{total}} n yimṣadan
+Afaylu-a PDF yettummesten s wawal n uɛeddi
+Awal n uɛeddi d armeɣtu
+Sekcem awal n uɛeddi ddaw-a
+seg {{count}}
+({{current}} seg {{count}})
+Asebter asuf
+Snat isebtar (aryugan)
+Snat isebtar (ayugan)
+Tixtiṛiyin n ugalis adisan
+Tixtiṛiyin n ubeqqeḍ
+Sezg ɣer usentel
+asebter {{page}}
+Asebter {{page}}
+Asebter {{page}}
+Asebter {{page}}
+[Awennit {{type}}]
+
+Tabdart
+Ur yettwassen ara
+Aḍris
+Tizaẓluyin
+Ticraḍ
+Akaram
+Afaylu
+Arat
+Azemz
+Azemz d wakud
+Amḍan
+Tanaka n ufran
+Aru [[
+i tuqqna n tezmilt
+agi
+Tawsit n urat
+Smizzwer
+Isem n urat ur yezmir ara ad yili d ilem.
+Arat yella yakan
+Isem n tecreṭ ur yeɣbil ara
+Amḍan armeɣtu
+Tecceḍ tɣuri n yiraten.
+Ilem
+Iraten
+Iraten d irmeɣta
+Sken aɣbalu
+Tuccḍa n tseddast. Tanga tamenzut-ik·im d tarmeɣtut.
+Rnu arat
+Tawsit ur temṣada ara, yetturaǧu {{type}}
+Tawsit ur temṣada ara
+Beqqeḍ am {{type}}?
+Isefka-k·m {{oldType}} ur mṣadan ara. Ad ttusizgen i wakken ad mwatan d umasal amaynut.
+Tigejdit
+Izirig
+Rnu izirig ddaw-a
+Rnu tigejdit ɣer yeffus
+Rnu izirig sennig
+Sali izirig
+Sader izirig
+Rnu tigejdit ɣer zelmeḍ
+Smutti tigejdit ɣer zelmeḍ
+Smutti tigejdit ɣer yeffus
+Sleg izirig
+Sleg tigejdit
+Kkes izirig
+Kkes tigejdit
+Tarigla ɣer zelmeḍ
+Tarigla ɣer tlemmast
+Tarigla ɣer yeffus
+Kkes tibniqin
+Sfeḍ tibniqin
+Smizzwer s tgejdit (A ɣer Z)
+Smizzwer s tgejdit (Z ɣer A)
+Tafelwit: {{command}}
+Tawsit n ulɣu
+Talɣut
+Axatar
+Iwelhen
+Amures
+Asteqsi
+Aḥedder
+Abdar
+Amedya
+Ulac
+Wayeḍ...
+Tawsit n ulɣu...
+
+{{count}} n wawal
+{{count}} n wawalen
+{{count}} n ugmuḍ
+{{count}} n yigmaḍ
+{{count}} n usekkil
+{{count}} n yisekkilen
+{{count}} n useɣwen
+{{count}} n yiseɣwan
+{{count}} n ufaylu
+{{count}} n yifuyla
+{{count}} n ukaram
+{{count}} n yikaramen
+{{count}} n useɣwen akcam
+{{count}} n yiseɣwan ikcamen
+{{count}} n yiccer
+{{count}} n waccaren
+{{count}} n urat
+{{count}} n yiraten
+{{count}} n usmel
+{{count}} n yismal
+{{count}} n uzegrir
+{{count}} n yizegriren
+{{count}} yermed
+{{count}} n ubruy
+{{count}} n yibruyen
+{{count}} n usentel
+{{count}} n yisental
+Sefsex
+IH
+Nɣel
+Ldi aseɣwen
+Ldi afaylu-agi
+Selkem afaylu
+Ldi aseɣwen azɣaray?
+Aseɣwen-agi ad yeldi asnas azɣaray beṛṛa n Obsidian. Kemmel kan ma yella tesɛiḍ taflest deg uɣbalu n useɣwen-a
+Yal tikelt ldi {{scheme}}:// links
+Alɣu n ufaylu anmeggag
+Afaylu-agi i d-yezgan deg uqeddac anmeggag, yezmer ad yili d amihaw.\nD tidet tebɣiḍ ad t-teldiḍ?
+Adig: {{location}}
+Anekcum ɣer unuḍaf n uẓeṭṭa
+Agbur-agi isutur isefka seg unuḍaf n uzeṭṭa. Asireg-agi yezmer ad isseqdec inekcam n tuqqna neɣ talɣut-nniḍen n tḥulfut i usneftaɣ anmeggag.
+Asneftaɣ: {{host}}
+Sireg
+Selkem afaylu amselkam?
+Aseɣwen-agi yesɛa asewwaṛ ɣer ufaylu amselkam. Aselḥu-ines yezmer ad iḍurr aselkim-inek·inem.
+Afaylu: {{path}}
+Akaram n weḥraz ur yettwaf ara.
+Ur yezmir ara ad d-yaf tansa URL {{url}} n ukaram n weḥraz
+Ifuyla yettwasefraken

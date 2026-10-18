@@ -106,6 +106,7 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
         }
       }
 
+      widgets.sort((a, b) => a.from - b.from || a.to - b.to);
       return Decoration.set(widgets, true);
     }
   },

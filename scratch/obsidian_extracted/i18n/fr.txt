@@ -1,0 +1,2602 @@
+
+Module
+Modules principaux
+Afficher dans la liste des modules
+Options des modules
+Exemple : dossier1/dossier2
+Exemple : dossier/note
+Aucun fichier sélectionné
+Changer cette option requiert un redémarrage pour prendre effet
+Nombre invalide
+La valeur doit être d’au moins {{min}}
+La valeur doit être au maximum {{max}}
+Fichier introuvable.
+Rechercher dans les paramètres...
+Aucun paramètre trouvé.
+{{count}} de plus
+Éditeur
+Comportement
+Affichage
+Vérification orthographique
+Active le correcteur orthographique.
+Langues du correcteur orthographique
+Sélectionne les langues que le correcteur orthographique doit vérifier.
+Le correcteur orthographique natif détecte automatiquement la langue utilisée par le système macOS
+Dictionnaire du correcteur orthographique
+Le dictionnaire du correcteur orthographique est vide.
+Titre en ligne
+Affiche le nom du fichier comme titre modifiable en ligne avec le contenu du fichier.
+Longueur de ligne lisible
+Limite la longueur de ligne maximale. Affiche moins de contenu à l'écran mais rend les longs paragraphes plus lisibles.
+Sauts de ligne stricts
+En mode aperçu, ignore les sauts de ligne simples selon les spécifications Markdown. Désactiver cette option permet d'afficher les sauts de ligne simples en mode aperçu.
+Propriétés dans les documents
+Indique comment les propriétés sont affichées dans l'éditeur. Sélectionner “Source” pour voir les propriétés affichées en YAML brut.
+Caché
+
+
+Association automatique des crochets
+Associe automatiquement entre-eux les crochets et les guillemets.
+Association automatique de la syntaxe Markdown
+Associe automatiquement les symboles pour : gras, italique, surlignage, soulignement et code.
+Indentation intelligente des listes
+Prise en charge automatique de l'indentation des éléments des listes.
+Pliage de l'entête
+Permet de plier toute la section sous un entête.
+Pliage de l'indentation
+Permet de plier des portions d'indentation identique, telles que les listes.
+Mode par défaut pour les nouveaux onglets
+Indique le mode par défaut dans lequel un nouvel onglet Markdown est ouvert.
+Mode édition
+Mode lecture
+Toujours focaliser sur les nouveaux onglets
+Permet de basculer immédiatement dans un nouvel onglet lorsqu'on ouvre un lien.
+Mode d'édition par défaut
+Permet de définir le mode d'édition par défaut d'un nouvel onglet.
+Mode source
+Aperçu en direct
+Numéros de ligne
+Affiche le numéro de ligne dans la marge.
+Guides d'indentation
+Affiche les lignes verticales pour relier entre elles les puces d'indentation de même niveau afin d'offrir un guide visuel.
+Utiliser des tabulations
+Utilisation des tabulations pour indenter avec la touche “Tab”. Désactiver cette option permet d'utiliser des espaces à la place.
+Taille des tabulations
+Nombre d'espaces auquel une tabulation équivaut.
+De droite à gauche (RTL)
+Définit la direction du texte des notes de droite à gauche (RTL).
+Afficher les diagrammes Mermaid dans les notes
+Afficher les diagrammes de flux, les diagrammes de séquence et d’autres diagrammes à partir des blocs de code “mermaid”.
+Convertir automatiquement le HTML en Markdown
+Convertit automatiquement le HTML en Markdown lors du collage et du glisser-déposer à partir de pages Web. Utiliser Ctrl/Cmd + Maj + V pour coller sans mise en forme.
+Raccourcis clavier Vim
+Permet d'utiliser les raccourcis clavier Vim en mode éditeur.
+Sur les mobiles, ce réglage est propre à chaque appareil et n'est pas synchronisé.
+Reconstruire le cache du coffre
+La reconstruction du cache peut prendre plusieurs secondes à plusieurs minutes suivant la taille du coffre.
+Reconstruire
+Confirmer l'entrée en mode Vim
+Le mode Vim permet une édition de texte efficace mais peut être contre-intuitive. Si vous n'êtes pas familier avec Vim, cette option peut donner l'impression qu'Obsidian a cessé de fonctionner.
+Pour vérifier que vous connaissez Vim, veuillez entrer ci-dessous la commande qui permet de quitter Vim sans enregistrer : 
+Réponse
+Entrer la commande...
+Activer Vim
+La commande étant correcte, le mode Vim est maintenant activé.
+La commande étant incorrecte, le mode Vim reste désactivé pour vous protéger.
+Entrer la commande pour activer le mode Vim
+Fichiers & Liens
+Confirmer avant de supprimer des fichiers
+Évite la suppression accidentelle de fichiers.
+Corbeille
+Fichiers supprimés
+Permet d'indiquer que faire des fichiers après les avoir supprimés
+Déplacer vers la corbeille du système
+Déplacer vers la corbeille d'Obsidian (dossier .trash)
+Supprimer définitivement
+Supprimer les pièces jointes lors de la suppression de fichiers
+Permet de supprimer automatiquement les pièces jointes liées au fichier supprimé quand elles ne sont pas utilisées ailleurs.
+Toujours
+Demander à chaque fois
+Jamais
+Fichier ouvert par défaut
+Permet de choisir quel fichier ouvrir au démarrage de l'application.
+Dernier ouvert
+Nouvelle note
+Fichier spécifique
+La note du jour
+Fichier à ouvrir
+Permet de sélectionner un fichier spécifique à ouvrir par défaut.
+Toujours mettre à jour les liens internes
+Permet de mettre à jour automatiquement les liens internes après avoir renommé un fichier.
+Emplacement par défaut de la nouvelle note
+Indique où placer les nouvelles notes. Les paramètres d'éventuels modules primeront sur ce paramètre.
+Racine du coffre
+Même dossier que le fichier
+Dans le dossier spécifié ci-dessous
+Dossier dans lequel créer de nouvelles notes
+Indique dans quel dossier placer les nouvelles notes. Les paramètres d'éventuels modules primeront en cas de conflit.
+Utiliser les [[Wikilinks]]
+Génère automatiquement des Wikilinks pour les [[liens]] et ![[images]] à la place des liens Markdown et des images. Si désactivée, cette option génère automatiquement des liens Markdown.
+Détecter toutes les extensions de fichiers
+Affiche les fichiers et leurs extensions, même si Obsidian ne peut pas les ouvrir nativement, afin que vous puissiez les lier et les voir dans l'explorateur de fichiers et le sélecteur rapide.
+Liens
+Format des nouveaux liens
+Indique le format des liens lors de la génération automatique de liens internes.
+Chemin le plus court si possible
+Chemin relatif au fichier
+Chemin absolu dans le coffre
+Emplacement par défaut des nouvelles pièces jointes
+Indique l'emplacement des pièces jointes nouvellement ajoutées.
+Pièces jointes
+Dans le sous-dossier, sous le dossier actuel
+Chemin du dossier des pièces jointes
+Indique dans quel dossier les nouveaux fichiers joints sont enregistrés. Cela inclut les images créées par glisser-déposer ou collées ainsi que les enregistrements audio.
+Nom du sous-dossier
+Si votre coffre est dans “coffre/dossier”, et votre nom de sous-dossier est “pièces-jointes”, alors les pièces jointes seront enregistrées dans “coffre/dossier/pièces-jointes”.
+Fichiers exclus
+Les fichiers exclus seront masqués dans la recherche et la vue graphique, et moins visibles dans le sélecteur rapide et la suggestion de liens.
+Ajouter une exclusion...
+Aucune exclusion ajoutée.
+{{count}} règle
+{{count}} règles
+Ajouter une exclusion
+Saisissez un chemin ou une expression régulière, par ex. /daily-.*/
+Le filtre ne peut pas être vide
+Autoriser les rappels URI
+Active l'utilisation de x-callback-url via x-success ou x-error lors du traitement des URI Obsidian.
+Apparence
+Thème de base
+Permet de choisir le jeu de couleurs par défaut d'Obsidian.
+sombre clair système mode nuit jeu de couleurs
+Couleur d'accentuation
+Permet de choisir la couleur d'accentuation utilisée dans toute l'application.
+surlignage marque couleur principale
+Sombre
+Clair
+S'adapte automatiquement au système
+Police
+Avancé
+
+Police de l'interface
+Définit la police de base utilisée dans Obsidian.
+Niveau de zoom
+Contrôler le niveau global du zoom de l'application.
+Police de texte
+Définit la police pour l'édition et l'aperçu.
+Police monospace
+Définit la police pour des textes tels que des blocs de code et des métadonnées.
+{{count}} police
+{{count}} polices
+Entrez le nom de la police...
+Aucune police personnalisée n'est utilisée pour le moment. Ajoutez-en une ci-dessous.
+La première police de cette liste qui existe sur votre appareil sera utilisée.
+Cette police n'est pas détectée sur le système.
+Cette police est détectée sur le système.
+Nom de la police
+Ouvrir les thèmes communautaires
+Prévisualisation et choix de magnifiques thèmes créés par la communauté.
+Parcourir
+Taille de police
+Définit la taille de police en pixels utilisée par l'éditeur et l'aperçu.
+taille du texte zoom
+Réglage rapide de la taille de police 
+Ajuste la taille de la police à l'aide de Ctrl + Molette ou à l'aide du geste de zoom par pincement du trackpad.
+Thèmes
+Gestion des thèmes installés et découverte des thèmes de la communauté
+communauté parcourir installer télécharger
+Gérer
+Aucun
+Menus natifs
+Apparence des menus de l'application semblable à ceux du système d'exploitation. L'apparence des menus ne sera pas affectée par votre thème.
+Ouvrir le dossier des thèmes
+Extraits de CSS
+Gérez votre collection de fichiers CSS pour personnaliser l’apparence de l’application.
+Aucun extrait de CSS n'a été trouvé dans le dossier.
+{{count}} activé
+Les extraits CSS vous permettent de personnaliser l’apparence d’Obsidian. Placez les fichiers CSS dans “{{path}}” pour qu’ils apparaissent ici.
+Recharger les extraits
+Ouvrir le dossier des extraits de CSS
+Extraits de CSS rechargés.
+Rechercher des extraits...
+Thèmes installés
+Capture d'écran indisponible
+Défaut
+Cliquer pour agrandir
+Mettre à jour
+Actif
+Style du cadre des fenêtres
+Détermine le style de la barre de titre des fenêtres Obsidian. Nécessite un redémarrage complet pour prendre effet.
+Caché (par défaut)
+Cadre Obsidian
+Cadre natif
+Icône d'app personnalisée
+Définit une icône personnalisée pour l'app
+Choisir une icône personnalisée
+Ruban latéral
+Configure les commandes apparaissant dans le ruban latéral de la barre de navigation.
+Élément du ruban d'accès rapide
+Permet de choisir l'action associée à l'élément du ruban d'accès rapide dans le menu de navigation. Maintenir appuyé permet d'afficher le menu.
+Ouvrir le menu déroulant
+Configurer
+Afficher le ruban
+Affiche la barre d'outils verticale sur le côté de la fenêtre.
+Autres éléments du ruban
+Configuration du ruban
+Choix des éléments que vous voulez activer dans le ruban. Faire un glisser-déposer permet de modifier l'ordre.
+Afficher la barre de titre des onglets
+Afficher le menu d'entête en amont de chaque onglet.
+Navigation flottante
+Permet de faire flotter les boutons de navigation au-dessus du contenu au lieu d’être ancrés.
+Barres latérales coulissantes
+Permet de faire glisser les barres latérales sur le côté du contenu au lieu de flotter au-dessus.
+Plein écran
+Permet de masquer automatiquement les éléments de l’interface pendant la lecture.
+Il y a {{count}} thème à mettre à jour.
+Il y a {{count}} thèmes à mettre à jour.
+Rechercher les mises à jour
+Afficher les mises à jour
+Tout mettre à jour
+Thèmes communautaires actuels
+{{count}} thème actuellement installé.
+{{count}} thèmes actuellement installés.
+Ouvrir les paramètres dans une nouvelle fenêtre
+Ouvrir les paramètres dans leur propre fenêtre au lieu de les intégrer à l’application.
+
+
+Avancé
+Raccourcis clavier
+Rechercher des raccourcis clavier
+Affichage de {{count}} raccourci clavier.
+Affichage de {{count}} raccourcis clavier.
+Filtrer...
+Supprimer le raccourci clavier
+Appuyer sur la touche de raccourci...
+Tous
+Conflits ({{count}})
+Non-assignées
+Assignées
+Assignées par moi-même
+Aucun résultat trouvé.
+Restaurer par défaut
+Personnaliser la commande
+Ce raccourci clavier est en conflit avec la commande “{{command}}”
+Ce raccourci clavier est en conflit avec {{count}} autres commandes
+Indéfini
+Trousseau
+
+Ajouter un secret
+Modifier le secret
+Afficher le secret
+Masquer le secret
+id
+
+nom-du-secret
+Lettres minuscules, chiffres et tirets uniquement.
+Saisissez votre secret.
+Jamais consulté
+Échec de la mise à jour du secret.
+Échec de l'ajout du secret.
+Un secret avec cet ID existe déjà.
+La valeur du secret ne peut pas être vide.
+L'ID du secret est invalide. Utilisez uniquement des lettres minuscules, chiffres et tirets. 64 caractères maximum.
+Aucun secret n'a été ajouté. Les secrets servent à stocker des informations comme des clés API et des mots de passe utilisables par les modules.
+Sélectionner un secret
+Rechercher un secret...
+Ajouter un secret...
+Lier...
+Les secrets sont stockés sans chiffrement, car aucun magasin de secrets n’est disponible sur ce système.
+Les secrets ne sont pas chiffrés
+Ne plus afficher
+Chiffrement non disponible
+Le chiffrement est fourni par le magasin de secrets de votre système d’exploitation. Sans magasin de secrets, vos secrets seront stockés sans chiffrement.
+Sous Linux, les magasins de secrets pris en charge incluent :
+Général
+Licence commerciale
+Clé de licence
+Votre clé de licence...
+Activer une licence
+Activer
+Inconnue
+
+Version du programme d’installation : {{version}}
+Lire le journal des modifications.
+Pour profiter des dernières fonctionnalités et recevoir les derniers correctifs de sécurité, Obsidian nécessite une mise à jour majeure de son installateur. Vous devez télécharger et réinstaller Obsidian manuellement.
+Une nouvelle version est prête à être installée.
+Les mises à jour sont désactivées.
+Relancer
+Rechercher les mises à jour
+Mises à jour automatiques
+Désactive la recherche des mises à jour de l'application.
+Alerter si le démarrage est plus long que prévu
+Détecte les dysfonctionnements en analysant les raisons des démarrages lents.
+Vérifier maintenant
+Interface en ligne de commande
+Autorise les interactions avec Obsidian depuis la ligne de commande (CLI).
+Configurer l’interface en ligne de commande (CLI) pour fonctionner dans le terminal
+Enregistre “obsidian” dans le PATH du système pour permettre l’accès dans le terminal à la commande “obsidian” depuis n’importe où.
+Enregistrer
+Obtenir de l'aide
+Apprendre à utiliser Obsidian et obtenir de l'aide de la communauté.
+Ouvrir
+Langue
+Permet de changer la langue d'affichage.
+Recevoir les pré-versions (Insider)
+Mises à jour automatiques avec les pré-versions. Permet d'essayer des nouvelles fonctionnalités mais notez que ces versions peuvent être moins stables.
+Avancé
+Accélération matérielle
+Active l'accélération matérielle. Utilise le GPU de la machine pour rendre l'affichage plus fluide.
+Si vous désactivez cette option, les performances de l'application seront sévèrement dégradées.
+Modifier le dossier de configuration
+Utilise un dossier de configuration différent de celui par défaut. Il doit commencer par un point.
+L'emplacement de configuration doit être un nom de dossier valide commençant par un point.
+Licence
+La clé de licence commerciale est “{{key}}”.
+Enregistré à “{{company}}” pour {{seats}} utilisateurs. Valable jusqu'au {{expiry}}.
+Validation en cours...
+Licence invalide : 
+Supprimer
+Licence Catalyst
+Vous avez actuellement la licence Catalyst {{tier}}. Merci pour votre soutien !
+Vous n'avez pas de licence Catalyst pour le moment. La licence Catalyst est un don qui aide à soutenir le développement d'Obsidian et vous donne accès aux nouvelles fonctionnalités.
+Application
+Apprendre comment ajouter une autre langue à Obsidian.
+Compte
+Compte
+Vous êtes actuellement connecté avec {{name}} ({{email}}).
+Vous n'êtes pas connecté pour le moment. Un compte est nécessaire uniquement pour Obsidian Sync, Obsidian Publish et les pré-versions Catalyst.
+Mise à niveau
+Licence commerciale
+Aidez Obsidian à rester 100% financé par ses utilisateurs.
+Acheter
+Se déconnecter
+Se connecter
+Se connecter à Obsidian
+S'inscrire
+Adresse électronique
+Votre adresse électronique...
+Nom complet
+Mot de passe
+Votre mot de passe...
+Mot de passe oublié ?
+Se connecter
+L'adresse électronique ne peut pas être vide.
+L'adresse électronique est invalide.
+Le mot de passe ne peut pas être vide.
+Échec de connexion, merci de vérifier à nouveau l'adresse électronique et le mot de passe.
+Inscription échouée
+Pas de compte ? 
+S'inscrire maintenant
+Code 2FA à six chiffres
+Le code de double authentification doit contenir 6 chiffres.
+Code 2FA incorrect, veuillez vérifier votre application d'authentification.
+Liste des modules principaux
+Rechercher parmi les modules principaux
+Filtre les modules par nom ou par description.
+Rechercher parmi les modules...
+Modules complémentaires
+Mode restreint
+Activez le mode restreint pour utiliser l’application sans modules complémentaires.
+Activer
+Vérifier automatiquement les mises à jour des modules
+Vérifie périodiquement les mises à jour des modules.
+Modules complémentaires
+Parcourir et installer des modules complémentaires créés par la communauté.
+Parcourir
+Quitter le mode restreint
+Les modules complémentaires, comme tout autre logiciel que vous installez, peuvent potentiellement causer des problèmes d'intégrité et de sécurité des données.
+La sécurité des modules est importante pour nous. Voici ce que nous faisons :
+Malgré nos efforts, il existe toujours une faible chance qu'un module complémentaire se comporte mal.
+Examen du code
+Les modules du répertoire officiel de la communauté sont automatiquement examinés après chaque mise à jour.
+
+La plupart des modules sont open source sur GitHub, ce qui vous permet d'inspecter le code vous-même.
+Audit par des pairs
+Nous avons une grande communauté de développeurs qui veillent les uns sur les autres.
+Dispositif de rapport
+Nous assurons le suivi et le retrait des modules défectueux sur signalement des utilisateurs.
+En savoir plus sur la sécurité des modules
+Autoriser les modules complémentaires
+Les modules peuvent exécuter du code arbitraire sur votre appareil. Nous vous recommandons de sauvegarder vos données avant de les activer.
+Réactiver les modules installés
+Restaurer {{count}} module précédemment installé.
+Restaurer {{count}} modules précédemment installés.
+Afficher les informations du module
+Modules activés
+Ces modules seront activés en quittant le mode restreint.
+Faire confiance à l'auteur de ce coffre ?
+Vous ouvrez ce coffre pour la première fois et il est livré avec des modules complémentaires.
+Si vous avez obtenu ce coffre de quelqu'un d'autre, veuillez noter que des modules complémentaires d'origine inconnue peuvent présenter des risques pour la sécurité.
+Si vous ne faites pas entièrement confiance à l'auteur de ce coffre, nous vous recommandons de rester en mode restreint, afin que les modules de ce coffre soient désactivés.
+Faire confiance à l'auteur et activer les modules
+Parcourir le coffre en mode restreint
+Recherche de modules complémentaires...
+Impossible de charger les modules complémentaires.
+Installé
+Installer
+Activer
+Désactiver
+Copier le lien de partage
+Voir les détails
+Ouvrir la page de la communauté
+Paramètres
+Faire un don
+Aucun résultat trouvé.
+Aucun fichier récent trouvé. Tapez pour démarrer la recherche...
+Échec du chargement du manifeste du module.
+Version : {{version}}
+ (actuellement installée : {{version}})
+De 
+Dépôt : 
+Dernière mise à jour : 
+Voir la dernière mise à jour
+Ce module complémentaire ne prend pas en charge cet appareil.
+Mettre à jour
+Ce module complémentaire n'a pas fourni de fichier README.
+Installation du module “{{name}}”...
+Échec de l'installation du module “{{name}}”.
+Le module “{{name}}” a été installé avec succès.
+Échec de la désinstallation du module “{{id}}”.
+Échec de la désactivation du module “{{id}}”.
+Modules installés
+Recharger les modules complémentaires
+Modules complémentaires rechargés.
+Désinstaller
+Désinstaller ce module complémentaire
+Êtes-vous sûr de vouloir désinstaller ce module ? Cela supprimera aussi son dossier.
+Ouvrir le dossier des modules complémentaires
+Rechercher les mises à jour
+Tout mettre à jour
+Modules actuels
+Recherche de mises à jour...
+Il y a {{count}} module installé.
+Il y a {{count}} modules installés.
+Aucune mise à jour de module complémentaire trouvée.
+{{count}} module peut être mis à jour.
+{{count}} modules peuvent être mis à jour.
+Mettre à jour vers la version {{version}}
+Rechercher dans les modules installés
+Filtre les modules installés par nom ou par description
+Rechercher les modules installés...
+Afficher uniquement les modules installés
+Aucun module installé.
+Faire un don pour soutenir {{name}}
+Les développeurs de modules sont des bénévoles de la communauté qui réalisent des trucs incroyables par passion. Si vous trouvez ce module utile, veuillez envisager de faire un don pour soutenir son développement.
+100% des dons iront directement au développeur du module ; Obsidian ne prend pas de commission. La plateforme de financement qu'ils choisissent peut prélever des frais de transaction.
+Merci pour votre généreux soutien !
+Soutenir l'auteur de ce module :
+Affichage de {{pluginCount}} : 
+Les plus téléchargés
+Récemment publiés
+Récemment mis à jour
+Alphabétique
+Mise à jour {{time}}
+Barre d'outils mobile
+Configurer l'action rapide
+Configure la commande à utiliser lorsque vous tirez la barre d'outils du haut vers le bas. La commande actuelle est définie sur “{{command}}”.
+Action non configurée
+Configurer
+Sélectionner l'action rapide...
+Aucun
+Gérer les options de la barre d'outils
+Ajouter un lien interne
+Intégrer un aperçu
+Ajouter un mot-clé
+Basculer l'entête
+Mettre en barré
+Mettre en surbrillance
+Basculer en code
+Basculer en bloc de citation
+Basculer en ligne mathématique
+Basculer en bloc mathématique
+Ajouter un lien Markdown
+Basculer en liste à puces
+Basculer en liste numérotée
+Indenter l'item de liste
+Désindenter l'item de liste
+Annuler
+Rétablir
+Déplacer le curseur vers le haut
+Déplacer le curseur vers le bas
+Déplacer le curseur vers la gauche
+Déplacer le curseur vers la droite
+Aller à la première ligne
+Aller à la dernière ligne
+Basculer le clavier
+Configurer la barre d'outils mobile
+Options ajoutées
+Plus d'options de barre d'outils
+Insérer une pièce jointe
+Prendre une photo
+Choisir un fichier
+Chercher
+Remplacer
+Quitter la recherche
+Suivant
+Précédent
+Trouver tout
+Remplacer
+Remplacer tout
+Saisir #
+pour lier l'entête
+Saisir ^
+pour lier les blocs
+Saisir |
+pour changer le texte d'affichage
+Afficher texte
+Entête
+Aucune correspondance trouvée
+Taille image : {{size}} px de large
+pour accepter
+Nouvelle note de bas de page.
+Aucune suggestion...
+Ajouter au dictionnaire
+Modifier le lien
+Editer le tag
+Modifier ce bloc
+Supprimer pied de page et référence
+Réinitialiser la taille
+Supprimer l’image
+Supprimer l’image
+Aucun entête
+Entête {{level}}
+Exporter au format PDF
+Exporter “{{filename}}” au format PDF avec les réglages ci-dessous.
+Format de la page
+Inclure le nom du fichier comme entête
+Paysage
+Marge
+Défaut
+Minimale
+Aucune
+Mise à l'échelle
+Exporter au format PDF
+Suivre le lien
+Ouvrir le lien
+Mot-clé à rechercher
+Impossible de trouver :
+Impossible de trouver “{{subpath}}” dans {{file}}
+Ouvrir avec l'application par défaut
+La barre latérale est vide, essayez de faire glisser un onglet ici.
+Développer
+Réduire
+Impossible d'enregistrer le fichier “{{filepath}}”. {{message}}. Effectuez une sauvegarde du contenu de ce fichier afin d'éviter toute perte de données.
+Echec de chargement du module “{{plugin}}”
+Erreur lors du chargement du module “{{plugin}}”
+{{plugin}} n’a pas été chargé. Ce module n’est pas compatible avec Obsidian v{{version}}.
+{{plugin}} ne fonctionne plus. Nous vous recommandons de le désinstaller.
+Impossible de charger le module {{plugin}} v{{version}}. Il a été signalé que cette version causait des problèmes. Veuillez rechercher une version plus récente du module.
+Impossible d'ouvrir le fichier “{{filepath}}”
+Échec de l’exportation de « {{filename}} »
+La vue « {{name}} » a rencontré une erreur lors de sa fermeture
+Impossible d'ouvrir l'emplacement “{{href}}”
+Pas de fichier
+“{{file}}” a été modifié hors de l'application. Fusion automatique des modifications.
+Gérer les coffres...
+Aide
+Paramètres
+Glisser pour réorganiser
+Mode d'affichage par défaut basculé sur Aperçu.
+Mode d'affichage par défaut basculé sur Éditeur.
+Pour utiliser cette fonctionnalité, merci de réinstaller Obsidian avec le dernier programme d'installation disponible depuis notre site web officiel.
+Chargement lent détecté.
+Cette fonction n'est disponible que dans l'app de bureau.
+Restaurer les paramètres par défaut
+Copier dans le presse-papier
+Copier
+Copié dans le presse-papiers
+{{item}} copié dans le presse-papier
+Impossible de copier dans le presse-papiers
+Filtrer...
+Une erreur s’est produite lors du rendu du bloc de code.
+Fichier “{{path}}” ouvert
+Le fichier “{{name}}” n'a pas été trouvé.
+Action d’URI non reconnue : {{action}}
+Supprimer
+Obsidian indexe votre coffre...\nCela ne devrait se produire qu'une seule fois.
+Certaines fonctionnalités peuvent ne pas être disponibles tant que le processus est en cours.
+Indexation terminée.
+C'est un coffre test.\nLes modifications faites dans ce coffre seront perdues.
+IndexedDB est nécessaire pour cette fonction, mais est actuellement désactivée.
+Si vous utilisez iOS en mode Isolement, veuillez exclure Obsidian du réglage “Configurer la navigation web” du mode Isolement.
+Entrer pour créer
+Mise à jour disponible
+Infos de débogage
+En savoir plus
+Pas maintenant
+Ajouter
+Gérer
+Nouvel onglet
+Masquer le ruban
+Cet onglet est actuellement occupé, veuillez réessayer plus tard.
+Formater
+Paragraphe
+Insérer
+Par défaut
+Rouge
+
+Jaune
+Vert
+Bleu
+Violet
+Ajouter un lien
+Ajouter un lien externe
+Mise en avant
+Ligne horizontale
+Bloc de code
+Bloc mathématiques
+Tableau
+Note de bas de page
+Gras
+
+Commentaire
+Surligner
+Italique
+Barré
+Mathématiques
+Liste à puces
+Liste de tâches
+Liste numérotée
+Titre {{level}}
+Corps
+Supprimer le formatage
+Citation
+Vide
+Aucun fichier n'est ouvert
+Créer un nouveau fichier
+Aller au fichier
+Voir les fichiers récents
+Fermer
+Fermer tous les “{{id}}” onglets ({{count}})
+Le module complémentaire n'est plus actif.
+Le module complémentaire qui créait cet onglet ({{type}}) a disparu.
+Notes de version {{version}}
+Aucune note de version disponible pour {{version}}.
+Impossible de charger les notes de version pour {{version}}.
+Publié le {{date}}
+Nouveautés de la version {{version}}
+Éditer (Ctrl/Cmd + Clic pour éditer dans un nouvel onglet)
+Mode actuel : Aperçu
+Ruban
+Barre latérale de gauche
+Barre latérale de droite
+Cliquer pour modifier
+Cliquer pour lire
+{{key}}+Clique pour ouvrir dans un nouvel onglet
+Appuyer sur {{key}}+C pour copier la source
+Chercher...
+Remplacer...
+Éditer
+Supprimer
+Retirer de la liste
+Renommer
+Aperçu
+Plus d'options
+Fermer
+Fermer tout
+Fermer {{count}} onglet
+Fermer {{count}} onglets
+Fermer les autres
+Fermer les onglets après
+Épingler
+Désépingler
+Délier l'onglet
+Lier avec l'onglet...
+Mode source
+Mode lecture
+Ajouter des propriétés de fichier
+Supprimer
+Supprimer le fichier
+Créer ce fichier
+Ouvrir le lien
+Ouvrir dans un nouvel onglet
+Ouvrir vers la droite
+Copier le lien
+Copier
+Couper
+Coller
+Copier le chemin
+Copier l'image
+en tant qu’URL Obsidian
+depuis la racine du système
+depuis le dossier du coffre
+Coller en texte brut
+Recherchez “{{selection}}”
+Tout sélectionner
+Renommer cet entête...
+Renommer cet ID de bloc...
+Ouvrir dans une nouvelle fenêtre
+Déplacer dans une nouvelle fenêtre
+Ouvrir dans le navigateur
+Empiler les onglets
+Désempiler les onglets
+Ouvrir la vue liée
+Cliquer pour afficher
+Cliquer pour réduire
+
+Pas encore créé, cliquer pour créer
+
+Créer un coffre local
+Ouvrir un dossier comme coffre
+Choix du dossier contenant des fichiers Markdown existants.
+Créer un nouveau coffre
+Crée un nouveau coffre Obsidian dans un dossier.
+Se connecter à Obsidian Sync
+Configure un coffre synchronisé avec un coffre distant existant.
+Nom du coffre
+Choix du nom de votre nouveau coffre.
+Emplacement
+Choix de l'emplacement où enregistrer votre nouveau coffre.
+Le nouveau coffre sera placé dans : 
+Montre le coffre dans l'explorateur de fichiers de l'ordinateur
+Montrer le coffre dans le Finder
+Renommer le coffre...
+Copier l'ID du coffre
+Il y a déjà un coffre avec ce même nom.
+Impossible de déplacer le coffre dans un de ses sous-dossiers.
+Impossible de renommer un coffre qui est actuellement ouvert.
+Échec du renommage du coffre.
+Le coffre a été renommé avec succès.
+Déplacement du coffre...
+Sélectionner le dossier de destination
+Il y a déjà un coffre dans le dossier de destination.
+Impossible de déplacer un coffre qui est actuellement ouvert.
+Échec du déplacement du coffre.
+Le coffre a été déplacé avec succès.
+Supprimer de la liste
+Démarrage rapide
+Ouvrir
+Parcourir
+Connecter
+Créer
+Retour
+Le nom du coffre ne peut pas être vide.
+Le nom du coffre ne peut pas finir par un point.
+Merci de choisir un dossier valide.
+Échec de la création du coffre.
+Impossible de créer le coffre à cet emplacement. Merci de vérifier l'emplacement et ses permissions d'accès.
+Échec de l'ouverture.
+Impossible de supprimer un coffre en cours d'utilisation.
+Obtenir de l'aide
+Adresse électronique
+Votre adresse électronique...
+Mot de passe
+Votre mot de passe...
+Connexion
+Configuration
+Créez un coffre synchronisé sur cet appareil.
+Il s'agit d'un coffre distant dont vous êtes le propriétaire.
+Il s'agit d'un coffre distant partagé avec vous.
+Vos pensées vous appartiennent.
+Synchronisé
+Non synchronisé
+Aucun
+Recommendé
+Obsidian enregistre les notes sur votre appareil, afin que vous puissiez y accéder rapidement et de manière privée, même hors ligne.\nVos données sont enregistrées dans un dossier local sécurisé appelé **coffre**.
+Créer un coffre
+Utiliser mon coffre existant
+Pour accéder à vos notes sur d'autres appareils vous devez paramétrer la synchronisation.
+Comme Obsidian enregistre vos notes sur l'appareil, vous devez activer la synchronisation si vous voulez accéder à vos notes sur un autre appareil.\nVous pouvez paramétrer la synchronisation maintenant, ou la paramétrer plus tard.
+Paramétrer Sync
+Passer pour l'instant
+Ignorer
+Choisir un nom pour le coffre.
+Créer un coffre
+Paramétrage de Sync
+Crée un coffre synchronisé sur votre compte Obsidian pour que vous puissiez accéder à vos données depuis d'autres appareils.
+Chiffrement Sync
+Chiffrement de bout en bout
+Offre la meilleure sécurité, mais nécessite de stocker votre mot de passe de chiffrement en lieu sûr
+Chiffrement standard
+Utilise une clé gérée par Obsidian pour protéger vos données en transit et sur nos serveurs.
+Paramètres Sync
+Voulez-vous exclure et donc ignorer certains dossiers ou fichiers lors de la synchronisation sur cet appareil ?
+Début de synchronisation
+Créer un compte Obsidian ou se connecter
+Créer un compte
+Se connecter
+Envoyer un nouveau mail
+Des coffres Sync existent déjà
+Voulez-vous créer un nouveau coffre ou vous connecter à un coffre synchronisé déjà existant ?
+Créer un nouveau coffre synchronisé
+Choisir un coffre déjà existant
+Se déconnecter
+Mot de passe oublié
+Nom du coffre
+Emplacement du coffre
+Stockage sur l’appareil
+Permet à d’autres applications d’accéder aux données d’Obsidian.
+Nécessite des autorisations supplémentaires.
+Stockage de l’application
+Vos données ne seront pas accessibles aux autres applications.
+Android supprimera vos données si vous désinstallez Obsidian.
+Votre nouveau coffre sera placé dans {{vaultLocation}}
+Région
+Choisir une région de serveur proche de vous permet d'accélérer la synchronisation.
+Clé de chiffrement
+Ce mot de passe ne peut pas être modifié par la suite. Si vous oubliez votre mot de passe, toutes les données distantes sur les serveur Sync seront définitivement perdues.
+Mon coffre
+Automatique
+Choisir un coffre
+Votre compte **{{email}}** dispose déjà de coffres auxquels vous pouvez vous connecter.
+Se connecter au compte Obsidian
+Mot de passe oublié
+Réinitialiser le mot de passe
+Nous avons envoyé une adresse électronique à {{email}} pour réinitialiser votre mot de passe.
+Choisir comment synchroniser les notes
+Pour utiliser Obsidian sur vos appareils vous devrez synchroniser vos données entre les différents appareils.
+De manière transparente sur tous les appareils et tous systèmes d'exploitation.
+Sécurisé avec les standards les plus élevés de chiffrement point à point.
+Nécessite un abonnement payant.
+Uniquement pour iOS et macOS.
+Non chiffré par défaut.
+Nécessite des modules complémentaires ou des outils tiers.
+Peut ne pas être chiffré par défaut.
+Utiliser Obsidian Sync
+Utiliser iCloud
+Utiliser un tiers de synchronisation
+Autres méthodes de synchronisation
+Utiliser des méthodes de synchronisation prises en charge
+Où se trouve le coffre ?
+Autre
+Synchronisation tierce
+Sur cet appareil
+Connecté à iCloud
+Connecté à un autre service de synchronisation
+Connecté à Obsidian Sync
+Choisir un dossier
+Autres méthodes de synchronisation
+Obsidian supporte de manière officielle deux méthodes de synchronisation : **Obsidian Sync** et **iCloud**.\nCependant, comme Obsidian vous donne le contrôle sur vos données, il existe d'autres options alternatives de synchronisation que vous pouvez utiliser.\nCes options comprennent des modules tiers et autres outils qui peuvent demander un paramétrage plus avancé.\nPour utiliser une méthode alternative de synchronisation, **créez un coffre** et suivez les instructions fournies par le module ou le fournisseur tiers de synchronisation.
+Saisir l'adresse email
+Votre email est nécessaire pour créer un compte Obsidian.
+Saisir le nom et le mot de passe
+Se connecter à Obsidian Sync
+Vous devriez bientôt recevoir un email à **{{email}}** avec les instructions pour vous connecter à Obsidian Sync.
+Votre coffre iCloud n'a pas pu être détecté. Cela peut être dû aux raisons suivantes :
+Votre coffre est sur un compte iCloud différent de celui avec lequel vous êtes connecté sur cet appareil.
+Votre coffre n'est pas enregistré dans le répertoire Obsidian de premier niveau de votre lecteur iCloud.
+iCloud non pris en charge
+La synchronisation iCloud n'est disponible que sur les appareils Apple. Si votre coffre se synchronise actuellement via iCloud, apprenez à migrer votre coffre vers un autre service de synchronisation.
+Autoriser l’accès aux fichiers
+En cours de connexion à...
+Le nom du coffre est requis
+Nouvel email de confirmation envoyé.
+Echec du nouvel envoi de l'email.
+L'emplacement du coffre doit être un dossier.
+Bienvenue
+Voici votre nouveau *coffre*.\n\nAjoutez une note, [[créez un lien]], ou essayez [l'importateur](obsidian://show-plugin?id=obsidian-importer)!\n\nLorsque vous serez prêt, supprimez cette note et faites de ce coffre le vôtre.
+Insérer un lien ici
+Insérer des liens ici
+Déplacer dans “{{folder}}”
+Ajouter ce fichier aux favoris
+Ajouter ces fichiers aux favoris
+Ouvrir dans cet onglet
+Ouvrir dans un nouvel onglet
+Maximiser
+Minimiser
+Restaurer
+Fermer la fenêtre
+Chargement d'Obsidian
+Une erreur s'est produite lors du chargement d'Obsidian.
+Recharger l'application
+Relancer l'app en mode sans échec
+Ouvrir un autre coffre
+Chargement des modules...
+Le module “{{plugin}}” prend du temps à se charger. 
+Chargement du coffre...
+Échec du chargement du coffre : 
+Chargement du cache...
+Chargement de l'espace de travail...
+Importer dans le coffre
+Ajouter du texte à un fichier :
+Choisir un fichier à insérer 
+Insérer du texte dans {{filename}}
+Insérer le lien dans “{{filename}}”
+Afficher la vue des onglets
+Importation...
+Importation réussie
+Échec de l'importation du fichier “{{filename}}”
+Appuyez à nouveau sur la touche Retour/Enter pour sortir.
+Commentaires
+Vous appréciez Obsidian ? Aidez-nous en donnant votre évaluation.
+Noter l’application
+Ignorer
+Fichiers de configuration mis à jour depuis iCloud. Rechargement requis
+Recharger
+Site officiel du support
+Lisez la documentation d'aide officielle d'Obsidian, disponible en plusieurs langues.
+Visiter
+Discussion sur Discord
+Discord est le meilleur endroit pour discuter avec d'autres utilisateurs expérimentés d'Obsidian du monde entier.
+Rejoindre
+Forum officiel
+Aidez-vous les uns les autres, postez des demandes de fonctionnalités, signalez les bogues et ayez des discussions approfondies sur la gestion des connaissances.
+Coffre de test
+Jouez et expérimentez avec les différentes fonctionnalités. Notez que vos modifications ne seront pas enregistrées.
+Enregistrer le fichier courant
+Télécharger les pièces jointes pour le fichier actuel
+Suivre le lien sous le curseur
+Ouvrir le lien sous le curseur dans un nouvel onglet
+Ouvrir le lien sous le curseur vers la droite
+Ouvrir le lien sous le curseur dans une nouvelle fenêtre
+Focus sur le groupe d'onglets ci-dessus
+Focus sur le groupe d'onglets ci-dessous
+Focus sur le groupe d'onglets vers la gauche
+Focus sur le groupe d'onglets vers la droite
+Basculer l'épingle
+Fractionner vers la droite
+Fractionner vers le bas
+Faire basculer les onglets empilés
+Basculer la longueur de ligne lisible
+Afficher/Masquer les numéros de ligne
+Naviguer en arrière
+Naviguer vers l'avant
+Basculer entre le mode clair/sombre
+Changer le thème...
+Changer de coffre...
+Ouvrir un coffre...
+Ouvrir un fichier situé hors du coffre…
+Gérer les coffres
+Rechercher dans le fichier courant
+Rechercher & remplacer dans le fichier courant
+Ajouter une propriété au fichier
+Nom (A à Z)
+Nom (Z à A)
+Ajouter un alias
+Effacer les propriétés d'un fichier
+Ouvrir les paramètres
+Ouvrir l'aide
+Basculer entre Édition et Aperçu
+Basculer entre aperçu en direct et mode source
+Supprimer le fichier actuel
+Nouvel onglet
+Nouvelle fenêtre
+Afficher la corbeille
+Fermer tous les onglets
+Fermer l'onglet actuel
+Fermer les autres onglets du groupe
+Fermer tous les autres onglets
+Fermer ce groupe d'onglet
+Basculer la barre latérale gauche
+Afficher le ruban
+Basculer la barre latérale droite
+Basculer le mode par défaut pour les nouveaux onglets
+Ajouter un curseur au-dessus
+Ajouter un curseur au-dessous
+Focus sur l'éditeur
+Plier/Déplier les propriétés du fichier actuel
+Plier/Déplier sur la ligne actuelle
+Plier tous les titres et listes
+Déplier tous les titres et listes
+Plier plus
+Plier moins
+Déplacer la ligne vers le haut
+Déplacer la ligne vers le bas
+Supprimer l'entête
+Définir comme entête {{level}}
+Mettre en gras la sélection
+Mettre en italique la sélection
+Mettre en surbrillance la sélection
+Activer ou désactiver le surlignage {{color, lowercase}}
+Mettre en commentaire la sélection
+Afficher le formatage
+Insérer un lien
+Activer la vérification orthographique
+Supprimer le paragraphe
+Basculer l'état de l'élément de la checklist
+Basculer entre puces/cases à cocher
+Insérer une mise en avant (callout)
+Insérer un bloc de code
+Insérer un bloc mathématique
+Insérer une ligne horizontale
+Insérer un tableau
+Ajouter une note de bas de page
+Modifier le titre du fichier
+Copier le chemin du fichier
+Copier le chemin complet du fichier actuel depuis la racine des fichiers
+Copier l'URL Obsidian
+Exporter en PDF
+Recharger l'application sans enregistrer
+Annuler la fermeture de l'onglet
+Afficher le menu contextuel sous le curseur
+Afficher les informations de débogage
+Ouvrir le coffre Bac à Sable
+Rendre la fenêtre toujours visible
+Augmenter la taille de la police
+Diminuer la taille de la police
+Zoom avant
+Zoom arrière
+Réinitialiser le zoom
+Basculer entre édition et aperçu
+Déplacer l'onglet actuel vers une nouvelle fenêtre
+Ouvrir l'onglet actuel dans une nouvelle fenêtre
+Renommer le fichier actuel
+Aller à l'onglet précédent
+Aller à l'onglet suivant
+Aller au dernier onglet
+Aller à l'onglet #{{n}}
+Afficher les notes de mise à jour
+Cela mettra à jour {{links}} dans {{files}}.
+{{links}} ont été mis à jour dans {{files}}.
+Mettre à jour les liens
+Mettre à jour les liens internes qui renvoient à ce fichier ?
+Toujours mettre à jour
+Cette fois uniquement
+Ne pas mettre à jour
+Supprimer “{{filename}}” ?
+Il sera déplacé vers la corbeille du système.
+Il sera déplacé vers votre corbeille Obsidian, qui se trouve dans le dossier caché “.trash” de votre coffre.
+Le fichier sera définitivement supprimé.
+Ce dossier n'est pas vide.
+En cas de confirmation, tous les fichiers de ce dossier seront supprimés.
+Supprimer le dossier
+Supprimer
+Ne pas redemander
+Il y a actuellement {{count}} lien qui pointe vers ce fichier.
+Il y a actuellement {{count}} liens qui pointent vers ce fichier.
+Supprimer le fichier
+Télécharger les pièces jointes
+Il n'y a pas de pièces jointes externes dans cette note.
+{{count}} pièce jointe téléchargée.
+{{count}} pièces jointes téléchargées.
+{{count}} fichier a été mis à jour.
+{{count}} fichiers ont été mis à jour.
+Modifications annulées pour {{count}} fichier.
+Modifications annulées pour {{count}} fichiers.
+Aucune connexion internet
+Chargement...
+Gérer
+Voir
+Confirmer
+Annuler
+Autoriser
+Ignorer
+Téléchager
+Valider
+Sauvegarder
+Arrêter
+Modifier
+Continuer
+Choisir
+Réessayer
+Mettre à jour
+Annuler
+Préparation du PDF...
+Renommer le fichier
+Nom du fichier
+Nouveau nom
+Erreur
+Sélectionné
+Fichier correctement renommé.
+Échec de la fusion des notes : {{message}}
+Le fichier ou dossier “{{path}}” n'existe pas.
+Obsidian ne peut pas ouvrir les fichiers « .{{extension}} ».
+L'entête ne peut pas être vide
+L'ID du bloc ne peut pas être vide
+L'ID du bloc ne peut contenir que des caractères alphanumériques ou des tirets
+Renommer l'entête
+Renommer l'ID du bloc
+Supprimer les pièces jointes du fichier ?
+Cette pièce jointe n’est plus utilisée dans aucune note. Voulez-vous la supprimer ?
+Ces {{count}} pièces jointes ne sont plus utilisées dans aucune note. Voulez-vous les supprimer ?
+Arborescence des fichiers
+Galerie
+Créer une note
+Créer une note à droite
+Nouvel onglet
+Nouvelle fenêtre
+Ouvrir rapidement...
+Ouvrir un fichier…
+Ouvrir le coffre...
+Fermer l'onglet
+Fermer la fenêtre
+Trouver
+Remplacer
+Mise en avant (callout)
+Lien Markdown
+Lien
+Entête {{level}}
+Aucun entête
+Citation
+Exporter en PDF
+Insérer une pièce jointe...
+Bloc de Code
+Bloc Mathématique
+Tableau
+Note de bas de page
+Titre en ligne
+Numéros de ligne
+Liste à puces
+Liste numérotée
+Liste de tâches
+Gras
+
+Commentaire
+Italique
+Maths
+Surligné
+Barré
+Commentaires
+Plier
+Tout plier
+Tout déplier
+Plier plus
+Plier moins
+Mode source
+Mode lecture
+Afficher les informations de débogage.
+Ouvrir le Coffre Bac à sable
+Déplacer vers une nouvelle fenêtre
+Naviguer vers l'arrière
+Naviguer vers l'avant
+Basculer la barre latérale gauche
+Basculer la barre latérale droite
+Ruban
+Fractionner à droite
+Fractionner en bas
+Notes de mise à jour
+Modules
+Explorateur de fichiers
+Parcourt tous les fichiers du coffre.
+Ouvrir l'explorateur de fichiers
+Afficher l'explorateur de fichiers
+Créer une nouvelle note
+Créer un nouveau dossier
+Créer une note dans l'onglet actuel
+Créer une note à droite
+Auto-revéler le fichier actuel
+Tout réduire
+Tout développer
+Nouvelle note
+Nouveau dossier
+Modifier l'ordre de tri
+Afficher le fichier dans l'explorateur de fichiers
+Afficher le fichier actif dans l'explorateur de fichiers
+Faire une copie du fichier actuel
+Dupliquer le fichier actuel
+Déplacer le fichier vers un autre dossier
+Nouveau dossier avec la sélection ({{count}} élément)
+Nouveau dossier avec la sélection ({{count}} éléments)
+Déplacer le fichier vers...
+Déplacer le dossier vers...
+Déplacer {{count}} articles dans...
+Saisir le nom d'un dossier
+Aucun dossier trouvé.
+pour naviguer
+pour déplacer
+pour créer
+pour annuler
+Trier par nom de fichier (A à Z)
+Trier par nom de fichier (Z à A)
+Trier par date d'édition (plus récent au plus ancien)
+Trier par date d'édition (plus ancien au plus récent)
+Trier par date de création (plus ancien au plus récent)
+Trier par date de création (plus récent au plus ancien)
+Nouvelle note
+Nouveau dossier
+Renommer
+Supprimer
+Dupliquer
+Dupliquer
+Le nom de fichier ne peut pas contenir les caractères suivants : 
+Les liens ne fonctionneront pas avec les noms de fichiers contenant l'un de ces caractères : 
+Il y a déjà un fichier du même nom
+Le nom de fichier ne peut pas être vide.
+Le nom de fichier ne doit pas commencer par un point.
+Dernière modification le {{time}}
+Créé le {{time}}
+Sans titre
+Sans titre
+Les pièces jointes seront désormais enregistrées dans “{{path}}”.
+Rechercher
+Recherche le mot-clé dans toutes les notes.
+Rechercher dans tous les fichiers
+Réduire les résultats
+Respecter la casse
+Expliquer le terme de recherche
+Afficher plus de contexte
+{{count}} résultat
+{{count}} résultats
+Chercher des paramètres
+Saisir pour lancer la recherche...
+Correspond au texte : 
+Correspond à la regex : 
+Contient exactement le texte : 
+Supérieur à : 
+Inférieur à : 
+Est vrai
+Est faux
+Est vide
+Contient la propriété : 
+Contient tous ces termes : 
+Contient au moins l'un de ces termes : 
+Exclure : 
+Sensible à la casse
+Insensible à la casse
+Correspond au chemin d'accès au fichier : 
+Correspond au nom du fichier : 
+Correspond au contenu : 
+Correspond à la tâche : 
+Correspond à la tâche (à faire) : 
+Correspond à la tâche (fait) : 
+Correspond à la ligne : 
+Correspond au bloc : 
+Correspond à la section : 
+Correspond au mot-clé : 
+Aucun résultat.
+... et {{count}} autre résultat.
+... et {{count}} autres résultats.
+Copier le résultat de la recherche
+Copier les résultats
+Résultats copiés dans le presse-papiers.
+Afficher l'emplacement
+Affiche le chemin complet du fichier plutôt que simplement le nom du fichier.
+Style de lien
+Transformer chaque fichier trouvé en un lien.
+Aucun
+Lien wiki
+Lien Markdown
+Préfixe de liste
+Ajoute un préfixe à chaque fichier trouvé.
+Aucun
+Tiret (-)
+Astérisque (*)
+Numéroté
+Effacer la recherche
+Options de recherche
+Propriétés
+Mots-clés
+Lire plus
+Historique
+Effacer l'historique de recherche
+correspondance avec le chemin du fichier
+correspondance avec le nom du fichier
+recherche par mots-clés
+recherche par mots-clés dans la même ligne
+recherche par mots-clés sous le même titre
+propriété correspondante
+Rechercher “{{keyword}}”
+Rechercher dans un dossier
+Sélecteur rapide
+Accède à tous les fichiers sans quitter le clavier. Ctrl/Cmd + O pour activer.
+Sélecteur
+Ouvrir le sélecteur rapide
+pour naviguer
+pour ouvrir
+pour ouvrir dans un nouvel onglet
+pour ouvrir vers la droite
+pour créer
+pour annuler
+pour sélectionner
+Aucune note trouvée. Appuyer sur Entrée pour en créer une nouvelle.
+Saisir le fichier vers lequel basculer ou créer...
+Entrer pour créer le fichier
+Inexistant, selectionner pour créer.
+Afficher uniquement des liens existants
+Si cochés, les liens vers des fichiers inexistants ne seront pas affichés.
+Afficher les pièces jointes
+Afficher les pièces jointes telles que les images, vidéos et PDF.
+Afficher tous les types de fichiers
+Afficher tous les fichiers, y compris ceux qu'Obsidian ne peut pas ouvrir. Le fichier sera ouvert avec l'application par défaut pour ce type de fichier.
+Vue graphique
+Graphe local
+Montre un aperçu graphique des connexions entre vos notes
+Ouvrir la vue graphique
+Ouvrir la vue graphique autour du fichier courant
+Copier la capture d'écran
+Graphique de {{displayText}}
+Filtres
+Rechercher des fichiers...
+Profondeur
+Affiche les nœuds à ce nombre de nœuds de distance.
+Liens voisins
+Afficher les liens entre voisins.
+Liens sortants
+Afficher les liens vers d'autres fichiers
+Rétroliens
+Afficher les liens venant d'autres fichiers
+Mots-clés
+Les mots-clés sont liés aux notes qui les contiennent
+Pièces jointes
+Afficher les pièces jointes incluses dans les notes
+Fichiers existants uniquement
+Si cochés, les liens vers des fichiers inexistants ne seront pas affichés
+Orphelins
+Afficher les fichiers qui ne sont liés à aucun autre fichier
+Afficher
+Flèches
+Afficher les flèches quand zoomé
+Seuil de fondu du texte
+Taille des nœuds
+Épaisseur des liens
+
+Force centrale
+Force de liaison
+Distance des liens
+Force de répulsion
+Ouvrir les paramètres du graphique
+Capture d'écran copiée dans le presse-papiers.
+Groupes
+Entrer la requête...
+Supprimer le groupe
+Nouveau groupe
+Cliquer pour changer la couleur\nFaire glisser pour réorganiser les groupes
+Lancer l'animation timelapse du graphique
+Démarrer le timelapse
+Animer
+Rétroliens
+Affiche le nombre de rétroliens soit dans une vue séparée soit dans la barre d'état.
+Ouvrir les rétroliens
+Afficher l'onglet des rétroliens
+Ouvrir les rétroliens du fichier courant
+Basculer les rétroliens dans le document
+Rétroliens dans le document
+Occurrences liées
+Aucun rétrolien trouvé.
+Occurrences non liées
+Afficher le filtre de recherche
+Lien
+Rétrolien pour {{displayText}}
+Aucune occurrence non liée trouvée.
+
+Rétroliens dans le document
+Afficher les rétroliens par défaut dans le document lors de l'ouverture de nouveaux volets.
+Liens sortants
+Affiche les liens sortants et détecte les mentions non liées d'autres notes dans la note actuelle.
+Ouvrir les liens sortants
+Afficher l'onglet des liens sortants
+Ouvre les liens sortants pour le fichier actuel
+Liens sortants de {{displayText}}
+Liens
+Aucun lien trouvé.
+Mention non liée
+Lier ce fichier
+Pas encore créé
+Volet de mots-clés
+Mots-clés
+Affiche la liste de tous vos mots-clés avec leur nombre d'occurrences
+Afficher l'onglet des mots-clés
+Aucun mot-clé trouvé
+Nom de mot-clé (A à Z)
+Nom de mot-clé (Z à A)
+Fréquence (décroissant)
+Fréquence (croissant)
+Afficher les mots-clés imbriqués
+Tout réduire
+Tout développer
+Vue des notes de bas de page
+Notes de bas de page
+Affiche une liste des notes de bas de page de la note actuelle.
+Afficher les notes de bas de page
+Aucune note de bas de page trouvée.
+Vue des propriétés
+Affiche les métadonnées de vos fichiers dans la barre d'état.
+Toutes les propriétés
+Propriétés du fichier
+Propriétés du fichier pour {{displayText}}
+Afficher toutes les propriétés
+Afficher les propriétés du fichier
+Supprimer la propriété
+Supprimer les propriétés
+Automatique
+Automatique ({{type}})
+Aucune propriété trouvée.
+Propriétés invalides.
+Nom de la propriété (A à Z)
+Nom de la propriété (Z à A)
+Fréquence (haute à basse)
+Frequence (basse à haute)
+Fusionner la propriété “{{oldKey}}” avec “{{newKey}}” ?
+En cas de conflit, les valeurs seront fusionnées ou la valeur de “{{oldKey}}” sera utilisée.
+Tout fermer
+Tout développer
+Ouvrir les propriétés du fichier
+Ouvrir la note journalière
+Aperçu de page
+Prévisualise une note en passant la souris sur un lien interne. Ctrl/Cmd + survol en mode édition.
+“{{linktext}}” n'a pas été trouvée.
+“{{linktext}}” n'a pas encore été créée. Cliquer pour la créer.
+Note de bas de page {{id}} non trouvée. Cliquer pour la créer.
+Éditeur
+Aperçu
+Recherche, Rétroliens et Liens sortants
+Entête des onglets
+Exiger l'appui de {{key}} pour déclencher l'aperçu de page au survol
+Signets
+Enregistre un signet pour les fichiers et les recherches fréquemment utilisés.
+Afficher les signets
+Tout réduire
+Marquer l'onglet actif...
+Nouveau groupe de signets
+Marquer...
+Ajouter un signet
+Modifier le signet
+Marquer le bloc sous le curseur...
+Marquer l'en-tête sous le curseur...
+Marquer la recherche en cours...
+Supprimer le signet du fichier actuel
+Marquer {{count}} onglet...
+Marquer {{count}} onglets...
+Marquer tous les onglets...
+Marquer ce graphique...
+Signet
+Signet marqué
+{{count}} signet
+{{count}} signets
+Aucun signet trouvé
+Échec du chargement des signets.
+Les données du fichiers sont corrompues.
+Groupe sans titre
+Graphique sans titre
+Modifier...
+Supprimer
+Renommer
+Mettre un signet sur ce bloc...
+Marquer cet en-tête...
+Aucune recherche à marquer.
+Chemin
+Requête
+Titre
+Groupe de signets
+Signets
+CSS personnalisé
+Utilise le fichier “obsidian.css” dans le dossier du coffre.
+Thèmes tiers
+Récupération des thèmes de la communauté...
+Filtrer...
+Thèmes sombres uniquement
+Thèmes clairs uniquement
+Utiliser
+Arrêter d'utiliser ce thème
+Installer et utiliser
+Mise à jour
+Ce thème ne contient pas de README.
+Supprimer le thème
+Ouvrir sur GitHub
+Impossible de charger les thèmes de la communauté, merci de vérifier la connexion internet.
+{{title}} est maintenant utilisé comme thème CSS.
+Le thème {{title}} a été supprimé
+Le thème {{title}} a été mis à jour.
+Installé
+Ancien
+Tout mettre à jour
+Échec du chargement des thèmes communautaires.
+Aucune mise à jour de thème trouvée.
+Trouvé {{count}} thème à mettre à jour.
+Trouvé {{count}} thèmes à mettre à jour.
+Échec de la mise à jour du thème “{{name}}”.
+Le thème “{{name}}” a été installé avec succès.
+Installation du thème “{{name}}”...
+Affichage de {{themeCount}}
+Mise à jour disponible
+Palette de commandes
+Saisit une commande pour l'invoquer. Pas besoin d'utiliser l'interface utilisateur ou de mémoriser le raccourci.
+Ouvrir la palette de commandes
+pour naviguer
+pour utiliser
+pour fermer
+Aucune commande trouvée.
+Ajouter une commande…
+Sélectionner une commande…
+Commandes épinglées
+Convertisseur de fichiers Markdown
+Migration des métadonnées
+Migre les mots-clés, alias et cssclasses des métadonnées vers le format strict requis par Obsidian v1.9+
+Attention : l'importateur convertira tous les fichiers de votre coffre, pas seulement le fichier actuel.
+Vos fichiers seront écrasés. Enregistrez tous vos fichiers avant de tenter la conversion.
+Lancer la conversion
+Arrêter
+Retourner
+Fait
+Traitement en cours...
+Annulation...
+Terminé !
+Fichiers traités
+Fichiers modifiés
+Échec
+Notes quotidiennes
+Ouvre la note quotidienne ou la crée si elle n'existe pas encore.
+Aujourd'hui
+Ouvrir la note quotidienne
+Ouvrir la note quotidienne précédente
+Ouvrir la note quotidienne suivante
+Insérer du texte dans la note quotidienne
+Insérer un lien dans la note quotidienne
+Échec de la création de la note quotidienne. “{{format}}” n'est pas un format valide.
+Échec de la création de la note quotidienne. Le dossier “{{folderOption}}” n'a pas été trouvé.
+Échec de la création de la note quotidienne. Le fichier modèle “{{template}}” n'a pas été trouvé.
+Il n'y a pas de note quotidienne avant celle-ci.
+Il n'y a pas de note quotidienne après celle-ci.
+Format de la date
+Choisissez comment les notes quotidiennes sont nommées dans votre coffre.
+Format personnalisé
+Personnalisé
+Format de date invalide
+Dossier des notes quotidiennes introuvable.
+Pour plus d'informations à propos de la syntaxe, se reporter à 
+référence des formats
+Voici à quoi cela va ressembler : 
+Nouvel emplacement de fichier
+Emplacement du dossier où créer la nouvelle note quotidienne.
+Emplacement du fichier de modèle
+Choix du fichier à utiliser comme modèle.
+Créateur de note unique
+Crée des notes avec des préfixes d'horodatage uniques, pour des workflows tels que zettelkasten ou slip box.
+
+Créer une nouvelle note unique
+Nouvelle note unique
+Ajouter un lien interne unique
+Nouvel emplacement du fichier
+Le chemin du dossier dans lequel créer la nouvelle note unique.
+Échec de la création d'une note unique. Dossier “{{folderOption}}” introuvable.
+Emplacement du modèle
+Le chemin du fichier à utiliser comme modèle.
+Exemple: dossier1/note
+Format de préfixe unique
+Échec de la création d'une note unique. Modèle “{{template}}” introuvable.
+Échec de la création d'une note unique avec le format “{{format}}”
+Note aléatoire
+Ouvre une note au hasard. Utile pour réviser et découvrir.
+Aléatoire
+Ouvre une note au hasard
+Plan
+Affiche le plan du fichier courant ou du volet lié.
+Ouvrir le plan
+Afficher l'onglet du plan
+Ouvrir le plan du fichier actuel
+Plan de {{displayText}}
+Aucun entête trouvé.
+Défilement automatique vers la section courante
+Nombre de mots
+Affiche le nombre de mots dans la barre d'état.
+Afficher les diagrammes Mermaid dans ce coffre ?
+N’autorisez cette option que si vous faites confiance au contenu de ce coffre.
+Diapositives
+Crée une présentation à partir du Markdown. Utiliser “---” pour séparer les diapositives.
+Démarrer la présentation
+Enregistreur audio
+Enregistre une note audio et l'enregistre comme pièce jointe.
+Commencer l'enregistrement audio
+Arrêter l'enregistrement audio
+Démarrer/Arrêter l'enregistrement
+L'accès au microphone a été refusé, merci de l'activer dans l'onglet des préférences.
+Merci d'autoriser le microphone pour démarrer l'enregistrement.
+Aucun microphone n'est connecté.
+Ouvrir avec l'application par défaut
+Ajoute un bouton pour ouvrir le fichier actuel avec l'application par défaut
+Ouvrir avec l'application par défaut
+Partager
+Afficher dans le dossier
+Révéler dans le Finder
+Modèles
+Insère le contenu d'un modèle à partir d'un dossier de fichiers de modèles.
+Insérer le modèle
+Insérer la date actuelle
+Insérer l'heure actuelle
+Emplacement du dossier modèle
+Les fichiers dans ce dossier seront disponibles comme modèles.
+Format de date
+{{date}} dans ce fichier modèle sera remplacé par cette valeur.
+Il est aussi possible d'utiliser {{date:YYYY-MM-DD}} pour ponctuellement passer outre le format.
+Format de temps
+{{time}} dans ce fichier modèle sera remplacé par cette valeur.
+Il est aussi possible d'utiliser {{time:HH:mm}} pour ponctuellement passer outre le format.
+pour naviguer
+pour insérer le modèle
+pour annuler
+Aucun modèle trouvé
+Échec de l'affichage de la liste des modèles. Le dossier des modèles n'est pas valide.
+Échec de l'affichage de la liste des modèles. Le dossier “{{folderOption}}” est introuvable.
+Impossible d'insérer le modèle, les propriétés du modèle n'ont pas pu être lues.
+Échec de l'affichage de la liste des modèles. Aucun dossier de modèles n'est configuré.
+Saisir le nom d'un modèle...
+Transparence de la fenêtre
+Active l'effet de transparence pour améliorer la sensation de profondeur. À utiliser de préférence avec le mode sombre. Non pris en charge sous Linux.
+Commandes Slash /
+Permet de déclencher les commandes Slash / dans l'éditeur en tapant la touche barre oblique.
+Statut Édition
+Ajoute un élément dans la barre d'état pour afficher et modifier le mode d'édition actuel.
+Aperçu
+Mode source
+Aperçu en direct
+Publier
+Publie vos notes en ligne sous la forme d'un site web, d'un wiki ou d'une documentation.
+Publier les modifications
+Publier le fichier actuel
+Un accès à internet est nécessaire pour publier les modifications.
+Obsidian Publish est un service payant complémentaire qui vous permet de publier vos notes en ligne directement depuis Obsidian.
+Pour commencer à publier, connectez-vous ou créez un nouveau compte Obsidian.
+Aucun abonnement à Obsidian Publish.
+Acheter
+Gérer les sites
+Aucun site.
+Choisir
+Modifier l'ID du site
+Supprimer le site
+Supprimer ce site ?
+Cela supprimera immédiatement et définitivement le site.
+Confirmer la suppression du site “{{site}}”
+ID du site
+Votre site sera disponible à https://publish.obsidian.md/{site id}. Il est possible de changer cela plus tard. Seuls les lettres minuscules, les chiffres et les tirets sont autorisés.
+Choisir un identifiant de site
+Créer
+L'ID de site ne peut contenir que des lettres minuscules, des chiffres et des tirets.
+Cet ID de site est déjà utilisé, merci d'en essayer un autre.
+Un problème est survenu lors de la création de votre site.
+Options du site
+Général
+Composants
+Apparence
+Mode lecture
+Autres paramètres du site
+Nom du site
+Il apparaîtra comme titre du site.
+Nom du site
+Page d'accueil
+La première page que l'utilisateur voit quand il va sur le site
+Nom du fichier
+
+Choix de l'image à utiliser comme logo du site.
+Toute image présente dans le coffre...
+Publication collaborative
+Gérer les collaborateurs de ce site.
+Personnaliser la navigation
+Modifier l'ordre des éléments de navigation et masquer les pages ou dossiers de l'affichage.
+Ordre d'affichage des éléments de navigation
+Masquer des pages ou des dossiers de la navigation
+Effectuez un clic droit et sélectionnez “Masquer” pour empêcher certaines pages spécifiques d'apparaître dans la navigation du site. Les pages resteront accessibles via des liens ou en accédant directement à leur URL.
+Afficher les éléments masqués
+Gérer
+
+Faites glisser et déposer pour personnaliser l'ordre d'apparition des éléments de navigation sur votre site Publish.
+Masquer dans la navigation
+Gérer
+Thème
+Permet de choisir le jeu de couleurs par défaut pour votre site.
+Adapter au système
+Bascule entre les thèmes sombre/lumineux
+Laisse le visiteur basculer entre le thème clair et le thème sombre.
+Affichage de la navigation
+Affiche toutes les pages publiées sur le côté gauche de votre site publié.
+Affichage de la barre de recherche
+Affiche une barre de recherche en haut de la navigation qui permet aux visiteurs de rechercher pages et titres sur votre site.
+Afficher la vue graphique
+Affiche un petit graphique local sur chaque page.
+Afficher la table des matières
+Affiche le plan du fichier sur chaque page.
+Afficher les rétroliens
+Affiche une section avec les rétroliens au bas de chaque page.
+Utiliser les fenêtres coulissantes
+Ouvre les nouvelles pages dans des volets à droite. Permet de faire défiler les volets horizontalement.
+Afficher l'aperçu au survol
+Affiche l'aperçu de la page lors du survol des liens.
+Cacher le titre de la page
+Cache le titre de la page. Utile lorsque vous avez vos propres titres au début de chaque page.
+Longueur de ligne lisible
+Limite la longueur de ligne maximale. Affiche moins de contenu à l'écran mais rends les longs paragraphes plus lisibles.
+Mots de passe
+Restreindre l'accès à votre site avec un ou des mots de passe.
+Code de suivi Google Analytics
+Configure Google Analytics pour votre site. Uniquement disponible pour les visiteurs depuis l'URL de votre domaine personnalisé. Merci de d'abord vérifier les lois et réglementations locales.
+Gérer
+Enregistrer les paramètres du site
+Options du site mises à jour.
+Retour
+Publier sur
+Changer de site
+Ajouter les fichiers liés
+Ajouter tous les fichiers qui sont liés dans les éléments sélectionnés
+{{count}} fichier lié a été ajouté.
+{{count}} fichiers liés ont été ajoutés.
+Modifier les options du site
+Aucun changement n'a été détecté.
+Changements
+Inchangé (sélectionner pour supprimer)
+ sélectionné
+Tout sélectionner
+Élements de navigation
+Tout désélectionner
+Nouveau
+Publier
+Vous ne disposez pas des autorisations nécessaires pour publier sur le site actuel.
+Merci de sélectionner au moins un fichier.
+Envoyer les modifications
+Terminer
+Arrêter
+Envoi en cours
+À publier
+À supprimer
+Publié
+Supprimé
+Erreur
+Annulé
+Modifier
+Il faut quelques minutes pour que les modifications apparaissent sur votre site. Si vous ne voyez pas vos dernières modifications, essayez de vider le cache de votre navigateur.
+Site accessible ici : 
+Un problème est survenu. Consulter la console développeur pour plus de détails.
+Une erreur réseau s'est produite.
+Gérer les mots de passe
+Ajouter un mot de passe
+Nouveau mot de passe
+Votre site n'a actuellement aucun mot de passe. Tout le monde peut le visiter.
+Votre site est protégé par mot de passe. Si vous avez plusieurs mots de passe, les visiteurs peuvent accéder à votre site en saisissant l'un d'entre eux.
+Mot de passe
+Une version chiffrée de votre mot de passe sera stockée en toute sécurité. Une fois le mot de passe défini, il ne peut pas être déchiffré en clair.
+Mot de passe
+Surnom (optionnel)
+Définissez un surnom pour vous rappeler à quoi ou à qui est destiné le mot de passe.
+Ajouter ce mot de passe
+Mot de passe sans titre
+Créé {{time}}
+Nouveau mot de passe ajouté.
+Domaine personnalisé
+Utilise votre propre nom de domaine à la place de l'URL https://publish.obsidian.md/{site id}.
+Bloquer l'indexation par les moteurs de recherche
+Empêche les moteurs de recherche d'indexer le site.
+Configurer
+Configuration du domaine personnalisé
+URL personnalisée
+Permet d'indiquer l'URL sur laquelle votre site sera situé. Ne pas indiquer le “www.”
+Redirection vers le domaine personnalisé
+Redirige les visiteurs de publish.obsidian.md/id vers votre propre nom de domaine.
+Mettre à jour les paramètres du domaine
+Veuillez vous référer à notre {{link}} sur notre site pour plus d'informations.
+guide d'aide pour le domaine personnalisé
+{{site}} utilisés sur {{limit}}.
+Acheter plus de sites
+Aucun site acheté.
+Obtenir un site
+Gérer le partage du site “{{name}}”
+Ce site est actuellement partagé avec les personnes suivantes :
+Ce site n'est actuellement partagé avec personne.
+En attente
+Supprimer l'utilisateur
+Inviter un utilisateur
+Saisir leur adresse électronique...
+Veuillez saisir une adresse électronique valide pour inviter quelqu'un.
+Sites
+Sites partagés avec vous
+Arrêter de collaborer sur ce site
+Confirmer l'arrêt de la collaboration
+Cela supprimera ce site de la liste des sites partagés avec vous. Cette action ne peut pas être annulée.
+Veuillez contacter le propriétaire du site si vous souhaitez collaborer à nouveau sur ce site.
+Quitter
+Comparer avec la version en ligne
+Utiliser la version en ligne
+Confirmer le remplacement de la version locale
+Remplacer la version locale ?
+La version en ligne sera utilisée et votre version locale sera abandonnée. Veuillez faire des sauvegardes si nécessaire.
+Continuer
+L'utilisation de la version en ligne qui a remplacé votre version locale a réussi.
+Ouvrir dans le site en ligne
+Ouvrir le dossier
+Gérer les filtres de Publish
+Dossiers inclus
+Les fichiers situés dans ces dossiers seront automatiquement sélectionnés lorsque vous examinerez les modifications à publier.
+ Ces dossiers sont actuellement inclus :
+Dossiers exclus
+Les fichiers situés dans ces dossiers n'apparaîtront pas lorsque vous examinerez les modifications à publier. Ce paramètre est prioritaire sur les dossiers inclus ci-dessus.
+Obsidian Publish inclut actuellement {{dossiers}}.
+Obsidian Publish exclut actuellement les {{dossiers}}.
+Gérer les dossiers inclus
+Gérer les dossiers exclus
+Inclure un dossier
+Vous pouvez inclure à la fois des dossiers existants et des dossiers qui n'ont pas encore été créés..
+Contacter le support
+Aperçu de la navigation
+Espaces de travail
+Enregistre et change la disposition de l'espace de travail.
+Charger l'espace de travail
+Gérer les dispositions des espaces de travail
+Sauvegarder l'espace de travail
+Sauvegarder et charger un autre espace de travail
+Sauvegarder l'espace de travail actuel comme...
+Sauvegarder
+Charger
+Supprimer l'espace de travail
+Veuillez saisir un nom pour le nouvel espace de travail.
+L'espace de travail “{{name}}” a été sauvegardé avec succès.
+Aucun espace de travail enregistré n'a été trouvé.
+Modifié le {{time}}
+Taper le nom de l'espace de travail...
+
+Synchronise les fichiers avec Obsidian Sync.
+Afficher l'historique de cet instantané
+Paramétrer Sync
+Ouvrir d'historique de version
+Afficher l'historique de Sync
+Ouvrir le journal d'activité
+Charger plus
+Afficher les différences
+Copier dans le presse-papiers
+Restaurer cette version
+Cette version est déjà la dernière.
+Version du {{time}} restaurée avec succès
+Ce fichier a été supprimé
+Supprimé depuis {{ device }}
+Fichier renommé à partir de “{{from}}”
+Renommé de “{{from}}” à “{{to}}”
+Déplacé depuis “{{from}}”
+Déplacé de “{{from}}” à “{{to}}”
+{{count}} révision
+{{revisions}} révisions
+depuis {{device}}
+Pas d'historique de synchronisation pour ce fichier.
+Vide
+Impossible de retrouver l'historique des versions
+Fichiers de configuration
+Fichiers supprimés
+Historique des versions
+Cliquer sur un fichier pour voir son historique.
+Créer un coffre distant
+Saisir un mot de passe.
+Le nom du coffre ne peut pas être vide.
+Création réussie du coffre distant “{{name}}”.
+Les coffres distants permettent une synchronisation fiable et sécurisée entre tous vos appareils.
+Nom du coffre
+Choisir un nom évoquant l'objet du coffre.
+Région
+Automatique
+Sélectionnez la région du serveur la plus proche de vous pour stocker le coffre distant. Ce choix ne pourra pas être modifié à l'avenir.
+Mon magnifique coffre
+Chiffrement
+Le chiffrement de bout en bout offre le meilleur niveau de sécurité mais nécessite que vous enregistriez votre mot de passe de chiffrement. Le chiffrement standard utilise une clé gérée par Obsidian pour protéger le transfert de vos données et son stockage sur nos serveurs.
+Cette option ne peut pas être changée par la suite.
+Chiffrement de bout en bout
+Chiffrement standard
+Mot de passe de chiffrement
+Le mot de passe ne pourra pas être modifié ultérieurement.
+Si vous oubliez le mot de passe, les données stockées à distance resteront inutilisables à jamais.
+Cela n'affecte pas les données stockées localement.
+Le coffre distant “{{name}}” est actuellement chiffré. Entrez votre mot de passe pour le déverrouiller.
+Mot de passe
+Déverrouiller le coffre distant
+Déverrouiller le coffre
+Coffres distants
+Créé {{time}}
+Supprimer
+Renommer
+Renommer le coffre distant “{{name}}”
+Entrez un nouveau nom pour ce coffre distant.
+Gérer le partage
+Confirmer la suppression du coffre
+Supprimer le coffre distant “{{name}}” ?
+Toutes les données stockées sur notre serveur ainsi que l'historique des instantanés seront supprimés. Vos fichiers locaux resteront intacts.
+Cette action est permanente et irréversible.
+Le coffre distant {{name}} a été supprimé.
+Obsidian Sync : le coffre distant connecté n'existe plus.
+Se connecter
+Se déconnecter
+Sync : {{status}}
+Aucun coffre distant.
+Aucun abonnement actif à Obsidian Sync.
+Veuillez visiter
+Impossible de prévisualiser les fichiers {{type}}.
+Créer un nouveau coffre
+Journal des synchronisations
+Tout
+Erreurs
+Passé
+Conflits de fusion
+Copier le journal des synchronisations
+Journal des synchronisations copié avec succès.
+Réessayer
+Acheter
+Détection d'un conflit avec le service de synchronisation de fichiers.
+Attention : votre coffre semble utiliser {{service}} comme service de synchronisation tiers. Si vous souhaitez utiliser Obsidian Sync pour ce coffre, vous risquez de rencontrer des conflits, une corruption de fichiers ou une perte de données.
+Si vous utilisez iCloud Drive, vos dossiers Documents et Bureau pourraient être synchronisés avec iCloud. Cela pourrait provoquer des conflits avec Obsidian Sync.
+Coffre distant
+Choisir
+Gérer
+Actuellement connecté au coffre distant “{{name}}”.
+Actuellement non connecté à un coffre distant.
+État de la synchronisation
+Obsidian Sync est en pause.
+Obsidian Sync est activé et en cours de fonctionnement.
+Nom de l'appareil
+Ce nom sera affiché dans le journal des synchronisations. Laissez vide pour utiliser le nom par défaut.
+Reprendre
+
+Fichiers supprimés
+Affiche et récupére les fichiers supprimés.
+Activité de synchronisation
+Afficher le journal des synchronisations récentes.
+Voir
+Tout récupérer
+Restaurer les fichiers
+{{count}} fichier restauré
+{{count}} fichiers restaurés
+Récupération...
+`Récupération complète : {{succeeded}} avec succès et {{failed}} en échec.`
+Taille du coffre
+Vous utilisez {{size}} sur un max de {{limit}}
+Impossible de calculer la taille du coffre.
+Récupération de la taille du coffre...
+La taille du coffre est au-dessus de la limite max
+La taille du coffre approche la limite max
+Voir les fichiers les plus volumineux
+Voici les fichiers téléversés qui prennent le plus de place. Après la suppression des pièces jointes, utilisez le bouton Purger pour libérer l'espace sur le coffre distant.
+Augmenter le stockage
+Purger
+Masquer mes changements
+Efface de manière permanente les pièces jointes supprimées de votre coffre distant et libère ainsi de l'espace.
+Purge complète.
+Empêcher la mise en veille de l'appareil
+Empêche l'appareil de se mettre en veille lorsqu'il reste des fichiers à synchroniser.
+Synchronisation sélective
+Dossiers exclus
+Empêche la synchronisation de certains dossiers.
+ Les dossiers suivants sont actuellement exclus :
+Gérer
+Synchronisation des images
+Synchronise les fichiers image qui ont ces extensions : {{extensions}}.
+Synchronisation des audios
+Synchronise les fichiers audio qui ont ces extensions : {{extensions}}.
+Synchronisation des vidéos
+Synchronise les fichiers vidéo qui ont ces extensions : {{extensions}}.
+Synchronisation des PDF
+Synchronise les fichiers PDF.
+Synchronisation de tous les autres types
+Synchronise les types de fichiers non pris en charge par Obsidian.
+Configuration de la synchronisation du coffre
+Historique des versions des paramètres
+Affiche et restaure l'historique des versions des fichiers de paramètres.
+Réglages principaux
+Synchronise les paramètres de l'éditeur, des fichiers, des liens, des raccourcis personnalisés, etc.
+Paramètres d'apparence
+Synchronise les paramètres d'apparence tels que le mode sombre, le thème actif et les extraits de CSS utilisés.
+Thèmes et extraits de CSS
+Synchronise les thèmes et les extraits de CSS téléchargés. Leur utilisation dépend des paramètres précédents.
+Raccourcis clavier
+Synchronise les raccourcis clavier personnalisés.
+Liste des modules principaux actifs
+Synchronise la liste des modules principaux actifs.
+Paramètres des modules principaux
+Synchronise les paramètres des modules principaux.
+Liste des modules complémentaires actifs
+Synchronise les modules complémentaires actifs.
+Liste des modules complémentaires installés
+Synchronise les modules complémentaires installés (Fichiers .js, .css, et manifest.json) ainsi que leurs paramètres.
+Autoriser les modules synchronisés à s’exécuter sur cet appareil ?
+Obsidian Sync ne peut pas vérifier le contenu des modules synchronisés sur cet appareil, et ils peuvent différer des modules publiés dans le répertoire de la communauté.
+N’activez cette option que si le coffre et les appareils connectés sont fiables.
+Oui, activer la synchronisation des modules
+Sync est encore en cours de chargement, veuillez actualiser cette page plus tard.
+Obsidian Sync est le service de synchronisation complémentaire d'Obsidian, avec chiffrement de bout en bout et historique des instantanés.
+Pour démarrer la synchronisation, veuillez vous connecter ou créer un nouveau compte Obsidian.
+Fichier actuel
+Synchroniser les changements
+Aujourd'hui
+Hier
+Cette semaine
+Plus ancien
+Dernière synchronisation
+{{count}} supplémentaires
+S'inscrire
+S'identifier
+Gérer les dossiers qui sont exclus
+{{folders}} sont actuellement exclus de la synchronisation.
+Exclure un dossier
+Vous pouvez exclure à la fois les dossiers existants et les dossiers qui n'ont pas encore été créés.
+Retirer de la liste des exclus
+Paramétrer la connexion
+Connexion...
+Echec de la connexion
+Echec de la connexion au coffre distant.
+Connexion établie au coffre distant “{{name}}”.
+Démarrer la synchronisation
+Confirmer la fusion des coffres
+Le coffre local contient déjà quelques notes.
+Si vous vous connectez au coffre distant “{{name}}”, les notes de votre espace de stockage local seront fusionnées avec les notes de ce coffre distant. En cas de conflit, la version la plus récente de la note sera préservée.
+Veuillez mettre à jour cette option et redémarrer l'application sur tous les appareils sur lesquels vous souhaitez qu'elle prenne effet.
+Ce coffre distant est actuellement partagé avec les personnes suivantes :
+Ce coffre distant n'est actuellement partagé avec personne.
+Coffres partagés avec vous
+Arrêter de collaborer sur ce coffre
+Confirmez l'arrêt de la collaboration
+Cela supprimera ce coffre de la liste des coffres-forts partagés avec vous. Cette action ne peut pas être annulée.
+Veuillez contacter le propriétaire du coffre si vous souhaitez collaborer à nouveau sur ce coffre.
+Quitter
+Echec lors du chargement des coffres distants.
+Vous avez besoin d'un abonnement à Obsidian Sync pour vous connecter à ce coffre.
+Contacter le support
+Si vous rencontrez des problèmes avec Obsidian Sync, veuillez nous contacter pour que nous puissions vous aider ! Vous pouvez nous joindre à support@obsidian.md.
+Copier les info de débogage
+Support par mail
+Sync n'est pas connecté à un coffre distant.
+Obsidian Sync vous permet de créer jusqu'à 5 coffres distants. Pour créer un nouveau coffre distant, veuillez supprimer un coffre existant.
+Mettre à niveau le coffre
+Mettre à niveau le chiffrement du coffre
+Il y a une nouvelle version de chiffrement disponible pour les coffres distants.
+Migrer le coffre distant
+Configuration du coffre distant
+Migrer
+Ceci supprimera votre coffre distant et le recréera avec le dernier chiffrement. Les fichiers locaux ne seront pas affectés, mais l'historique des versions sera perdu.
+Confirmer la migration du coffre
+Pour mettre à niveau votre chiffrement, toutes les données du coffre seront à nouveau téléversées vers les serveurs Obsidian Sync en utilisant la nouvelle méthode de chiffrement. Ceci supprimera de manière définitive toute les données chiffrées avec l'ancienne méthode, y compris l'historique de version de votre coffre.
+Important : nous vous recommandons vivement de créer une sauvegarde de votre coffre avant de procéder afin d'éviter toute perte potentielle de données.
+Après la mise à niveau, vous devrez reconnecter tous vos appareils au coffre distant mis à niveau.
+Migrer votre coffre peut prendre du temps. Nous devons conserver Obsidian actif sur cet appareil pour téléverser à nouveau toutes vos notes et pièces jointes. Il est préférable de faire ceci sur votre appareil principal.
+Continuer ?
+Migration du coffre en cours.
+Migration du coffre terminée.
+Résolution des conflits
+Choisissez comment les conflits sont résolus lorsqu’une note est modifiée indépendamment sur plusieurs appareils.
+Fusionner automatiquement
+Créer un fichier de conflit
+Récupération de fichier
+Permet de restaurer des instantanés récents en cas de perte de données accidentelle. Les instantanés ne sont enregistrés que pour les fichiers Markdown.
+Ouvrir les instantanés
+Intervalle entre les instantanés
+Intervalle minimal en minutes entre l'enregistrement de deux instantanés.
+Durée de l'historique
+Durée en jours pendant laquelle les instantanés sont conservés.
+Instantanés
+Afficher et restaurer les instantanés enregistrés.
+Afficher
+Supprimer l'historique
+Efface tout l'historique des instantanés.
+Supprimer
+Souhaitez-vous vraiment supprimer tous les instantanés ? Seuls les instantanés seront supprimés, aucun fichier de votre coffre ne sera touché.
+Instantanés effacés.
+Aucun instantané trouvé.
+Choisir un fichier...
+Sélectionner un fichier sur la gauche pour en afficher les instantanés.
+Compositeur de note
+Fusionne ou scinde des notes afin de les restructurer.
+Confirmer la fusion du fichier
+Invite avant de fusionner deux fichiers.
+Texte après extraction
+Que montrer à la place du texte sélectionné après son extraction.
+Lien vers un nouveau fichier
+Incorporer un nouveau fichier
+Rien
+Emplacement du fichier de modèle
+Fichier de modèle à utiliser lors de la fusion ou de l'extraction. Variables disponibles : {{content}}, {{fromTitle}}, {{newTitle}}, {{date:FORMAT}}, par exemple {{date:YYYY-MM-DD}}.
+Fusionner le fichier actuel avec un autre fichier...
+Fusionner tout le fichier avec...
+Aucun fichier trouvé.
+pour naviguer
+pour fusionner
+pour créer un nouveau
+pour fusionner en haut
+pour annuler
+Sélectionner un fichier à fusionner...
+Fusionner le fichier
+Êtes-vous sûr de vouloir fusionner “{{file}}” vers “{{destination}}” ? Le fichier “{{file}}” sera supprimé.
+Fusionner
+Extraire la sélection actuelle...
+Extraire cet entête...
+pour ajouter en bas
+pour ajouter en haut
+Échec lors de la récupération du fichier de modèle : “{{template}}” n'a pas été trouvé.
+Impossible de trouver l'entête
+Afficheur web
+Historique web
+Ouvrir les liens externes vers des pages web à l'intérieur d'Obsidian.
+Ouvrir l'afficheur web
+Afficher l'historique
+Activer le mode lecture
+Copier l'URL
+Supprimer de l'historique
+Supprimer l'historique
+Ouvrir le lien
+Ouvrir le lien dans un nouvel onglet
+Ouvrir le lien à droite
+Ouvrir le lien dans une nouvelle fenêtre
+Ouvrir le lien dans le navigateur par défaut
+Ouvrir le lien dans l'afficheur web
+Copier l'adresse du lien
+Mettre le lien en favori
+Rechercher “{{query}}”
+Extraire la sélection vers une nouvelle note
+Copier
+Couper
+Coller
+Supprimer
+Sélectionner tout
+Enregistrer dans le coffre
+Enregistrer l'image dans le coffre
+Copier le lien de l'image
+Précédent
+Suivant
+Recharger
+Marquer la page
+Ouvrir dans le navigateur par défaut
+Focus sur la barre d'addresse
+Rechercher sur Internet
+Supprimer les données
+
+Ceci peut vous déconnecter de sites Internet.
+Données en cache
+Historique
+Toutes les données de l'afficheur web
+Supprime toutes les données ci-dessus ainsi que le stockage local et les sessions actives.
+Nouvel afficheur web
+Impossible de charger ce site.
+Soyez certains que vous disposez de la bonne adresse.
+Mode lecture
+Chercher sur Internet
+Données du visualisateur web
+Effacer les données du visualisateur web
+Ouvrir les liens externes
+Ouvrir les liens dans Obsidian plutôt que dans le système par défaut.
+Page d'accueil
+Quelle page afficher lorsque un visualisateur web est ouvert
+Dossier des pages sauvegardé
+Les sites Internet sauvegardés en Markdown seront placés ici.
+Moteur de recherche
+Moteur de recherche utilisé lors d'une recherche depuis la barre d'adresses.
+Moteur de recherche personnalisé
+Utilise %s à la place de la requête.
+Personnalisé
+Active le bloqueur de publicités
+Activé, les listes de filtre ci-dessous seront appliquées à tous les onglets du visualisateur web.
+Règles de blocage publicitaire
+Une URL de liste de blocage par ligne. Partagé par tous les coffres.
+Fréquence de mise à jour du blocage publicitaire.
+Jours entre les mises à jours des listes de filtre. 0 signifie désactivé. Partagé par tous les coffres.
+Supprimer les données du visualisateur web
+Erreur inattendue lors de l'extraction du contenu.
+Impossible de trouver du contenu à extraire.
+
+Organise et relie les notes sur un canvas infini.
+Ajouter une note du coffre
+Ajouter un média du coffre
+Ajouter une carte
+Ajouter une page web
+Créer un groupe
+Créer une carte avec une taille spécifique
+Convertir en fichier...
+Glisser pour ajouter une note du coffre
+Glisser pour ajouter un média du coffre
+Glisser pour ajouter une carte
+Modifier l'étiquette
+Supprimer l'étiquette
+Chercher un fichier
+Définir la couleur
+Aligner
+Aligner à gauche
+Aligner au centre
+Aligner à droite
+Aligner en haut
+Aligner au milieu
+Aligner en bas
+Répartir l'espacement horizontal
+Répartir l'espacement vertical
+Justifier horizontalement
+Justifier horizontalement
+Disposer en ligne
+Disposer en colonne
+Disposer en grille
+Exporter comme image
+Passer au groupe
+Définir l'arrière-plan
+Éditer l'arrière-plan
+Remplacer l'arrière-plan
+Supprimer l'arrière-plan
+Aucune image trouvée.
+Aucun média trouvé.
+Exporter “{{title}}” dans un fichier PNG avec les paramètres ci-dessous.
+Dimensions estimées de l'image: {{dimensions}}
+Distribuer
+Justifier
+Disposer
+Toujours
+Au survol
+Jamais
+Aucune section trouvée
+Comportement par défaut de la roulette de la souris
+Comportement par défaut de {{key}}
+Afficher le menu
+Emplacement par défaut pour les nouveaux fichiers canvas
+Indique l'emplacement à utiliser pour les fichiers canvas nouvellement créés.
+Dossier où enregistrer les nouveaux fichiers canvas créés
+Indique le dossier à utiliser pour les fichiers canvas nouvellement créés.
+Afficher l'étiquette des cartes
+Aligner sur la grille
+Aligne les cartes sur la grille d'arrière-plan lors de leur déplacement et de leur redimensionnement.
+Aligner par rapport aux objets
+Adapte les cartes aux objets proches lors de leur déplacement et de leur redimensionnement.
+Seuil de zoom pour cacher le contenu des cartes
+Des valeurs plus faibles augmentent les performances mais masquent le contenu de la carte plus tôt lors d'un zoom arrière.
+Afficher le logo
+Affiche le logo d'Obsidian en bas à gauche.
+Mode de confidentialité
+Obscurcit tout texte placé sur le canvas.
+
+Un zoom plus élevé génère une image de plus haute résolution.
+Fenêtre d'affichage
+Affiche le rendu de l'ensemble du canvas ou seulement la portion de fenêtre actuellement visible.
+Canvas complet
+Fenêtre visible uniquement
+Couvrir
+Conserver le rapport hauteur/largeur
+Répéter
+Nouveau canvas
+Dupliquer
+Supprimer
+Réduire à l'en-tête...
+Réduire au bloc...
+Épingler la vue...
+Échanger le fichier...
+Changer l'URL...
+Zoomer pour ajuster
+Zoomer sur la sélection
+Recharger la page
+Suivre la connexion
+Créer un nouveau canvas
+Convertir en fichier...
+pour intégrer l'en-tête
+pour intégrer le bloc
+pour naviguer au groupe
+Taper le nom de l'entête
+Entrer l'URL
+“{{linktext}}” n'a pas été trouvé.
+Ajouter du texte...
+Taper pour rechercher...
+Aide concernant les canvas
+Paramètres des canvas
+Afficher le fichier entier
+Afficher la vue par défaut
+Lecture-seule
+Désactiver la lecture-seule
+Panoramique
+Panoramique horizontal
+Zoomer
+Tout sélectionner
+Ajouter à / Supprimer de la sélection
+Dupliquer la carte
+Limitation du mouvement de la carte à l'axe
+Désactiver le verrouillage lors d'un déplacement
+Supprimer la carte
+Faire glisser depuis le bas ou Double-Cliquer
+Toucher et maintenir pour ajouter / déplacer / sélectionner
+Faire glisser pour obtenir un panoramique
+Pincer pour agrandir
+Espace + glisser pour faire un panoramique
+Faire défiler pour zoomer
+Groupe sans titre
+Direction de la ligne
+Non directionnel
+Unidirectionnel
+Bidirectionnel
+
+
+Aucun groupe trouvé
+Impossible d'exporter un canvas vide
+Renommage de fichier canvas détecté et affectant {{count}} fichier canvas. Mise à jour en cours...
+Renommages de fichiers canvas détectés et affectant {{count}} fichiers canvas. Mises à jour en cours...
+Canvas a mis à jour {{count}} carte intégrée
+Canvas a mis à jour {{count}} cartes intégrées
+
+Create bases by querying note properties.
+Nouvelle base
+Ajouter la propriété “{{name}}”
+Ajouter le résumé “{{name}}”
+Ajouter une formule
+Tout masquer
+Basculer la visibilité
+Supprimer la formule
+Vue par défaut
+Dupliquer la vue
+Supprimer la vue
+Supprimer le résumé
+Exporter en CSV...
+Créer une nouvelle base
+Insérer une nouvelle base
+Copier le tableau dans le presse-papiers
+Changer de vue
+Ajouter une vue
+Ajouter un élément
+Ajouter une vue
+Ajouter un filtre
+Ajouter un groupe de filtres
+Tout afficher
+Tout afficher ({{count}})
+Ajouter un résumé
+Masquer le résumé
+Toutes les vues
+Cette vue
+Rechercher ou créer...
+Propriétés calculées
+Type de propriété
+Masquer la propriété
+Afficher la propriété
+Modifier la propriété
+Modifier {{name}}
+Configurer la vue
+Mise en page
+Filtres globaux
+Filtres de la vue
+Nom de la vue
+Vue
+Tableau
+Nom d’affichage
+Nom du résumé
+Formule
+Vues
+Trier
+Filtre
+Rechercher
+Propriétés
+Nouveau
+Affichage : {{count}}
+Fichier modèle pour les nouveaux éléments
+Dossier des nouveaux éléments
+Au moins l’une des conditions suivantes est vraie
+Toutes les conditions suivantes sont vraies
+Aucune des conditions suivantes n’est vraie
+où
+ou
+et
+Propriété
+Sans titre
+fichier
+name
+nom de base du fichier
+nom complet du fichier
+path
+dossier
+extension
+date de création
+date de modification
+taille du fichier
+rétroliens vers le fichier
+liens vers le fichier
+intégrations du fichier
+mots-clés du fichier
+Ajouter un tri
+Grouper par
+Groupe
+Affichage
+Résultats
+Manuel
+Ajouter un groupe
+Trier par
+Limiter le nombre de résultats
+
+
+Du plus ancien au plus récent
+Du plus récent au plus ancien
+
+
+Le nom de la vue ne peut pas contenir : 
+Le nom de la vue existe déjà.
+Le nom de la vue ne peut pas être vide.
+Ce filtre ne peut pas être représenté par le générateur de filtres simple.
+Impossible d’analyser le filtre. Le générateur de filtres simple ne peut pas être utilisé.
+Configuration des propriétés invalide.
+La configuration de la propriété “{{ name }}” est invalide.
+Impossible d'ajouter la nouvelle vue Bases “{{ viewId }}”. Une vue avec le même ID existe déjà.
+Impossible d'analyser le fichier de base :
+La vue “{{ view }}” est introuvable
+La base est configurée avec type inconnu : {{ viewtype }}
+Les vues doivent être un tableau
+Les valeurs d’affichage doivent être des chaînes. La valeur de la propriété {{ key }} n’en est pas une.
+“{{ key }}” doit être un {{ type }}
+“filters” doit être une chaîne ou un objet
+Le filtre “{{ conjunction }}” doit être un tableau
+“filters” ne peuvent contenir qu’une seule des clés “and”, “or” ou “not”.
+Échec de l’évaluation d’un filtre : {{ message }}
+Les valeurs de formule doivent être des chaînes. La valeur de la propriété {{ key }} n’en est pas une.
+Échec du calcul de la valeur de la propriété “{{ key }}” : {{ message }}
+Le format de la requête est invalide. Elle doit être un objet YAML.
+Les éléments “view” doivent être un objet YAML, mais l’élément {{ index }} n’en est pas un
+“name” manquant ou invalide dans la vue {{ index }}
+“{{ key }}” est requis dans la vue “{{ viewName }}”
+“{{ key }}” doit être un(e) {{ type }} dans la vue “{{ viewName }}”
+Les valeurs de “{{ key }}” doivent toutes être de type {{ type }} dans la vue “{{ viewName }}”
+Impossible d’analyser les filtres dans la vue “{{ viewName }}” : {{ message }}
+Boucle infinie détectée dans la formule
+Propriété invalide
+Cette note sera filtrée car elle ne correspond pas à vos critères
+Filtre avancé
+ex. 10
+Filtre avancé
+Filtre simple
+Supprimer le filtre
+Aucun
+Liste
+Marqueurs
+Indenter les propriétés
+Séparateur de propriétés
+Puce
+Nombre
+Aucun
+Galerie
+Taille des cartes
+Propriété de l’image
+Ajustement de l’image
+Couvrir
+Contenir
+Ratio d’aspect de l’image
+
+Modifier les groupes...
+Largeur de colonne
+Ajouter des colonnes
+Choisissez une propriété pour regrouper les éléments.
+Choisir une propriété
+Aucune colonne
+Sélectionnez les groupes à afficher sous forme de colonnes.
+Tableau
+Masquer la colonne
+Modifier la propriété...
+Modifier la formule...
+Effacer le tri
+Trier A → Z
+Trier Z → A
+Hauteur des lignes
+Courte
+Moyenne
+Haute
+Très haute
+Résumer...
+Regrouper par cette propriété
+Redimensionner la colonne...
+Réinitialiser la taille de la colonne
+Faire glisser pour redimensionner
+Effacer les valeurs
+Résumé
+Impossible d’analyser la formule “{{ formula }}”
+Impossible de trouver la fonction “{{ function }}”
+Impossible de trouver la fonction “{{ function }}” sur le type {{ type }}
+Impossible d’appeler la fonction “{{ function }}” : pas assez d’arguments.
+Impossible d’appeler la fonction “{{ function }}” : trop d’arguments.
+Erreur de type dans “{{ function }}”, paramètre “{{ parameter }}”. Attendu : {{ expected }}, Donné : {{ given }}.
+Impossible d'accéder à l'index {{ index }} d'une valeur qui n'est pas un tableau
+Impossible d'accéder à l'index {{ index }} du type {{ type }}
+Tout surligner
+Correspondance des diacritiques
+Mot entier
+Vignettes
+Table des matières
+Afficher la page dans la table des matières
+Afficher le ruban latéral
+Page précédente
+Page suivante
+Ajuster la largeur
+Ajuster la hauteur
+Sauvegarder la position actuelle dans le document
+Copier l'annotation
+Copier comme citation
+Copier le lien vers la sélection
+Copier le lien vers l'annotation
+Copier le lien vers la section
+Copier le lien vers “{{title}}”
+Copier le lien vers la page {{page}}
+{{current}} sur plus de {{limit}} résultats
+{{current}} sur {{total}} résultat
+{{current}} sur {{total}} résultats
+Ce PDF est protégé par un mot de passe.
+Mot de passe invalide
+Saisir le mot de passe ci-dessous
+de {{count}}
+({{current}} de {{count}})
+Page unique
+Deux pages (impaires)
+Deux pages (paires)
+Option du ruban latéral
+Options d'affichage
+Adapter au thème
+
+
+
+
+[Annotation {{type}}]
+
+Liste
+Inconnu
+Texte
+Alias
+Mots-clés
+Dossier
+Fichier
+Propriété
+
+Date & heure
+Nombre
+Case à cocher
+
+pour lier la note
+pour annuler
+Type de propriété
+Trier
+Le nom de la propriété ne peut pas être vide.
+La propriété existe déjà
+Nom de mot-clé incorrect
+Nombre incorrect
+Impossible de lire les propriétés.
+Aucune valeur
+Propriétés
+Propriétés invalides
+Afficher la source
+Erreur de syntaxe. Votre en-tête est invalide.
+Ajouter une propriété
+Incompatibilité de type, {{type}} attendu
+Incompatibilité de type
+Afficher comme {{type}} ?
+Vos données {{oldType}} ne sont pas compatibles. Elles seront adaptées pour correspondre au nouveau format.
+Colonne
+Ligne
+Ajouter une ligne après
+Ajouter une colonne après
+Ajouter une ligne avant
+Déplacer la ligne vers le haut
+Déplacer la ligne vers le bas
+Ajouter une colonne avant
+Déplacer la colonne vers la gauche
+Déplacer la colonne vers la droite
+Dupliquer la ligne
+Dupliquer la colonne
+Supprimer la ligne
+Supprimer la colonne
+Aligner à gauche
+Aligner au centre
+Aligner à droite
+Supprimer la cellule
+Nettoyer les cellules
+Tri par colonne (A à Z)
+Tri par colonne (Z à A)
+Tableau : {{command}}
+Type de mise en avant
+
+
+Astuce
+Succès
+
+Attention
+Citation
+Exemple
+Aucun
+Autre...
+Type de la mise en avant...
+
+{{count}} mot
+{{count}} mots
+{{count}} résultat
+{{count}} résultats
+{{count}} caractère
+{{count}} caractères
+{{count}} lien
+{{count}} liens
+{{count}} fichier
+{{count}} fichiers
+{{count}} dossier
+{{count}} dossiers
+{{count}} rétrolien
+{{count}} rétroliens
+{{count}} onglet
+{{count}} onglets
+{{count}} propriété
+{{count}} propriétés
+
+
+{{count}} module
+{{count}} modules
+{{count}} actif
+{{count}} extrait de CSS
+{{count}} extraits de CSS
+{{count}} thème
+{{count}} thèmes
+Annuler
+
+Copier
+Ouvrir le lien
+Ouvrir ce fichier
+Exécuter le fichier
+Ouvrir le lien externe ?
+Ce lien ouvrira une application externe en dehors d’Obsidian. Ne continuez que si vous faites confiance à la source de ce lien.
+Toujours ouvrir les liens {{scheme}}://
+Avertissement concernant un fichier distant
+Ce fichier se trouve sur un serveur distant et peut être dangereux.\nVoulez-vous vraiment l’ouvrir ?
+Emplacement : {{location}}
+Accès au lecteur réseau
+Ce contenu demande des données à un lecteur réseau. L’autoriser peut exposer vos identifiants de connexion ou d’autres informations sensibles à l’hôte distant.
+Hôte : {{host}}
+Autoriser
+Exécuter le fichier exécutable ?
+Ce lien pointe vers un fichier exécutable. L’exécuter pourrait endommager votre ordinateur.
+Fichier : {{path}}
+Coffre introuvable.
+Impossible de trouver un coffre pour l’URL {{url}}
+Fichiers pris en charge

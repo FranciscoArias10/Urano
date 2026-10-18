@@ -79,6 +79,8 @@ export const mathExtension = ViewPlugin.fromClass(
       const text = doc.toString();
       const selection = view.state.selection.main;
 
+      const coveredRanges: [number, number][] = [];
+
       // 1. Block Math: $$ ... $$ (supports multi-line equations)
       const blockRegex = /\$\$([\s\S]+?)\$\$/g;
       let blockMatch: RegExpExecArray | null;
@@ -90,11 +92,12 @@ export const mathExtension = ViewPlugin.fromClass(
 
         if (mathContent.length === 0) continue;
 
+        coveredRanges.push([start, end]);
+
         // If user cursor is inside the equation, keep it as raw LaTeX so they can edit
         const isCursorInside = selection.head >= start && selection.head <= end;
 
         if (!isCursorInside) {
-          // Replace raw $$...$$ with real KaTeX rendered formula!
           widgets.push(
             Decoration.replace({
               widget: new MathWidget(mathContent, true, start),
@@ -103,7 +106,7 @@ export const mathExtension = ViewPlugin.fromClass(
         }
       }
 
-      // 2. Inline Math: $...$ (single line)
+      // 2. Inline Math: $...$ (single line, avoid overlapping block math)
       const inlineRegex = /(?<!\$)\$(?!\$)([^\$\n]+?)(?<!\$)\$(?!\$)/g;
       let inlineMatch: RegExpExecArray | null;
 
@@ -113,6 +116,12 @@ export const mathExtension = ViewPlugin.fromClass(
         const mathContent = inlineMatch[1].trim();
 
         if (mathContent.length === 0) continue;
+
+        // Skip if inside a block math
+        const isOverlapping = coveredRanges.some(
+          ([bStart, bEnd]) => start >= bStart && end <= bEnd
+        );
+        if (isOverlapping) continue;
 
         const isCursorInside = selection.head >= start && selection.head <= end;
 
@@ -124,6 +133,9 @@ export const mathExtension = ViewPlugin.fromClass(
           );
         }
       }
+
+      // Sort strictly by start position to avoid RangeError
+      widgets.sort((a, b) => a.from - b.from || a.to - b.to);
 
       return Decoration.set(widgets, true);
     }

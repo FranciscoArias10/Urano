@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { useVaultStore } from './stores/vaultStore';
 import { useSyncStore } from './stores/syncStore';
-import { Header } from './components/layout/Header';
-import { StatusBar } from './components/layout/StatusBar';
+import { TabBar, TabItem } from './components/tabs/TabBar';
 import { FileTree } from './components/vault/FileTree';
 import { Editor } from './components/editor/Editor';
 import { GraphView } from './components/graph/GraphView';
+import { BacklinksPanel } from './components/backlinks/BacklinksPanel';
+import { CommandPalette, CommandItem } from './components/palette/CommandPalette';
+import { StatusBar } from './components/layout/StatusBar';
 import { SyncConfigModal } from './components/sync/SyncConfigModal';
 import { SyncLogsModal } from './components/sync/SyncLogsModal';
 import { UranoLogo } from './components/common/UranoLogo';
@@ -16,28 +18,50 @@ import {
   FolderPlus,
   RotateCw,
   Search,
-  Sparkles,
-  Shield,
-  Zap,
+  GitFork,
+  Command,
+  Settings,
+  PanelLeftClose,
+  PanelLeft,
+  ArrowLeftRight,
+  RefreshCw,
 } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'editor' | 'graph'>('editor');
+  // Tabs State (Obsidian Workspace Leaf Tabs)
+  const [tabs, setTabs] = useState<TabItem[]>([]);
+  const [activeTabId, setActiveTabId] = useState<string>('');
+
+  // UI Panels Toggles
+  const [showLeftSidebar, setShowLeftSidebar] = useState(true);
+  const [showBacklinks, setShowBacklinks] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
+
+  // Command Palette & Quick Switcher
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteMode, setPaletteMode] = useState<'commands' | 'files'>('commands');
+
+  // File tree search
   const [searchQuery, setSearchQuery] = useState('');
 
   const {
     activeVault,
+    vaultName,
+    activeFile,
+    activeFileName,
+    fileContent,
     fileTree,
+    isDirty,
+    notesContentMap,
     setVault,
     refreshTree,
+    selectFile,
     createUntitledNote,
     createFolder,
-    selectFile,
     openOrCreateWikilink,
   } = useVaultStore();
 
-  const { checkAuthStatus } = useSyncStore();
+  const { checkAuthStatus, triggerSync, isSyncing, setShowConfigModal } = useSyncStore();
 
   // On mount: restore previous vault and Google auth status
   useEffect(() => {
@@ -50,6 +74,81 @@ export const App: React.FC = () => {
     }
   }, []);
 
+  // Synchronize tabs when activeFile changes
+  useEffect(() => {
+    if (!activeFile) return;
+
+    const fileName = activeFileName ? activeFileName.replace(/\.md$/i, '') : 'Nota';
+
+    setTabs((prev) => {
+      const existingIdx = prev.findIndex((t) => t.filePath === activeFile);
+      if (existingIdx !== -1) {
+        // Update title and isDirty if changed
+        const updated = [...prev];
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          title: fileName,
+          isDirty,
+        };
+        return updated;
+      } else {
+        // Add new tab
+        const newTab: TabItem = {
+          id: activeFile,
+          type: 'note',
+          filePath: activeFile,
+          title: fileName,
+          isDirty,
+        };
+        return [...prev, newTab];
+      }
+    });
+
+    setActiveTabId(activeFile);
+  }, [activeFile, activeFileName, isDirty]);
+
+  // Global Keyboard Shortcuts (Obsidian matching)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+P: Command Palette
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        setPaletteMode('commands');
+        setPaletteOpen(true);
+      }
+      // Ctrl+O: Quick Switcher (File Finder)
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        setPaletteMode('files');
+        setPaletteOpen(true);
+      }
+      // Ctrl+G: Open Graph View
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') {
+        e.preventDefault();
+        handleOpenGraphTab();
+      }
+      // Ctrl+N: New Untitled Note immediately
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        handleCreateUntitledNote();
+      }
+      // Ctrl+B: Toggle Left Sidebar
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b' && !e.shiftKey) {
+        e.preventDefault();
+        setShowLeftSidebar((prev) => !prev);
+      }
+      // Ctrl+Shift+B: Toggle Backlinks Panel
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b' && e.shiftKey) {
+        e.preventDefault();
+        setShowBacklinks((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeVault]);
+
+  // Folder open picker dialog
   const handleOpenFolderDialog = async () => {
     try {
       const selected = await open({
@@ -65,9 +164,13 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleCreateRootNote = async () => {
+  // Create untitled note immediately without prompt
+  const handleCreateUntitledNote = async () => {
     if (!activeVault) return;
-    await createUntitledNote(activeVault);
+    const newPath = await createUntitledNote(activeVault);
+    if (newPath) {
+      setActiveTabId(newPath);
+    }
   };
 
   const handleCreateRootFolder = async () => {
@@ -78,8 +181,45 @@ export const App: React.FC = () => {
     }
   };
 
+  // Open Graph View Tab
+  const handleOpenGraphTab = () => {
+    const graphTabId = 'workspace-graph-view';
+    setTabs((prev) => {
+      if (prev.some((t) => t.id === graphTabId)) return prev;
+      return [...prev, { id: graphTabId, type: 'graph', title: 'Vista Gráfica' }];
+    });
+    setActiveTabId(graphTabId);
+  };
+
+  // Tab Selection
+  const handleSelectTab = (tabId: string) => {
+    setActiveTabId(tabId);
+    const tab = tabs.find((t) => t.id === tabId);
+    if (tab && tab.filePath) {
+      selectFile(tab.filePath);
+    }
+  };
+
+  // Close Tab
+  const handleCloseTab = (tabId: string) => {
+    const remaining = tabs.filter((t) => t.id !== tabId);
+    setTabs(remaining);
+
+    if (activeTabId === tabId) {
+      if (remaining.length > 0) {
+        const next = remaining[remaining.length - 1];
+        setActiveTabId(next.id);
+        if (next.filePath) {
+          selectFile(next.filePath);
+        }
+      } else {
+        setActiveTabId('');
+      }
+    }
+  };
+
   // Filter file tree by search query
-  const filteredTree = React.useMemo(() => {
+  const filteredTree = useMemo(() => {
     if (!searchQuery.trim()) return fileTree;
     const q = searchQuery.toLowerCase();
 
@@ -102,151 +242,333 @@ export const App: React.FC = () => {
     return filterItems(fileTree);
   }, [fileTree, searchQuery]);
 
+  // Compute backlinks count for the active file
+  const backlinksCount = useMemo(() => {
+    if (!activeFileName) return 0;
+    const base = activeFileName.replace(/\.md$/i, '').toLowerCase();
+    let count = 0;
+
+    for (const [path, content] of Object.entries(notesContentMap)) {
+      if (path === activeFile) continue;
+      const regex = /\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g;
+      let m;
+      while ((m = regex.exec(content)) !== null) {
+        if (m[1].trim().toLowerCase() === base) {
+          count++;
+          break;
+        }
+      }
+    }
+    return count;
+  }, [activeFile, activeFileName, notesContentMap]);
+
+  // Registered commands for Command Palette (Ctrl+P)
+  const paletteCommands: CommandItem[] = [
+    {
+      id: 'new-note',
+      name: 'Crear nueva nota (sin título)',
+      shortcut: 'Ctrl+N',
+      icon: <FilePlus size={15} />,
+      action: handleCreateUntitledNote,
+    },
+    {
+      id: 'quick-switcher',
+      name: 'Buscar nota en la bóveda (Quick Switcher)',
+      shortcut: 'Ctrl+O',
+      icon: <Search size={15} />,
+      action: () => {
+        setPaletteMode('files');
+        setPaletteOpen(true);
+      },
+    },
+    {
+      id: 'graph-view',
+      name: 'Abrir vista gráfica interactiva',
+      shortcut: 'Ctrl+G',
+      icon: <GitFork size={15} />,
+      action: handleOpenGraphTab,
+    },
+    {
+      id: 'toggle-sidebar',
+      name: 'Alternar barra lateral izquierda',
+      shortcut: 'Ctrl+B',
+      icon: <PanelLeft size={15} />,
+      action: () => setShowLeftSidebar((prev) => !prev),
+    },
+    {
+      id: 'toggle-backlinks',
+      name: 'Alternar panel de Backlinks y menciones',
+      shortcut: 'Ctrl+Shift+B',
+      icon: <ArrowLeftRight size={15} />,
+      action: () => setShowBacklinks((prev) => !prev),
+    },
+    {
+      id: 'sync-now',
+      name: 'Sincronizar ahora con Google Drive',
+      icon: <RefreshCw size={15} />,
+      action: () => {
+        if (activeVault) triggerSync(activeVault);
+      },
+    },
+    {
+      id: 'open-vault',
+      name: 'Abrir otra carpeta de bóveda...',
+      icon: <FolderOpen size={15} />,
+      action: handleOpenFolderDialog,
+    },
+    {
+      id: 'sync-config',
+      name: 'Configurar cuenta de Google Drive y sincronización',
+      icon: <Settings size={15} />,
+      action: () => setShowConfigModal(true),
+    },
+  ];
+
   return (
     <div className="flex flex-col h-screen w-screen bg-obsidian-bg text-obsidian-text overflow-hidden select-none">
-      {/* Top Application Header */}
-      <Header
-        currentView={currentView}
-        onToggleView={setCurrentView}
-        onOpenLogs={() => setShowLogs(true)}
-      />
-
       {/* Main Workspace Body */}
       <div className="flex flex-1 overflow-hidden">
-        {activeVault ? (
-          <>
-            {/* Left Sidebar: Vault File Explorer */}
-            <aside className="w-64 bg-obsidian-sidebar border-r border-obsidian-border flex flex-col shrink-0">
-              {/* Explorer Toolbar */}
-              <div className="px-3 py-2 border-b border-obsidian-border flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-obsidian-muted">
-                  Bóveda
+        {/* ========================================================
+            Obsidian Left Ribbon (.side-dock-ribbon)
+            ======================================================== */}
+        <div className="side-dock-ribbon">
+          {/* Logo at the top */}
+          <div className="mb-2 p-1">
+            <UranoLogo size={24} className="hover:scale-105 transition-transform" />
+          </div>
+
+          {/* Toggle Left Sidebar */}
+          <button
+            onClick={() => setShowLeftSidebar((prev) => !prev)}
+            title={showLeftSidebar ? 'Ocultar barra lateral (Ctrl+B)' : 'Mostrar barra lateral (Ctrl+B)'}
+            className={`side-dock-ribbon-action ${showLeftSidebar ? 'is-active' : ''}`}
+          >
+            {showLeftSidebar ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}
+          </button>
+
+          {/* Quick Switcher (Ctrl+O) */}
+          <button
+            onClick={() => {
+              setPaletteMode('files');
+              setPaletteOpen(true);
+            }}
+            title="Buscar nota (Ctrl+O)"
+            className="side-dock-ribbon-action"
+          >
+            <Search size={18} />
+          </button>
+
+          {/* Command Palette (Ctrl+P) */}
+          <button
+            onClick={() => {
+              setPaletteMode('commands');
+              setPaletteOpen(true);
+            }}
+            title="Paleta de comandos (Ctrl+P)"
+            className="side-dock-ribbon-action"
+          >
+            <Command size={18} />
+          </button>
+
+          {/* Interactive Graph View (Ctrl+G) */}
+          <button
+            onClick={handleOpenGraphTab}
+            title="Vista Gráfica (Ctrl+G)"
+            className={`side-dock-ribbon-action ${activeTabId === 'workspace-graph-view' ? 'is-active' : ''}`}
+          >
+            <GitFork size={18} />
+          </button>
+
+          {/* New Untitled Note (Ctrl+N) */}
+          <button
+            onClick={handleCreateUntitledNote}
+            title="Nueva nota (Ctrl+N)"
+            className="side-dock-ribbon-action text-orange-400 hover:text-orange-300"
+          >
+            <FilePlus size={18} />
+          </button>
+
+          {/* Google Drive Sync Trigger */}
+          <button
+            onClick={() => {
+              if (activeVault) triggerSync(activeVault);
+            }}
+            title={isSyncing ? 'Sincronizando con Google Drive...' : 'Sincronizar ahora con Google Drive'}
+            className="side-dock-ribbon-action hover:text-sky-400"
+          >
+            <RefreshCw size={17} className={isSyncing ? 'animate-spin text-sky-400' : ''} />
+          </button>
+
+          <div className="flex-1" />
+
+          {/* Settings / Google Auth Button at Bottom of Ribbon */}
+          <button
+            onClick={() => setShowConfigModal(true)}
+            title="Configuración de Bóveda y Google Drive"
+            className="side-dock-ribbon-action mb-1 text-stone-400 hover:text-stone-200"
+          >
+            <Settings size={18} />
+          </button>
+        </div>
+
+        {/* ========================================================
+            Obsidian Left Collapsible Sidebar (File Explorer)
+            ======================================================== */}
+        {showLeftSidebar && (
+          <aside className="w-64 bg-obsidian-sidebar border-r border-obsidian-border flex flex-col shrink-0">
+            {/* Vault Header & Actions */}
+            <div className="px-3 py-2.5 border-b border-obsidian-border flex items-center justify-between">
+              <div
+                onClick={handleOpenFolderDialog}
+                className="flex items-center gap-2 cursor-pointer hover:text-orange-400 transition-colors truncate"
+                title="Haz clic para abrir otra bóveda"
+              >
+                <FolderOpen className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-stone-200 truncate">
+                  {vaultName || 'Bóveda'}
                 </span>
-                <div className="flex items-center gap-1 text-obsidian-muted">
-                  <button
-                    onClick={handleCreateRootNote}
-                    title="Nueva nota en la raíz"
-                    className="p-1 hover:text-white hover:bg-obsidian-hover rounded transition-colors"
-                  >
-                    <FilePlus className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={handleCreateRootFolder}
-                    title="Nueva carpeta en la raíz"
-                    className="p-1 hover:text-white hover:bg-obsidian-hover rounded transition-colors"
-                  >
-                    <FolderPlus className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => refreshTree()}
-                    title="Recargar archivos"
-                    className="p-1 hover:text-white hover:bg-obsidian-hover rounded transition-colors"
-                  >
-                    <RotateCw className="w-3.5 h-3.5" />
-                  </button>
-                </div>
               </div>
 
-              {/* Quick Search Input */}
-              <div className="p-2 border-b border-obsidian-border">
-                <div className="flex items-center gap-2 bg-obsidian-bg px-2.5 py-1.5 rounded-md border border-obsidian-border text-xs text-obsidian-text">
-                  <Search className="w-3.5 h-3.5 text-obsidian-muted shrink-0" />
-                  <input
-                    type="text"
-                    placeholder="Buscar notas..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-transparent outline-none placeholder:text-obsidian-muted text-xs"
-                  />
-                </div>
-              </div>
-
-              {/* File Tree List */}
-              <div className="flex-1 overflow-y-auto py-2">
-                {filteredTree.length === 0 ? (
-                  <div className="text-center text-obsidian-muted text-xs py-8 px-4">
-                    {searchQuery ? 'No se encontraron notas' : 'Bóveda vacía. Crea tu primera nota.'}
-                  </div>
-                ) : (
-                  <FileTree items={filteredTree} />
-                )}
-              </div>
-            </aside>
-
-            {/* Main Content Area */}
-            <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-obsidian-bg">
-              {currentView === 'editor' ? (
-                <Editor onWikilinkClick={openOrCreateWikilink} />
-              ) : (
-                <GraphView
-                  onSelectNote={(notePath) => {
-                    selectFile(notePath);
-                    setCurrentView('editor');
-                  }}
-                />
-              )}
-            </main>
-          </>
-        ) : (
-          /* Empty / Welcome State when no vault is opened */
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-obsidian-bg">
-            <UranoLogo size={88} className="mb-6 drop-shadow-[0_0_24px_rgba(234,88,12,0.45)] animate-pulse" />
-
-            <h1 className="text-2xl font-bold text-white mb-2">Bienvenido a Urano</h1>
-            <p className="text-sm text-obsidian-muted max-w-md mb-8">
-              Tu espacio de notas Markdown <span className="text-orange-400 font-medium">Local-First</span> de alto rendimiento con sincronización directa en tu cuenta personal de Google Drive.
-            </p>
-
-            <button
-              onClick={handleOpenFolderDialog}
-              className="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white font-medium text-sm px-6 py-3 rounded-xl shadow-lg shadow-orange-600/30 transition-all hover:scale-105 active:scale-95"
-            >
-              <FolderOpen className="w-4 h-4" />
-              <span>Abrir o Crear Bóveda Local</span>
-            </button>
-
-            {/* Feature Highlights */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mt-12 text-left">
-              <div className="p-4 rounded-xl bg-obsidian-sidebar border border-obsidian-border">
-                <div className="flex items-center gap-2 text-orange-400 mb-1">
-                  <Zap className="w-4 h-4" />
-                  <span className="font-semibold text-xs text-white">Ultra Ligero</span>
-                </div>
-                <p className="text-[11px] text-obsidian-muted">
-                  Construido sobre Tauri 2.0 y Rust. Consume solo ~40-80 MB de memoria RAM.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-obsidian-sidebar border border-obsidian-border">
-                <div className="flex items-center gap-2 text-emerald-400 mb-1">
-                  <Shield className="w-4 h-4" />
-                  <span className="font-semibold text-xs text-white">100% Privado</span>
-                </div>
-                <p className="text-[11px] text-obsidian-muted">
-                  Tus archivos son Markdown puro (.md) en tu disco. Sin servidores intermedios de terceros.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-obsidian-sidebar border border-obsidian-border">
-                <div className="flex items-center gap-2 text-amber-400 mb-1">
-                  <Sparkles className="w-4 h-4" />
-                  <span className="font-semibold text-xs text-white">Google Drive Sync</span>
-                </div>
-                <p className="text-[11px] text-obsidian-muted">
-                  Sincronización diferencial con algoritmo 3-way y resolución de conflictos sin pérdida.
-                </p>
+              <div className="flex items-center gap-1 text-obsidian-muted">
+                <button
+                  onClick={handleCreateUntitledNote}
+                  title="Nueva nota (Ctrl+N)"
+                  className="p-1 hover:text-orange-400 hover:bg-obsidian-hover rounded transition-colors"
+                >
+                  <FilePlus className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={handleCreateRootFolder}
+                  title="Nueva carpeta en la raíz"
+                  className="p-1 hover:text-white hover:bg-obsidian-hover rounded transition-colors"
+                >
+                  <FolderPlus className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => refreshTree()}
+                  title="Recargar archivos"
+                  className="p-1 hover:text-white hover:bg-obsidian-hover rounded transition-colors"
+                >
+                  <RotateCw className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
+
+            {/* Quick Filter Search Input */}
+            <div className="p-2 border-b border-obsidian-border">
+              <div className="flex items-center gap-2 bg-[#161412] px-2.5 py-1.5 rounded-md border border-stone-800 text-xs text-obsidian-text">
+                <Search className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Filtrar archivos..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-transparent outline-none placeholder:text-stone-500 text-xs"
+                />
+              </div>
+            </div>
+
+            {/* File Tree Component */}
+            <div className="flex-1 overflow-y-auto p-2">
+              <FileTree items={filteredTree} />
+            </div>
+          </aside>
+        )}
+
+        {/* ========================================================
+            Center Main Workspace (Tabs + Editor / Graph Canvas)
+            ======================================================== */}
+        <main className="flex-1 flex flex-col overflow-hidden bg-obsidian-bg min-w-0">
+          {/* Obsidian TabBar */}
+          <TabBar
+            tabs={tabs}
+            activeTabId={activeTabId}
+            onSelectTab={handleSelectTab}
+            onCloseTab={handleCloseTab}
+            onNewTab={handleCreateUntitledNote}
+          />
+
+          {/* Tab Content Canvas */}
+          <div className="flex-1 overflow-hidden relative">
+            {activeTabId === 'workspace-graph-view' ? (
+              <GraphView onSelectNote={(path: string) => selectFile(path)} />
+            ) : activeFile ? (
+              <Editor
+                onWikilinkClick={(name) => openOrCreateWikilink(name)}
+              />
+            ) : (
+              <div className="flex-1 h-full flex flex-col items-center justify-center text-obsidian-muted p-8 text-center bg-obsidian-bg">
+                <UranoLogo size={56} className="mb-4 opacity-80" />
+                <h2 className="text-xl font-medium text-obsidian-text mb-2">Bóveda de Urano</h2>
+                <p className="text-sm max-w-sm text-obsidian-muted mb-6">
+                  Crea una nueva nota (Ctrl+N) o presiona Ctrl+O para abrir una nota existente.
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleCreateUntitledNote}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white text-xs font-medium shadow transition-colors"
+                  >
+                    <FilePlus size={14} />
+                    <span>Crear nueva nota</span>
+                  </button>
+                  <button
+                    onClick={handleOpenFolderDialog}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-medium transition-colors"
+                  >
+                    <FolderOpen size={14} />
+                    <span>Abrir otra carpeta</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
+        </main>
+
+        {/* ========================================================
+            Right Sidebar: Backlinks & Outgoing Links Panel
+            ======================================================== */}
+        {showBacklinks && (
+          <BacklinksPanel
+            activeFile={activeFile}
+            activeFileName={activeFileName}
+            fileContent={fileContent}
+            notesContentMap={notesContentMap}
+            onOpenNote={(pathOrName) => openOrCreateWikilink(pathOrName)}
+            onClose={() => setShowBacklinks(false)}
+          />
         )}
       </div>
 
-      {/* Bottom Status Bar */}
-      <StatusBar />
+      {/* ========================================================
+          Obsidian Bottom Status Bar
+          ======================================================== */}
+      <StatusBar
+        onToggleBacklinks={() => setShowBacklinks((prev) => !prev)}
+        backlinksCount={backlinksCount}
+        onOpenLogs={() => setShowLogs(true)}
+      />
 
-      {/* Global Modals */}
+      {/* ========================================================
+          Modals & Overlays
+          ======================================================== */}
+      {/* Command Palette & Quick Switcher (Ctrl+P / Ctrl+O) */}
+      <CommandPalette
+        isOpen={paletteOpen}
+        mode={paletteMode}
+        fileTree={fileTree}
+        commands={paletteCommands}
+        onClose={() => setPaletteOpen(false)}
+        onSelectFile={(path) => selectFile(path)}
+      />
+
+      {/* Google Drive Sync Configuration Modal */}
       <SyncConfigModal />
-      <SyncLogsModal isOpen={showLogs} onClose={() => setShowLogs(false)} />
+
+      {/* Sync Logs & Telemetry Modal */}
+      <SyncLogsModal
+        isOpen={showLogs}
+        onClose={() => setShowLogs(false)}
+      />
     </div>
   );
 };
