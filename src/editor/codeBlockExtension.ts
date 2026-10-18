@@ -23,7 +23,7 @@ class CodeHeaderWidget extends WidgetType {
 
     const copyBtn = document.createElement('button');
     copyBtn.className = 'cm-codeblock-copy-btn';
-    copyBtn.title = 'Copiar código al portapapeles';
+    copyBtn.title = 'Copiar código';
     copyBtn.innerHTML = `
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
@@ -69,9 +69,15 @@ class CodeHeaderWidget extends WidgetType {
   }
 }
 
+// Decorations for visible fence editing state
 const codeLineBegin = Decoration.line({ class: 'cm-codeblock-line cm-codeblock-begin' });
 const codeLineMid = Decoration.line({ class: 'cm-codeblock-line' });
 const codeLineEnd = Decoration.line({ class: 'cm-codeblock-line cm-codeblock-end' });
+
+// Decorations for collapsed fence Live Preview state
+const codeLineFenceHidden = Decoration.line({ class: 'cm-codeblock-fence-hidden' });
+const codeLineFirstContent = Decoration.line({ class: 'cm-codeblock-line cm-codeblock-first-content' });
+const codeLineLastContent = Decoration.line({ class: 'cm-codeblock-line cm-codeblock-last-content' });
 
 export const codeBlockExtension = ViewPlugin.fromClass(
   class {
@@ -82,7 +88,7 @@ export const codeBlockExtension = ViewPlugin.fromClass(
     }
 
     update(update: ViewUpdate) {
-      if (update.docChanged || update.viewportChanged) {
+      if (update.docChanged || update.viewportChanged || update.selectionSet) {
         this.decorations = this.computeDecorations(update.view);
       }
     }
@@ -90,6 +96,7 @@ export const codeBlockExtension = ViewPlugin.fromClass(
     computeDecorations(view: EditorView): DecorationSet {
       const builder = new RangeSetBuilder<Decoration>();
       const doc = view.state.doc;
+      const selection = view.state.selection.main;
 
       interface CodeBlockInfo {
         startLineNum: number;
@@ -136,6 +143,10 @@ export const codeBlockExtension = ViewPlugin.fromClass(
         const startLineObj = doc.line(block.startLineNum);
         const endLineObj = doc.line(block.endLineNum);
 
+        // Check if cursor/selection is anywhere inside this code block
+        const isCursorInside =
+          selection.from <= endLineObj.to && selection.to >= startLineObj.from;
+
         const getCode = () => {
           const lines: string[] = [];
           for (let l = block.startLineNum + 1; l < block.endLineNum; l++) {
@@ -144,7 +155,7 @@ export const codeBlockExtension = ViewPlugin.fromClass(
           return lines.join('\n');
         };
 
-        // Header block widget above first line
+        // Header widget displayed above code block
         builder.add(
           startLineObj.from,
           startLineObj.from,
@@ -155,18 +166,50 @@ export const codeBlockExtension = ViewPlugin.fromClass(
           })
         );
 
-        // Opening line
-        builder.add(startLineObj.from, startLineObj.from, codeLineBegin);
+        if (isCursorInside) {
+          // Cursor is inside: show full fences for editing
+          builder.add(startLineObj.from, startLineObj.from, codeLineBegin);
 
-        // Middle code lines
-        for (let l = block.startLineNum + 1; l < block.endLineNum; l++) {
-          const midLine = doc.line(l);
-          builder.add(midLine.from, midLine.from, codeLineMid);
-        }
+          for (let l = block.startLineNum + 1; l < block.endLineNum; l++) {
+            const midLine = doc.line(l);
+            builder.add(midLine.from, midLine.from, codeLineMid);
+          }
 
-        // Closing line
-        if (block.endLineNum > block.startLineNum) {
-          builder.add(endLineObj.from, endLineObj.from, codeLineEnd);
+          if (block.endLineNum > block.startLineNum) {
+            builder.add(endLineObj.from, endLineObj.from, codeLineEnd);
+          }
+        } else {
+          // Cursor is outside: Live Preview hides the ``` fence lines
+          builder.add(startLineObj.from, startLineObj.from, codeLineFenceHidden);
+
+          const totalContentLines = block.endLineNum - block.startLineNum - 1;
+
+          for (let l = block.startLineNum + 1; l < block.endLineNum; l++) {
+            const midLine = doc.line(l);
+            const isFirst = l === block.startLineNum + 1;
+            const isLast = l === block.endLineNum - 1;
+
+            if (isFirst && isLast) {
+              builder.add(
+                midLine.from,
+                midLine.from,
+                Decoration.line({ class: 'cm-codeblock-line cm-codeblock-first-content cm-codeblock-last-content' })
+              );
+            } else if (isFirst) {
+              builder.add(midLine.from, midLine.from, codeLineFirstContent);
+            } else if (isLast) {
+              builder.add(midLine.from, midLine.from, codeLineLastContent);
+            } else {
+              builder.add(midLine.from, midLine.from, codeLineMid);
+            }
+          }
+
+          // If there are no inner content lines (e.g. ```\n```), show empty line
+          if (totalContentLines <= 0) {
+            builder.add(endLineObj.from, endLineObj.from, codeLineEnd);
+          } else {
+            builder.add(endLineObj.from, endLineObj.from, codeLineFenceHidden);
+          }
         }
       }
 

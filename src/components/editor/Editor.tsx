@@ -563,14 +563,26 @@ export const Editor: React.FC<EditorProps> = ({
     const view = viewRef.current;
     if (!view) return;
     const sel = view.state.selection.main;
-    const line = view.state.doc.lineAt(sel.from);
-    const text = view.state.sliceDoc(sel.from, sel.to) || 'console.log("Hola Urano");';
-    const prefix = line.text.trim().length > 0 ? '\n```javascript\n' : '```javascript\n';
-    const insertText = `${prefix}${text}\n\`\`\`\n`;
-    view.dispatch({
-      changes: { from: sel.from, to: sel.to, insert: insertText },
-      selection: { anchor: sel.from + prefix.length, head: sel.from + prefix.length + text.length },
-    });
+    const selected = view.state.sliceDoc(sel.from, sel.to);
+
+    if (selected) {
+      const line = view.state.doc.lineAt(sel.from);
+      const prefix = line.from === sel.from ? '' : '\n';
+      const insert = `${prefix}\`\`\`\n${selected}\n\`\`\`\n`;
+      view.dispatch({
+        changes: { from: sel.from, to: sel.to, insert },
+        selection: { anchor: sel.from + prefix.length + 3 },
+      });
+    } else {
+      const line = view.state.doc.lineAt(sel.from);
+      const prefix = line.text.trim().length > 0 ? '\n' : '';
+      const insert = `${prefix}\`\`\`\n\n\`\`\`\n`;
+      const targetPos = sel.from + prefix.length + 3;
+      view.dispatch({
+        changes: { from: sel.from, to: sel.to, insert },
+        selection: { anchor: targetPos },
+      });
+    }
     view.focus();
   };
 
