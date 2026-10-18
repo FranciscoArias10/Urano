@@ -850,9 +850,11 @@
   border-radius: 4px;
   color: #888;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  opacity: 0.45;
+  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
   user-select: none;
+  z-index: 20;
+  pointer-events: auto !important;
 }
 
 .urano-table-row-btn {
@@ -869,9 +871,11 @@
   border-radius: 4px;
   color: #888;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  opacity: 0.45;
+  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
   user-select: none;
+  z-index: 20;
+  pointer-events: auto !important;
 }
 
 .urano-table-wrapper:hover .urano-table-col-btn,
@@ -884,6 +888,6 @@
   opacity: 1 !important;
   color: #e06c1b;
   border-color: #e06c1b;
-  background-color: #222;
+  background-color: #252525;
 }
 

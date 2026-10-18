@@ -190,22 +190,32 @@ export function findAllTables(doc: Text): ParsedTable[] {
   return tables;
 }
 
-function findTableAtPos(doc: Text, pos: number): ParsedTable | null {
-  const safePos = Math.max(0, Math.min(pos, doc.length));
+function findTargetTable(
+  doc: Text,
+  widgetFrom: number,
+  widgetIndex: number
+): ParsedTable | null {
   const tables = findAllTables(doc);
-  for (const tbl of tables) {
-    if (tbl.from <= safePos && safePos <= tbl.to) {
-      return tbl;
+  if (tables.length === 0) return null;
+
+  // 1. Direct match by exact 'from' position
+  const exact = tables.find((t) => t.from === widgetFrom);
+  if (exact) return exact;
+
+  // 2. Direct match by index if valid
+  if (tables[widgetIndex]) return tables[widgetIndex];
+
+  // 3. Proximity fallback
+  let closest = tables[0];
+  let minDiff = Math.abs(tables[0].from - widgetFrom);
+  for (let i = 1; i < tables.length; i++) {
+    const diff = Math.abs(tables[i].from - widgetFrom);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = tables[i];
     }
   }
-  // Try line match
-  const line = doc.lineAt(safePos);
-  for (const tbl of tables) {
-    if (line.number >= tbl.startLine && line.number <= tbl.endLine) {
-      return tbl;
-    }
-  }
-  return null;
+  return closest;
 }
 
 class TableWidget extends WidgetType {
@@ -217,16 +227,23 @@ class TableWidget extends WidgetType {
   }
 
   eq(other: TableWidget): boolean {
+    if (this.tableData.rawText === other.tableData.rawText) {
+      return true;
+    }
+    const activeEl = document.activeElement;
+    const isEditingCell = Boolean(
+      activeEl && activeEl.classList.contains('urano-table-cell-content')
+    );
     if (
-      this.tableData.headers.length !== other.tableData.headers.length ||
-      this.tableData.rows.length !== other.tableData.rows.length ||
-      JSON.stringify(this.tableData.alignments) !==
+      isEditingCell &&
+      this.tableData.headers.length === other.tableData.headers.length &&
+      this.tableData.rows.length === other.tableData.rows.length &&
+      JSON.stringify(this.tableData.alignments) ===
         JSON.stringify(other.tableData.alignments)
     ) {
-      return false;
+      return true;
     }
-    // Structure matches -> keep DOM intact so focus and typing are preserved
-    return true;
+    return false;
   }
 
   updateDOM(): boolean {
@@ -264,9 +281,18 @@ class TableWidget extends WidgetType {
         commitTimer = null;
       }
 
-      const currentPos = view.posAtDOM(container);
-      const tbl = findTableAtPos(view.state.doc, currentPos);
-      if (!tbl) return;
+      const activeView = (window as any).__uranoEditorView || view;
+      if (!activeView) {
+        console.error('[Urano Table] No active EditorView found');
+        return;
+      }
+
+      const doc = activeView.state.doc;
+      const tbl = findTargetTable(doc, from, this.tableIndex);
+      if (!tbl) {
+        console.warn('[Urano Table] Table not found in doc for from:', from);
+        return;
+      }
 
       const newMarkdown = serializeTable(
         currentHeaders,
@@ -274,6 +300,8 @@ class TableWidget extends WidgetType {
         currentRows
       );
       if (newMarkdown === tbl.rawText) return;
+
+      console.log('[Urano Table] Aplicando cambios a la tabla en rango:', tbl.from, tbl.to);
 
       if (immediateFocus) {
         pendingTableFocus = {
@@ -283,11 +311,11 @@ class TableWidget extends WidgetType {
         };
       }
 
-      view.dispatch({
+      activeView.dispatch({
         changes: { from: tbl.from, to: tbl.to, insert: newMarkdown },
       });
 
-      const newDoc = view.state.doc.toString();
+      const newDoc = activeView.state.doc.toString();
       useVaultStore.getState().updateContent(newDoc);
     };
 
@@ -630,24 +658,26 @@ class TableWidget extends WidgetType {
           icon: <Trash2 size={14} />,
           isWarning: true,
           action: () => {
-            const currentPos = view.posAtDOM(container);
-            const tbl = findTableAtPos(view.state.doc, currentPos);
+            const activeView = (window as any).__uranoEditorView || view;
+            if (!activeView) return;
+            const doc = activeView.state.doc;
+            const tbl = findTargetTable(doc, from, this.tableIndex);
             if (!tbl) return;
 
             let endPos = tbl.to;
             if (
-              endPos < view.state.doc.length &&
-              view.state.sliceDoc(endPos, endPos + 1) === '\n'
+              endPos < activeView.state.doc.length &&
+              activeView.state.sliceDoc(endPos, endPos + 1) === '\n'
             ) {
               endPos += 1;
             }
 
-            view.dispatch({
+            activeView.dispatch({
               changes: { from: tbl.from, to: endPos, insert: '' },
               selection: { anchor: tbl.from },
             });
 
-            const newDoc = view.state.doc.toString();
+            const newDoc = activeView.state.doc.toString();
             useVaultStore.getState().updateContent(newDoc);
             useNoticeStore.getState().showNotice('Tabla eliminada', 2500, 'info');
           },
@@ -864,16 +894,20 @@ class TableWidget extends WidgetType {
     addColBtn.title = 'Añadir columna a la derecha';
     addColBtn.innerHTML =
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
-    addColBtn.addEventListener('mousedown', (e) => {
+
+    const handleAddCol = (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      console.log('[Urano Table] Añadir columna clicada');
       currentHeaders.push('');
       currentAlignments.push('left');
       for (const r of currentRows) {
         r.push('');
       }
       commitChanges({ row: 0, col: currentHeaders.length - 1 });
-    });
+    };
+    addColBtn.addEventListener('mousedown', handleAddCol);
+    addColBtn.addEventListener('click', handleAddCol);
     wrapper.appendChild(addColBtn);
 
     // Add Row Button (+) on bottom edge
@@ -883,13 +917,17 @@ class TableWidget extends WidgetType {
     addRowBtn.title = 'Añadir fila abajo';
     addRowBtn.innerHTML =
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
-    addRowBtn.addEventListener('mousedown', (e) => {
+
+    const handleAddRow = (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      console.log('[Urano Table] Añadir fila clicada');
       const newRow = new Array(currentHeaders.length).fill('');
       currentRows.push(newRow);
       commitChanges({ row: currentRows.length, col: 0 });
-    });
+    };
+    addRowBtn.addEventListener('mousedown', handleAddRow);
+    addRowBtn.addEventListener('click', handleAddRow);
     wrapper.appendChild(addRowBtn);
 
     container.appendChild(wrapper);
