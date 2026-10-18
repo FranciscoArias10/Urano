@@ -9,7 +9,7 @@ import { liveMarkdownExtension } from '../../editor/liveMarkdown';
 import { mathExtension } from '../../editor/mathExtension';
 import { codeBlockExtension } from '../../editor/codeBlockExtension';
 import { calloutExtension } from '../../editor/calloutExtension';
-import { tableExtension } from '../../editor/tableExtension';
+import { tableExtension, setPendingTableFocus } from '../../editor/tableExtension';
 import { createWikilinksExtension } from '../../editor/wikilinks';
 import { useVaultStore } from '../../stores/vaultStore';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
@@ -368,6 +368,29 @@ export const Editor: React.FC<EditorProps> = ({
     return () => window.removeEventListener('keydown', handleSuggestKeys, true);
   }, [showSuggest, availableNotes, suggestIndex]);
 
+  // Listen for table-specific context menu events (1:1 with Obsidian)
+  useEffect(() => {
+    const handleTableContextMenu = (e: Event) => {
+      const customEvent = e as CustomEvent<{
+        x: number;
+        y: number;
+        items: MenuItemData[];
+      }>;
+      if (customEvent.detail?.items) {
+        setContextMenu({
+          x: customEvent.detail.x,
+          y: customEvent.detail.y,
+          items: customEvent.detail.items,
+        });
+      }
+    };
+
+    window.addEventListener('urano-table-contextmenu', handleTableContextMenu);
+    return () => {
+      window.removeEventListener('urano-table-contextmenu', handleTableContextMenu);
+    };
+  }, []);
+
   // Handle .inline-title keyboard events (Enter / Escape)
   const handleTitleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter') {
@@ -664,24 +687,35 @@ export const Editor: React.FC<EditorProps> = ({
   };
 
   const handleInsertTable = () => {
-    console.log('[Urano Menu] Ejecutando comando: Tabla');
+    console.log('[Urano Menu] Ejecutando comando: Insertar Tabla 2x2 Limpia');
     const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     const sel = view.state.selection.main;
     const line = view.state.doc.lineAt(sel.from);
     const prefix = line.text.trim().length > 0 ? '\n\n' : '';
-    const insert = `${prefix}| Encabezado 1 | Encabezado 2 |\n| ------------ | ------------ |\n| Elemento 1   | Dato 1       |\n| Elemento 2   | Dato 2       |\n`;
+    const insert = `${prefix}|  |  |\n| --- | --- |\n|  |  |\n`;
+    const targetPos = sel.from + prefix.length;
+
+    setPendingTableFocus({ tableFrom: targetPos, row: 0, col: 0 });
+
     view.dispatch({
       changes: { from: sel.from, to: sel.to, insert },
-      selection: {
-        anchor: sel.from + prefix.length + 2,
-        head: sel.from + prefix.length + 14,
-      },
+      selection: { anchor: targetPos + 2 },
     });
+
     const newDoc = view.state.doc.toString();
     lastDispatchedDocRef.current = newDoc;
     updateContent(newDoc);
     view.focus();
+
+    setTimeout(() => {
+      const firstCell = document.querySelector(
+        `.urano-table-editor [data-row="0"][data-col="0"].urano-table-cell-content`
+      ) as HTMLElement;
+      if (firstCell) {
+        firstCell.focus();
+      }
+    }, 40);
   };
 
   const handleInsertCallout = () => {
@@ -816,8 +850,11 @@ export const Editor: React.FC<EditorProps> = ({
 
   // Right-click context menu handler matching Obsidian specification
   const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
     const target = e.target as HTMLElement;
+    if (target.closest('.urano-table-editor') || target.closest('.cm-table-widget')) {
+      return;
+    }
+    e.preventDefault();
 
     // If no text is selected or right-click is outside active selection, move cursor
     if (viewRef.current) {
