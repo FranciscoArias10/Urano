@@ -117,12 +117,17 @@ export function serializeTable(
     Array.from({ length: colCount }, (_, i) => r[i] ?? '')
   );
 
-  const headerLine = `| ${normHeaders.map((h) => (h.trim() === '' ? ' ' : h.trim())).join(' | ')} |`;
+  const cleanCell = (c: string) => {
+    const escaped = c.replace(/(?<!\\)\|/g, '\\|');
+    return escaped === '' ? ' ' : escaped;
+  };
+
+  const headerLine = `| ${normHeaders.map(cleanCell).join(' | ')} |`;
   const sepLine = `| ${normAlign
     .map((a) => (a === 'center' ? ':---:' : a === 'right' ? '---:' : '---'))
     .join(' | ')} |`;
   const rowLines = normRows.map(
-    (row) => `| ${row.map((c) => (c.trim() === '' ? ' ' : c.trim())).join(' | ')} |`
+    (row) => `| ${row.map(cleanCell).join(' | ')} |`
   );
 
   return [headerLine, sepLine, ...rowLines].join('\n');
@@ -226,7 +231,7 @@ export function findTargetTable(
 }
 
 export class TableWidget extends WidgetType {
-  private domNode: HTMLElement | null = null;
+  domNode: HTMLElement | null = null;
 
   constructor(
     readonly tableData: ParsedTable,
@@ -242,22 +247,41 @@ export class TableWidget extends WidgetType {
     // Prevent destroying DOM and losing focus while user is editing inside cells
     const activeEl = document.activeElement;
     if (activeEl && activeEl.classList.contains('urano-table-cell-content')) {
-      const widgetEl = activeEl.closest('.cm-table-widget');
-      if (widgetEl && widgetEl === this.domNode) {
-        if (
-          this.tableData.headers.length === other.tableData.headers.length &&
-          this.tableData.rows.length === other.tableData.rows.length &&
-          JSON.stringify(this.tableData.alignments) ===
-            JSON.stringify(other.tableData.alignments)
-        ) {
-          return true;
+      const activeWidgetEl = activeEl.closest('.cm-table-widget') as HTMLElement | null;
+      if (activeWidgetEl) {
+        const activeTableIndex = activeWidgetEl.getAttribute('data-table-index');
+        const activeTableFrom = activeWidgetEl.getAttribute('data-table-from');
+        const isThisTable =
+          (this.domNode && activeWidgetEl === this.domNode) ||
+          activeTableIndex === String(this.tableIndex) ||
+          activeTableFrom === String(this.tableData.from);
+
+        if (isThisTable) {
+          if (
+            this.tableData.headers.length === other.tableData.headers.length &&
+            this.tableData.rows.length === other.tableData.rows.length &&
+            JSON.stringify(this.tableData.alignments) ===
+              JSON.stringify(other.tableData.alignments)
+          ) {
+            other.domNode = activeWidgetEl;
+            this.domNode = activeWidgetEl;
+            return true;
+          }
         }
       }
     }
     return false;
   }
 
-  updateDOM(): boolean {
+  updateDOM(dom: HTMLElement): boolean {
+    this.domNode = dom;
+    const activeEl = document.activeElement;
+    if (activeEl && activeEl.classList.contains('urano-table-cell-content')) {
+      const activeWidgetEl = activeEl.closest('.cm-table-widget');
+      if (activeWidgetEl === dom) {
+        return true;
+      }
+    }
     return false;
   }
 
@@ -266,7 +290,8 @@ export class TableWidget extends WidgetType {
   }
 
   toDOM(view: EditorView): HTMLElement {
-    const { headers, alignments, rows, from } = this.tableData;
+    let from = this.tableData.from;
+    const { headers, alignments, rows } = this.tableData;
 
     let currentHeaders = [...headers];
     let currentAlignments = [...alignments];
@@ -277,6 +302,7 @@ export class TableWidget extends WidgetType {
     container.className =
       'cm-embed-block cm-table-widget urano-table-container my-4 max-w-full overflow-x-auto select-text';
     container.setAttribute('data-table-from', String(from));
+    container.setAttribute('data-table-index', String(this.tableIndex));
     this.domNode = container;
 
     const wrapper = document.createElement('div');
@@ -305,6 +331,9 @@ export class TableWidget extends WidgetType {
         return;
       }
 
+      from = tbl.from;
+      container.setAttribute('data-table-from', String(from));
+
       const newMarkdown = serializeTable(
         currentHeaders,
         currentAlignments,
@@ -329,7 +358,7 @@ export class TableWidget extends WidgetType {
       if (commitTimer) clearTimeout(commitTimer);
       commitTimer = setTimeout(() => {
         commitChanges();
-      }, 180);
+      }, 600);
     };
 
     const focusCell = (row: number, col: number, cursorAtEnd = true) => {
@@ -715,7 +744,7 @@ export class TableWidget extends WidgetType {
 
       // Cell Input (auto-sync value)
       cellContent.addEventListener('input', () => {
-        const val = cellContent.innerText.replace(/\n/g, ' ').trim();
+        const val = cellContent.innerText.replace(/[\r\n]+/g, ' ');
         if (row === 0) {
           currentHeaders[col] = val;
         } else {
@@ -941,8 +970,14 @@ export class TableWidget extends WidgetType {
         ) as HTMLElement;
         if (targetCell) {
           targetCell.focus();
+          const range = document.createRange();
+          const sel = window.getSelection();
+          range.selectNodeContents(targetCell);
+          range.collapse(false);
+          sel?.removeAllRanges();
+          sel?.addRange(range);
         }
-      }, 50);
+      }, 25);
     }
 
     return container;
