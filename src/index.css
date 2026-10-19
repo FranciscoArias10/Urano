@@ -442,6 +442,42 @@
   margin: 1.5rem 0 !important;
 }
 
+.cm-hr {
+  display: block;
+  width: 100%;
+  height: 0;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  margin: 1.5rem 0;
+  cursor: text;
+  box-sizing: border-box;
+}
+
+.cm-footnote-ref {
+  font-size: 0.75em;
+  line-height: 0;
+  vertical-align: super;
+  color: #fb923c;
+  cursor: pointer;
+  padding: 0 2px;
+  font-weight: 600;
+  border-radius: 2px;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.cm-footnote-ref:hover {
+  color: #fdba74;
+  text-decoration: underline;
+  background-color: rgba(234, 88, 12, 0.2);
+}
+
+.cm-footnote-def-prefix {
+  color: #f97316 !important;
+  font-weight: 600 !important;
+  font-family: var(--font-monospace) !important;
+}
+
 .cm-wikilink {
   color: #fb923c !important;
   background-color: rgba(234, 88, 12, 0.14);

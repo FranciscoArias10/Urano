@@ -93,6 +93,7 @@ interface VaultState {
   createUntitledNote: (parentPath?: string) => Promise<{ path: string; name: string }>;
   createUntitledCanvas: (parentPath?: string) => Promise<{ path: string; name: string }>;
   createUntitledBase: (parentPath?: string) => Promise<{ path: string; name: string }>;
+  createBaseFile: (parentPath?: string) => Promise<{ path: string; name: string; fileName: string }>;
   openDailyNote: () => Promise<string>;
   createUntitledFolder: (parentPath?: string) => Promise<string>;
   moveItem: (sourcePath: string, targetFolderPath: string) => Promise<void>;
@@ -405,6 +406,53 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     return { path: fullPath, name: candidateName.replace(/\.base$/, '') };
   },
 
+  // Create .base file without changing active note (for inline embed)
+  createBaseFile: async (parentPath?: string): Promise<{ path: string; name: string; fileName: string }> => {
+    const { activeVault, fileTree, refreshTree } = get();
+    const targetDir = parentPath || activeVault;
+    if (!targetDir) return { path: '', name: '', fileName: '' };
+
+    const existingNames = new Set<string>();
+    const collectInDir = (items: FileItem[]) => {
+      for (const item of items) {
+        if (item.path.startsWith(targetDir)) {
+          existingNames.add(item.name.toLowerCase());
+        }
+        if (item.children) collectInDir(item.children);
+      }
+    };
+    collectInDir(fileTree);
+
+    let candidateName = 'Sin título.base';
+    let counter = 1;
+    while (existingNames.has(candidateName.toLowerCase())) {
+      candidateName = `Sin título ${counter}.base`;
+      counter++;
+    }
+
+    const fullPath = `${targetDir}/${candidateName}`.replace(/\/+/g, '/');
+    const initialBase = JSON.stringify(
+      {
+        title: candidateName.replace(/\.base$/, ''),
+        filters: [],
+        sort: [{ field: 'name', order: 'asc' }],
+        columns: ['name', 'folder', 'tags', 'mtime', 'size'],
+      },
+      null,
+      2
+    );
+
+    await invoke('create_file', { filePath: fullPath });
+    await invoke('write_file', { filePath: fullPath, content: initialBase });
+    await refreshTree();
+
+    return {
+      path: fullPath,
+      name: candidateName.replace(/\.base$/, ''),
+      fileName: candidateName,
+    };
+  },
+
   // Open or create today's daily note (YYYY-MM-DD.md)
   openDailyNote: async (): Promise<string> => {
     const { activeVault, fileTree, refreshTree, selectFile } = get();
@@ -646,8 +694,11 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     const findNote = (items: FileItem[]): string | null => {
       for (const item of items) {
         if (!item.isDir) {
-          const baseName = item.name.replace(/\.md$/i, '');
-          if (baseName.toLowerCase() === noteName.toLowerCase()) {
+          const nameWithoutExt = item.name.replace(/\.(md|canvas|base)$/i, '');
+          if (
+            nameWithoutExt.toLowerCase() === noteName.toLowerCase() ||
+            item.name.toLowerCase() === noteName.toLowerCase()
+          ) {
             return item.path;
           }
         } else if (item.children) {
@@ -662,7 +713,12 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     if (existingPath) {
       await selectFile(existingPath);
     } else {
-      const newPath = await createNote(activeVault, `${noteName}.md`);
+      const isBase = noteName.toLowerCase().endsWith('.base');
+      const isCanvas = noteName.toLowerCase().endsWith('.canvas');
+      const fileName = isBase || isCanvas || noteName.toLowerCase().endsWith('.md')
+        ? noteName
+        : `${noteName}.md`;
+      const newPath = await createNote(activeVault, fileName);
       await selectFile(newPath);
     }
   },

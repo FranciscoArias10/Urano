@@ -4,6 +4,7 @@ import {
   EditorView,
   ViewPlugin,
   ViewUpdate,
+  WidgetType,
 } from '@codemirror/view';
 import { Range } from '@codemirror/state';
 
@@ -17,8 +18,69 @@ const h6Line = Decoration.line({ class: 'cm-h6-line' });
 const blockquoteLine = Decoration.line({ class: 'cm-blockquote-line' });
 const hrLine = Decoration.line({ class: 'cm-hr-line' });
 
+// Horizontal Rule Widget (<hr class="cm-hr">)
+class HrWidget extends WidgetType {
+  toDOM(): HTMLElement {
+    const hr = document.createElement('hr');
+    hr.className = 'cm-hr';
+    return hr;
+  }
+
+  eq(): boolean {
+    return true;
+  }
+
+  ignoreEvent(): boolean {
+    return false;
+  }
+}
+
+// Footnote Reference Widget (Clickable superscript [n])
+class FootnoteWidget extends WidgetType {
+  constructor(readonly n: string) {
+    super();
+  }
+
+  toDOM(view: EditorView): HTMLElement {
+    const sup = document.createElement('sup');
+    sup.className = 'cm-footnote-ref';
+    sup.textContent = `[${this.n}]`;
+    sup.setAttribute('data-footnote', this.n);
+    sup.title = `Nota al pie [${this.n}] (clic para ir a la definición)`;
+
+    sup.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const doc = view.state.doc;
+      const targetStr = `[^${this.n}]:`;
+      const fullText = doc.toString();
+      const defIdx = fullText.indexOf(targetStr);
+      if (defIdx !== -1) {
+        const targetPos = defIdx + targetStr.length;
+        const finalPos = fullText.charAt(targetPos) === ' ' ? targetPos + 1 : targetPos;
+        view.dispatch({
+          selection: { anchor: finalPos },
+          scrollIntoView: true,
+        });
+        view.focus();
+      }
+    });
+
+    return sup;
+  }
+
+  eq(other: FootnoteWidget): boolean {
+    return other.n === this.n;
+  }
+
+  ignoreEvent(): boolean {
+    return false;
+  }
+}
+
 // Delimiter hider: replaces markdown syntax tokens with empty widget
 const hideDelimiter = Decoration.replace({});
+const footnoteDefMark = Decoration.mark({ class: 'cm-footnote-def-prefix' });
 
 // Inline marker decorations
 const headingMarker = Decoration.mark({ class: 'cm-heading-marker' });
@@ -136,7 +198,17 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
             const markLen = text.startsWith('> ') ? 2 : 1;
             widgets.push(blockquoteMarker.range(line.from, line.from + markLen));
           } else if (/^(---|\*\*\*|___)$/.test(trimmed)) {
-            widgets.push(hrLine.range(line.from));
+            if (!isCursorOnLine && line.from < line.to) {
+              widgets.push(
+                Decoration.replace({
+                  widget: new HrWidget(),
+                }).range(line.from, line.to)
+              );
+            } else {
+              widgets.push(hrLine.range(line.from));
+            }
+            pos = line.to + 1;
+            continue;
           }
 
           // Track ranges occupied by inline tokens to prevent overlaps
@@ -273,6 +345,38 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
               widgets.push(hideDelimiter.range(end - 1, end));
             } else {
               widgets.push(emMark.range(start + 1, end - 1));
+            }
+          }
+
+          // 7. Footnotes: [^n] (when cursor not inside, replace with clickable superscript [n])
+          const fnRegex = /\[\^(\d+)\](?!\:)/g;
+          let fnMatch: RegExpExecArray | null;
+          while ((fnMatch = fnRegex.exec(text)) !== null) {
+            const start = line.from + fnMatch.index;
+            const end = start + fnMatch[0].length;
+            if (isOverlapping(start, end)) continue;
+            occupied.push([start, end]);
+
+            const num = fnMatch[1];
+            const isCursorInside = sel.from <= end && sel.to >= start;
+
+            if (!isCursorInside) {
+              widgets.push(
+                Decoration.replace({
+                  widget: new FootnoteWidget(num),
+                }).range(start, end)
+              );
+            }
+          }
+
+          // 8. Footnote definition line: [^n]: ...
+          const fnDefMatch = text.match(/^\[\^(\d+)\]\:\s?/);
+          if (fnDefMatch) {
+            const start = line.from;
+            const end = line.from + fnDefMatch[0].length;
+            if (!isOverlapping(start, end)) {
+              occupied.push([start, end]);
+              widgets.push(footnoteDefMark.range(start, end));
             }
           }
 

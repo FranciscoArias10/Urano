@@ -33,9 +33,7 @@ import {
   Columns,
   Copy,
   Scissors,
-  Terminal,
   Table,
-  AlertCircle,
   Minus,
   ArrowLeft,
   ArrowRight,
@@ -59,7 +57,9 @@ import {
   ClipboardCheck,
   ClipboardType,
   SquareDashed,
-  LayoutTemplate,
+  FilePen,
+  SquareSigma,
+  TableProperties,
 } from 'lucide-react';
 
 interface EditorProps {
@@ -768,40 +768,56 @@ export const Editor: React.FC<EditorProps> = ({
     view.focus();
   };
 
-  const handleInsertMath = () => {
+  const handleInsertFootnote = () => {
+    console.log('[Urano Menu] Ejecutando comando: Nota al pie');
     const view = viewRef.current || getActiveEditorView();
     if (!view) return;
-    const sel = view.state.selection.main;
-    const line = view.state.doc.lineAt(sel.from);
-    const text = view.state.sliceDoc(sel.from, sel.to) || 'E = mc^2';
-    const prefix = line.text.trim().length > 0 ? '\n$$\n' : '$$\n';
-    const insertText = `${prefix}${text}\n$$\n`;
-    view.dispatch({
-      changes: { from: sel.from, to: sel.to, insert: insertText },
-      selection: { anchor: sel.from + prefix.length, head: sel.from + prefix.length + text.length },
-    });
-    const newDoc = view.state.doc.toString();
-    lastDispatchedDocRef.current = newDoc;
-    updateContent(newDoc);
-    view.focus();
-  };
 
-  const handleInsertCode = () => {
-    console.log('[Urano Menu] Ejecutando comando: Bloque de código');
-    const view = viewRef.current || getActiveEditorView();
-    if (!view) {
-      console.warn('[Urano Menu] EditorView no disponible');
-      return;
+    const doc = view.state.doc;
+    const docText = doc.toString();
+
+    // 1. Calcular el número más alto existente [^1], [^2], etc.
+    const fnRegex = /\[\^(\d+)\]/g;
+    let maxN = 0;
+    let match: RegExpExecArray | null;
+    while ((match = fnRegex.exec(docText)) !== null) {
+      const val = parseInt(match[1], 10);
+      if (!isNaN(val) && val > maxN) {
+        maxN = val;
+      }
     }
-    const sel = view.state.selection.main;
-    const selectedText = view.state.sliceDoc(sel.from, sel.to);
-    const insertText = selectedText ? `\`\`\`\n${selectedText}\n\`\`\`` : '```\n\n```';
-    const targetAnchor = sel.from + 4;
+    const n = maxN + 1;
 
-    view.dispatch({
-      changes: { from: sel.from, to: sel.to, insert: insertText },
-      selection: { anchor: targetAnchor },
-    });
+    // 2. Insertar [^n] en la posición actual del cursor (o justo después de la selección)
+    const sel = view.state.selection.main;
+    const insertPos = sel.empty ? sel.from : sel.to;
+    const insertRef = `[^${n}]`;
+
+    // 3. Al final del documento agregar una nueva línea con [^n]: 
+    const docLen = doc.length;
+    const docEndsWithNewline = docLen > 0 && doc.sliceString(docLen - 1, docLen) === '\n';
+    const defPrefix = docEndsWithNewline ? '' : '\n';
+    const defText = `${defPrefix}[^${n}]: `;
+
+    if (insertPos >= docLen) {
+      const fullInsert = `${insertRef}${defText}`;
+      const targetPos = docLen + fullInsert.length;
+      view.dispatch({
+        changes: { from: docLen, to: docLen, insert: fullInsert },
+        selection: { anchor: targetPos },
+        scrollIntoView: true,
+      });
+    } else {
+      const targetPos = docLen + insertRef.length + defText.length;
+      view.dispatch({
+        changes: [
+          { from: insertPos, to: insertPos, insert: insertRef },
+          { from: docLen, to: docLen, insert: defText },
+        ],
+        selection: { anchor: targetPos },
+        scrollIntoView: true,
+      });
+    }
 
     const newDoc = view.state.doc.toString();
     lastDispatchedDocRef.current = newDoc;
@@ -875,8 +891,8 @@ export const Editor: React.FC<EditorProps> = ({
     const line = view.state.doc.lineAt(sel.from);
     const prefix = line.text.trim().length > 0 ? '\n' : '';
     const selected = view.state.sliceDoc(sel.from, sel.to);
-    const content = selected ? selected : 'Contenido del aviso';
-    const insert = `${prefix}> [!note] Título\n> ${content}\n`;
+    const content = selected ? selected : 'Contenido';
+    const insert = `${prefix}> [!NOTE] Título\n> ${content}\n`;
     const titleStart = sel.from + prefix.length + 10;
     const titleEnd = titleStart + 6;
     view.dispatch({
@@ -890,16 +906,105 @@ export const Editor: React.FC<EditorProps> = ({
   };
 
   const handleInsertHr = () => {
+    console.log('[Urano Menu] Ejecutando comando: Línea horizontal');
     const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     const sel = view.state.selection.main;
+    const line = view.state.doc.lineAt(sel.from);
+    const prefix = line.text.trim().length > 0 ? '\n' : '';
+    const insertText = `${prefix}---\n\n`;
+    const targetAnchor = sel.from + insertText.length;
     view.dispatch({
-      changes: { from: sel.from, to: sel.to, insert: '\n---\n' },
+      changes: { from: sel.from, to: sel.to, insert: insertText },
+      selection: { anchor: targetAnchor },
     });
     const newDoc = view.state.doc.toString();
     lastDispatchedDocRef.current = newDoc;
     updateContent(newDoc);
     view.focus();
+  };
+
+  const handleInsertCode = () => {
+    console.log('[Urano Menu] Ejecutando comando: Bloque de código');
+    const view = viewRef.current || getActiveEditorView();
+    if (!view) {
+      console.warn('[Urano Menu] EditorView no disponible');
+      return;
+    }
+    const sel = view.state.selection.main;
+    const line = view.state.doc.lineAt(sel.from);
+    const prefix = line.text.trim().length > 0 ? '\n' : '';
+    const selectedText = view.state.sliceDoc(sel.from, sel.to);
+    const insertText = selectedText ? `${prefix}\`\`\`\n${selectedText}\n\`\`\`\n` : `${prefix}\`\`\`\n\n\`\`\`\n`;
+    const targetAnchor = sel.from + prefix.length + 4;
+
+    view.dispatch({
+      changes: { from: sel.from, to: sel.to, insert: insertText },
+      selection: { anchor: targetAnchor },
+    });
+
+    const newDoc = view.state.doc.toString();
+    lastDispatchedDocRef.current = newDoc;
+    updateContent(newDoc);
+    view.focus();
+  };
+
+  const handleInsertMath = () => {
+    console.log('[Urano Menu] Ejecutando comando: Bloque matemático');
+    const view = viewRef.current || getActiveEditorView();
+    if (!view) return;
+    const sel = view.state.selection.main;
+    const line = view.state.doc.lineAt(sel.from);
+    const selectedText = view.state.sliceDoc(sel.from, sel.to);
+    const prefix = line.text.trim().length > 0 ? '\n' : '';
+    const content = selectedText || '';
+    const insertText = `${prefix}$$\n${content}\n$$\n`;
+    const targetAnchor = sel.from + prefix.length + 3;
+
+    view.dispatch({
+      changes: { from: sel.from, to: sel.to, insert: insertText },
+      selection: {
+        anchor: targetAnchor,
+        head: content ? targetAnchor + content.length : targetAnchor,
+      },
+    });
+    const newDoc = view.state.doc.toString();
+    lastDispatchedDocRef.current = newDoc;
+    updateContent(newDoc);
+    view.focus();
+  };
+
+  const handleInsertNewBase = async () => {
+    console.log('[Urano Menu] Ejecutando comando: Nueva base');
+    const view = viewRef.current || getActiveEditorView();
+    if (!view) return;
+
+    try {
+      const { createBaseFile, activeVault } = useVaultStore.getState();
+      const parentDir = activeFile
+        ? activeFile.substring(0, activeFile.lastIndexOf('/'))
+        : activeVault || undefined;
+
+      const res = await createBaseFile(parentDir);
+      if (!res.fileName) return;
+
+      const sel = view.state.selection.main;
+      const insertText = `![[${res.fileName}]]`;
+
+      view.dispatch({
+        changes: { from: sel.from, to: sel.to, insert: insertText },
+        selection: { anchor: sel.from + insertText.length },
+      });
+
+      const newDoc = view.state.doc.toString();
+      lastDispatchedDocRef.current = newDoc;
+      updateContent(newDoc);
+      view.focus();
+      showNotice(`Base de datos creada: ${res.fileName}`, 3000, 'success');
+    } catch (err) {
+      console.error('Error al insertar nueva base:', err);
+      showNotice('Error al crear nueva base', 3000, 'error');
+    }
   };
 
   const handleCut = () => {
@@ -1204,10 +1309,6 @@ export const Editor: React.FC<EditorProps> = ({
     lastDispatchedDocRef.current = newDoc;
     updateContent(newDoc);
     view.focus();
-  };
-
-  const handleInsertTemplate = () => {
-    window.dispatchEvent(new CustomEvent('urano-open-templates'));
   };
 
   // Right-click context menu handler matching Obsidian specification
@@ -1529,34 +1630,40 @@ export const Editor: React.FC<EditorProps> = ({
         icon: <ListPlus size={14} />,
         submenu: [
           {
+            title: 'Nota al pie',
+            icon: <FilePen size={14} />,
+            action: handleInsertFootnote,
+          },
+          {
             title: 'Tabla',
             icon: <Table size={14} />,
             action: handleInsertTable,
           },
           {
             title: 'Callout',
-            icon: <AlertCircle size={14} />,
+            icon: <Quote size={14} />,
             action: handleInsertCallout,
-          },
-          {
-            title: 'Bloque de código',
-            icon: <Terminal size={14} />,
-            action: handleInsertCode,
-          },
-          {
-            title: 'Bloque matemático',
-            icon: <Sigma size={14} />,
-            action: handleInsertMath,
           },
           {
             title: 'Línea horizontal',
             icon: <Minus size={14} />,
             action: handleInsertHr,
           },
+          { type: 'separator' },
           {
-            title: 'Plantilla',
-            icon: <LayoutTemplate size={14} />,
-            action: handleInsertTemplate,
+            title: 'Bloque de código',
+            icon: <Code size={14} />,
+            action: handleInsertCode,
+          },
+          {
+            title: 'Bloque matemático',
+            icon: <SquareSigma size={14} />,
+            action: handleInsertMath,
+          },
+          {
+            title: 'Nueva base',
+            icon: <TableProperties size={14} />,
+            action: handleInsertNewBase,
           },
         ],
       }
