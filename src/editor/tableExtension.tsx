@@ -1,6 +1,5 @@
 import { StateField, RangeSetBuilder, Text } from '@codemirror/state';
 import { EditorView, Decoration, DecorationSet, WidgetType } from '@codemirror/view';
-import { useVaultStore } from '../stores/vaultStore';
 import { MenuItemData } from '../components/common/ObsidianMenu';
 import { useNoticeStore } from '../components/common/Notice';
 import {
@@ -47,20 +46,20 @@ export function setPendingTableFocus(
   pendingTableFocus = focus;
 }
 
-function isTableRow(text: string): boolean {
+export function isTableRow(text: string): boolean {
   const t = text.trim();
-  return t.startsWith('|') && t.endsWith('|') && t.includes('|');
+  return t.startsWith('|') && t.endsWith('|') && t.indexOf('|', 1) !== -1;
 }
 
-function isTableSeparator(text: string): boolean {
+export function isTableSeparator(text: string): boolean {
   const t = text.trim();
   if (!t.startsWith('|') || !t.endsWith('|')) return false;
   const cells = t.slice(1, -1).split('|');
   if (cells.length < 1) return false;
-  return cells.every((c) => /^\s*:?-+:?\s*$/.test(c));
+  return cells.every((c) => /^\s*:?-{1,}:?\s*$/.test(c));
 }
 
-function parseAlignments(
+export function parseAlignments(
   sepLine: string,
   count: number
 ): ('left' | 'center' | 'right')[] {
@@ -79,7 +78,7 @@ function parseAlignments(
   return result;
 }
 
-function parseTableRowCells(text: string, count: number): string[] {
+export function parseTableRowCells(text: string, count: number): string[] {
   const raw = text.trim();
   const inner = raw.startsWith('|') && raw.endsWith('|') ? raw.slice(1, -1) : raw;
   const cells: string[] = [];
@@ -155,7 +154,7 @@ export function findAllTables(doc: Text): ParsedTable[] {
 
       for (let r = i + 2; r <= lineCount; r++) {
         const nextText = doc.line(r).text;
-        // If this row is followed by a separator, it is the start of another table!
+        // If followed by another separator, it is the start of a next table
         if (
           r < lineCount &&
           isTableRow(nextText) &&
@@ -198,7 +197,7 @@ export function findAllTables(doc: Text): ParsedTable[] {
   return tables;
 }
 
-function findTargetTable(
+export function findTargetTable(
   doc: Text,
   widgetFrom: number,
   widgetIndex: number
@@ -210,7 +209,7 @@ function findTargetTable(
   const exact = tables.find((t) => t.from === widgetFrom);
   if (exact) return exact;
 
-  // 2. Direct match by index if valid
+  // 2. Direct match by table index if bounds fit
   if (tables[widgetIndex]) return tables[widgetIndex];
 
   // 3. Proximity fallback
@@ -226,7 +225,9 @@ function findTargetTable(
   return closest;
 }
 
-class TableWidget extends WidgetType {
+export class TableWidget extends WidgetType {
+  private domNode: HTMLElement | null = null;
+
   constructor(
     readonly tableData: ParsedTable,
     readonly tableIndex: number
@@ -238,20 +239,19 @@ class TableWidget extends WidgetType {
     if (this.tableData.rawText === other.tableData.rawText) {
       return true;
     }
+    // Prevent destroying DOM and losing focus while user is editing inside cells
     const activeEl = document.activeElement;
     if (activeEl && activeEl.classList.contains('urano-table-cell-content')) {
       const widgetEl = activeEl.closest('.cm-table-widget');
-      const editingFrom = widgetEl?.getAttribute('data-table-from');
-      const isEditingThisTable = editingFrom === String(this.tableData.from);
-
-      if (
-        isEditingThisTable &&
-        this.tableData.headers.length === other.tableData.headers.length &&
-        this.tableData.rows.length === other.tableData.rows.length &&
-        JSON.stringify(this.tableData.alignments) ===
-          JSON.stringify(other.tableData.alignments)
-      ) {
-        return true;
+      if (widgetEl && widgetEl === this.domNode) {
+        if (
+          this.tableData.headers.length === other.tableData.headers.length &&
+          this.tableData.rows.length === other.tableData.rows.length &&
+          JSON.stringify(this.tableData.alignments) ===
+            JSON.stringify(other.tableData.alignments)
+        ) {
+          return true;
+        }
       }
     }
     return false;
@@ -268,7 +268,6 @@ class TableWidget extends WidgetType {
   toDOM(view: EditorView): HTMLElement {
     const { headers, alignments, rows, from } = this.tableData;
 
-    // Working copies for in-place edits
     let currentHeaders = [...headers];
     let currentAlignments = [...alignments];
     let currentRows = rows.map((r) => [...r]);
@@ -276,8 +275,9 @@ class TableWidget extends WidgetType {
 
     const container = document.createElement('div');
     container.className =
-      'cm-table-widget urano-table-container my-4 max-w-full overflow-x-auto select-text';
+      'cm-embed-block cm-table-widget urano-table-container my-4 max-w-full overflow-x-auto select-text';
     container.setAttribute('data-table-from', String(from));
+    this.domNode = container;
 
     const wrapper = document.createElement('div');
     wrapper.className = 'urano-table-wrapper relative inline-block min-w-full';
@@ -312,8 +312,6 @@ class TableWidget extends WidgetType {
       );
       if (newMarkdown === tbl.rawText) return;
 
-      console.log('[Urano Table] Aplicando cambios a la tabla en rango:', tbl.from, tbl.to);
-
       if (immediateFocus) {
         pendingTableFocus = {
           tableIndex: this.tableIndex,
@@ -325,9 +323,6 @@ class TableWidget extends WidgetType {
       activeView.dispatch({
         changes: { from: tbl.from, to: tbl.to, insert: newMarkdown },
       });
-
-      const newDoc = activeView.state.doc.toString();
-      useVaultStore.getState().updateContent(newDoc);
     };
 
     const scheduleCommit = () => {
@@ -361,7 +356,7 @@ class TableWidget extends WidgetType {
       const totalRows = currentRows.length + 1; // 1 header + body rows
 
       const items: MenuItemData[] = [
-        // Fila Submenu
+        // Fila Submenu (1:1 with Obsidian)
         {
           title: 'Fila',
           icon: <Rows size={14} />,
@@ -457,7 +452,7 @@ class TableWidget extends WidgetType {
             },
           ],
         },
-        // Columna Submenu
+        // Columna Submenu (1:1 with Obsidian)
         {
           title: 'Columna',
           icon: <Columns size={14} />,
@@ -687,9 +682,6 @@ class TableWidget extends WidgetType {
               changes: { from: tbl.from, to: endPos, insert: '' },
               selection: { anchor: tbl.from },
             });
-
-            const newDoc = activeView.state.doc.toString();
-            useVaultStore.getState().updateContent(newDoc);
             useNoticeStore.getState().showNotice('Tabla eliminada', 2500, 'info');
           },
         },
@@ -732,12 +724,12 @@ class TableWidget extends WidgetType {
         scheduleCommit();
       });
 
-      // Context menu
+      // Context menu on right click
       parentCell.addEventListener('contextmenu', (e) => {
         openTableMenu(e, row, col);
       });
 
-      // Keyboard Navigation
+      // Keyboard Navigation (Exact 1:1 with Obsidian)
       cellContent.addEventListener('keydown', (e: KeyboardEvent) => {
         const totalRows = currentRows.length + 1;
         const totalCols = currentHeaders.length;
@@ -906,14 +898,9 @@ class TableWidget extends WidgetType {
     addColBtn.innerHTML =
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
 
-    let lastAddColTime = 0;
     const handleAddCol = (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const now = Date.now();
-      if (now - lastAddColTime < 250) return;
-      lastAddColTime = now;
-      console.log('[Urano Table] Añadir columna clicada');
       currentHeaders.push('');
       currentAlignments.push('left');
       for (const r of currentRows) {
@@ -922,7 +909,6 @@ class TableWidget extends WidgetType {
       commitChanges({ row: 0, col: currentHeaders.length - 1 });
     };
     addColBtn.addEventListener('mousedown', handleAddCol);
-    addColBtn.addEventListener('click', handleAddCol);
     wrapper.appendChild(addColBtn);
 
     // Add Row Button (+) on bottom edge
@@ -933,25 +919,19 @@ class TableWidget extends WidgetType {
     addRowBtn.innerHTML =
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
 
-    let lastAddRowTime = 0;
     const handleAddRow = (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const now = Date.now();
-      if (now - lastAddRowTime < 250) return;
-      lastAddRowTime = now;
-      console.log('[Urano Table] Añadir fila clicada');
       const newRow = new Array(currentHeaders.length).fill('');
       currentRows.push(newRow);
       commitChanges({ row: currentRows.length, col: 0 });
     };
     addRowBtn.addEventListener('mousedown', handleAddRow);
-    addRowBtn.addEventListener('click', handleAddRow);
     wrapper.appendChild(addRowBtn);
 
     container.appendChild(wrapper);
 
-    // Handle auto-focus if this table has pendingFocus
+    // Auto-focus if this table has pendingFocus
     if (pendingTableFocus && pendingTableFocus.tableIndex === this.tableIndex) {
       const target = pendingTableFocus;
       pendingTableFocus = null;
@@ -962,7 +942,7 @@ class TableWidget extends WidgetType {
         if (targetCell) {
           targetCell.focus();
         }
-      }, 40);
+      }, 50);
     }
 
     return container;

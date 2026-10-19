@@ -700,16 +700,16 @@ export const Editor: React.FC<EditorProps> = ({
     let insertFrom = sel.from;
     let insertTo = sel.to;
     if (enclosingTable) {
-      // If cursor was inside an existing table, insert cleanly after it
       insertFrom = enclosingTable.to;
       insertTo = enclosingTable.to;
     }
 
+    const docLen = view.state.doc.length;
     const textBefore = view.state.sliceDoc(0, insertFrom);
     const textAfter = view.state.sliceDoc(insertTo);
 
     let prefix = '';
-    if (textBefore.length > 0) {
+    if (insertFrom > 0) {
       if (textBefore.endsWith('\n\n')) {
         prefix = '';
       } else if (textBefore.endsWith('\n')) {
@@ -720,11 +720,11 @@ export const Editor: React.FC<EditorProps> = ({
     }
 
     let suffix = '\n';
-    if (!textAfter.startsWith('\n')) {
+    if (insertTo < docLen && !textAfter.startsWith('\n')) {
       suffix = '\n\n';
     }
 
-    const tableMarkdown = '|   |   |\n| --- | --- |\n|   |   |';
+    const tableMarkdown = '|  |  |\n| --- | --- |\n|  |  |';
     const insert = `${prefix}${tableMarkdown}${suffix}`;
     const targetPos = insertFrom + prefix.length;
 
@@ -1008,7 +1008,7 @@ export const Editor: React.FC<EditorProps> = ({
             action: handleInsertCode,
           },
           {
-            title: 'Tabla Markdown',
+            title: 'Tabla',
             icon: <Table size={14} />,
             action: handleInsertTable,
           },
