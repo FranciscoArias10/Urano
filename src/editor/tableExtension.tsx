@@ -273,15 +273,7 @@ export class TableWidget extends WidgetType {
     return false;
   }
 
-  updateDOM(dom: HTMLElement): boolean {
-    this.domNode = dom;
-    const activeEl = document.activeElement;
-    if (activeEl && activeEl.classList.contains('urano-table-cell-content')) {
-      const activeWidgetEl = activeEl.closest('.cm-table-widget');
-      if (activeWidgetEl === dom) {
-        return true;
-      }
-    }
+  updateDOM(): boolean {
     return false;
   }
 
@@ -927,9 +919,16 @@ export class TableWidget extends WidgetType {
     addColBtn.innerHTML =
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
 
+    let colAdding = false;
     const handleAddCol = (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      if (colAdding) return;
+      colAdding = true;
+      setTimeout(() => {
+        colAdding = false;
+      }, 300);
+
       currentHeaders.push('');
       currentAlignments.push('left');
       for (const r of currentRows) {
@@ -938,6 +937,7 @@ export class TableWidget extends WidgetType {
       commitChanges({ row: 0, col: currentHeaders.length - 1 });
     };
     addColBtn.addEventListener('mousedown', handleAddCol);
+    addColBtn.addEventListener('click', handleAddCol);
     wrapper.appendChild(addColBtn);
 
     // Add Row Button (+) on bottom edge
@@ -948,14 +948,22 @@ export class TableWidget extends WidgetType {
     addRowBtn.innerHTML =
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
 
+    let rowAdding = false;
     const handleAddRow = (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      if (rowAdding) return;
+      rowAdding = true;
+      setTimeout(() => {
+        rowAdding = false;
+      }, 300);
+
       const newRow = new Array(currentHeaders.length).fill('');
       currentRows.push(newRow);
       commitChanges({ row: currentRows.length, col: 0 });
     };
     addRowBtn.addEventListener('mousedown', handleAddRow);
+    addRowBtn.addEventListener('click', handleAddRow);
     wrapper.appendChild(addRowBtn);
 
     container.appendChild(wrapper);
