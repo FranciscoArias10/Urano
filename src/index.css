@@ -443,13 +443,13 @@
   color: #ffedd5 !important;
 }
 
-.cm-highlight-text {
-  background-color: rgba(249, 115, 22, 0.25) !important;
-  color: #ffedd5 !important;
-  padding: 1px 5px !important;
-  border-radius: 4px !important;
-  border-bottom: 2px solid #ea580c !important;
-  font-weight: 500 !important;
+.cm-strong {
+  font-weight: 700 !important;
+  color: #f5f5f4 !important;
+}
+
+.cm-em {
+  font-style: italic !important;
 }
 
 .cm-strikethrough {
@@ -465,6 +465,84 @@
   padding: 1px 5px !important;
   color: #fb923c !important;
   border: 1px solid rgba(234, 88, 12, 0.2) !important;
+}
+
+/* 6 Obsidian Highlight Colors */
+.cm-highlight-text,
+.hl-default,
+mark.hl-default {
+  background-color: rgba(255, 208, 0, 0.35) !important;
+  color: #ffedd5 !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  border-bottom: 2px solid #eab308 !important;
+  font-weight: 500 !important;
+}
+
+.cm-highlight-red,
+.hl-red,
+mark.hl-red {
+  background-color: rgba(239, 68, 68, 0.35) !important;
+  color: #fca5a5 !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  border-bottom: 2px solid #ef4444 !important;
+  font-weight: 500 !important;
+}
+
+.cm-highlight-orange,
+.hl-orange,
+mark.hl-orange {
+  background-color: rgba(249, 115, 22, 0.35) !important;
+  color: #fdba74 !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  border-bottom: 2px solid #f97316 !important;
+  font-weight: 500 !important;
+}
+
+.cm-highlight-yellow,
+.hl-yellow,
+mark.hl-yellow {
+  background-color: rgba(234, 179, 8, 0.35) !important;
+  color: #fde047 !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  border-bottom: 2px solid #eab308 !important;
+  font-weight: 500 !important;
+}
+
+.cm-highlight-green,
+.hl-green,
+mark.hl-green {
+  background-color: rgba(34, 197, 94, 0.35) !important;
+  color: #86efac !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  border-bottom: 2px solid #22c55e !important;
+  font-weight: 500 !important;
+}
+
+.cm-highlight-blue,
+.hl-blue,
+mark.hl-blue {
+  background-color: rgba(59, 130, 246, 0.35) !important;
+  color: #93c5fd !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  border-bottom: 2px solid #3b82f6 !important;
+  font-weight: 500 !important;
+}
+
+.cm-highlight-purple,
+.hl-purple,
+mark.hl-purple {
+  background-color: rgba(168, 85, 247, 0.35) !important;
+  color: #d8b4fe !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  border-bottom: 2px solid #a855f7 !important;
+  font-weight: 500 !important;
 }
 
 /* Animations */

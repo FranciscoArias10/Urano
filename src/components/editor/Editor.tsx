@@ -645,6 +645,117 @@ export const Editor: React.FC<EditorProps> = ({
     view.focus();
   };
 
+  const applyHighlight = (
+    color: 'default' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple'
+  ) => {
+    const view = viewRef.current || getActiveEditorView();
+    if (!view) return;
+    const sel = view.state.selection.main;
+    let from = sel.from;
+    let to = sel.to;
+    let selectedText = view.state.sliceDoc(from, to);
+
+    // If cursor is collapsed, check if cursor is currently inside any highlight on this line
+    if (from === to) {
+      const line = view.state.doc.lineAt(from);
+      const lineText = line.text;
+      const offset = from - line.from;
+
+      const hlPatterns = [
+        /<mark class="hl-(?:red|orange|yellow|green|blue|purple)">([\s\S]*?)<\/mark>/gi,
+        /==\[(?:red|orange|yellow|green|blue|purple)\]([\s\S]*?)==/gi,
+        /==([^=\n]+)==/g,
+      ];
+
+      let found = false;
+      for (const pat of hlPatterns) {
+        let m: RegExpExecArray | null;
+        while ((m = pat.exec(lineText)) !== null) {
+          const mStart = m.index;
+          const mEnd = mStart + m[0].length;
+          if (offset >= mStart && offset <= mEnd) {
+            from = line.from + mStart;
+            to = line.from + mEnd;
+            selectedText = m[0];
+            found = true;
+            break;
+          }
+        }
+        if (found) break;
+      }
+
+      if (!found) {
+        const word = view.state.wordAt(from);
+        if (word) {
+          from = word.from;
+          to = word.to;
+          selectedText = view.state.sliceDoc(from, to);
+        }
+      }
+    }
+
+    const line = view.state.doc.lineAt(from);
+    const lineText = line.text;
+    const offsetInLineFrom = from - line.from;
+    const offsetInLineTo = to - line.from;
+
+    const beforeText = lineText.slice(0, offsetInLineFrom);
+    const afterText = lineText.slice(offsetInLineTo);
+
+    const markOpenRegex = /<mark class="hl-(?:red|orange|yellow|green|blue|purple)">$/i;
+    const markCloseRegex = /^<\/mark>/i;
+
+    const bracketOpenRegex = /==\[(?:red|orange|yellow|green|blue|purple)\]$/i;
+    const bracketCloseRegex = /^==/;
+
+    const defaultOpenRegex = /==$/;
+    const defaultCloseRegex = /^==/;
+
+    // Strip existing highlight delimiters from inside selectedText
+    let cleanText = selectedText;
+    cleanText = cleanText
+      .replace(/^<mark class="hl-[a-z]+">/i, '')
+      .replace(/<\/mark>$/i, '')
+      .replace(/^==\[[a-z]+\]/i, '')
+      .replace(/^==/i, '')
+      .replace(/==$/i, '')
+      .replace(/^[🔴🟠🟡🟢🔵🟣🟥🟧🟨🟩🟦🟪]\s*/, '')
+      .trim();
+
+    let replaceFrom = from;
+    let replaceTo = to;
+
+    // Check if delimiters immediately surround the selection
+    if (markOpenRegex.test(beforeText) && markCloseRegex.test(afterText)) {
+      const matchOpen = beforeText.match(markOpenRegex)!;
+      replaceFrom = from - matchOpen[0].length;
+      replaceTo = to + '</mark>'.length;
+    } else if (bracketOpenRegex.test(beforeText) && bracketCloseRegex.test(afterText)) {
+      const matchOpen = beforeText.match(bracketOpenRegex)!;
+      replaceFrom = from - matchOpen[0].length;
+      replaceTo = to + 2;
+    } else if (defaultOpenRegex.test(beforeText) && defaultCloseRegex.test(afterText)) {
+      replaceFrom = from - 2;
+      replaceTo = to + 2;
+    }
+
+    const content = cleanText || 'resaltado';
+    const newWrapped =
+      color === 'default'
+        ? `==${content}==`
+        : `<mark class="hl-${color}">${content}</mark>`;
+
+    view.dispatch({
+      changes: { from: replaceFrom, to: replaceTo, insert: newWrapped },
+      selection: { anchor: replaceFrom + newWrapped.length },
+    });
+
+    const newDoc = view.state.doc.toString();
+    lastDispatchedDocRef.current = newDoc;
+    updateContent(newDoc);
+    view.focus();
+  };
+
   const handleInsertMath = () => {
     const view = viewRef.current || getActiveEditorView();
     if (!view) return;
@@ -977,9 +1088,80 @@ export const Editor: React.FC<EditorProps> = ({
             action: () => toggleInlineFormatting('`'),
           },
           {
-            title: 'Resaltado (==)',
+            title: 'Resaltado',
             icon: <Highlighter size={14} />,
-            action: () => toggleInlineFormatting('=='),
+            submenu: [
+              {
+                title: 'Default (Por defecto)',
+                icon: (
+                  <span
+                    className="w-2.5 h-2.5 rounded-full inline-block border border-yellow-600/40"
+                    style={{ backgroundColor: 'rgba(255, 208, 0, 0.9)' }}
+                  />
+                ),
+                action: () => applyHighlight('default'),
+              },
+              {
+                title: 'Red (Rojo)',
+                icon: (
+                  <span
+                    className="w-2.5 h-2.5 rounded-full inline-block border border-red-600/40"
+                    style={{ backgroundColor: '#ef4444' }}
+                  />
+                ),
+                action: () => applyHighlight('red'),
+              },
+              {
+                title: 'Orange (Naranja)',
+                icon: (
+                  <span
+                    className="w-2.5 h-2.5 rounded-full inline-block border border-orange-600/40"
+                    style={{ backgroundColor: '#f97316' }}
+                  />
+                ),
+                action: () => applyHighlight('orange'),
+              },
+              {
+                title: 'Yellow (Amarillo)',
+                icon: (
+                  <span
+                    className="w-2.5 h-2.5 rounded-full inline-block border border-yellow-600/40"
+                    style={{ backgroundColor: '#eab308' }}
+                  />
+                ),
+                action: () => applyHighlight('yellow'),
+              },
+              {
+                title: 'Green (Verde)',
+                icon: (
+                  <span
+                    className="w-2.5 h-2.5 rounded-full inline-block border border-green-600/40"
+                    style={{ backgroundColor: '#22c55e' }}
+                  />
+                ),
+                action: () => applyHighlight('green'),
+              },
+              {
+                title: 'Blue (Azul)',
+                icon: (
+                  <span
+                    className="w-2.5 h-2.5 rounded-full inline-block border border-blue-600/40"
+                    style={{ backgroundColor: '#3b82f6' }}
+                  />
+                ),
+                action: () => applyHighlight('blue'),
+              },
+              {
+                title: 'Purple (Púrpura)',
+                icon: (
+                  <span
+                    className="w-2.5 h-2.5 rounded-full inline-block border border-purple-600/40"
+                    style={{ backgroundColor: '#a855f7' }}
+                  />
+                ),
+                action: () => applyHighlight('purple'),
+              },
+            ],
           },
           {
             title: 'Comentario (%%)',

@@ -19,9 +19,88 @@ interface ObsidianMenuProps {
   onClose: () => void;
 }
 
+interface MenuItemRowProps {
+  item: MenuItemData;
+  onTrigger: (item: MenuItemData, e: React.MouseEvent) => void;
+}
+
+const MenuItemRow: React.FC<MenuItemRowProps> = ({ item, onTrigger }) => {
+  const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const hasSubmenu = Boolean(item.submenu && item.submenu.length > 0);
+
+  return (
+    <div
+      ref={rowRef}
+      className={`menu-item relative ${item.isWarning ? 'is-warning' : ''} ${
+        item.disabled ? 'is-disabled' : ''
+      } ${isSubmenuOpen ? 'selected' : ''}`}
+      onMouseEnter={() => {
+        if (hasSubmenu) setIsSubmenuOpen(true);
+      }}
+      onMouseLeave={() => {
+        if (hasSubmenu) setIsSubmenuOpen(false);
+      }}
+      onMouseDown={(e) => {
+        if (hasSubmenu) {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsSubmenuOpen((prev) => !prev);
+        } else {
+          onTrigger(item, e);
+        }
+      }}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!hasSubmenu) {
+          onTrigger(item, e);
+        }
+      }}
+    >
+      {item.icon && <span className="menu-item-icon">{item.icon}</span>}
+      <span className="menu-item-title flex-1">{item.title}</span>
+
+      {item.shortcut && (
+        <span className="menu-item-shortcut">{item.shortcut}</span>
+      )}
+
+      {hasSubmenu && (
+        <ChevronRight size={14} className="text-stone-500 ml-2" />
+      )}
+
+      {/* Recursive Submenu */}
+      {hasSubmenu && isSubmenuOpen && item.submenu && (
+        <div
+          className="menu absolute top-0 left-full -ml-1 min-w-[190px] shadow-2xl animate-fadeIn z-50"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onMouseEnter={() => setIsSubmenuOpen(true)}
+        >
+          <div className="menu-scroll">
+            {item.submenu.map((sub, sIdx) => {
+              if (sub.type === 'separator') {
+                return <div key={sIdx} className="menu-separator" />;
+              }
+              return (
+                <MenuItemRow
+                  key={sIdx}
+                  item={sub}
+                  onTrigger={onTrigger}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const ObsidianMenu: React.FC<ObsidianMenuProps> = ({ x, y, items, onClose }) => {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [activeSubmenuIndex, setActiveSubmenuIndex] = useState<number | null>(null);
   const [coords, setCoords] = useState<{ x: number; y: number }>({ x, y });
 
   // Boundary adjustment to keep menu inside screen
@@ -95,93 +174,12 @@ export const ObsidianMenu: React.FC<ObsidianMenuProps> = ({ x, y, items, onClose
             return <div key={idx} className="menu-separator" />;
           }
 
-          const hasSubmenu = Boolean(item.submenu && item.submenu.length > 0);
-          const isSubmenuOpen = activeSubmenuIndex === idx;
-
           return (
-            <div
+            <MenuItemRow
               key={idx}
-              className={`menu-item relative ${item.isWarning ? 'is-warning' : ''} ${
-                item.disabled ? 'is-disabled' : ''
-              } ${isSubmenuOpen ? 'selected' : ''}`}
-              onMouseEnter={() => {
-                if (hasSubmenu) {
-                  setActiveSubmenuIndex(idx);
-                } else {
-                  setActiveSubmenuIndex(null);
-                }
-              }}
-              onMouseDown={(e) => {
-                if (hasSubmenu) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setActiveSubmenuIndex(idx);
-                } else {
-                  handleItemTrigger(item, e);
-                }
-              }}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (!hasSubmenu) {
-                  handleItemTrigger(item, e);
-                }
-              }}
-            >
-              {item.icon && <span className="menu-item-icon">{item.icon}</span>}
-              <span className="menu-item-title">{item.title}</span>
-
-              {item.shortcut && (
-                <span className="menu-item-shortcut">{item.shortcut}</span>
-              )}
-
-              {hasSubmenu && (
-                <ChevronRight size={14} className="text-stone-500 ml-2" />
-              )}
-
-              {/* Submenu rendering */}
-              {hasSubmenu && isSubmenuOpen && item.submenu && (
-                <div
-                  className="menu absolute top-0 left-full -ml-1 min-w-[180px] shadow-2xl animate-fadeIn"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onMouseEnter={() => setActiveSubmenuIndex(idx)}
-                >
-                  <div className="menu-scroll">
-                    {item.submenu.map((subItem, sIdx) => {
-                      if (subItem.type === 'separator') {
-                        return <div key={sIdx} className="menu-separator" />;
-                      }
-
-                      return (
-                        <div
-                          key={sIdx}
-                          className={`menu-item ${subItem.isWarning ? 'is-warning' : ''} ${
-                            subItem.disabled ? 'is-disabled' : ''
-                          }`}
-                          onMouseDown={(e) => {
-                            handleItemTrigger(subItem, e);
-                          }}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleItemTrigger(subItem, e);
-                          }}
-                        >
-                          {subItem.icon && <span className="menu-item-icon">{subItem.icon}</span>}
-                          <span className="menu-item-title">{subItem.title}</span>
-                          {subItem.shortcut && (
-                            <span className="menu-item-shortcut">{subItem.shortcut}</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
+              item={item}
+              onTrigger={handleItemTrigger}
+            />
           );
         })}
       </div>
