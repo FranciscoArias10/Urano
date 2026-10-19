@@ -25,11 +25,9 @@ class MathBlockWidget extends WidgetType {
 
   toDOM(view: EditorView): HTMLElement {
     const box = document.createElement('div');
-    box.className = `cm-katex-block-widget select-none relative my-3 p-4 border border-[#363636] rounded-md bg-[#181818] text-center transition-colors group ${
+    box.className = `cm-katex-block-widget select-none relative transition-colors group ${
       this.isExpanded ? 'is-expanded' : 'is-collapsed'
     }`;
-    box.style.cssText =
-      'border: 1px solid #363636; border-radius: 6px; padding: 16px; position: relative; background-color: #181818; display: flex; justify-content: center; align-items: center; margin: 12px 0; text-align: center;';
 
     // The </> toggle button in top right corner
     const codeBtn = document.createElement('button');

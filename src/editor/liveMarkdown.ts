@@ -198,8 +198,43 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
             }
           }
 
-          // 5. Highlights:
-          // 5a. HTML format: <mark class="hl-(red|orange|yellow|green|blue|purple)">text</mark>
+          // 5. Highlights: /==(🔴|🟠|🟡|🟢|🔵|🟣)?([^=\n]+)==/g
+          const hlRegex = /==(🔴|🟠|🟡|🟢|🔵|🟣)?([^=\n]+)==/g;
+          let hMatch: RegExpExecArray | null;
+          while ((hMatch = hlRegex.exec(text)) !== null) {
+            const start = line.from + hMatch.index;
+            const end = start + hMatch[0].length;
+            if (isOverlapping(start, end)) continue;
+            occupied.push([start, end]);
+
+            const circleEmoji = hMatch[1] || '';
+            const color = emojiColorMap[circleEmoji] || 'default';
+            const markDeco = highlightMarks[color] || highlightMarks.default;
+
+            // Check if cursor/selection is INSIDE this specific highlight
+            const isCursorInside = sel.from <= end && sel.to >= start;
+
+            if (isCursorInside) {
+              // Cursor ESTÁ dentro del resaltado (al hacer clic sobre él):
+              // Muestra los signos == y el círculo 🔵 (==🔵esto va a estar resaltado==)
+              // y aplica Decoration.mark del color de fondo al RANGO COMPLETO [start, end]
+              widgets.push(markDeco.range(start, end));
+            } else {
+              // Cursor NO está dentro de este resaltado (Cursor FUERA):
+              // Esconde el == inicial y el círculo de color (==🔵) con Decoration.replace({})
+              // Esconde el == final con Decoration.replace({})
+              // Mantiene Decoration.mark sobre el texto limpio
+              let openLen = 2 + circleEmoji.length;
+              if (text.charAt(start + openLen - line.from) === ' ') {
+                openLen += 1;
+              }
+              widgets.push(hideDelimiter.range(start, start + openLen));
+              widgets.push(markDeco.range(start + openLen, end - 2));
+              widgets.push(hideDelimiter.range(end - 2, end));
+            }
+          }
+
+          // Backward compatibility for any legacy <mark class="hl-(...)">...</mark>
           const htmlHlRegex = /<mark class="hl-(red|orange|yellow|green|blue|purple)">([^\n]+?)<\/mark>/g;
           let htmlMatch: RegExpExecArray | null;
           while ((htmlMatch = htmlHlRegex.exec(text)) !== null) {
@@ -212,69 +247,14 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
             const openTagLen = `<mark class="hl-${color}">`.length;
             const closeTagLen = '</mark>'.length;
             const markDeco = highlightMarks[color] || highlightMarks.default;
+            const isCursorInside = sel.from <= end && sel.to >= start;
 
-            if (!isCursorOnLine) {
+            if (isCursorInside) {
+              widgets.push(markDeco.range(start, end));
+            } else {
               widgets.push(hideDelimiter.range(start, start + openTagLen));
               widgets.push(markDeco.range(start + openTagLen, end - closeTagLen));
               widgets.push(hideDelimiter.range(end - closeTagLen, end));
-            } else {
-              widgets.push(markDeco.range(start + openTagLen, end - closeTagLen));
-            }
-          }
-
-          // 5b. Bracket format: ==[color]text==
-          const bracketHlRegex = /==\[(red|orange|yellow|green|blue|purple)\]([^\n]+?)==/g;
-          let brMatch: RegExpExecArray | null;
-          while ((brMatch = bracketHlRegex.exec(text)) !== null) {
-            const start = line.from + brMatch.index;
-            const end = start + brMatch[0].length;
-            if (isOverlapping(start, end)) continue;
-            occupied.push([start, end]);
-
-            const color = brMatch[1];
-            const openTagLen = `==[${color}]`.length;
-            const markDeco = highlightMarks[color] || highlightMarks.default;
-
-            if (!isCursorOnLine) {
-              widgets.push(hideDelimiter.range(start, start + openTagLen));
-              widgets.push(markDeco.range(start + openTagLen, end - 2));
-              widgets.push(hideDelimiter.range(end - 2, end));
-            } else {
-              widgets.push(markDeco.range(start + openTagLen, end - 2));
-            }
-          }
-
-          // 5c. Standard/Default format: ==text== (also supporting ==🔴 text==)
-          const hlRegex = /==([^=\n]+)==/g;
-          let hMatch: RegExpExecArray | null;
-          while ((hMatch = hlRegex.exec(text)) !== null) {
-            const start = line.from + hMatch.index;
-            const end = start + hMatch[0].length;
-            if (isOverlapping(start, end)) continue;
-            occupied.push([start, end]);
-
-            const inner = hMatch[1];
-            let color = 'default';
-            let contentStart = start + 2;
-
-            // Check if first character is an emoji color marker
-            const firstChar = inner.slice(0, 2);
-            if (emojiColorMap[firstChar]) {
-              color = emojiColorMap[firstChar];
-              contentStart = start + 2 + firstChar.length;
-              if (text.charAt(contentStart - line.from) === ' ') {
-                contentStart += 1;
-              }
-            }
-
-            const markDeco = highlightMarks[color] || highlightMarks.default;
-
-            if (!isCursorOnLine) {
-              widgets.push(hideDelimiter.range(start, contentStart));
-              widgets.push(markDeco.range(contentStart, end - 2));
-              widgets.push(hideDelimiter.range(end - 2, end));
-            } else {
-              widgets.push(markDeco.range(start + 2, end - 2));
             }
           }
 

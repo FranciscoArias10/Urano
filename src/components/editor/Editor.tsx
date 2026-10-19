@@ -645,6 +645,16 @@ export const Editor: React.FC<EditorProps> = ({
     view.focus();
   };
 
+  const HIGHLIGHT_COLOR_EMOJI: Record<string, string> = {
+    default: '',
+    red: '🔴',
+    orange: '🟠',
+    yellow: '🟡',
+    green: '🟢',
+    blue: '🔵',
+    purple: '🟣',
+  };
+
   const applyHighlight = (
     color: 'default' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple'
   ) => {
@@ -655,6 +665,8 @@ export const Editor: React.FC<EditorProps> = ({
     let to = sel.to;
     let selectedText = view.state.sliceDoc(from, to);
 
+    const colorEmoji = HIGHLIGHT_COLOR_EMOJI[color] ?? '';
+
     // If cursor is collapsed, check if cursor is currently inside any highlight on this line
     if (from === to) {
       const line = view.state.doc.lineAt(from);
@@ -662,9 +674,9 @@ export const Editor: React.FC<EditorProps> = ({
       const offset = from - line.from;
 
       const hlPatterns = [
+        /==(🔴|🟠|🟡|🟢|🔵|🟣)?([^=\n]+)==/g,
         /<mark class="hl-(?:red|orange|yellow|green|blue|purple)">([\s\S]*?)<\/mark>/gi,
         /==\[(?:red|orange|yellow|green|blue|purple)\]([\s\S]*?)==/gi,
-        /==([^=\n]+)==/g,
       ];
 
       let found = false;
@@ -702,48 +714,45 @@ export const Editor: React.FC<EditorProps> = ({
     const beforeText = lineText.slice(0, offsetInLineFrom);
     const afterText = lineText.slice(offsetInLineTo);
 
+    const surroundingRegexBefore = /==(🔴|🟠|🟡|🟢|🔵|🟣)?$/;
+    const surroundingRegexAfter = /^==/;
+
     const markOpenRegex = /<mark class="hl-(?:red|orange|yellow|green|blue|purple)">$/i;
     const markCloseRegex = /^<\/mark>/i;
 
     const bracketOpenRegex = /==\[(?:red|orange|yellow|green|blue|purple)\]$/i;
     const bracketCloseRegex = /^==/;
 
-    const defaultOpenRegex = /==$/;
-    const defaultCloseRegex = /^==/;
-
-    // Strip existing highlight delimiters from inside selectedText
+    // Strip existing highlight delimiters and emoji from inside selectedText
     let cleanText = selectedText;
     cleanText = cleanText
       .replace(/^<mark class="hl-[a-z]+">/i, '')
       .replace(/<\/mark>$/i, '')
       .replace(/^==\[[a-z]+\]/i, '')
-      .replace(/^==/i, '')
-      .replace(/==$/i, '')
-      .replace(/^[🔴🟠🟡🟢🔵🟣🟥🟧🟨🟩🟦🟪]\s*/, '')
+      .replace(/^==(🔴|🟠|🟡|🟢|🔵|🟣)?/, '')
+      .replace(/==$/, '')
       .trim();
 
     let replaceFrom = from;
     let replaceTo = to;
 
     // Check if delimiters immediately surround the selection
-    if (markOpenRegex.test(beforeText) && markCloseRegex.test(afterText)) {
+    if (surroundingRegexBefore.test(beforeText) && surroundingRegexAfter.test(afterText)) {
+      const matchBefore = beforeText.match(surroundingRegexBefore)!;
+      replaceFrom = from - matchBefore[0].length;
+      replaceTo = to + 2;
+    } else if (markOpenRegex.test(beforeText) && markCloseRegex.test(afterText)) {
       const matchOpen = beforeText.match(markOpenRegex)!;
       replaceFrom = from - matchOpen[0].length;
-      replaceTo = to + '</mark>'.length;
+      replaceTo = to + 7;
     } else if (bracketOpenRegex.test(beforeText) && bracketCloseRegex.test(afterText)) {
       const matchOpen = beforeText.match(bracketOpenRegex)!;
       replaceFrom = from - matchOpen[0].length;
       replaceTo = to + 2;
-    } else if (defaultOpenRegex.test(beforeText) && defaultCloseRegex.test(afterText)) {
-      replaceFrom = from - 2;
-      replaceTo = to + 2;
     }
 
-    const content = cleanText || 'resaltado';
-    const newWrapped =
-      color === 'default'
-        ? `==${content}==`
-        : `<mark class="hl-${color}">${content}</mark>`;
+    const content = cleanText || 'texto';
+    const newWrapped = `==${colorEmoji}${content}==`;
 
     view.dispatch({
       changes: { from: replaceFrom, to: replaceTo, insert: newWrapped },
