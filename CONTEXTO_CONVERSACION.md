@@ -85,5 +85,7 @@ Se actualizó **únicamente** el submenú de `Insertar` en [Editor.tsx](file:///
 
 ---
 
-
-
+8. **Tablas Markdown en Live Preview ([tableExtension.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/editor/tableExtension.tsx))**:
+   - Reemplazo y reconciliación de widgets de tabla sin pérdida de foco ni cursor al escribir dentro de celdas (`eq` preserva el DOM cuando el número de filas y columnas no cambia).
+   - Inserción y eliminación de filas y columnas tanto desde el menú contextual (`urano-table-contextmenu`) como desde los botones `+` (`urano-table-col-btn` a la derecha y `urano-table-row-btn` abajo).
+   - Reconstrucción limpia de la tabla y autoenfoque (`pendingTableFocus`) en la nueva celda al agregar filas o columnas.
