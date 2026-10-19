@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Search, X, FileText, ChevronRight, ChevronDown } from 'lucide-react';
 import { useVaultStore } from '../../stores/vaultStore';
 
@@ -18,8 +18,20 @@ interface FileSearchResult {
 
 export const GlobalSearchPanel: React.FC = () => {
   const { notesContentMap, selectFile } = useVaultStore();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() => (window as any).__uranoInitialSearchQuery || '');
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const handleSearchEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ query: string }>;
+      if (customEvent.detail?.query) {
+        setQuery(customEvent.detail.query);
+        (window as any).__uranoInitialSearchQuery = customEvent.detail.query;
+      }
+    };
+    window.addEventListener('urano-search', handleSearchEvent);
+    return () => window.removeEventListener('urano-search', handleSearchEvent);
+  }, []);
 
   const searchResults: FileSearchResult[] = useMemo(() => {
     const q = query.trim().toLowerCase();

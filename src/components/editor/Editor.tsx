@@ -11,7 +11,8 @@ import { codeBlockExtension } from '../../editor/codeBlockExtension';
 import { calloutExtension } from '../../editor/calloutExtension';
 import { tableExtension, setPendingTableFocus, findAllTables } from '../../editor/tableExtension';
 import { createWikilinksExtension } from '../../editor/wikilinks';
-import { useVaultStore } from '../../stores/vaultStore';
+import { invoke } from '@tauri-apps/api/core';
+import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 import { useNoticeStore } from '../common/Notice';
 import { FileItem } from '../../types';
@@ -23,7 +24,6 @@ import {
   Strikethrough,
   Code,
   MessageSquare,
-  CheckSquare,
   Sigma,
   Link,
   BookOpen,
@@ -33,17 +33,33 @@ import {
   Columns,
   Copy,
   Scissors,
-  Clipboard,
   Terminal,
   Table,
   AlertCircle,
   Minus,
-  Type,
-  PlusSquare,
-  FilePlus,
   ArrowLeft,
   ArrowRight,
   MoreVertical,
+  Paintbrush,
+  Pilcrow,
+  ListPlus,
+  Heading1,
+  Heading2,
+  Heading3,
+  Heading4,
+  Heading5,
+  Heading6,
+  List,
+  ListOrdered,
+  ListTodo,
+  Quote,
+  Search,
+  FolderInput,
+  Eraser,
+  ClipboardCheck,
+  ClipboardType,
+  SquareDashed,
+  LayoutTemplate,
 } from 'lucide-react';
 
 interface EditorProps {
@@ -88,6 +104,7 @@ export const Editor: React.FC<EditorProps> = ({
   });
 
   const {
+    activeVault,
     activeFile,
     activeFileName,
     fileContent,
@@ -99,6 +116,7 @@ export const Editor: React.FC<EditorProps> = ({
     autoFocusTitle,
     setAutoFocusTitle,
     isLoading,
+    refreshTree,
   } = useVaultStore();
 
   const { showNotice } = useNoticeStore();
@@ -630,21 +648,6 @@ export const Editor: React.FC<EditorProps> = ({
     }
   };
 
-  const wrapSelection = (prefix: string, suffix: string, placeholder = 'Nota') => {
-    const view = viewRef.current || getActiveEditorView();
-    if (!view) return;
-    const sel = view.state.selection.main;
-    const text = view.state.sliceDoc(sel.from, sel.to) || placeholder;
-    view.dispatch({
-      changes: { from: sel.from, to: sel.to, insert: `${prefix}${text}${suffix}` },
-      selection: { anchor: sel.from + prefix.length, head: sel.to + prefix.length },
-    });
-    const newDoc = view.state.doc.toString();
-    lastDispatchedDocRef.current = newDoc;
-    updateContent(newDoc);
-    view.focus();
-  };
-
   const HIGHLIGHT_COLOR_EMOJI: Record<string, string> = {
     default: '',
     red: '🔴',
@@ -886,34 +889,6 @@ export const Editor: React.FC<EditorProps> = ({
     view.focus();
   };
 
-  const handleInsertWikilink = () => {
-    console.log('[Urano Menu] Ejecutando comando: Enlace interno');
-    const view = viewRef.current || getActiveEditorView();
-    if (!view) return;
-    const sel = view.state.selection.main;
-    const insert = '[[]]';
-    view.dispatch({
-      changes: { from: sel.from, to: sel.to, insert },
-      selection: { anchor: sel.from + 2 },
-    });
-    const newDoc = view.state.doc.toString();
-    lastDispatchedDocRef.current = newDoc;
-    updateContent(newDoc);
-    view.focus();
-
-    // Trigger autocompletion popup immediately
-    setSuggestQuery('');
-    setSuggestIndex(0);
-    setShowSuggest(true);
-    const coords = view.coordsAtPos(sel.from + 2);
-    if (coords) {
-      setSuggestCoords({
-        top: coords.bottom + 6,
-        left: Math.max(20, Math.min(coords.left, window.innerWidth - 280)),
-      });
-    }
-  };
-
   const handleInsertHr = () => {
     const view = viewRef.current || getActiveEditorView();
     if (!view) return;
@@ -994,6 +969,247 @@ export const Editor: React.FC<EditorProps> = ({
     view.focus();
   };
 
+  const handleAddInternalLink = () => {
+    const view = viewRef.current || getActiveEditorView();
+    if (!view) return;
+    const sel = view.state.selection.main;
+    if (!sel.empty) {
+      const text = view.state.sliceDoc(sel.from, sel.to);
+      const replacement = `[[${text}]]`;
+      view.dispatch({
+        changes: { from: sel.from, to: sel.to, insert: replacement },
+        selection: { anchor: sel.from + 2, head: sel.from + 2 + text.length },
+      });
+      const newDoc = view.state.doc.toString();
+      lastDispatchedDocRef.current = newDoc;
+      updateContent(newDoc);
+      view.focus();
+    } else {
+      const pos = sel.from;
+      view.dispatch({
+        changes: { from: pos, to: pos, insert: '[[]]' },
+        selection: { anchor: pos + 2, head: pos + 2 },
+      });
+      const newDoc = view.state.doc.toString();
+      lastDispatchedDocRef.current = newDoc;
+      updateContent(newDoc);
+      view.focus();
+
+      setTimeout(() => {
+        const coords = view.coordsAtPos(pos + 2);
+        if (coords) {
+          setSuggestCoords({
+            top: coords.bottom + 6,
+            left: Math.max(20, Math.min(coords.left, window.innerWidth - 280)),
+          });
+          setSuggestQuery('');
+          setSuggestIndex(0);
+          setShowSuggest(true);
+        }
+      }, 50);
+    }
+  };
+
+  const handleAddExternalLink = () => {
+    const view = viewRef.current || getActiveEditorView();
+    if (!view) return;
+    const sel = view.state.selection.main;
+    if (!sel.empty) {
+      const text = view.state.sliceDoc(sel.from, sel.to);
+      const replacement = `[${text}](url)`;
+      const urlStart = sel.from + 1 + text.length + 2;
+      const urlEnd = urlStart + 3;
+      view.dispatch({
+        changes: { from: sel.from, to: sel.to, insert: replacement },
+        selection: { anchor: urlStart, head: urlEnd },
+      });
+      const newDoc = view.state.doc.toString();
+      lastDispatchedDocRef.current = newDoc;
+      updateContent(newDoc);
+      view.focus();
+    } else {
+      const pos = sel.from;
+      const replacement = '[](url)';
+      view.dispatch({
+        changes: { from: pos, to: pos, insert: replacement },
+        selection: { anchor: pos + 1, head: pos + 1 },
+      });
+      const newDoc = view.state.doc.toString();
+      lastDispatchedDocRef.current = newDoc;
+      updateContent(newDoc);
+      view.focus();
+    }
+  };
+
+  const handleSearchSelection = (text: string) => {
+    (window as any).__uranoInitialSearchQuery = text;
+    window.dispatchEvent(new CustomEvent('urano-search', { detail: { query: text } }));
+  };
+
+  const handleExtractSelection = async (
+    selectedText: string,
+    selFrom: number,
+    selTo: number
+  ) => {
+    const view = viewRef.current || getActiveEditorView();
+    if (!view || !selectedText) return;
+
+    const noteTitle = window.prompt('Título de la nueva nota:');
+    if (!noteTitle || !noteTitle.trim()) return;
+
+    const cleanName = noteTitle.trim().replace(ILLEGAL_FILENAME_CHARS, '');
+    if (!cleanName) {
+      showNotice('Nombre de nota no válido', 2500, 'warning');
+      return;
+    }
+
+    const parentDir = activeFile
+      ? activeFile.substring(0, activeFile.lastIndexOf('/'))
+      : activeVault;
+
+    if (!parentDir) return;
+
+    const fullPath = `${parentDir}/${cleanName}.md`.replace(/\/+/g, '/');
+
+    try {
+      await invoke('create_file', { filePath: fullPath });
+      await invoke('write_file', { filePath: fullPath, content: selectedText });
+      await refreshTree();
+
+      const replacement = `[[${cleanName}]]`;
+      view.dispatch({
+        changes: { from: selFrom, to: selTo, insert: replacement },
+        selection: { anchor: selFrom + 2, head: selFrom + 2 + cleanName.length },
+      });
+      const newDoc = view.state.doc.toString();
+      lastDispatchedDocRef.current = newDoc;
+      updateContent(newDoc);
+      view.focus();
+      showNotice(`Nota "${cleanName}" extraída con éxito`, 2500, 'success');
+    } catch (err) {
+      console.error('Error al extraer selección:', err);
+      showNotice('Error al extraer nota', 3000, 'error');
+    }
+  };
+
+  const handleClearFormatting = () => {
+    const view = viewRef.current || getActiveEditorView();
+    if (!view) return;
+    const sel = view.state.selection.main;
+    if (sel.empty) return;
+    const text = view.state.sliceDoc(sel.from, sel.to);
+
+    const cleaned = text
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/__(.*?)__/g, '$1')
+      .replace(/~~(.*?)~~/g, '$1')
+      .replace(/==(?:[🔴🟠🟡🟢🔵🟣])?(.*?)==/g, '$1')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\$([^$]+)\$/g, '$1')
+      .replace(/%%([\s\S]*?)%%/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/_([^_]+)_/g, '$1')
+      .replace(/<\/?mark[^>]*>/gi, '');
+
+    view.dispatch({
+      changes: { from: sel.from, to: sel.to, insert: cleaned },
+      selection: { anchor: sel.from, head: sel.from + cleaned.length },
+    });
+    const newDoc = view.state.doc.toString();
+    lastDispatchedDocRef.current = newDoc;
+    updateContent(newDoc);
+    view.focus();
+  };
+
+  const applyParagraphPrefix = (
+    type:
+      | 'body'
+      | 'h1'
+      | 'h2'
+      | 'h3'
+      | 'h4'
+      | 'h5'
+      | 'h6'
+      | 'bullet'
+      | 'numbered'
+      | 'todo'
+      | 'quote'
+  ) => {
+    const view = viewRef.current || getActiveEditorView();
+    if (!view) return;
+
+    const { state } = view;
+    const sel = state.selection.main;
+    const startLine = state.doc.lineAt(sel.from);
+    const endLine = state.doc.lineAt(sel.to);
+
+    const prefixRegex = /^(?:#{1,6}\s+|>\s+|-\s+\[[ xX]\]\s+|[-*+]\s+|\d+\.\s+)/;
+
+    const changes: { from: number; to: number; insert: string }[] = [];
+    let itemIndex = 1;
+
+    for (let lineNo = startLine.number; lineNo <= endLine.number; lineNo++) {
+      const line = state.doc.line(lineNo);
+      const text = line.text;
+      const match = text.match(prefixRegex);
+      const content = match ? text.slice(match[0].length) : text;
+
+      let newPrefix = '';
+      switch (type) {
+        case 'body':
+          newPrefix = '';
+          break;
+        case 'h1':
+          newPrefix = '# ';
+          break;
+        case 'h2':
+          newPrefix = '## ';
+          break;
+        case 'h3':
+          newPrefix = '### ';
+          break;
+        case 'h4':
+          newPrefix = '#### ';
+          break;
+        case 'h5':
+          newPrefix = '##### ';
+          break;
+        case 'h6':
+          newPrefix = '###### ';
+          break;
+        case 'bullet':
+          newPrefix = '- ';
+          break;
+        case 'numbered':
+          newPrefix = `${itemIndex}. `;
+          itemIndex++;
+          break;
+        case 'todo':
+          newPrefix = '- [ ] ';
+          break;
+        case 'quote':
+          newPrefix = '> ';
+          break;
+      }
+
+      changes.push({
+        from: line.from,
+        to: line.to,
+        insert: `${newPrefix}${content}`,
+      });
+    }
+
+    view.dispatch({ changes });
+    const newDoc = view.state.doc.toString();
+    lastDispatchedDocRef.current = newDoc;
+    updateContent(newDoc);
+    view.focus();
+  };
+
+  const handleInsertTemplate = () => {
+    window.dispatchEvent(new CustomEvent('urano-open-templates'));
+  };
+
   // Right-click context menu handler matching Obsidian specification
   const handleContextMenu = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -1018,12 +1234,20 @@ export const Editor: React.FC<EditorProps> = ({
       }
     }
 
+    const currentView = viewRef.current || getActiveEditorView();
+    const activeSel = currentView ? currentView.state.selection.main : null;
+    const hasSelection = Boolean(activeSel && !activeSel.empty);
+    const selectedText =
+      hasSelection && currentView
+        ? currentView.state.sliceDoc(activeSel!.from, activeSel!.to)
+        : '';
+
     // Check if right-clicked on [[Wikilink]]
     let clickedWikilink: string | null = null;
     const wikilinkEl = target.closest('.cm-wikilink');
-    if (wikilinkEl && viewRef.current) {
-      const pos = viewRef.current.posAtDOM(wikilinkEl);
-      const line = viewRef.current.state.doc.lineAt(pos);
+    if (wikilinkEl && currentView) {
+      const pos = currentView.posAtDOM(wikilinkEl);
+      const line = currentView.state.doc.lineAt(pos);
       const regex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
       let match: RegExpExecArray | null;
       while ((match = regex.exec(line.text)) !== null) {
@@ -1038,7 +1262,7 @@ export const Editor: React.FC<EditorProps> = ({
 
     const items: MenuItemData[] = [];
 
-    // 1. Wikilink Options if clicked on [[Wikilink]]
+    // Optional Wikilink Options if clicked specifically on a [[Wikilink]]
     if (clickedWikilink) {
       items.push(
         {
@@ -1068,21 +1292,68 @@ export const Editor: React.FC<EditorProps> = ({
       );
     }
 
-    // 2. Submenús desplegables: Formato ▸ & Insertar ▸
+    // =========================================================================
+    // BLOQUE 1 (Arriba - Enlaces + Bloque dinámico de selección)
+    // =========================================================================
+    items.push(
+      {
+        title: 'Añadir enlace',
+        icon: <Link size={14} />,
+        action: handleAddInternalLink,
+      },
+      {
+        title: 'Añadir enlace externo',
+        icon: <ExternalLink size={14} />,
+        action: handleAddExternalLink,
+      }
+    );
+
+    if (hasSelection && selectedText.trim()) {
+      const querySnippet =
+        selectedText.trim().length > 25
+          ? `${selectedText.trim().slice(0, 22)}...`
+          : selectedText.trim();
+      const safeTitle = querySnippet.replace(/\n+/g, ' ');
+
+      items.push(
+        {
+          title: `Buscar "${safeTitle}"`,
+          icon: <Search size={14} />,
+          action: () => handleSearchSelection(selectedText.trim()),
+        },
+        {
+          title: 'Extraer selección actual...',
+          icon: <FolderInput size={14} />,
+          action: () =>
+            handleExtractSelection(
+              selectedText,
+              activeSel!.from,
+              activeSel!.to
+            ),
+        }
+      );
+    }
+
+    items.push({ type: 'separator' });
+
+    // =========================================================================
+    // BLOQUE 2 (Centro - Los 3 Submenús en este orden exacto)
+    // 1. Formato (Paintbrush con chevron >)
+    // 2. Párrafo (Pilcrow ¶ con chevron >)
+    // 3. Insertar (ListPlus con chevron >)
+    // =========================================================================
     items.push(
       {
         title: 'Formato',
-        icon: <Type size={14} />,
+        icon: <Paintbrush size={14} />,
         submenu: [
           {
             title: 'Negrita',
-            shortcut: 'Ctrl+B',
             icon: <Bold size={14} />,
             action: () => toggleInlineFormatting('**', '__'),
           },
           {
             title: 'Cursiva',
-            shortcut: 'Ctrl+I',
             icon: <Italic size={14} />,
             action: () => toggleInlineFormatting('*', '_'),
           },
@@ -1090,11 +1361,6 @@ export const Editor: React.FC<EditorProps> = ({
             title: 'Tachado',
             icon: <Strikethrough size={14} />,
             action: () => toggleInlineFormatting('~~'),
-          },
-          {
-            title: 'Código en línea',
-            icon: <Code size={14} />,
-            action: () => toggleInlineFormatting('`'),
           },
           {
             title: 'Resaltado',
@@ -1172,26 +1438,105 @@ export const Editor: React.FC<EditorProps> = ({
               },
             ],
           },
+          { type: 'separator' },
           {
-            title: 'Comentario (%%)',
+            title: 'Código',
+            icon: <Code size={14} />,
+            action: () => toggleInlineFormatting('`'),
+          },
+          {
+            title: 'Matemáticas',
+            icon: <Sigma size={14} />,
+            action: () => toggleInlineFormatting('$'),
+          },
+          {
+            title: 'Comentario',
             icon: <MessageSquare size={14} />,
             action: () => toggleInlineFormatting('%%'),
+          },
+          { type: 'separator' },
+          {
+            title: 'Borrar formato',
+            icon: <Eraser size={14} />,
+            action: handleClearFormatting,
+          },
+        ],
+      },
+      {
+        title: 'Párrafo',
+        icon: <Pilcrow size={14} />,
+        submenu: [
+          {
+            title: 'Texto normal',
+            icon: <Pilcrow size={14} />,
+            action: () => applyParagraphPrefix('body'),
+          },
+          {
+            title: 'Encabezado 1',
+            icon: <Heading1 size={14} />,
+            action: () => applyParagraphPrefix('h1'),
+          },
+          {
+            title: 'Encabezado 2',
+            icon: <Heading2 size={14} />,
+            action: () => applyParagraphPrefix('h2'),
+          },
+          {
+            title: 'Encabezado 3',
+            icon: <Heading3 size={14} />,
+            action: () => applyParagraphPrefix('h3'),
+          },
+          {
+            title: 'Encabezado 4',
+            icon: <Heading4 size={14} />,
+            action: () => applyParagraphPrefix('h4'),
+          },
+          {
+            title: 'Encabezado 5',
+            icon: <Heading5 size={14} />,
+            action: () => applyParagraphPrefix('h5'),
+          },
+          {
+            title: 'Encabezado 6',
+            icon: <Heading6 size={14} />,
+            action: () => applyParagraphPrefix('h6'),
+          },
+          { type: 'separator' },
+          {
+            title: 'Lista con viñetas',
+            icon: <List size={14} />,
+            action: () => applyParagraphPrefix('bullet'),
+          },
+          {
+            title: 'Lista numerada',
+            icon: <ListOrdered size={14} />,
+            action: () => applyParagraphPrefix('numbered'),
+          },
+          {
+            title: 'Lista de tareas',
+            icon: <ListTodo size={14} />,
+            action: () => applyParagraphPrefix('todo'),
+          },
+          {
+            title: 'Cita',
+            icon: <Quote size={14} />,
+            action: () => applyParagraphPrefix('quote'),
           },
         ],
       },
       {
         title: 'Insertar',
-        icon: <PlusSquare size={14} />,
+        icon: <ListPlus size={14} />,
         submenu: [
           {
-            title: 'Enlace interno [[]]',
-            icon: <Link size={14} />,
-            action: handleInsertWikilink,
+            title: 'Tabla',
+            icon: <Table size={14} />,
+            action: handleInsertTable,
           },
           {
-            title: 'Nota incrustada ! [[]]',
-            icon: <FilePlus size={14} />,
-            action: () => wrapSelection('![[', ']]', 'Nota'),
+            title: 'Callout',
+            icon: <AlertCircle size={14} />,
+            action: handleInsertCallout,
           },
           {
             title: 'Bloque de código',
@@ -1199,56 +1544,60 @@ export const Editor: React.FC<EditorProps> = ({
             action: handleInsertCode,
           },
           {
-            title: 'Tabla',
-            icon: <Table size={14} />,
-            action: handleInsertTable,
-          },
-          {
-            title: 'Callout (> [!NOTE])',
-            icon: <AlertCircle size={14} />,
-            action: handleInsertCallout,
-          },
-          {
-            title: 'Ecuación matemática ($$)',
+            title: 'Bloque matemático',
             icon: <Sigma size={14} />,
             action: handleInsertMath,
           },
           {
-            title: 'Línea horizontal (---)',
+            title: 'Línea horizontal',
             icon: <Minus size={14} />,
             action: handleInsertHr,
           },
+          {
+            title: 'Plantilla',
+            icon: <LayoutTemplate size={14} />,
+            action: handleInsertTemplate,
+          },
         ],
-      },
-      { type: 'separator' },
+      }
+    );
+
+    items.push({ type: 'separator' });
+
+    // =========================================================================
+    // BLOQUE 3 (Abajo - Portapapeles con iconos exactos y estado deshabilitado)
+    // 1. Cortar (Scissors, deshabilitado si no hay selección)
+    // 2. Copiar (Copy, deshabilitado si no hay selección)
+    // 3. Pegar (ClipboardCheck)
+    // 4. Pegar sin formato (ClipboardType)
+    // 5. Seleccionar todo (SquareDashed)
+    // =========================================================================
+    items.push(
       {
         title: 'Cortar',
-        shortcut: 'Ctrl+X',
         icon: <Scissors size={14} />,
+        disabled: !hasSelection,
         action: handleCut,
       },
       {
         title: 'Copiar',
-        shortcut: 'Ctrl+C',
         icon: <Copy size={14} />,
+        disabled: !hasSelection,
         action: handleCopy,
       },
       {
         title: 'Pegar',
-        shortcut: 'Ctrl+V',
-        icon: <Clipboard size={14} />,
+        icon: <ClipboardCheck size={14} />,
         action: handlePaste,
       },
       {
         title: 'Pegar sin formato',
-        shortcut: 'Ctrl+Shift+V',
-        icon: <FileText size={14} />,
+        icon: <ClipboardType size={14} />,
         action: handlePastePlainText,
       },
       {
         title: 'Seleccionar todo',
-        shortcut: 'Ctrl+A',
-        icon: <CheckSquare size={14} />,
+        icon: <SquareDashed size={14} />,
         action: handleSelectAll,
       }
     );

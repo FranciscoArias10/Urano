@@ -26,6 +26,7 @@ interface MenuItemRowProps {
 
 const MenuItemRow: React.FC<MenuItemRowProps> = ({ item, onTrigger }) => {
   const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
+  const [opensLeft, setOpensLeft] = useState(false);
   const rowRef = useRef<HTMLDivElement>(null);
   const hasSubmenu = Boolean(item.submenu && item.submenu.length > 0);
 
@@ -36,15 +37,31 @@ const MenuItemRow: React.FC<MenuItemRowProps> = ({ item, onTrigger }) => {
         item.disabled ? 'is-disabled' : ''
       } ${isSubmenuOpen ? 'selected' : ''}`}
       onMouseEnter={() => {
-        if (hasSubmenu) setIsSubmenuOpen(true);
+        if (item.disabled) return;
+        if (hasSubmenu) {
+          if (rowRef.current) {
+            const rect = rowRef.current.getBoundingClientRect();
+            setOpensLeft(rect.right + 200 > window.innerWidth);
+          }
+          setIsSubmenuOpen(true);
+        }
       }}
       onMouseLeave={() => {
         if (hasSubmenu) setIsSubmenuOpen(false);
       }}
       onMouseDown={(e) => {
+        if (item.disabled) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
         if (hasSubmenu) {
           e.preventDefault();
           e.stopPropagation();
+          if (rowRef.current) {
+            const rect = rowRef.current.getBoundingClientRect();
+            setOpensLeft(rect.right + 200 > window.innerWidth);
+          }
           setIsSubmenuOpen((prev) => !prev);
         } else {
           onTrigger(item, e);
@@ -53,6 +70,7 @@ const MenuItemRow: React.FC<MenuItemRowProps> = ({ item, onTrigger }) => {
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
+        if (item.disabled) return;
         if (!hasSubmenu) {
           onTrigger(item, e);
         }
@@ -72,7 +90,7 @@ const MenuItemRow: React.FC<MenuItemRowProps> = ({ item, onTrigger }) => {
       {/* Recursive Submenu */}
       {hasSubmenu && isSubmenuOpen && item.submenu && (
         <div
-          className="menu absolute top-0 left-full -ml-1 min-w-[190px] shadow-2xl animate-fadeIn z-50"
+          className={`menu absolute top-0 ${opensLeft ? 'right-full -mr-1' : 'left-full -ml-1'} min-w-[185px] shadow-2xl animate-fadeIn z-50`}
           onMouseDown={(e) => {
             e.preventDefault();
             e.stopPropagation();

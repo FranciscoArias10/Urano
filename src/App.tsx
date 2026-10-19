@@ -190,8 +190,23 @@ export const App: React.FC = () => {
       }
     };
 
+    const handleUranoSearch = () => {
+      setShowLeftSidebar(true);
+      setSidebarTab('search');
+    };
+
+    const handleUranoTemplates = () => {
+      setShowTemplateModal(true);
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('urano-search', handleUranoSearch);
+    window.addEventListener('urano-open-templates', handleUranoTemplates);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('urano-search', handleUranoSearch);
+      window.removeEventListener('urano-open-templates', handleUranoTemplates);
+    };
   }, [activeVault]);
 
   // Folder open picker dialog

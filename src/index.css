@@ -582,16 +582,16 @@ mark.hl-purple {
    ======================================================== */
 .menu {
   position: fixed;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
+  background-color: var(--background-secondary, #202020);
+  border: 1px solid #2e2e2e;
   border-radius: 8px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 2px 6px rgba(0, 0, 0, 0.4);
-  padding: 4px;
-  min-width: 200px;
-  max-width: 320px;
+  padding: 6px;
+  min-width: 185px;
+  max-width: 290px;
   z-index: 9999;
-  font-size: 0.82rem;
-  color: var(--text-normal);
+  font-size: 13px;
+  color: var(--text-normal, #dcddde);
   backdrop-filter: blur(12px);
 }
 
@@ -604,17 +604,19 @@ mark.hl-purple {
 .menu-item {
   display: flex;
   align-items: center;
-  padding: 6px 10px;
-  border-radius: var(--radius-s);
+  padding: 4px 10px;
+  border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.1s ease, color 0.1s ease;
   user-select: none;
-  font-size: 0.82rem;
-  color: var(--text-normal);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-normal, #dcddde);
+  gap: 10px;
 }
 
 .menu-item:hover, .menu-item.selected {
-  background-color: var(--background-modifier-hover);
+  background-color: rgba(255, 255, 255, 0.08);
   color: #ffffff;
 }
 
@@ -622,15 +624,14 @@ mark.hl-purple {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 8px;
-  color: var(--text-muted);
-  width: 16px;
-  height: 16px;
+  color: var(--text-muted, #888888);
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
 }
 
 .menu-item:hover .menu-item-icon, .menu-item.selected .menu-item-icon {
-  color: var(--text-accent);
+  color: #ffffff;
 }
 
 .menu-item-title {
@@ -660,14 +661,20 @@ mark.hl-purple {
 }
 
 .menu-item.is-disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  pointer-events: none;
+  opacity: 0.38 !important;
+  cursor: default !important;
+  pointer-events: none !important;
+  color: #737373 !important;
+}
+
+.menu-item.is-disabled .menu-item-icon {
+  color: #737373 !important;
 }
 
 .menu-separator {
   height: 1px;
-  background-color: var(--background-modifier-border);
+  background-color: #2e2e2e;
+  border: none;
   margin: 4px 0;
 }
 
