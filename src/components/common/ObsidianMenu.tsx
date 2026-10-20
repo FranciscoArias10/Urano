@@ -46,8 +46,14 @@ const MenuItemRow: React.FC<MenuItemRowProps> = ({ item, onTrigger }) => {
           setIsSubmenuOpen(true);
         }
       }}
-      onMouseLeave={() => {
-        if (hasSubmenu) setIsSubmenuOpen(false);
+      onMouseLeave={(e) => {
+        if (hasSubmenu) {
+          const nextTarget = e.relatedTarget as Node | null;
+          if (rowRef.current && nextTarget && rowRef.current.contains(nextTarget)) {
+            return;
+          }
+          setIsSubmenuOpen(false);
+        }
       }}
       onMouseDown={(e) => {
         if (item.disabled) {
@@ -90,7 +96,8 @@ const MenuItemRow: React.FC<MenuItemRowProps> = ({ item, onTrigger }) => {
       {/* Recursive Submenu */}
       {hasSubmenu && isSubmenuOpen && item.submenu && (
         <div
-          className={`menu absolute top-0 ${opensLeft ? 'right-full -mr-1' : 'left-full -ml-1'} min-w-[185px] shadow-2xl animate-fadeIn z-50`}
+          className={`menu top-0 ${opensLeft ? 'right-full -mr-1' : 'left-full -ml-1'} min-w-[185px] shadow-2xl animate-fadeIn z-50`}
+          style={{ position: 'absolute' }}
           onMouseDown={(e) => {
             e.preventDefault();
             e.stopPropagation();

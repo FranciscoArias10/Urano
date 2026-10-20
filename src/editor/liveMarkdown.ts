@@ -225,12 +225,16 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
             if (isOverlapping(start, end)) continue;
             occupied.push([start, end]);
 
-            if (!isCursorOnLine) {
+            const isCursorInside = !sel.empty
+              ? sel.from < end && sel.to > start
+              : sel.head > start && sel.head < end;
+
+            if (isCursorInside) {
+              widgets.push(strongMark.range(start + 2, end - 2));
+            } else {
               widgets.push(hideDelimiter.range(start, start + 2));
               widgets.push(strongMark.range(start + 2, end - 2));
               widgets.push(hideDelimiter.range(end - 2, end));
-            } else {
-              widgets.push(strongMark.range(start + 2, end - 2));
             }
           }
 
@@ -243,12 +247,16 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
             if (isOverlapping(start, end)) continue;
             occupied.push([start, end]);
 
-            if (!isCursorOnLine) {
+            const isCursorInside = !sel.empty
+              ? sel.from < end && sel.to > start
+              : sel.head > start && sel.head < end;
+
+            if (isCursorInside) {
+              widgets.push(strikeMark.range(start + 2, end - 2));
+            } else {
               widgets.push(hideDelimiter.range(start, start + 2));
               widgets.push(strikeMark.range(start + 2, end - 2));
               widgets.push(hideDelimiter.range(end - 2, end));
-            } else {
-              widgets.push(strikeMark.range(start + 2, end - 2));
             }
           }
 
@@ -261,12 +269,16 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
             if (isOverlapping(start, end)) continue;
             occupied.push([start, end]);
 
-            if (!isCursorOnLine) {
+            const isCursorInside = !sel.empty
+              ? sel.from < end && sel.to > start
+              : sel.head > start && sel.head < end;
+
+            if (isCursorInside) {
+              widgets.push(codeInlineMark.range(start + 1, end - 1));
+            } else {
               widgets.push(hideDelimiter.range(start, start + 1));
               widgets.push(codeInlineMark.range(start + 1, end - 1));
               widgets.push(hideDelimiter.range(end - 1, end));
-            } else {
-              widgets.push(codeInlineMark.range(start + 1, end - 1));
             }
           }
 
@@ -283,8 +295,10 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
             const color = emojiColorMap[circleEmoji] || 'default';
             const markDeco = highlightMarks[color] || highlightMarks.default;
 
-            // Check if cursor/selection is INSIDE this specific highlight
-            const isCursorInside = sel.from <= end && sel.to >= start;
+            // Check if cursor/selection is strictly INSIDE this specific highlight
+            const isCursorInside = !sel.empty
+              ? sel.from < end && sel.to > start
+              : sel.head > start && sel.head < end;
 
             if (isCursorInside) {
               // Cursor ESTÁ dentro del resaltado (al hacer clic sobre él):
@@ -319,7 +333,9 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
             const openTagLen = `<mark class="hl-${color}">`.length;
             const closeTagLen = '</mark>'.length;
             const markDeco = highlightMarks[color] || highlightMarks.default;
-            const isCursorInside = sel.from <= end && sel.to >= start;
+            const isCursorInside = !sel.empty
+              ? sel.from < end && sel.to > start
+              : sel.head > start && sel.head < end;
 
             if (isCursorInside) {
               widgets.push(markDeco.range(start, end));
@@ -339,12 +355,16 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
             if (isOverlapping(start, end)) continue;
             occupied.push([start, end]);
 
-            if (!isCursorOnLine) {
+            const isCursorInside = !sel.empty
+              ? sel.from < end && sel.to > start
+              : sel.head > start && sel.head < end;
+
+            if (isCursorInside) {
+              widgets.push(emMark.range(start + 1, end - 1));
+            } else {
               widgets.push(hideDelimiter.range(start, start + 1));
               widgets.push(emMark.range(start + 1, end - 1));
               widgets.push(hideDelimiter.range(end - 1, end));
-            } else {
-              widgets.push(emMark.range(start + 1, end - 1));
             }
           }
 

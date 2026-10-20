@@ -11,6 +11,7 @@ import { codeBlockExtension } from '../../editor/codeBlockExtension';
 import { calloutExtension } from '../../editor/calloutExtension';
 import { tableExtension, setPendingTableFocus, findAllTables } from '../../editor/tableExtension';
 import { createWikilinksExtension } from '../../editor/wikilinks';
+import { formattingClickExtension } from '../../editor/formattingClickExtension';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
@@ -258,6 +259,7 @@ export const Editor: React.FC<EditorProps> = ({
         calloutExtension, // Obsidian Callout boxes in Live Preview
         tableExtension, // Obsidian Markdown Tables in Live Preview
         EditorView.lineWrapping,
+        formattingClickExtension,
         createWikilinksExtension({
           onWikilinkClick,
         }),
