@@ -16,6 +16,7 @@ import {
   createImageExtension,
   createImageDropPasteHandler,
   copyImageBlobToClipboard,
+  procesarPegadoDeImagen,
 } from '../../editor/imageExtension';
 import { getStorageAdapter } from '../../services/storageAdapter';
 import { invoke } from '@tauri-apps/api/core';
@@ -270,6 +271,26 @@ export const Editor: React.FC<EditorProps> = ({
         tableExtension, // Obsidian Markdown Tables in Live Preview
         createImageExtension({
           onOpenInNewTab,
+        }),
+        EditorView.domEventHandlers({
+          paste: (event: ClipboardEvent, view: EditorView) => {
+            const items = event.clipboardData?.items;
+            if (!items) return false;
+
+            for (let i = 0; i < items.length; i++) {
+              const item = items[i];
+              if (item.type.startsWith('image/')) {
+                event.preventDefault(); // Detener el pegado por defecto
+                const file = item.getAsFile();
+                if (file) {
+                  console.log('[Urano] Imagen detectada en portapapeles, procesando...', file.name);
+                  procesarPegadoDeImagen(file, view);
+                }
+                return true; // Evento manejado
+              }
+            }
+            return false;
+          },
         }),
         createImageDropPasteHandler(),
         EditorView.lineWrapping,
@@ -1239,6 +1260,26 @@ export const Editor: React.FC<EditorProps> = ({
     const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     try {
+      if (navigator.clipboard && navigator.clipboard.read) {
+        try {
+          const clipboardItems = await navigator.clipboard.read();
+          for (const item of clipboardItems) {
+            for (const type of item.types) {
+              if (type.startsWith('image/')) {
+                const blob = await item.getType(type);
+                const ext = type === 'image/jpeg' ? 'jpg' : type.split('/')[1] || 'png';
+                const file = new File([blob], `clipboard_image.${ext}`, { type });
+                await procesarPegadoDeImagen(file, view);
+                view.focus();
+                return;
+              }
+            }
+          }
+        } catch {
+          // Ignorar y proceder a pegado de texto
+        }
+      }
+
       const text = await navigator.clipboard.readText();
       const sel = view.state.selection.main;
       view.dispatch({ changes: { from: sel.from, to: sel.to, insert: text } });

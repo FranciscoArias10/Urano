@@ -9,6 +9,8 @@
     "core:default",
     "dialog:default",
     "fs:default",
+    "fs:read-all",
+    "fs:write-all",
     "shell:default",
     "log:default"
   ]

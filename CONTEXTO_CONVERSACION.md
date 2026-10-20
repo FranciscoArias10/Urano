@@ -174,8 +174,14 @@ Se realizó ingeniería inversa completa de la implementación oficial de Obsidi
      - *Cursor dentro de la línea*: Mantiene el texto Markdown/Wikilink visible y coloreado para edición directa, y despliega debajo un bloque widget interactivo en vivo (`Decoration.widget({ block: true, side: 1 })`), actualizando su tamaño en tiempo real al tipear el número tras `|`.
    - **Tirador de Redimensionamiento Arrastrable**:
      - Al pasar el ratón por la esquina inferior derecha, se visualiza el tirador `.image-resize-corner` con acento naranja `#e06c1b`. Al arrastrar con el mouse, calcula el nuevo ancho proporcionalmente y actualiza automáticamente la sintaxis Markdown en el documento (`|300`).
-   - **Pegado con `Ctrl+V`**:
-     - Intercepta `paste` en CodeMirror: si `clipboardData` contiene un elemento `image/*`, genera el nombre `Pasted image YYYYMMDDHHmmss.png`, guarda el binario vía `writeBinary`, actualiza el árbol de archivos e inserta `![[Pasted image YYYYMMDDHHmmss.png]]` en la posición del cursor.
+   - **Pegado con `Ctrl+V` (Solución Robusta para Tauri)**:
+     - Intercepta el evento nativo `paste` en CodeMirror 6 (`EditorView.domEventHandlers`) verificando `clipboardData.items` (`type.startsWith("image/")`) y `clipboardData.files`.
+     - Función asíncrona `procesarPegadoDeImagen(file, view)`: genera el nombre exacto de Obsidian con mayúsculas `Pasted Image YYYYMMDDHHmmss.png` (ej. `Pasted Image 20261020094410.png`).
+     - Conversión binaria requerida por Tauri: `file.arrayBuffer()` -> `new Uint8Array(arrayBuffer)`.
+     - Escritura física en disco mediante `StorageAdapter.writeBinary` mapeado directamente a `@tauri-apps/plugin-fs` (`writeFile`) con fallback automático a comando Rust `write_file_binary` y permisos completos `"fs:read-all"` / `"fs:write-all"` en [default.json](file:///home/fkhalil/Desktop/Proyectos/Urano/src-tauri/capabilities/default.json).
+     - Actualización inmediata del árbol lateral vía `refreshTree()` para mostrar la nueva imagen con su distintivo `PNG`/`JPG`.
+     - Inserción instantánea de `![[Pasted Image YYYYMMDDHHmmss.png]]` en la posición exacta del cursor (`view.dispatch`), activando el Live Preview.
+     - Soporte simultáneo en el menú contextual "Pegar" (`handlePaste`) leyendo imágenes con `navigator.clipboard.read()`.
    - **Arrastrar y Soltar (Drag & Drop)**:
      - Desde el sistema operativo hacia el editor o árbol: guarda el archivo binario con su nombre original e inserta `![[nombre.ext]]`.
      - Desde el explorador lateral de Urano hacia el editor: inserta `![[nombre.ext]]` en la posición soltada.

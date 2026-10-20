@@ -1,7 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
+import { writeFile, readFile } from '@tauri-apps/plugin-fs';
 
 export interface StorageAdapter {
-  writeBinary(path: string, data: ArrayBuffer | Blob): Promise<void>;
+  writeBinary(path: string, data: ArrayBuffer | Blob | Uint8Array): Promise<void>;
   readBinary(path: string): Promise<Blob>;
   getResourcePath(path: string): Promise<string>;
   read(path: string): Promise<string>;
@@ -69,21 +70,27 @@ export function getImageFormatTag(filePath: string): string | null {
 export class LocalAdapter implements StorageAdapter {
   private resourceCache = new Map<string, string>();
 
-  async writeBinary(path: string, data: ArrayBuffer | Blob): Promise<void> {
-    let arrayBuffer: ArrayBuffer;
-    if (data instanceof Blob) {
-      arrayBuffer = await data.arrayBuffer();
+  async writeBinary(path: string, data: ArrayBuffer | Blob | Uint8Array): Promise<void> {
+    let uint8: Uint8Array;
+    if (data instanceof Uint8Array) {
+      uint8 = data;
+    } else if (data instanceof Blob) {
+      const arrayBuffer = await data.arrayBuffer();
+      uint8 = new Uint8Array(arrayBuffer);
     } else {
-      arrayBuffer = data;
+      uint8 = new Uint8Array(data);
     }
 
-    const uint8 = new Uint8Array(arrayBuffer);
-    const dataArray = Array.from(uint8);
-
-    await invoke('write_file_binary', {
-      filePath: path,
-      data: dataArray,
-    });
+    try {
+      // First attempt native plugin-fs writeFile
+      await writeFile(path, uint8);
+    } catch (pluginErr) {
+      console.warn('[LocalAdapter] writeFile from plugin-fs failed, falling back to invoke write_file_binary:', pluginErr);
+      await invoke('write_file_binary', {
+        filePath: path,
+        data: Array.from(uint8),
+      });
+    }
 
     // Invalidate cached URL if exists
     if (this.resourceCache.has(path)) {
@@ -94,10 +101,16 @@ export class LocalAdapter implements StorageAdapter {
   }
 
   async readBinary(path: string): Promise<Blob> {
-    const rawData = await invoke<number[]>('read_file_binary', { filePath: path });
-    const uint8 = new Uint8Array(rawData);
     const mime = getImageMimeType(path);
-    return new Blob([uint8], { type: mime });
+    try {
+      const uint8 = await readFile(path);
+      return new Blob([uint8], { type: mime });
+    } catch (pluginErr) {
+      console.warn('[LocalAdapter] readFile from plugin-fs failed, falling back to invoke read_file_binary:', pluginErr);
+      const rawData = await invoke<number[]>('read_file_binary', { filePath: path });
+      const uint8 = new Uint8Array(rawData);
+      return new Blob([uint8], { type: mime });
+    }
   }
 
   async getResourcePath(path: string): Promise<string> {
@@ -146,7 +159,7 @@ export class LocalAdapter implements StorageAdapter {
 export class GoogleDriveAdapter implements StorageAdapter {
   private localFallback = new LocalAdapter();
 
-  async writeBinary(path: string, data: ArrayBuffer | Blob): Promise<void> {
+  async writeBinary(path: string, data: ArrayBuffer | Blob | Uint8Array): Promise<void> {
     // Write locally first so sync engine can mirror to Drive
     await this.localFallback.writeBinary(path, data);
   }

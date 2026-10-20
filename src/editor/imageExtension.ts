@@ -477,56 +477,130 @@ export function createImageExtension(options?: ImageExtensionOptions) {
 }
 
 /**
+ * Processes an image file pasted from clipboard, converts it to Uint8Array for Tauri,
+ * saves it physically to the vault folder, updates the file tree, and inserts the Wikilink at cursor pos.
+ */
+export async function procesarPegadoDeImagen(file: File, view: EditorView): Promise<string | null> {
+  try {
+    console.log('[Urano] Imagen detectada en portapapeles, procesando...', file.name);
+
+    // Genera el nombre del archivo exactamente como lo hace Obsidian: Pasted Image YYYYMMDDHHmmss.png
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(
+      now.getDate()
+    )}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+
+    let ext = 'png';
+    if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+      ext = 'jpg';
+    } else if (file.type === 'image/webp') {
+      ext = 'webp';
+    } else if (file.type === 'image/gif') {
+      ext = 'gif';
+    } else if (file.type === 'image/svg+xml') {
+      ext = 'svg';
+    } else if (file.type === 'image/avif') {
+      ext = 'avif';
+    } else if (file.type === 'image/bmp') {
+      ext = 'bmp';
+    } else if (file.name && file.name.includes('.')) {
+      const parts = file.name.split('.');
+      ext = parts[parts.length - 1].toLowerCase();
+    }
+
+    const nombreImagen = `Pasted Image ${timestamp}.${ext}`;
+
+    const { activeVault, activeFile, refreshTree } = useVaultStore.getState();
+
+    // Determine target directory in active vault
+    let targetDir = activeVault;
+    if (activeFile) {
+      const lastSlash = Math.max(activeFile.lastIndexOf('/'), activeFile.lastIndexOf('\\'));
+      if (lastSlash > 0) {
+        targetDir = activeFile.substring(0, lastSlash);
+      }
+    }
+
+    if (!targetDir) {
+      console.error('[Urano] No hay un directorio de vault activo para guardar la imagen');
+      return null;
+    }
+
+    const separator = targetDir.includes('\\') ? '\\' : '/';
+    const cleanTargetDir = targetDir.endsWith(separator) ? targetDir.slice(0, -1) : targetDir;
+    const rutaDestino = `${cleanTargetDir}${separator}${nombreImagen}`;
+
+    // Conversión crucial para Tauri: File/Blob -> ArrayBuffer -> Uint8Array
+    const arrayBuffer = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+
+    // Guardar físicamente en el disco mediante el storageAdapter
+    const adapter = getStorageAdapter();
+    await adapter.writeBinary(rutaDestino, uint8Array);
+    console.log('[Urano] Imagen guardada físicamente en disco:', rutaDestino);
+
+    // Refrescar el árbol de archivos lateral de inmediato
+    await refreshTree();
+
+    // Insertar la referencia en la posición exacta del cursor en el Editor
+    const link = `![[${nombreImagen}]]`;
+    const fromPos = view.state.selection.main.from;
+    view.dispatch({
+      changes: { from: fromPos, insert: link },
+      selection: { anchor: fromPos + link.length },
+    });
+
+    useNoticeStore
+      .getState()
+      .showNotice(`Imagen guardada: ${nombreImagen}`, 2500, 'success');
+
+    return nombreImagen;
+  } catch (err) {
+    console.error('[Urano] Error procesando pegado de imagen:', err);
+    useNoticeStore
+      .getState()
+      .showNotice('Error al guardar imagen del portapapeles', 3000, 'error');
+    return null;
+  }
+}
+
+/**
  * Paste and Drag & Drop Event Handlers for CodeMirror 6
  */
 export function createImageDropPasteHandler() {
   return EditorView.domEventHandlers({
     paste(event, view) {
-      const items = Array.from(event.clipboardData?.items || []);
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          event.preventDefault();
-          const file = item.getAsFile();
-          if (!file) continue;
-
-          // Generate exact Obsidian timestamp name: Pasted image YYYYMMDDHHmmss.png
-          const now = new Date();
-          const pad = (n: number) => String(n).padStart(2, '0');
-          const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(
-            now.getDate()
-          )}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-          const ext = file.type === 'image/jpeg' ? 'jpg' : file.type.split('/')[1] || 'png';
-          const fileName = `Pasted image ${timestamp}.${ext}`;
-
-          const { activeVault, activeFile, refreshTree } = useVaultStore.getState();
-          const targetDir = activeFile
-            ? activeFile.substring(0, activeFile.lastIndexOf('/'))
-            : activeVault;
-
-          if (!targetDir) return true;
-
-          const fullPath = `${targetDir}/${fileName}`.replace(/\/+/g, '/');
-
-          // Save binary asynchronously and insert embed
-          getStorageAdapter()
-            .writeBinary(fullPath, file)
-            .then(async () => {
-              await refreshTree();
-              view.dispatch(view.state.replaceSelection(`![[${fileName}]]`));
-              useNoticeStore
-                .getState()
-                .showNotice(`Imagen guardada: ${fileName}`, 2500, 'success');
-            })
-            .catch((err) => {
-              console.error('Error saving pasted image:', err);
-              useNoticeStore
-                .getState()
-                .showNotice('Error al guardar imagen pegada', 3000, 'error');
-            });
-
-          return true;
+      const items = event.clipboardData?.items;
+      if (items && items.length > 0) {
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (item.type.startsWith('image/')) {
+            event.preventDefault(); // Detener el pegado por defecto
+            const file = item.getAsFile();
+            if (file) {
+              console.log('[Urano] Imagen detectada en portapapeles, procesando...', file.name);
+              procesarPegadoDeImagen(file, view);
+            }
+            return true; // Evento manejado
+          }
         }
       }
+
+      // Fallback si items está vacío pero hay files en clipboard
+      const files = event.clipboardData?.files;
+      if (files && files.length > 0) {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          if (file.type.startsWith('image/') || isImagePath(file.name)) {
+            event.preventDefault();
+            console.log('[Urano] Archivo de imagen detectado en portapapeles:', file.name);
+            procesarPegadoDeImagen(file, view);
+            return true;
+          }
+        }
+      }
+
       return false;
     },
 
@@ -543,16 +617,25 @@ export function createImageDropPasteHandler() {
         const dropPos = view.posAtCoords(coords) ?? view.state.selection.main.head;
 
         const { activeVault, activeFile, refreshTree } = useVaultStore.getState();
-        const targetDir = activeFile
-          ? activeFile.substring(0, activeFile.lastIndexOf('/'))
-          : activeVault;
+        let targetDir = activeVault;
+        if (activeFile) {
+          const lastSlash = Math.max(activeFile.lastIndexOf('/'), activeFile.lastIndexOf('\\'));
+          if (lastSlash > 0) {
+            targetDir = activeFile.substring(0, lastSlash);
+          }
+        }
 
         if (!targetDir) return true;
 
+        const separator = targetDir.includes('\\') ? '\\' : '/';
+        const cleanTargetDir = targetDir.endsWith(separator) ? targetDir.slice(0, -1) : targetDir;
+
         Promise.all(
           imageFiles.map(async (file) => {
-            const fullPath = `${targetDir}/${file.name}`.replace(/\/+/g, '/');
-            await getStorageAdapter().writeBinary(fullPath, file);
+            const fullPath = `${cleanTargetDir}${separator}${file.name}`;
+            const arrayBuffer = await file.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+            await getStorageAdapter().writeBinary(fullPath, uint8Array);
             return file.name;
           })
         ).then(async (savedNames) => {
@@ -569,6 +652,9 @@ export function createImageDropPasteHandler() {
               2500,
               'success'
             );
+        }).catch((err) => {
+          console.error('[Urano] Error guardando imagen soltada:', err);
+          useNoticeStore.getState().showNotice('Error al guardar imagen soltada', 3000, 'error');
         });
 
         return true;
