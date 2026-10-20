@@ -13,6 +13,7 @@ import {
   ChevronsUpDown,
   Bookmark,
   Check,
+  LayoutGrid,
 } from 'lucide-react';
 import { FileItem, SortOrder } from '../../types';
 import { useVaultStore, validateFileName } from '../../stores/vaultStore';
@@ -44,6 +45,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
     autoReveal,
     setAutoReveal,
     createUntitledNote,
+    createUntitledCanvas,
     createUntitledFolder,
   } = useVaultStore();
 
@@ -51,6 +53,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
 
   const [sortMenu, setSortMenu] = useState<{ x: number; y: number } | null>(null);
+  const [rootContextMenu, setRootContextMenu] = useState<{ x: number; y: number } | null>(null);
 
   const setFolderOpen = (path: string, isOpen: boolean) => {
     setCollapsedMap((prev) => ({
@@ -97,6 +100,13 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
     }
   };
 
+  const handleCreateNewCanvas = async () => {
+    const { path } = await createUntitledCanvas();
+    if (path) {
+      setRenamingPath(path);
+    }
+  };
+
   const handleCreateNewFolder = async () => {
     const path = await createUntitledFolder();
     if (path) {
@@ -119,6 +129,24 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
     icon: sortOrder === opt.order ? <Check size={13} className="text-orange-500" /> : <span className="w-3.5" />,
     action: () => setSortOrder(opt.order),
   }));
+
+  const rootMenuItems: MenuItemData[] = [
+    {
+      title: 'Nueva nota',
+      icon: <SquarePen size={14} />,
+      action: handleCreateNewNote,
+    },
+    {
+      title: 'Nuevo lienzo',
+      icon: <LayoutGrid size={14} />,
+      action: handleCreateNewCanvas,
+    },
+    {
+      title: 'Nueva carpeta',
+      icon: <FolderPlus size={14} />,
+      action: handleCreateNewFolder,
+    },
+  ];
 
   return (
     <FileTreeContext.Provider
@@ -199,11 +227,29 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
         )}
 
         {/* Tree Items List */}
-        <div className="flex flex-col flex-1 overflow-y-auto pt-1 pb-4">
+        <div
+          className="flex flex-col flex-1 overflow-y-auto pt-1 pb-4"
+          onContextMenu={(e) => {
+            if (e.target === e.currentTarget) {
+              e.preventDefault();
+              setRootContextMenu({ x: e.clientX, y: e.clientY });
+            }
+          }}
+        >
           {items.map((item) => (
             <FileTreeItem key={item.path} item={item} depth={depth} />
           ))}
         </div>
+
+        {/* Root Context Menu Modal */}
+        {rootContextMenu && (
+          <ObsidianMenu
+            x={rootContextMenu.x}
+            y={rootContextMenu.y}
+            items={rootMenuItems}
+            onClose={() => setRootContextMenu(null)}
+          />
+        )}
 
         {/* Sort Menu Modal */}
         {sortMenu && (
@@ -234,6 +280,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
     autoReveal,
     selectFile,
     createUntitledNote,
+    createUntitledCanvas,
     createUntitledFolder,
     duplicateNote,
     deleteItem,
@@ -334,6 +381,15 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           icon: <SquarePen size={14} />,
           action: async () => {
             const { path } = await createUntitledNote(item.path);
+            ctx?.setFolderOpen(item.path, true);
+            if (path) ctx?.setRenamingPath(path);
+          },
+        },
+        {
+          title: 'Nuevo lienzo',
+          icon: <LayoutGrid size={14} />,
+          action: async () => {
+            const { path } = await createUntitledCanvas(item.path);
             ctx?.setFolderOpen(item.path, true);
             if (path) ctx?.setRenamingPath(path);
           },

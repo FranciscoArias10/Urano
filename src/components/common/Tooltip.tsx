@@ -4,7 +4,7 @@ import ReactDOM from 'react-dom';
 interface TooltipProps {
   content: string;
   shortcut?: string;
-  position?: 'right' | 'bottom' | 'top';
+  position?: 'right' | 'bottom' | 'top' | 'left';
   delay?: number;
   children: React.ReactElement;
 }
@@ -32,6 +32,9 @@ export const Tooltip: React.FC<TooltipProps> = ({
       if (position === 'right') {
         top = rect.top + rect.height / 2;
         left = rect.right + 8;
+      } else if (position === 'left') {
+        top = rect.top + rect.height / 2;
+        left = rect.left - 8;
       } else if (position === 'bottom') {
         top = rect.bottom + 8;
         left = rect.left + rect.width / 2;
@@ -94,6 +97,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
               transform:
                 position === 'right'
                   ? 'translateY(-50%)'
+                  : position === 'left'
+                  ? 'translate(-100%, -50%)'
                   : position === 'bottom'
                   ? 'translateX(-50%)'
                   : 'translate(-50%, -100%)',

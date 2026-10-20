@@ -332,18 +332,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     const fullPath = `${targetDir}/${candidateName}`.replace(/\/+/g, '/');
     const initialCanvas = JSON.stringify(
       {
-        nodes: [
-          {
-            id: 'node-1',
-            type: 'text',
-            text: '# Mi Lienzo Canvas\n\nHaz doble clic para editar o usa los botones para añadir tarjetas.',
-            x: 100,
-            y: 100,
-            width: 320,
-            height: 180,
-            color: '1',
-          },
-        ],
+        nodes: [],
         edges: [],
       },
       null,

@@ -103,3 +103,42 @@ Se actualizó **únicamente** el submenú de `Insertar` en [Editor.tsx](file:///
   - [Editor.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/editor/Editor.tsx): `toggleInlineFormatting`, `applyHighlight`, `handleClearFormatting`.
   - [EditorFormattingMenu.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/editor/EditorFormattingMenu.tsx): `applyInlineWrap`.
 
+---
+
+## 5. Módulo Canvas 1:1 con Obsidian (Formato JSON Canvas 1.0)
+Se realizó ingeniería inversa completa de la implementación oficial de Obsidian (`obsidian.asar`) para replicar de manera idéntica su diseño, arquitectura y matemáticas, adaptando el color de acento al naranja oficial de Urano (`#e06c1b`) y guardando mediante el `StorageAdapter` (Local y Google Drive).
+
+### A. Especificaciones Técnicas y Matemáticas Extraídas de Obsidian
+1. **Esquema JSON Canvas 1.0**:
+   - `nodes`: `[{ id, type: "text" | "file" | "link" | "group", x, y, width, height, color?, text?, file?, url?, label? }]`.
+   - `edges`: `[{ id, fromNode, fromSide, toNode, toSide, color?, label?, fromEnd?, toEnd? }]`.
+   - Dimensiones predeterminadas: texto (`250x60` px), nota/archivo (`400x400` px), enlace (`400x400` px), grupo (`400x300` px), dimensión mínima (`50px`).
+2. **Matemáticas de Conexiones Bézier Cúbicas SVG**:
+   - `dist = hypot(to.x - from.x, to.y - from.y)`.
+   - `offset = clamp(dist / 2, 70, 150)`.
+   - Puntos de control proyectados con vector normal de salida según lado (`top`, `bottom`, `left`, `right`).
+   - Holgura de borde (`clearance`) de 7px desde el bounding box del nodo.
+   - Rotación y ubicación exacta de la flecha con `marker-end="url(#canvas-arrow)"`.
+   - Selección automática de lado (`autoSide`) calculando distancias mínimas cuando no se especifica.
+3. **Paleta de 6 Colores Oficiales de Obsidian + Default**:
+   - 1: Rojo (`#e93147`)
+   - 2: Naranja (`#ec7500`)
+   - 3: Amarillo (`#e0ac00`)
+   - 4: Verde (`#08b94e`)
+   - 5: Cian (`#00bfbc`)
+   - 6: Púrpura (`#7852ee`)
+   - Sin color: Borde neutro (`#383838`), fondo (`#1c1c1c` o transparente en grupos).
+
+### B. Componentes Implementados en Urano
+1. [canvasMath.ts](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/canvas/canvasMath.ts): Bounding boxes, curvas Bézier, autoSide, conversiones pantalla-mundo y colores.
+2. [canvasStyles.css](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/canvas/canvasStyles.css): Hoja de estilos extraída de Obsidian adaptada con variables CSS y acento naranja `#e06c1b`.
+3. [CanvasControls.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/canvas/CanvasControls.tsx): Controles superiores derechos (Zoom in `+`, Zoom out `-`, `100%`, `Zoom to fit`, Candado de solo lectura).
+4. [CanvasCardMenu.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/canvas/CanvasCardMenu.tsx): Píldora inferior flotante central con 3 botones arrastrables y clicables (Tarjeta de texto, Nota del Vault, Enlace externo/media).
+5. [VaultFileModal.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/canvas/VaultFileModal.tsx): Modal de selección y búsqueda instantánea de notas `.md` del Vault.
+6. [CanvasFloatingMenu.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/canvas/CanvasFloatingMenu.tsx): Barra de herramientas contextual sobre tarjetas o flechas seleccionadas (Eliminar, Paleta de 6 colores, Editar, Convertir a archivo `.md`, Invertir/Alternar flecha, Etiqueta).
+7. [CanvasNodeView.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/canvas/CanvasNodeView.tsx): Renderizado interactivo de nodos `text`, `file`, `link` y `group`, con Live Markdown, checkboxes de tareas interactivos, 8 tiradores de redimensionamiento y 4 puertos de conexión en hover.
+8. [CanvasEdgeView.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/canvas/CanvasEdgeView.tsx): Renderizado SVG de conexiones con curvas Bézier, etiquetas centrales y selección resaltada en naranja.
+9. [CanvasView.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/canvas/CanvasView.tsx): Lienzo infinito interactivo con cuadrícula de puntos dinámica, arrastre (pan con botón central, espacio o rueda), zoom de 0.15x a 3x enfocado hacia el cursor, cuadro de selección múltiple, arrastre de grupos que desplaza a sus nodos contenidos, y debounce de autoguardado a disco vía `StorageAdapter`.
+10. [FileTree.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/vault/FileTree.tsx): Etiqueta `.nav-file-tag` (`CANVAS`), menú contextual en carpetas y en espacio vacío ("Nuevo lienzo").
+
+
