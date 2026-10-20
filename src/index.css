@@ -1124,3 +1124,91 @@ mark.hl-purple {
   margin-left: 17px;
 }
 
+/* ========================================================
+   Obsidian 1:1 Image Embeds & Live Preview Resizing
+   ======================================================== */
+.image-embed {
+  display: inline-block;
+  vertical-align: bottom;
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin: 6px 0;
+  user-select: none;
+}
+
+.image-embed .image-wrapper {
+  display: inline-flex;
+  position: relative;
+  max-width: 100%;
+  border-radius: 4px;
+  overflow: visible;
+}
+
+.image-embed .image-wrapper img {
+  border-radius: 4px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.image-embed .image-resize-corner {
+  display: block;
+  position: absolute;
+  z-index: 10;
+  cursor: nwse-resize;
+  bottom: 0;
+  right: 0;
+  width: 26px;
+  height: 26px;
+}
+
+.image-embed .image-resize-corner::after {
+  position: absolute;
+  display: block;
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid #e06c1b;
+  border-bottom: 2px solid #e06c1b;
+  border-bottom-right-radius: 3px;
+  right: 4px;
+  bottom: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+@media (hover: hover) {
+  .image-embed:hover .image-resize-corner::after {
+    opacity: 1;
+  }
+  .image-embed:hover .image-wrapper::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1.5px solid rgba(224, 108, 27, 0.6);
+    border-radius: 4px;
+    pointer-events: none;
+  }
+}
+
+.image-embed.is-resizing .image-resize-corner::after {
+  opacity: 1;
+}
+
+.image-embed.is-resizing .image-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid #e06c1b;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.cm-image-block-preview {
+  display: block;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+

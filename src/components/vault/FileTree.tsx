@@ -17,6 +17,11 @@ import {
 } from 'lucide-react';
 import { FileItem, SortOrder } from '../../types';
 import { useVaultStore, validateFileName } from '../../stores/vaultStore';
+import {
+  getStorageAdapter,
+  getImageFormatTag,
+} from '../../services/storageAdapter';
+import { copyImageBlobToClipboard } from '../../editor/imageExtension';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 import { useNoticeStore } from '../common/Notice';
 import { Tooltip } from '../common/Tooltip';
@@ -428,6 +433,23 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
         }
       );
     } else {
+      const imageTag = getImageFormatTag(item.name);
+      if (imageTag) {
+        items.push({
+          title: 'Copiar imagen',
+          icon: <Copy size={14} />,
+          action: async () => {
+            try {
+              const blob = await getStorageAdapter().readBinary(item.path);
+              await copyImageBlobToClipboard(blob);
+              showNotice('Imagen copiada al portapapeles', 2000, 'success');
+            } catch (err) {
+              console.error('Error copying image:', err);
+              showNotice('Error al copiar imagen', 2500, 'error');
+            }
+          },
+        });
+      }
       items.push(
         {
           title: 'Abrir en una pestaña nueva',
@@ -482,10 +504,13 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
     setContextMenu({ x: e.clientX, y: e.clientY, items });
   };
 
-  // Determine Tag (.canvas -> CANVAS, .base -> BASE)
+  // Determine Tag (.canvas -> CANVAS, .base -> BASE, or image format tag)
   const isCanvas = item.name.toLowerCase().endsWith('.canvas');
   const isBase = item.name.toLowerCase().endsWith('.base');
+  const imageTag = getImageFormatTag(item.name);
   const displayName = item.isDir
+    ? item.name
+    : imageTag
     ? item.name
     : item.name.replace(/\.(md|canvas|base)$/i, '');
 
@@ -510,6 +535,20 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           if (!item.isDir) return;
           e.preventDefault();
           setIsDragTarget(false);
+
+          // Handle dropped files from OS
+          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const files = Array.from(e.dataTransfer.files);
+            for (const f of files) {
+              const fullPath = `${item.path}/${f.name}`.replace(/\/+/g, '/');
+              await getStorageAdapter().writeBinary(fullPath, f);
+            }
+            ctx?.setFolderOpen(item.path, true);
+            await useVaultStore.getState().refreshTree();
+            showNotice(`${files.length} archivo(s) guardado(s)`, 2000, 'success');
+            return;
+          }
+
           const sourcePath = e.dataTransfer.getData('text/plain');
           if (sourcePath && sourcePath !== item.path) {
             await moveItem(sourcePath, item.path);
@@ -565,11 +604,12 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           )}
         </div>
 
-        {/* Badges for CANVAS and BASE */}
+        {/* Badges for CANVAS, BASE, and IMAGES */}
         {!isRenaming && (
           <div className="flex items-center shrink-0">
             {isCanvas && <span className="nav-file-tag">CANVAS</span>}
             {isBase && <span className="nav-file-tag">BASE</span>}
+            {imageTag && <span className="nav-file-tag">{imageTag}</span>}
           </div>
         )}
       </div>

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   FileText,
+  FileImage,
   ExternalLink,
   CheckSquare,
   Square,
@@ -9,6 +10,7 @@ import {
 import { CanvasNode, CanvasNodeSide } from '../../types/canvas';
 import { CANVAS_COLORS, DEFAULT_COLOR } from './canvasMath';
 import { useVaultStore } from '../../stores/vaultStore';
+import { isImagePath, getStorageAdapter } from '../../services/storageAdapter';
 
 interface CanvasNodeViewProps {
   node: CanvasNode;
@@ -53,6 +55,17 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
   const { notesContentMap } = useVaultStore();
 
   const colorScheme = node.color && CANVAS_COLORS[node.color] ? CANVAS_COLORS[node.color] : DEFAULT_COLOR;
+
+  const isImageFile = node.type === 'file' && isImagePath(node.file);
+  const [fileImageUrl, setFileImageUrl] = useState<string>('');
+
+  useEffect(() => {
+    if (isImageFile) {
+      getStorageAdapter().getResourcePath(node.file).then((url) => {
+        setFileImageUrl(url);
+      });
+    }
+  }, [node, isImageFile]);
 
   useEffect(() => {
     if (node.type === 'text') {
@@ -246,14 +259,18 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
             )
           )}
 
-          {/* TYPE: FILE (Vault note) */}
+          {/* TYPE: FILE (Vault note or image) */}
           {node.type === 'file' && (
             <div className="w-full h-full flex flex-col -m-3.5">
               <div className="canvas-file-header flex items-center justify-between px-3 py-1.5 border-b border-[#2e2e2e] bg-[#222222]">
                 <div className="flex items-center gap-1.5 truncate">
-                  <FileText size={13} className="text-orange-400 shrink-0" />
+                  {isImageFile ? (
+                    <FileImage size={13} className="text-orange-400 shrink-0" />
+                  ) : (
+                    <FileText size={13} className="text-orange-400 shrink-0" />
+                  )}
                   <span className="truncate text-xs font-medium text-stone-200">
-                    {node.file.split('/').pop()?.replace(/\.md$/i, '') || node.file}
+                    {node.file.split('/').pop() || node.file}
                   </span>
                 </div>
                 {onOpenFile && (
@@ -263,14 +280,26 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
                       onOpenFile(node.file);
                     }}
                     className="p-1 text-stone-400 hover:text-white rounded hover:bg-stone-700/50"
-                    title="Abrir nota en pestaña"
+                    title="Abrir en pestaña"
                   >
                     <ExternalLink size={12} />
                   </button>
                 )}
               </div>
-              <div className="p-3 overflow-y-auto flex-1 text-xs text-stone-300 font-sans">
-                {renderMarkdown(notesContentMap[node.file] || 'Cargando nota...')}
+              <div className="p-3 overflow-y-auto flex-1 text-xs text-stone-300 font-sans flex items-center justify-center">
+                {isImageFile ? (
+                  fileImageUrl ? (
+                    <img
+                      src={fileImageUrl}
+                      alt={node.file}
+                      className="max-w-full max-h-full object-contain rounded select-none"
+                    />
+                  ) : (
+                    <span className="text-stone-500">Cargando imagen...</span>
+                  )
+                ) : (
+                  renderMarkdown(notesContentMap[node.file] || 'Cargando nota...')
+                )}
               </div>
             </div>
           )}

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { FileItem, SortOrder, BookmarkItem } from '../types';
+import { isImagePath } from '../services/storageAdapter';
 
 // Prohibited characters matching Obsidian specification: \ / : * ? " < > | # ^ [ ]
 export const ILLEGAL_FILENAME_CHARS = /[\\/:*?"<>|#^[\]]/;
@@ -216,7 +217,8 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
     try {
       set({ isLoading: true });
-      const content = await invoke<string>('read_file', { filePath });
+      const isImg = isImagePath(filePath);
+      const content = isImg ? '' : await invoke<string>('read_file', { filePath });
       const parts = filePath.replace(/\\/g, '/').split('/');
       const activeFileName = parts[parts.length - 1] || 'Nota';
 
@@ -246,7 +248,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
   saveCurrentFile: async () => {
     const { activeFile, fileContent } = get();
-    if (!activeFile) return;
+    if (!activeFile || isImagePath(activeFile)) return;
     try {
       await invoke('write_file', { filePath: activeFile, content: fileContent });
       set({ isDirty: false });

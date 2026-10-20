@@ -4,6 +4,10 @@ use std::fs;
 use std::path::Path;
 use std::time::UNIX_EPOCH;
 
+pub const IMAGE_EXTENSIONS: &[&str] = &[
+    "png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "bmp", "ico",
+];
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FileItem {
     pub path: String,
@@ -71,12 +75,13 @@ impl VaultService {
                     size,
                 });
             } else {
-                // Include markdown files (.md, .markdown), canvas files (.canvas), and base files (.base)
+                // Include markdown files (.md, .markdown), canvas files (.canvas), base files (.base), and images
                 let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
                 if ext.eq_ignore_ascii_case("md")
                     || ext.eq_ignore_ascii_case("markdown")
                     || ext.eq_ignore_ascii_case("canvas")
                     || ext.eq_ignore_ascii_case("base")
+                    || IMAGE_EXTENSIONS.iter().any(|&ie| ext.eq_ignore_ascii_case(ie))
                 {
                     items.push(FileItem {
                         path: path.to_string_lossy().to_string(),
@@ -117,6 +122,21 @@ impl VaultService {
             }
         }
         fs::write(path, content).map_err(|e| format!("Error al escribir archivo: {}", e))
+    }
+
+    /// Reads binary content of a file
+    pub fn read_file_binary(path: &Path) -> Result<Vec<u8>, String> {
+        fs::read(path).map_err(|e| format!("Error al leer binario: {}", e))
+    }
+
+    /// Writes binary content to a file
+    pub fn write_file_binary(path: &Path, data: &[u8]) -> Result<(), String> {
+        if let Some(parent) = path.parent() {
+            if !parent.exists() {
+                fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+        }
+        fs::write(path, data).map_err(|e| format!("Error al escribir binario: {}", e))
     }
 
     /// Creates a new empty file

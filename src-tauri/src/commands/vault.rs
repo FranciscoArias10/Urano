@@ -23,6 +23,16 @@ pub fn write_file(file_path: String, content: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn read_file_binary(file_path: String) -> Result<Vec<u8>, String> {
+    VaultService::read_file_binary(Path::new(&file_path))
+}
+
+#[tauri::command]
+pub fn write_file_binary(file_path: String, data: Vec<u8>) -> Result<(), String> {
+    VaultService::write_file_binary(Path::new(&file_path), &data)
+}
+
+#[tauri::command]
 pub fn create_file(file_path: String) -> Result<(), String> {
     VaultService::create_file(Path::new(&file_path))
 }

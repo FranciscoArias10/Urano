@@ -29,6 +29,8 @@ pub fn run() {
             commands::vault::list_vault_files,
             commands::vault::read_file,
             commands::vault::write_file,
+            commands::vault::read_file_binary,
+            commands::vault::write_file_binary,
             commands::vault::create_file,
             commands::vault::create_folder,
             commands::vault::delete_item,

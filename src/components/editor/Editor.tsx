@@ -12,6 +12,12 @@ import { calloutExtension } from '../../editor/calloutExtension';
 import { tableExtension, setPendingTableFocus, findAllTables } from '../../editor/tableExtension';
 import { createWikilinksExtension } from '../../editor/wikilinks';
 import { formattingClickExtension } from '../../editor/formattingClickExtension';
+import {
+  createImageExtension,
+  createImageDropPasteHandler,
+  copyImageBlobToClipboard,
+} from '../../editor/imageExtension';
+import { getStorageAdapter } from '../../services/storageAdapter';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
@@ -61,6 +67,9 @@ import {
   FilePen,
   SquareSigma,
   TableProperties,
+  FileImage,
+  ImageMinus,
+  Trash2,
 } from 'lucide-react';
 
 interface EditorProps {
@@ -113,6 +122,7 @@ export const Editor: React.FC<EditorProps> = ({
     updateContent,
     isDirty,
     saveCurrentFile,
+    deleteItem,
     renameNoteWithLinkRefactor,
     autoFocusTitle,
     setAutoFocusTitle,
@@ -258,6 +268,10 @@ export const Editor: React.FC<EditorProps> = ({
         codeBlockExtension, // Code blocks with syntax highlighting & copy button
         calloutExtension, // Obsidian Callout boxes in Live Preview
         tableExtension, // Obsidian Markdown Tables in Live Preview
+        createImageExtension({
+          onOpenInNewTab,
+        }),
+        createImageDropPasteHandler(),
         EditorView.lineWrapping,
         formattingClickExtension,
         createWikilinksExtension({
@@ -410,6 +424,90 @@ export const Editor: React.FC<EditorProps> = ({
       window.removeEventListener('urano-table-contextmenu', handleTableContextMenu);
     };
   }, []);
+
+  // Listen for image-specific context menu events (1:1 with Obsidian)
+  useEffect(() => {
+    const handleImageContextMenu = (e: Event) => {
+      const customEvent = e as CustomEvent<{
+        x: number;
+        y: number;
+        filePath: string;
+        src: string;
+        alt: string;
+        from: number;
+        to: number;
+        onOpenInNewTab?: (filePath: string) => void;
+      }>;
+      const { x, y, filePath, src, from, to, onOpenInNewTab: eventOnOpen } = customEvent.detail;
+
+      const items: MenuItemData[] = [
+        {
+          title: 'Copiar imagen',
+          icon: <Copy size={14} />,
+          action: async () => {
+            try {
+              let blob: Blob;
+              if (src.startsWith('blob:') || src.startsWith('data:')) {
+                const res = await fetch(src);
+                blob = await res.blob();
+              } else {
+                blob = await getStorageAdapter().readBinary(filePath);
+              }
+              await copyImageBlobToClipboard(blob);
+              showNotice('Imagen copiada al portapapeles', 2000, 'success');
+            } catch (err) {
+              console.error('Error copying image:', err);
+              showNotice('Error al copiar imagen', 2500, 'error');
+            }
+          },
+        },
+        {
+          title: 'Abrir en una pestaña nueva',
+          icon: <FileImage size={14} />,
+          action: () => {
+            if (eventOnOpen) {
+              eventOnOpen(filePath);
+            } else if (onOpenInNewTab) {
+              onOpenInNewTab(filePath);
+            }
+          },
+        },
+        { type: 'separator' },
+        {
+          title: 'Eliminar del documento',
+          icon: <ImageMinus size={14} />,
+          action: () => {
+            if (viewRef.current) {
+              viewRef.current.dispatch({
+                changes: { from, to, insert: '' },
+              });
+            }
+          },
+        },
+        {
+          title: 'Eliminar archivo',
+          icon: <Trash2 size={14} />,
+          isWarning: true,
+          action: async () => {
+            await deleteItem(filePath);
+            showNotice('Archivo eliminado', 2000, 'info');
+            if (viewRef.current) {
+              viewRef.current.dispatch({
+                changes: { from, to, insert: '' },
+              });
+            }
+          },
+        },
+      ];
+
+      setContextMenu({ x, y, items });
+    };
+
+    window.addEventListener('urano-image-contextmenu', handleImageContextMenu);
+    return () => {
+      window.removeEventListener('urano-image-contextmenu', handleImageContextMenu);
+    };
+  }, [onOpenInNewTab, deleteItem, showNotice]);
 
   // Handle .inline-title keyboard events (Enter / Escape)
   const handleTitleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {

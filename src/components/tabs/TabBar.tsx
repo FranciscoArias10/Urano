@@ -9,12 +9,13 @@ import {
   Copy,
   LayoutDashboard,
   LayoutList,
+  FileImage,
 } from 'lucide-react';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 
 export interface TabItem {
   id: string;
-  type: 'note' | 'graph' | 'canvas' | 'base';
+  type: 'note' | 'graph' | 'canvas' | 'base' | 'image';
   filePath?: string;
   title: string;
   isDirty?: boolean;
@@ -100,6 +101,8 @@ export const TabBar: React.FC<TabBarProps> = ({
               <LayoutDashboard size={13} className={isActive ? 'text-orange-500' : 'text-stone-400'} />
             ) : tab.type === 'base' ? (
               <LayoutList size={13} className={isActive ? 'text-orange-500' : 'text-stone-400'} />
+            ) : tab.type === 'image' ? (
+              <FileImage size={13} className={isActive ? 'text-orange-500' : 'text-stone-400'} />
             ) : (
               <FileText size={13} className={isActive ? 'text-orange-500' : 'text-stone-400'} />
             )}

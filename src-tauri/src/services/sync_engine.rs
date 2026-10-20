@@ -58,7 +58,12 @@ impl SyncEngine {
             let path = entry.path();
             if path.is_file() {
                 let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-                if ext.eq_ignore_ascii_case("md") || ext.eq_ignore_ascii_case("markdown") {
+                if ext.eq_ignore_ascii_case("md")
+                    || ext.eq_ignore_ascii_case("markdown")
+                    || ext.eq_ignore_ascii_case("canvas")
+                    || ext.eq_ignore_ascii_case("base")
+                    || crate::services::vault::IMAGE_EXTENSIONS.iter().any(|&ie| ext.eq_ignore_ascii_case(ie))
+                {
                     if let Ok(rel) = path.strip_prefix(vault_path) {
                         let rel_str = rel.to_string_lossy().replace('\\', "/");
                         if let Ok(bytes) = fs::read(path) {

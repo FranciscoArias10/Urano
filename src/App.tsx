@@ -9,6 +9,8 @@ import { EditorErrorBoundary } from './components/editor/EditorErrorBoundary';
 import { GraphView } from './components/graph/GraphView';
 import { CanvasView } from './components/canvas/CanvasView';
 import { BaseView } from './components/base/BaseView';
+import { ImageView } from './components/image/ImageView';
+import { isImagePath } from './services/storageAdapter';
 import { TemplateModal } from './components/templates/TemplateModal';
 import { GlobalSearchPanel } from './components/search/GlobalSearchPanel';
 import { BookmarksPanel } from './components/bookmarks/BookmarksPanel';
@@ -121,10 +123,13 @@ export const App: React.FC = () => {
     } else if (activeFile.endsWith('.base')) {
       type = 'base';
       ext = '.base';
+    } else if (isImagePath(activeFile)) {
+      type = 'image';
+      ext = '';
     }
 
     const fileName = activeFileName
-      ? activeFileName.replace(new RegExp(`\\${ext}$`, 'i'), '')
+      ? (ext ? activeFileName.replace(new RegExp(`\\${ext}$`, 'i'), '') : activeFileName)
       : 'Archivo';
 
     setTabs((prev) => {
@@ -391,12 +396,19 @@ export const App: React.FC = () => {
   // Open note in a new tab (or to the right)
   const handleOpenInNewTab = (filePathOrName: string) => {
     let targetPath = filePathOrName;
-    if (!targetPath.endsWith('.md') && !targetPath.endsWith('.canvas') && !targetPath.endsWith('.base')) {
+    if (
+      !targetPath.endsWith('.md') &&
+      !targetPath.endsWith('.canvas') &&
+      !targetPath.endsWith('.base') &&
+      !isImagePath(targetPath)
+    ) {
       const findInTree = (items: typeof fileTree): string | null => {
         for (const item of items) {
           if (
             !item.isDir &&
-            item.name.replace(/\.(md|canvas|base)$/i, '').toLowerCase() === filePathOrName.toLowerCase()
+            (item.name.toLowerCase() === filePathOrName.toLowerCase() ||
+              item.name.replace(/\.(md|canvas|base)$/i, '').toLowerCase() ===
+                filePathOrName.toLowerCase())
           ) {
             return item.path;
           }
@@ -420,6 +432,9 @@ export const App: React.FC = () => {
     } else if (targetPath.endsWith('.base')) {
       type = 'base';
       ext = '.base';
+    } else if (isImagePath(targetPath)) {
+      type = 'image';
+      ext = '';
     }
 
     const title =
@@ -856,6 +871,8 @@ export const App: React.FC = () => {
               <CanvasView filePath={activeFile} />
             ) : activeFile?.endsWith('.base') ? (
               <BaseView filePath={activeFile} />
+            ) : activeFile && isImagePath(activeFile) ? (
+              <ImageView filePath={activeFile} />
             ) : activeFile ? (
               <EditorErrorBoundary noteName={activeFileName || 'Nota'}>
                 <Editor

@@ -140,5 +140,60 @@ Se realizó ingeniería inversa completa de la implementación oficial de Obsidi
 8. [CanvasEdgeView.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/canvas/CanvasEdgeView.tsx): Renderizado SVG de conexiones con curvas Bézier, etiquetas centrales y selección resaltada en naranja.
 9. [CanvasView.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/canvas/CanvasView.tsx): Lienzo infinito interactivo con cuadrícula de puntos dinámica, arrastre (pan con botón central, espacio o rueda), zoom de 0.15x a 3x enfocado hacia el cursor, cuadro de selección múltiple, arrastre de grupos que desplaza a sus nodos contenidos, y debounce de autoguardado a disco vía `StorageAdapter`.
 10. [FileTree.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/vault/FileTree.tsx): Etiqueta `.nav-file-tag` (`CANVAS`), menú contextual en carpetas y en espacio vacío ("Nuevo lienzo").
+---
 
+## 6. Subsistema de Imágenes y Archivos Adjuntos 1:1 con Obsidian
+Se realizó ingeniería inversa completa de la implementación oficial de Obsidian (`obsidian.asar`) para replicar de manera idéntica su manejo de imágenes (`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`, `.avif`, `.bmp`), conservando el color de acento naranja de Urano (`#e06c1b`) y soporte binario en `StorageAdapter` (Local y Google Drive).
 
+### A. Especificaciones Técnicas Extraídas de Obsidian
+1. **Nomenclatura de Capturas y Pegado**:
+   - `"Pasted image " + moment().format("YYYYMMDDHHmmss") + "." + ext` (ej. `Pasted image 20261020084512.png`).
+2. **Parser de Dimensiones y Tubería (`|`)**:
+   - Expresión regular: `/^\s*([0-9]+)\s*(?:x\s*([0-9]+)\s*)?$/`.
+   - Soporte para `![[imagen.png|300]]` (ancho 300px, alto auto), `![[imagen.png|300x200]]` (ancho 300px, alto 200px con `object-fit: cover`), `![[imagen.png|Texto alternativo|300]]` y Markdown estándar `![texto|300](url)`.
+3. **Estructura DOM y CSS**:
+   - Contenedor `.image-embed` con `.image-wrapper`, imagen `<img src="...">` y tirador de redimensionamiento `.image-resize-corner`.
+   - Pseudoelemento `.image-resize-corner::after` con acento naranja `#e06c1b`, cursor `nwse-resize` y borde sutil.
+4. **Copia al Portapapeles (Clipboard API)**:
+   - Uso de Canvas Offscreen para exportar cualquier formato como `image/png` y llamar a `navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])`.
+
+### B. Arquitectura e Implementación en Urano
+1. **Soporte Binario en Backend Rust (`src-tauri`)**:
+   - [vault.rs](file:///home/fkhalil/Desktop/Proyectos/Urano/src-tauri/src/services/vault.rs): Constante `IMAGE_EXTENSIONS`, inclusión en `list_files_recursive`, y funciones `read_file_binary` (retorna `Vec<u8>`) y `write_file_binary` (escribe bytes crudos).
+   - [commands/vault.rs](file:///home/fkhalil/Desktop/Proyectos/Urano/src-tauri/src/commands/vault.rs) & [lib.rs](file:///home/fkhalil/Desktop/Proyectos/Urano/src-tauri/src/lib.rs): Comandos invocables desde Tauri.
+   - [sync_engine.rs](file:///home/fkhalil/Desktop/Proyectos/Urano/src-tauri/src/services/sync_engine.rs): Detección y sincronización diferencial de archivos binarios de imagen hacia Google Drive.
+2. **Capa de Abstracción de Almacenamiento ([storageAdapter.ts](file:///home/fkhalil/Desktop/Proyectos/Urano/src/services/storageAdapter.ts))**:
+   - Interfaz `StorageAdapter` con `readBinary(path)`, `writeBinary(path, data)` y `getResourcePath(path)`.
+   - `LocalAdapter` y `GoogleDriveAdapter`: `getResourcePath` lee los bytes del archivo, genera un `Blob` con su MIME type y retorna una `ObjectURL` cacheada (`URL.createObjectURL(blob)`), garantizando que las imágenes se rendericen en `<img src="...">` sin errores 404.
+   - Utilidades `isImagePath` y `getImageFormatTag`.
+3. **Protección del Store ([vaultStore.ts](file:///home/fkhalil/Desktop/Proyectos/Urano/src/stores/vaultStore.ts))**:
+   - Modificación de `selectFile` y `saveCurrentFile` para evitar leer o escribir imágenes como cadenas de texto UTF-8 corruptibles.
+4. **Extensión CodeMirror 6 Live Preview ([imageExtension.ts](file:///home/fkhalil/Desktop/Proyectos/Urano/src/editor/imageExtension.ts))**:
+   - **Dualidad de Cursor**:
+     - *Cursor fuera de la línea*: Oculta el texto crudo con `Decoration.replace` y muestra la imagen renderizada limpia con sus dimensiones aplicadas.
+     - *Cursor dentro de la línea*: Mantiene el texto Markdown/Wikilink visible y coloreado para edición directa, y despliega debajo un bloque widget interactivo en vivo (`Decoration.widget({ block: true, side: 1 })`), actualizando su tamaño en tiempo real al tipear el número tras `|`.
+   - **Tirador de Redimensionamiento Arrastrable**:
+     - Al pasar el ratón por la esquina inferior derecha, se visualiza el tirador `.image-resize-corner` con acento naranja `#e06c1b`. Al arrastrar con el mouse, calcula el nuevo ancho proporcionalmente y actualiza automáticamente la sintaxis Markdown en el documento (`|300`).
+   - **Pegado con `Ctrl+V`**:
+     - Intercepta `paste` en CodeMirror: si `clipboardData` contiene un elemento `image/*`, genera el nombre `Pasted image YYYYMMDDHHmmss.png`, guarda el binario vía `writeBinary`, actualiza el árbol de archivos e inserta `![[Pasted image YYYYMMDDHHmmss.png]]` en la posición del cursor.
+   - **Arrastrar y Soltar (Drag & Drop)**:
+     - Desde el sistema operativo hacia el editor o árbol: guarda el archivo binario con su nombre original e inserta `![[nombre.ext]]`.
+     - Desde el explorador lateral de Urano hacia el editor: inserta `![[nombre.ext]]` en la posición soltada.
+5. **Visor de Imágenes Dedicado ([ImageView.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/image/ImageView.tsx))**:
+   - Pestaña independiente (`type: "image"`) con icono `<FileImage />`.
+   - Imagen centrada sobre fondo oscuro con soporte de arrastre/paneo libre.
+   - Zoom con rueda del ratón enfocado hacia el cursor (rango 0.1x a 10x) y controles flotantes (`-`, `+`, `Reset 100%`, `Ajustar a pantalla`).
+   - Barra de estado inferior flotante que muestra dimensiones nativas (`ancho × alto px`), tamaño en disco formateado (KB/MB) y porcentaje actual de zoom.
+   - Menú contextual nativo al hacer clic derecho.
+6. **Explorador de Archivos ([FileTree.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/vault/FileTree.tsx))**:
+   - Etiqueta de formato en mayúsculas a la derecha de cada archivo (`PNG`, `JPG`, `WEBP`, `SVG`, `GIF`) con clase `.nav-file-tag`.
+   - Clic en archivo abre la pestaña `ImageView`.
+   - Clic derecho incluye opción "Copiar imagen".
+   - Soporte de soltar imágenes del SO sobre cualquier carpeta del árbol.
+7. **Menú Contextual de Imagen (Editor y Canvas)**:
+   - Evento desacoplado `urano-image-contextmenu` para imágenes en notas o nodos de Canvas:
+     - `Copiar imagen` (`Copy`): Exporta a PNG y copia al portapapeles con `navigator.clipboard.write`.
+     - `Abrir en una pestaña nueva` (`FileImage`).
+     - Separador (`.menu-separator`).
+     - `Cambiar nombre...` (`Pencil`).
+     - `Eliminar archivo` (`Trash2`, rojo).
