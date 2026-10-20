@@ -636,6 +636,94 @@ export const Editor: React.FC<EditorProps> = ({
         return;
       }
 
+      // If cursor is on or right after a word (e.g., user wrote "suu" and cursor is at "suu|", "s|uu", or after spaces "suu ")
+      let targetWord: { from: number; to: number; text: string } | null = null;
+      const wordAtPos = view.state.wordAt(pos);
+      if (wordAtPos && wordAtPos.from >= line.from && wordAtPos.to <= line.to) {
+        targetWord = {
+          from: wordAtPos.from,
+          to: wordAtPos.to,
+          text: view.state.sliceDoc(wordAtPos.from, wordAtPos.to),
+        };
+      } else {
+        // Look backwards on current line for the word right behind the cursor (ignoring trailing whitespace)
+        const textBefore = lineText.slice(0, relPos);
+        const match = textBefore.match(/([\p{L}\p{N}_]+)\s*$/u);
+        if (match) {
+          const word = match[1];
+          const matchIndex = match.index ?? 0;
+          const from = line.from + matchIndex;
+          const to = from + word.length;
+          targetWord = { from, to, text: word };
+        }
+      }
+
+      if (targetWord && targetWord.text.length > 0) {
+        // Check if targetWord is already wrapped with delimiter or altDelimiter
+        const beforeTarget = view.state.sliceDoc(Math.max(0, targetWord.from - len), targetWord.from);
+        const afterTarget = view.state.sliceDoc(
+          targetWord.to,
+          Math.min(view.state.doc.length, targetWord.to + len)
+        );
+        const isTargetWrapped = beforeTarget === delimiter && afterTarget === delimiter;
+
+        const altLen = altDelimiter ? altDelimiter.length : 0;
+        const beforeAlt = altDelimiter
+          ? view.state.sliceDoc(Math.max(0, targetWord.from - altLen), targetWord.from)
+          : '';
+        const afterAlt = altDelimiter
+          ? view.state.sliceDoc(
+              targetWord.to,
+              Math.min(view.state.doc.length, targetWord.to + altLen)
+            )
+          : '';
+        const isTargetWrappedAlt = altDelimiter
+          ? beforeAlt === altDelimiter && afterAlt === altDelimiter
+          : false;
+
+        if (isTargetWrapped) {
+          // Unwrap target word
+          view.dispatch({
+            changes: [
+              { from: targetWord.to, to: targetWord.to + len, insert: '' },
+              { from: targetWord.from - len, to: targetWord.from, insert: '' },
+            ],
+            selection: {
+              anchor: pos >= targetWord.to + len ? pos - len * 2 : Math.max(targetWord.from - len, pos - len),
+            },
+          });
+        } else if (isTargetWrappedAlt && altDelimiter) {
+          // Unwrap altDelimiter target word
+          view.dispatch({
+            changes: [
+              { from: targetWord.to, to: targetWord.to + altLen, insert: '' },
+              { from: targetWord.from - altLen, to: targetWord.from, insert: '' },
+            ],
+            selection: {
+              anchor: pos >= targetWord.to + altLen ? pos - altLen * 2 : Math.max(targetWord.from - altLen, pos - altLen),
+            },
+          });
+        } else {
+          // Wrap target word with delimiter
+          view.dispatch({
+            changes: {
+              from: targetWord.from,
+              to: targetWord.to,
+              insert: `${delimiter}${targetWord.text}${delimiter}`,
+            },
+            selection: {
+              anchor: pos >= targetWord.to ? pos + len * 2 : pos + len,
+            },
+          });
+        }
+
+        const newDoc = view.state.doc.toString();
+        lastDispatchedDocRef.current = newDoc;
+        updateContent(newDoc);
+        view.focus();
+        return;
+      }
+
       // Otherwise insert pair and place cursor in the middle
       view.dispatch({
         changes: { from: pos, insert: `${delimiter}${delimiter}` },
@@ -701,10 +789,21 @@ export const Editor: React.FC<EditorProps> = ({
 
       if (!found) {
         const word = view.state.wordAt(from);
-        if (word) {
+        if (word && word.from >= line.from && word.to <= line.to) {
           from = word.from;
           to = word.to;
           selectedText = view.state.sliceDoc(from, to);
+        } else {
+          // Look backwards on current line for word behind cursor
+          const textBefore = lineText.slice(0, offset);
+          const match = textBefore.match(/([\p{L}\p{N}_]+)\s*$/u);
+          if (match) {
+            const wordStr = match[1];
+            const matchIndex = match.index ?? 0;
+            from = line.from + matchIndex;
+            to = from + wordStr.length;
+            selectedText = wordStr;
+          }
         }
       }
     }
@@ -754,12 +853,16 @@ export const Editor: React.FC<EditorProps> = ({
       replaceTo = to + 2;
     }
 
-    const content = cleanText || 'texto';
-    const newWrapped = `==${colorEmoji}${content}==`;
+    const hasContent = Boolean(cleanText);
+    const newWrapped = `==${colorEmoji}${cleanText}==`;
 
     view.dispatch({
       changes: { from: replaceFrom, to: replaceTo, insert: newWrapped },
-      selection: { anchor: replaceFrom + newWrapped.length },
+      selection: {
+        anchor: hasContent
+          ? replaceFrom + newWrapped.length
+          : replaceFrom + 2 + colorEmoji.length,
+      },
     });
 
     const newDoc = view.state.doc.toString();
@@ -1201,9 +1304,64 @@ export const Editor: React.FC<EditorProps> = ({
     const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     const sel = view.state.selection.main;
-    if (sel.empty) return;
-    const text = view.state.sliceDoc(sel.from, sel.to);
+    let from = sel.from;
+    let to = sel.to;
 
+    if (sel.empty) {
+      const pos = sel.head;
+      const line = view.state.doc.lineAt(pos);
+      const lineText = line.text;
+      const relPos = pos - line.from;
+
+      const patterns = [
+        /\*\*(.*?)\*\*/g,
+        /__(.*?)__/g,
+        /~~(.*?)~~/g,
+        /==(?:[🔴🟠🟡🟢🔵🟣])?(.*?)==/g,
+        /`([^`]+)`/g,
+        /\$([^$]+)\$/g,
+        /%%([\s\S]*?)%%/g,
+        /\*([^*]+)\*/g,
+        /_([^_]+)_/g,
+        /<\/?mark[^>]*>.*?<\/mark>/gi,
+      ];
+
+      let found = false;
+      for (const pat of patterns) {
+        let m: RegExpExecArray | null;
+        while ((m = pat.exec(lineText)) !== null) {
+          const mStart = m.index;
+          const mEnd = mStart + m[0].length;
+          if (relPos >= mStart && relPos <= mEnd) {
+            from = line.from + mStart;
+            to = line.from + mEnd;
+            found = true;
+            break;
+          }
+        }
+        if (found) break;
+      }
+
+      if (!found) {
+        const word = view.state.wordAt(pos);
+        if (word && word.from >= line.from && word.to <= line.to) {
+          from = word.from;
+          to = word.to;
+        } else {
+          const textBefore = lineText.slice(0, relPos);
+          const match = textBefore.match(/([\p{L}\p{N}_]+)\s*$/u);
+          if (match) {
+            const matchIndex = match.index ?? 0;
+            from = line.from + matchIndex;
+            to = from + match[1].length;
+          } else {
+            return;
+          }
+        }
+      }
+    }
+
+    const text = view.state.sliceDoc(from, to);
     const cleaned = text
       .replace(/\*\*(.*?)\*\*/g, '$1')
       .replace(/__(.*?)__/g, '$1')
@@ -1217,8 +1375,8 @@ export const Editor: React.FC<EditorProps> = ({
       .replace(/<\/?mark[^>]*>/gi, '');
 
     view.dispatch({
-      changes: { from: sel.from, to: sel.to, insert: cleaned },
-      selection: { anchor: sel.from, head: sel.from + cleaned.length },
+      changes: { from, to, insert: cleaned },
+      selection: { anchor: from, head: from + cleaned.length },
     });
     const newDoc = view.state.doc.toString();
     lastDispatchedDocRef.current = newDoc;
