@@ -18,7 +18,7 @@ import {
   copyImageBlobToClipboard,
   procesarPegadoDeImagen,
 } from '../../editor/imageExtension';
-import { getStorageAdapter } from '../../services/storageAdapter';
+import { getStorageAdapter, isImagePath } from '../../services/storageAdapter';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
@@ -275,20 +275,35 @@ export const Editor: React.FC<EditorProps> = ({
         EditorView.domEventHandlers({
           paste: (event: ClipboardEvent, view: EditorView) => {
             const items = event.clipboardData?.items;
-            if (!items) return false;
+            let file: File | null = null;
 
-            for (let i = 0; i < items.length; i++) {
-              const item = items[i];
-              if (item.type.startsWith('image/')) {
-                event.preventDefault(); // Detener el pegado por defecto
-                const file = item.getAsFile();
-                if (file) {
-                  console.log('[Urano] Imagen detectada en portapapeles, procesando...', file.name);
-                  procesarPegadoDeImagen(file, view);
+            if (items && items.length > 0) {
+              for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item.type.startsWith('image/')) {
+                  file = item.getAsFile();
+                  if (file) break;
                 }
-                return true; // Evento manejado
               }
             }
+
+            if (!file && event.clipboardData?.files && event.clipboardData.files.length > 0) {
+              for (let i = 0; i < event.clipboardData.files.length; i++) {
+                const f = event.clipboardData.files[i];
+                if (f.type.startsWith('image/') || isImagePath(f.name)) {
+                  file = f;
+                  break;
+                }
+              }
+            }
+
+            if (file) {
+              event.preventDefault(); // Detener el pegado por defecto
+              console.log('[Urano] Imagen detectada en portapapeles, procesando...', file.name);
+              procesarPegadoDeImagen(file, view);
+              return true; // Evento manejado
+            }
+
             return false;
           },
         }),
