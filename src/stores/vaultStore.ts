@@ -730,7 +730,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       const map = await invoke<Record<string, string>>('get_vault_notes_content', {
         vaultPath: activeVault,
       });
-      set({ notesContentMap: map });
+      set({ notesContentMap: map || {} });
     } catch (err) {
       console.warn('No se pudo cargar contenido de notas:', err);
     }

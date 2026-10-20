@@ -188,6 +188,11 @@ export const App: React.FC = () => {
         e.preventDefault();
         setShowBacklinks((prev) => !prev);
       }
+      // F5 or Ctrl+R: Reload window in Tauri
+      else if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r')) {
+        e.preventDefault();
+        window.location.reload();
+      }
     };
 
     const handleUranoSearch = () => {
