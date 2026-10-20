@@ -53,14 +53,56 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
     const selectedText = view.state.sliceDoc(selection.from, selection.to);
 
     if (selection.empty) {
-      const insertText = `${prefix}${defaultPlaceholder}${suffix}`;
-      view.dispatch({
-        changes: { from: selection.from, insert: insertText },
-        selection: {
-          anchor: selection.from + prefix.length,
-          head: selection.from + prefix.length + defaultPlaceholder.length,
-        },
-      });
+      const pos = selection.head;
+      const line = view.state.doc.lineAt(pos);
+      const lineText = line.text;
+      const relPos = pos - line.from;
+
+      let targetWord: { from: number; to: number; text: string } | null = null;
+      const wordAtPos = view.state.wordAt(pos);
+      if (wordAtPos && wordAtPos.from >= line.from && wordAtPos.to <= line.to) {
+        targetWord = {
+          from: wordAtPos.from,
+          to: wordAtPos.to,
+          text: view.state.sliceDoc(wordAtPos.from, wordAtPos.to),
+        };
+      } else {
+        const textBefore = lineText.slice(0, relPos);
+        const match = textBefore.match(/([\p{L}\p{N}_]+)\s*$/u);
+        if (match) {
+          const word = match[1];
+          const matchIndex = match.index ?? 0;
+          const from = line.from + matchIndex;
+          const to = from + word.length;
+          targetWord = { from, to, text: word };
+        }
+      }
+
+      if (targetWord && targetWord.text.length > 0) {
+        view.dispatch({
+          changes: {
+            from: targetWord.from,
+            to: targetWord.to,
+            insert: `${prefix}${targetWord.text}${suffix}`,
+          },
+          selection: {
+            anchor: pos >= targetWord.to ? pos + prefix.length + suffix.length : pos + prefix.length,
+          },
+        });
+      } else {
+        const insertText = defaultPlaceholder
+          ? `${prefix}${defaultPlaceholder}${suffix}`
+          : `${prefix}${suffix}`;
+        view.dispatch({
+          changes: { from: pos, insert: insertText },
+          selection: defaultPlaceholder
+            ? {
+                anchor: pos + prefix.length,
+                head: pos + prefix.length + defaultPlaceholder.length,
+              }
+            : { anchor: pos + prefix.length },
+        });
+      }
     } else {
       // Check if already wrapped, if so unwrap
       const beforeLen = prefix.length;
