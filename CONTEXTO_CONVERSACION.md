@@ -203,3 +203,34 @@ Se realizó ingeniería inversa completa de la implementación oficial de Obsidi
      - Separador (`.menu-separator`).
      - `Cambiar nombre...` (`Pencil`).
      - `Eliminar archivo` (`Trash2`, rojo).
+
+---
+
+## 7. Corrección Definitiva: Pegado de Imágenes, Renderizado en Notas Markdown y Drag & Drop
+1. **No cambiar de pestaña al pegar (Ctrl+V) dentro de una nota Markdown**:
+   - Al pegar con Ctrl+V (o desde el menú contextual) una imagen desde el portapapeles en una nota .md:
+     * Se guarda el archivo binario en la raíz de la bóveda activa (activeVault) con el nombre estándar Pasted Image YYYYMMDDHHmmss.png.
+     * Se refresca el árbol de archivos (refreshTree()), pero NUNCA se llama a selectFile ni se modifica activeFile. La nota actual permanece activa y en primer plano.
+     * Se inserta inmediatamente mediante view.dispatch el texto 
+![[Pasted Image YYYYMMDDHHmmss.png]]
+ en la posición exacta del cursor.
+2. **Eliminación del crash fatal de CodeMirror 6 (RangeError: Block decorations may not be specified via plugins)**:
+   - Se prohibió y eliminó el uso de block: true dentro de ViewPlugin en imageExtension.ts.
+   - Tanto el reemplazo limpio cuando el cursor no toca el rango (Decoration.replace({ widget })) como el widget cuando el cursor está editando (Decoration.widget({ widget, side: 1 })) se manejan en línea en CodeMirror, mientras que el contenedor HTML del widget se estiliza con display: block; margin: 8px 0; width: fit-content; max-width: 100%; clear: both;.
+3. **Desacople y prevención de colisión con wikilinks.ts y liveMarkdown.ts**:
+   - En wikilinks.ts:
+     * WIKILINK_REGEX usa lookbehind negativo (?<!\!)\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g.
+     * Se descartan tanto enlaces precedidos de ! como nombres que correspondan a imágenes (isImagePath), evitando decoraciones duplicadas o clics conflictivos.
+   - En liveMarkdown.ts:
+     * Se precargan todos los rangos ocupados por ![[...]] y ![...](...) en occupied antes de procesar negritas, cursivas o códigos, impidiendo que tokens como guiones bajos en nombres de imagen interfieran con el formato de texto.
+4. **Carga binaria idéntica a ImageView con resolución limpia de dimensiones y caché ObjectURL**:
+   - El nombre del archivo se separa estrictamente de las dimensiones antes de consultar disco (const rawTarget = innerText.split('|')[0].trim();).
+   - Se resuelve la ruta absoluta buscando rawTarget en el fileTree de la bóveda (o concatenando activeVault).
+   - Se lee el binario mediante getStorageAdapter().readBinary(absolutePath) (exactamente como ImageView.tsx).
+   - Se genera y cachea el Blob y su URL.createObjectURL en imageBlobUrlCache: Map<string, string>, permitiendo renderizado instantáneo y sin parpadeos.
+5. **Arrastrar y soltar (Drag & Drop) desde el Explorador Lateral (FileTree.tsx)**:
+   - onDragStart suministra application/x-urano-path y text/plain.
+   - El manejador en el editor implementa dragover llamando a e.preventDefault() y configurando dropEffect = 'copy'.
+   - Al soltar en el editor, si es imagen se inserta 
+![[nombre.png]]
+, y si es una nota se inserta [[nombre]] en las coordenadas exactas donde cayó el cursor sin cambiar de pestaña.
