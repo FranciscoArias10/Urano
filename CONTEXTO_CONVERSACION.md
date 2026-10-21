@@ -234,3 +234,56 @@ Se realizó ingeniería inversa completa de la implementación oficial de Obsidi
    - Al soltar en el editor, si es imagen se inserta 
 ![[nombre.png]]
 , y si es una nota se inserta [[nombre]] en las coordenadas exactas donde cayó el cursor sin cambiar de pestaña.
+
+---
+
+## 8. Diagnóstico del Rendimiento de Carga de Imágenes (App de Escritorio vs. Navegador) y Solución
+
+### A. Diagnóstico del Problema: ¿Por qué en el navegador es instantáneo y en la app demora?
+1. **Diferencia de arquitectura de procesos**:
+   - **En Obsidian (Electron / Node.js)**:
+     Obsidian corre sobre Chromium con Node.js en el mismo espacio de memoria. Las imágenes se cargan de disco directamente mediante `fs.readFile` sin serialización ni puentes inter-proceso.
+   - **En el Navegador estándar (`localhost:1420`)**:
+     El motor de navegación maneja la memoria y decodificación de forma nativa sin pasar por el contenedor de escritorio de Tauri ni la capa de seguridad de WebKitGTK.
+   - **En la App de Escritorio Urano (Tauri v2 + WebKitGTK en Arch Linux)**:
+     - **Cuello de botella #1: Serialización IPC (`read_file_binary`)**:
+       Cuando las imágenes se piden mediante comandos `invoke`, Rust lee los bytes del disco y los serializa a un array JSON de números (`number[]` como `[255, 216, 255, ...]`). Una imagen de 2 MB se convierte en un bloque JSON de ~8 a 10 MB de texto que cruza el puente IPC hacia WebKitGTK, donde JavaScript debe parsearlo a un `Uint8Array` y luego crear un `Blob` y un `ObjectURL`.
+     - **Cuello de botella #2: Scope y restricciones de rutas en Linux**:
+       En Linux, WebKitGTK maneja rutas absolutas con barra inicial (`/home/...`). Los globs genéricos como `["**"]` en Tauri v2 suelen fallar la validación de scope en Linux si no contemplan `$HOME/**/*` o `/home/**/*`, lo que puede provocar rechazos (`403 Forbidden`) o retrasos en la resolución del protocolo `asset://`.
+     - **Cuello de botella #3: Directivas CSP en WebKitGTK**:
+       Al ejecutarse en modo desarrollo sobre `http://localhost:1420`, WebKitGTK bloquea o retrasa las solicitudes hacia `asset://` si la directiva Content Security Policy no incluye explícitamente `asset:` y `http://asset.localhost`. Cuando esto ocurre, el sistema se ve obligado a recurrir al fallback lento de lectura binaria por IPC.
+
+---
+
+### B. Solución Planteada y Arquitectura de Streaming Directo (0 ms IPC)
+
+1. **Protocolo Nativo de Assets (`asset://`) con Scope Completo en Linux**:
+   - **`src-tauri/Cargo.toml`**: Activación de la bandera `features = ["protocol-asset"]` en la dependencia de `tauri`.
+   - **`src-tauri/tauri.conf.json`**: Configuración de `assetProtocol` con scope explícito para rutas de Linux:
+     ```json
+     "assetProtocol": {
+       "enable": true,
+       "scope": [
+         "$HOME/**/*",
+         "/home/**/*",
+         "**"
+       ]
+     }
+     ```
+   - Esto habilita en Rust el servidor interno de streaming HTTP Range (`http-range`), permitiendo que el motor gráfico de WebKit lea directamente del disco en bloques continuos a velocidad nativa de I/O.
+
+2. **Ajuste de Content Security Policy (CSP)**:
+   - Habilitar en `tauri.conf.json` las fuentes necesarias:
+     `img-src 'self' asset: http://asset.localhost blob: data: https:;`
+   - Esto garantiza que WebKitGTK cargue las imágenes locales del protocolo `asset:` sin restricciones de contenido mixto ni bloqueos de seguridad.
+
+3. **Cero Sobrecarga de Serialización con `convertFileSrc`**:
+   - En [`src/services/storageAdapter.ts`](file:///home/fkhalil/Desktop/Proyectos/Urano/src/services/storageAdapter.ts) (`getResourcePath`) y en [`src/editor/imageExtension.ts`](file:///home/fkhalil/Desktop/Proyectos/Urano/src/editor/imageExtension.ts) (`resolveImageBlobUrl` y `ImageWidget.toDOM`):
+     - Se utiliza `convertFileSrc(absolutePath)` de `@tauri-apps/api/core`.
+     - `convertFileSrc` genera síncronamente la URL `asset://localhost/...` en **0 ms**.
+     - En el método `toDOM` de `ImageWidget`, `img.src` se establece de forma síncrona en el montaje del widget, eliminando esperas por promesas asíncronas o reconstrucción de blobs en memoria.
+
+4. **Límites de Redimensión y Fluidez Visual**:
+   - Redimensión controlada con límites seguros: Mínimo **50px**, Máximo **1200px** con indicador flotante de dimensiones (`image-resize-tooltip`).
+   - Skeleton shimmer animado mientras el motor WebKit decodifica la imagen y transición suave al estar disponible.
+
