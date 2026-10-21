@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { writeFile, readFile } from '@tauri-apps/plugin-fs';
 
 export interface StorageAdapter {
@@ -114,12 +114,24 @@ export class LocalAdapter implements StorageAdapter {
   }
 
   async getResourcePath(path: string): Promise<string> {
-    // If it's already an external HTTP/HTTPS URL or blob URL, return directly
-    if (/^(https?:|blob:|data:)/i.test(path)) {
+    if (!path) return '';
+
+    // If it's already an external HTTP/HTTPS URL, blob URL or asset protocol, return directly
+    if (/^(https?:|blob:|data:|asset:)/i.test(path)) {
       return path;
     }
 
-    // Check cached ObjectURL
+    // Fast-path: Convert directly to Tauri asset protocol URL (synchronous, 0ms latency, direct disk streaming)
+    try {
+      const assetUrl = convertFileSrc(path);
+      if (assetUrl) {
+        return assetUrl;
+      }
+    } catch {
+      // Fallback to cache/readBinary below
+    }
+
+    // Check cached ObjectURL fallback
     const cached = this.resourceCache.get(path);
     if (cached) {
       return cached;

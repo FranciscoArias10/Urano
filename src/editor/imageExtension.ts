@@ -15,7 +15,7 @@ import {
 import { useVaultStore } from '../stores/vaultStore';
 import { useNoticeStore } from '../components/common/Notice';
 import { FileItem } from '../types';
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 
 /** Resize constraints (pixels) */
 const MIN_IMAGE_WIDTH = 50;
@@ -145,7 +145,19 @@ export async function resolveImageBlobUrl(rawPathOrName: string): Promise<string
     return imageBlobUrlCache.get(rawTarget)!;
   }
 
-  // 3. Read binary via StorageAdapter (same as ImageView)
+  // 3. Fast Tauri Asset Protocol conversion: streams directly from disk via Rust with 0ms IPC overhead
+  try {
+    const assetUrl = convertFileSrc(absolutePath);
+    if (assetUrl) {
+      imageBlobUrlCache.set(absolutePath, assetUrl);
+      imageBlobUrlCache.set(rawTarget, assetUrl);
+      return assetUrl;
+    }
+  } catch (err) {
+    console.warn('[Urano] convertFileSrc fallback to readBinary:', err);
+  }
+
+  // 4. Fallback: Read binary via StorageAdapter
   try {
     const blob = await getStorageAdapter().readBinary(absolutePath);
     const blobUrl = URL.createObjectURL(blob);
@@ -283,10 +295,24 @@ export class ImageWidget extends WidgetType {
 
     // Synchronously check memory cache first to eliminate any flicker
     const targetKey = resolvedFilePath || targetPathOrUrl;
-    const cachedUrl =
+    let cachedUrl =
       imageBlobUrlCache.get(targetKey) ||
       imageBlobUrlCache.get(targetPathOrUrl) ||
       (resolvedFilePath ? imageBlobUrlCache.get(resolvedFilePath) : undefined);
+
+    // If not yet in cache, convert synchronously via Tauri asset protocol (0ms)
+    if (!cachedUrl && resolvedFilePath && !/^(https?:|blob:|data:|asset:)/i.test(resolvedFilePath)) {
+      try {
+        const assetUrl = convertFileSrc(resolvedFilePath);
+        if (assetUrl) {
+          cachedUrl = assetUrl;
+          imageBlobUrlCache.set(resolvedFilePath, assetUrl);
+          imageBlobUrlCache.set(targetPathOrUrl, assetUrl);
+        }
+      } catch {
+        // Fallback
+      }
+    }
 
     if (cachedUrl) {
       img.src = cachedUrl;
@@ -296,7 +322,7 @@ export class ImageWidget extends WidgetType {
         img.style.opacity = '1';
       }
     } else {
-      // Asynchronously resolve and load
+      // Asynchronously resolve and load fallback
       resolveImageBlobUrl(targetKey).then((url) => {
         if (url) {
           img.src = url;
@@ -697,6 +723,17 @@ export async function procesarPegadoDeImagen(
     const adapter = getStorageAdapter();
     await adapter.writeBinary(rutaDestino, uint8Array);
     console.log('[Urano] Imagen guardada físicamente en disco:', rutaDestino);
+
+    // Fast-path: Convert to native asset protocol URL
+    try {
+      const assetUrl = convertFileSrc(rutaDestino);
+      if (assetUrl) {
+        imageBlobUrlCache.set(rutaDestino, assetUrl);
+        imageBlobUrlCache.set(nombreImagen, assetUrl);
+      }
+    } catch {
+      // Keep memory blob URL in cache
+    }
 
     // Refresh vault file tree (WITHOUT switching active file or opening ImageView tab)
     await refreshTree();
