@@ -5119,6 +5119,7 @@ dependencies = [
  "arboard",
  "base64 0.22.1",
  "chrono",
+ "gtk",
  "image",
  "log",
  "md-5",
