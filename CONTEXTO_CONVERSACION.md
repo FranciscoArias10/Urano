@@ -287,3 +287,29 @@ Se realizó ingeniería inversa completa de la implementación oficial de Obsidi
    - Redimensión controlada con límites seguros: Mínimo **50px**, Máximo **1200px** con indicador flotante de dimensiones (`image-resize-tooltip`).
    - Skeleton shimmer animado mientras el motor WebKit decodifica la imagen y transición suave al estar disponible.
 
+---
+
+## 9. Diagnóstico Real del "Pegado Lento" (App vs. Navegador) y Corrección Aplicada
+
+La sección 8 atribuía la demora a la carga por IPC; esa parte ya estaba resuelta con `convertFileSrc`. Al revisar el código y la bóveda de prueba (`~/Desktop/prueba`, con decenas de `Pasted Image ... .png` de ~1.6 MB) se encontró que la lentitud estaba en el **flujo de pegado**, no en la lectura de disco. En el navegador el evento `paste` ya trae el blob de la imagen y se renderiza desde memoria; en la app (WebKitGTK) el flujo pasaba por Rust de forma redundante y bloqueante.
+
+### A. Causas confirmadas
+1. **`read_clipboard_image` se invocaba dos veces por cada Ctrl+V** (keymap `Mod-v` en `Editor.tsx` + fallback del evento `paste` en `imageExtension.ts`), y también en **cada pegado de texto**.
+2. **Comando sincrónico sobre el hilo principal**: `arboard` decodificaba el PNG del portapapeles a RGBA y el crate `image` lo re-codificaba con compresión por defecto. En un binario `debug` eso tarda segundos y congela la UI.
+3. **Serialización JSON de bytes**: el resultado `Vec<u8>` viajaba como array de números (~1.6 MB → varios MB de texto JSON a parsear).
+4. **`await refreshTree()` antes de insertar el enlace**: el listado completo de la bóveda bloqueaba la inserción de `![[...]]`.
+5. **Blob en memoria descartado**: tras guardar, se reemplazaba la URL `blob:` ya cargada por una URL `asset://`, forzando una relectura por el protocolo.
+6. **Recreación del `<img>` en CodeMirror**: `ImageWidget.eq` comparaba `from`/`to`, así que cualquier edición encima de la imagen recreaba el nodo DOM y volvía a pedir y decodificar la imagen (skeleton visible otra vez).
+
+### B. Cambios realizados
+- **Rust ([commands/vault.rs](file:///home/fkhalil/Desktop/Proyectos/Urano/src-tauri/src/commands/vault.rs))**:
+  - `read_clipboard_image` en Linux usa `gtk::Clipboard` para pedir el target `image/png` **crudo** (sin decodificar ni recodificar); si el propietario solo ofrece otro formato de imagen, GDK lo decodifica y libpng (C nativo) lo codifica. En otras plataformas se mantiene `arboard` con `CompressionType::Fast`.
+  - `read_clipboard_image` y `read_file_binary` devuelven `tauri::ipc::Response` (binario crudo, cero JSON). Sin imagen → cuerpo vacío.
+  - [Cargo.toml](file:///home/fkhalil/Desktop/Proyectos/Urano/src-tauri/Cargo.toml): dependencia `gtk = "0.18"` solo en Linux/BSD y `[profile.dev.package."*"] opt-level = 3` para que en `tauri dev` las dependencias (tauri, wry, tokio, image) corran optimizadas mientras el crate propio sigue en debug. La primera compilación tras este cambio recompila todas las dependencias una vez.
+- **Frontend**:
+  - [storageAdapter.ts](file:///home/fkhalil/Desktop/Proyectos/Urano/src/services/storageAdapter.ts): utilidad `toUint8Array` (acepta `ArrayBuffer`, `Uint8Array` o `number[]`) usada por todos los consumidores de binarios por IPC.
+  - [Editor.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/editor/Editor.tsx): eliminado el keymap `Mod-v`; `handlePaste` (menú contextual) normaliza la respuesta binaria.
+  - [imageExtension.ts](file:///home/fkhalil/Desktop/Proyectos/Urano/src/editor/imageExtension.ts):
+    - Evento `paste`: si `clipboardData` trae la imagen se usa directo; si trae texto plano (y no HTML con `<img>`) se deja pasar a CodeMirror **sin consultar el portapapeles nativo**; solo si no hay texto utilizable se pide el PNG crudo a Rust.
+    - `procesarPegadoDeImagen`: conserva la URL `blob:` en memoria como fuente de la imagen durante la sesión, inserta `![[...]]` inmediatamente después de escribir el archivo y ejecuta `refreshTree()` en segundo plano. Debounce reducido a 300 ms.
+    - `ImageWidget`: `eq` ya no compara `from`/`to`; nuevo `updateDOM` actualiza en sitio ancho/alto/alt cuando solo cambia la sintaxis (`|300`); las posiciones para redimensionar o abrir el menú contextual se recalculan en el momento con `locateEmbedRange` (basado en `view.posAtDOM`).
