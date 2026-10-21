@@ -31,6 +31,7 @@ pub fn run() {
             commands::vault::write_file,
             commands::vault::read_file_binary,
             commands::vault::write_file_binary,
+            commands::vault::read_clipboard_image,
             commands::vault::create_file,
             commands::vault::create_folder,
             commands::vault::delete_item,

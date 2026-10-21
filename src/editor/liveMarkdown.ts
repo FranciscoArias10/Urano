@@ -216,6 +216,19 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
           const isOverlapping = (s: number, e: number) =>
             occupied.some(([os, oe]) => (s >= os && s < oe) || (e > os && e <= oe));
 
+          // Pre-occupy image embed ranges (![[...]] and ![...](...))
+          const imgWikiRegex = /!\[\[([^\]]+)\]\]/g;
+          let iwMatch: RegExpExecArray | null;
+          while ((iwMatch = imgWikiRegex.exec(text)) !== null) {
+            occupied.push([line.from + iwMatch.index, line.from + iwMatch.index + iwMatch[0].length]);
+          }
+
+          const imgMdRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+          let imMatch: RegExpExecArray | null;
+          while ((imMatch = imgMdRegex.exec(text)) !== null) {
+            occupied.push([line.from + imMatch.index, line.from + imMatch.index + imMatch[0].length]);
+          }
+
           // 2. Bold: **text** or __text__
           const boldRegex = /(?:\*\*([^\*]+)\*\*|__([^_]+)__)/g;
           let bMatch: RegExpExecArray | null;

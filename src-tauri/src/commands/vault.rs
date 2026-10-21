@@ -33,6 +33,34 @@ pub fn write_file_binary(file_path: String, data: Vec<u8>) -> Result<(), String>
 }
 
 #[tauri::command]
+pub fn read_clipboard_image() -> Result<Option<Vec<u8>>, String> {
+    let mut clipboard = match arboard::Clipboard::new() {
+        Ok(c) => c,
+        Err(_) => return Ok(None),
+    };
+
+    match clipboard.get_image() {
+        Ok(img) => {
+            let width = img.width as u32;
+            let height = img.height as u32;
+            let rgba = img.bytes.into_owned();
+
+            let mut png_bytes = Vec::new();
+            let cursor = std::io::Cursor::new(&mut png_bytes);
+            let encoder = image::codecs::png::PngEncoder::new(cursor);
+
+            use image::ImageEncoder;
+            encoder
+                .write_image(&rgba, width, height, image::ExtendedColorType::Rgba8)
+                .map_err(|e| format!("Failed to encode image to PNG: {}", e))?;
+
+            Ok(Some(png_bytes))
+        }
+        Err(_) => Ok(None),
+    }
+}
+
+#[tauri::command]
 pub fn create_file(file_path: String) -> Result<(), String> {
     VaultService::create_file(Path::new(&file_path))
 }
@@ -46,6 +74,7 @@ pub fn create_folder(folder_path: String) -> Result<(), String> {
 pub fn delete_item(path: String) -> Result<(), String> {
     VaultService::delete_item(Path::new(&path))
 }
+
 
 #[tauri::command]
 pub fn rename_item(old_path: String, new_path: String) -> Result<(), String> {

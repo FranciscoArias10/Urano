@@ -7,9 +7,10 @@ import {
   WidgetType,
 } from '@codemirror/view';
 import { Range } from '@codemirror/state';
+import { isImagePath } from '../services/storageAdapter';
 
-// Regex for [[Target Note]], [[Target Note|Display Text]], or ![[Target Note]]
-const WIKILINK_REGEX = /(!)?\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+// Regex for [[Target Note]] or [[Target Note|Display Text]], strictly ignoring ![[Embeds]]
+const WIKILINK_REGEX = /(?<!\!)\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 
 export interface WikilinkHandler {
   onWikilinkClick: (targetNote: string) => void;
@@ -136,6 +137,14 @@ export function createWikilinksExtension(handler?: WikilinkHandler) {
             WIKILINK_REGEX.lastIndex = 0;
 
             while ((match = WIKILINK_REGEX.exec(text)) !== null) {
+              if (match.index > 0 && text.charAt(match.index - 1) === '!') {
+                continue;
+              }
+              const targetNote = match[1].trim();
+              if (isImagePath(targetNote)) {
+                continue;
+              }
+
               const start = line.from + match.index;
               const end = start + match[0].length;
               widgets.push(wikilinkDecoration.range(start, end));
@@ -160,12 +169,15 @@ export function createWikilinksExtension(handler?: WikilinkHandler) {
             let match: RegExpExecArray | null;
             WIKILINK_REGEX.lastIndex = 0;
             while ((match = WIKILINK_REGEX.exec(text)) !== null) {
+              if (match.index > 0 && text.charAt(match.index - 1) === '!') continue;
+              const targetNote = match[1].trim();
+              if (isImagePath(targetNote)) continue;
+
               const start = line.from + match.index;
               const end = start + match[0].length;
               if (pos >= start && pos <= end) {
-                const noteName = match[2].trim();
                 if (handler?.onWikilinkClick) {
-                  handler.onWikilinkClick(noteName);
+                  handler.onWikilinkClick(targetNote);
                 }
                 break;
               }
@@ -182,10 +194,15 @@ export function createWikilinksExtension(handler?: WikilinkHandler) {
  */
 export function extractWikilinks(content: string): string[] {
   const links: string[] = [];
-  const regex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+  const regex = /(?<!\!)\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
   let match: RegExpExecArray | null;
   while ((match = regex.exec(content)) !== null) {
-    links.push(match[1].trim());
+    if (match.index > 0 && content.charAt(match.index - 1) === '!') continue;
+    const target = match[1].trim();
+    if (!isImagePath(target)) {
+      links.push(target);
+    }
   }
   return links;
 }
+

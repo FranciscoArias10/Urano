@@ -521,7 +521,8 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
         draggable={true}
         onDragStart={(e) => {
           e.dataTransfer.setData('text/plain', item.path);
-          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('application/x-urano-path', item.path);
+          e.dataTransfer.effectAllowed = 'copyMove';
         }}
         onDragOver={(e) => {
           if (item.isDir) {

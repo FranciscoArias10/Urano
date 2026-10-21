@@ -10,10 +10,12 @@ import { Range } from '@codemirror/state';
 import {
   getStorageAdapter,
   isImagePath,
+  getImageMimeType,
 } from '../services/storageAdapter';
 import { useVaultStore } from '../stores/vaultStore';
 import { useNoticeStore } from '../components/common/Notice';
 import { FileItem } from '../types';
+import { invoke } from '@tauri-apps/api/core';
 
 /**
  * Parses image dimension syntax like "300" or "300x200"
@@ -67,10 +69,90 @@ export function parseImageEmbed(altOrDimensions: string): {
 }
 
 // Regex matching Obsidian Wikilink embed: ![[filename.png]] or ![[filename.png|300]]
-const WIKILINK_IMAGE_REGEX = /!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+const WIKILINK_IMAGE_REGEX = /!\[\[([^\]]+)\]\]/g;
 
 // Regex matching standard Markdown image: ![alt|300](https://... or path)
 const MD_IMAGE_REGEX = /!\[([^\]]*)\]\(([^)]+)\)/g;
+
+/**
+ * Global cache of resolved image Object URLs to prevent flicker on CM6 rebuilds
+ */
+export const imageBlobUrlCache = new Map<string, string>();
+
+/**
+ * Resolves absolute path of an image within active vault and fileTree
+ */
+export function resolveVaultImagePath(rawTarget: string): string {
+  if (/^(https?:|blob:|data:)/i.test(rawTarget)) {
+    return rawTarget;
+  }
+
+  const { fileTree, activeVault } = useVaultStore.getState();
+
+  const traverse = (items: FileItem[]): string | null => {
+    for (const item of items) {
+      if (
+        item.name.toLowerCase() === rawTarget.toLowerCase() ||
+        item.path.endsWith(rawTarget)
+      ) {
+        return item.path;
+      }
+      if (item.children) {
+        const found = traverse(item.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const matched = traverse(fileTree);
+  if (matched) return matched;
+
+  if (activeVault) {
+    const separator = activeVault.includes('\\') ? '\\' : '/';
+    const cleanVault = activeVault.endsWith(separator) ? activeVault.slice(0, -1) : activeVault;
+    return `${cleanVault}${separator}${rawTarget}`;
+  }
+
+  return rawTarget;
+}
+
+/**
+ * Loads image binary bytes using StorageAdapter (same mechanism as ImageView)
+ * and creates a cached Blob URL.
+ */
+export async function resolveImageBlobUrl(rawPathOrName: string): Promise<string> {
+  if (!rawPathOrName) return '';
+  if (/^(https?:|blob:|data:)/i.test(rawPathOrName)) {
+    return rawPathOrName;
+  }
+
+  // 1. Separate filename from dimensions if any pipe remains
+  const rawTarget = rawPathOrName.split('|')[0].trim();
+
+  // 2. Resolve real absolute path in vault
+  const absolutePath = resolveVaultImagePath(rawTarget);
+
+  // Check memory cache first
+  if (imageBlobUrlCache.has(absolutePath)) {
+    return imageBlobUrlCache.get(absolutePath)!;
+  }
+  if (imageBlobUrlCache.has(rawTarget)) {
+    return imageBlobUrlCache.get(rawTarget)!;
+  }
+
+  // 3. Read binary via StorageAdapter (same as ImageView)
+  try {
+    const blob = await getStorageAdapter().readBinary(absolutePath);
+    const blobUrl = URL.createObjectURL(blob);
+    imageBlobUrlCache.set(absolutePath, blobUrl);
+    imageBlobUrlCache.set(rawTarget, blobUrl);
+    return blobUrl;
+  } catch (err) {
+    console.error(`[Urano] Error cargando binario de imagen para "${absolutePath}":`, err);
+    return '';
+  }
+}
 
 /**
  * Helper to copy image blob to system clipboard as image/png
@@ -106,6 +188,7 @@ export async function copyImageBlobToClipboard(blob: Blob): Promise<void> {
 
 /**
  * Image Embed Widget for CodeMirror 6 Live Preview
+ * Stiled as a block element (display: block; margin: 8px 0;) without using block: true.
  */
 export class ImageWidget extends WidgetType {
   constructor(
@@ -146,6 +229,10 @@ export class ImageWidget extends WidgetType {
       this.isBlockPreview ? 'cm-image-block-preview' : ''
     }`;
     container.tabIndex = -1;
+    container.style.display = 'block';
+    container.style.margin = '8px 0';
+    container.style.maxWidth = '100%';
+    container.style.clear = 'both';
 
     const wrapper = document.createElement('div');
     wrapper.className = 'image-wrapper';
@@ -168,49 +255,23 @@ export class ImageWidget extends WidgetType {
       img.style.height = 'auto';
     }
 
-    // Resolve URL asynchronously via StorageAdapter
-    const loadSrc = async () => {
-      try {
-        let finalPath = targetPathOrUrl;
-        if (/^(https?:|blob:|data:)/i.test(finalPath)) {
-          img.src = finalPath;
-          return;
-        }
+    // Synchronously check memory cache first to eliminate any flicker
+    const targetKey = resolvedFilePath || targetPathOrUrl;
+    const cachedUrl =
+      imageBlobUrlCache.get(targetKey) ||
+      imageBlobUrlCache.get(targetPathOrUrl) ||
+      (resolvedFilePath ? imageBlobUrlCache.get(resolvedFilePath) : undefined);
 
-        // Check if resolvedFilePath is available or resolve from vault
-        if (!resolvedFilePath) {
-          const { fileTree, activeVault } = useVaultStore.getState();
-          const findInTree = (items: FileItem[]): string | null => {
-            for (const item of items) {
-              if (
-                item.name.toLowerCase() === targetPathOrUrl.toLowerCase() ||
-                item.path.endsWith(targetPathOrUrl)
-              ) {
-                return item.path;
-              }
-              if (item.children) {
-                const sub = findInTree(item.children);
-                if (sub) return sub;
-              }
-            }
-            return null;
-          };
-
-          const matched = findInTree(fileTree);
-          finalPath = matched || (activeVault ? `${activeVault}/${targetPathOrUrl}` : targetPathOrUrl);
-        } else {
-          finalPath = resolvedFilePath;
-        }
-
-        const url = await getStorageAdapter().getResourcePath(finalPath);
+    if (cachedUrl) {
+      img.src = cachedUrl;
+    } else {
+      // Asynchronously resolve and load
+      resolveImageBlobUrl(targetKey).then((url) => {
         if (url) {
           img.src = url;
         }
-      } catch (err) {
-        console.error('Error resolving image src:', err);
-      }
-    };
-    loadSrc();
+      });
+    }
 
     wrapper.appendChild(img);
 
@@ -273,7 +334,6 @@ export class ImageWidget extends WidgetType {
       e.preventDefault();
       e.stopPropagation();
 
-      // Trigger custom context menu event on editor container
       const customEvent = new CustomEvent('urano-image-contextmenu', {
         bubbles: true,
         detail: {
@@ -294,7 +354,6 @@ export class ImageWidget extends WidgetType {
   }
 
   ignoreEvent(event: Event): boolean {
-    // Allow mousedown on resize corner or right click on wrapper
     const target = event.target as HTMLElement;
     if (
       target.classList.contains('image-resize-corner') ||
@@ -311,7 +370,8 @@ export interface ImageExtensionOptions {
 }
 
 /**
- * CodeMirror 6 ViewPlugin for Image Live Preview & Paste/Drop handlers
+ * CodeMirror 6 ViewPlugin for Image Live Preview
+ * STRICT RULE: Absolutely NO block: true is used (avoids RangeError: Block decorations may not be specified via plugins).
  */
 export function createImageExtension(options?: ImageExtensionOptions) {
   return ViewPlugin.fromClass(
@@ -336,29 +396,6 @@ export function createImageExtension(options?: ImageExtensionOptions) {
         const widgets: Range<Decoration>[] = [];
         const sel = view.state.selection.main;
         const doc = view.state.doc;
-        const { fileTree, activeVault } = useVaultStore.getState();
-
-        // Helper to find real vault path of an image
-        const findImagePath = (nameOrPath: string): string | undefined => {
-          if (/^(https?:|blob:|data:)/i.test(nameOrPath)) return nameOrPath;
-          const traverse = (items: FileItem[]): string | null => {
-            for (const it of items) {
-              if (
-                it.name.toLowerCase() === nameOrPath.toLowerCase() ||
-                it.path.endsWith(nameOrPath)
-              ) {
-                return it.path;
-              }
-              if (it.children) {
-                const sub = traverse(it.children);
-                if (sub) return sub;
-              }
-            }
-            return null;
-          };
-          const res = traverse(fileTree);
-          return res || (activeVault ? `${activeVault}/${nameOrPath}` : undefined);
-        };
 
         for (const { from, to } of view.visibleRanges) {
           let pos = from;
@@ -366,27 +403,45 @@ export function createImageExtension(options?: ImageExtensionOptions) {
             if (pos > doc.length) break;
             const line = doc.lineAt(pos);
             const text = line.text;
-            const isCursorOnLine = sel.from <= line.to && sel.to >= line.from;
 
-            // 1. Check Wikilink image embed: ![[imagen.png|300]]
+            // 1. Check Wikilink image embed: ![[imagen.png]] or ![[imagen.png|300]]
             let wikiMatch: RegExpExecArray | null;
             WIKILINK_IMAGE_REGEX.lastIndex = 0;
 
             while ((wikiMatch = WIKILINK_IMAGE_REGEX.exec(text)) !== null) {
               const fullMatch = wikiMatch[0];
-              const targetName = wikiMatch[1].trim();
-              const altOrDim = wikiMatch[2] ? wikiMatch[2].trim() : '';
+              const innerText = wikiMatch[1].trim();
 
-              if (isImagePath(targetName)) {
-                const { width, height, alt } = parseImageEmbed(altOrDim);
+              // Always separate target filename from dimension and alt parameters
+              const parts = innerText.split('|').map((p) => p.trim());
+              const rawTarget = parts[0];
+
+              if (isImagePath(rawTarget)) {
+                let width = 0;
+                let height = 0;
+                let alt = '';
+
+                for (let i = 1; i < parts.length; i++) {
+                  const dim = parseImageDimensions(parts[i]);
+                  if (dim) {
+                    width = dim.width;
+                    height = dim.height;
+                  } else {
+                    alt = parts[i];
+                  }
+                }
+
                 const start = line.from + wikiMatch.index;
                 const end = start + fullMatch.length;
-                const resolved = findImagePath(targetName);
+                const resolved = resolveVaultImagePath(rawTarget);
+
+                // Cursor is actively inside this image embed range
+                const isCursorInside = sel.from <= end && sel.to >= start;
 
                 const widget = new ImageWidget(
                   {
                     rawText: fullMatch,
-                    targetPathOrUrl: targetName,
+                    targetPathOrUrl: rawTarget,
                     resolvedFilePath: resolved,
                     alt,
                     width,
@@ -395,21 +450,20 @@ export function createImageExtension(options?: ImageExtensionOptions) {
                     to: end,
                     isWikilink: true,
                   },
-                  isCursorOnLine,
+                  isCursorInside,
                   options?.onOpenInNewTab
                 );
 
-                if (!isCursorOnLine) {
-                  // Hide raw text and show clean image
+                if (!isCursorInside) {
+                  // Clean live preview: replace markdown syntax with the image widget
                   widgets.push(Decoration.replace({ widget }).range(start, end));
                 } else {
-                  // Keep text visible and show block preview right below line
+                  // Cursor inside: keep raw text visible for editing and append widget right after
                   widgets.push(
                     Decoration.widget({
                       widget,
-                      block: true,
                       side: 1,
-                    }).range(line.to)
+                    }).range(end)
                   );
                 }
               }
@@ -431,7 +485,9 @@ export function createImageExtension(options?: ImageExtensionOptions) {
                 const { width, height, alt } = parseImageEmbed(altOrDim);
                 const start = line.from + mdMatch.index;
                 const end = start + fullMatch.length;
-                const resolved = isWeb ? targetUrl : findImagePath(targetUrl);
+                const resolved = isWeb ? targetUrl : resolveVaultImagePath(targetUrl);
+
+                const isCursorInside = sel.from <= end && sel.to >= start;
 
                 const widget = new ImageWidget(
                   {
@@ -445,19 +501,18 @@ export function createImageExtension(options?: ImageExtensionOptions) {
                     to: end,
                     isWikilink: false,
                   },
-                  isCursorOnLine,
+                  isCursorInside,
                   options?.onOpenInNewTab
                 );
 
-                if (!isCursorOnLine) {
+                if (!isCursorInside) {
                   widgets.push(Decoration.replace({ widget }).range(start, end));
                 } else {
                   widgets.push(
                     Decoration.widget({
                       widget,
-                      block: true,
                       side: 1,
-                    }).range(line.to)
+                    }).range(end)
                   );
                 }
               }
@@ -466,6 +521,14 @@ export function createImageExtension(options?: ImageExtensionOptions) {
             pos = line.to + 1;
           }
         }
+
+        // Sort decorations by CM6 invariant
+        widgets.sort(
+          (a, b) =>
+            a.from - b.from ||
+            (a.value.startSide ?? 0) - (b.value.startSide ?? 0) ||
+            a.to - b.to
+        );
 
         return Decoration.set(widgets, true);
       }
@@ -476,15 +539,29 @@ export function createImageExtension(options?: ImageExtensionOptions) {
   );
 }
 
+let lastPastedTimestamp = 0;
+
 /**
- * Processes an image file pasted from clipboard, converts it to Uint8Array for Tauri,
- * saves it physically to the vault folder, updates the file tree, and inserts the Wikilink at cursor pos.
+ * Processes an image file pasted from clipboard.
+ * Saves it physically to the active vault root, updates the file tree,
+ * keeps the current .md note active (NO tab change, NO ImageView open),
+ * and inserts \n![[Pasted Image YYYYMMDDHHmmss.png]]\n at the cursor position.
  */
-export async function procesarPegadoDeImagen(file: File, view: EditorView): Promise<string | null> {
+export async function procesarPegadoDeImagen(
+  file: File,
+  view: EditorView
+): Promise<string | null> {
+  const nowMs = Date.now();
+  if (nowMs - lastPastedTimestamp < 700) {
+    console.log('[Urano] Pegado de imagen ignorado por debounce');
+    return null;
+  }
+  lastPastedTimestamp = nowMs;
+
   try {
     console.log('[Urano] Imagen detectada en portapapeles, procesando...', file.name);
 
-    // Genera el nombre del archivo exactamente como lo hace Obsidian: Pasted Image YYYYMMDDHHmmss.png
+    // Exact Obsidian naming convention: Pasted Image YYYYMMDDHHmmss.png
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
     const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(
@@ -510,41 +587,39 @@ export async function procesarPegadoDeImagen(file: File, view: EditorView): Prom
     }
 
     const nombreImagen = `Pasted Image ${timestamp}.${ext}`;
+    const { activeVault, refreshTree } = useVaultStore.getState();
 
-    const { activeVault, activeFile, refreshTree } = useVaultStore.getState();
-
-    // Determine target directory in active vault
-    let targetDir = activeVault;
-    if (activeFile) {
-      const lastSlash = Math.max(activeFile.lastIndexOf('/'), activeFile.lastIndexOf('\\'));
-      if (lastSlash > 0) {
-        targetDir = activeFile.substring(0, lastSlash);
-      }
-    }
-
-    if (!targetDir) {
+    if (!activeVault) {
       console.error('[Urano] No hay un directorio de vault activo para guardar la imagen');
       return null;
     }
 
-    const separator = targetDir.includes('\\') ? '\\' : '/';
-    const cleanTargetDir = targetDir.endsWith(separator) ? targetDir.slice(0, -1) : targetDir;
-    const rutaDestino = `${cleanTargetDir}${separator}${nombreImagen}`;
+    // Save directly in the root of the active vault as requested
+    const separator = activeVault.includes('\\') ? '\\' : '/';
+    const cleanVault = activeVault.endsWith(separator) ? activeVault.slice(0, -1) : activeVault;
+    const rutaDestino = `${cleanVault}${separator}${nombreImagen}`;
 
-    // Conversión crucial para Tauri: File/Blob -> ArrayBuffer -> Uint8Array
+    // Convert file to Uint8Array for writing
     const arrayBuffer = await file.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
 
-    // Guardar físicamente en el disco mediante el storageAdapter
+    // Pre-cache immediate blob URL in memory so the image widget renders instantly
+    const mime = file.type || getImageMimeType(nombreImagen);
+    const memoryBlob = new Blob([uint8Array], { type: mime });
+    const memoryUrl = URL.createObjectURL(memoryBlob);
+    imageBlobUrlCache.set(rutaDestino, memoryUrl);
+    imageBlobUrlCache.set(nombreImagen, memoryUrl);
+
+    // Save physically to disk using storageAdapter
     const adapter = getStorageAdapter();
     await adapter.writeBinary(rutaDestino, uint8Array);
     console.log('[Urano] Imagen guardada físicamente en disco:', rutaDestino);
 
-    // Refrescar el árbol de archivos lateral de inmediato
+    // Refresh vault file tree (WITHOUT switching active file or opening ImageView tab)
     await refreshTree();
 
-    // Insertar la referencia en la posición exacta del cursor en el Editor
-    const link = `![[${nombreImagen}]]`;
+    // Insert \n![[Pasted Image YYYYMMDDHHmmss.png]]\n at exact cursor position
+    const link = `\n![[${nombreImagen}]]\n`;
     const fromPos = view.state.selection.main.from;
     view.dispatch({
       changes: { from: fromPos, insert: link },
@@ -566,115 +641,174 @@ export async function procesarPegadoDeImagen(file: File, view: EditorView): Prom
 }
 
 /**
- * Paste and Drag & Drop Event Handlers for CodeMirror 6
+ * Unified Paste and Drag & Drop Event Handlers for CodeMirror 6
  */
 export function createImageDropPasteHandler() {
   return EditorView.domEventHandlers({
     paste(event, view) {
       const items = event.clipboardData?.items;
+      let file: File | null = null;
+
       if (items && items.length > 0) {
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
           if (item.type.startsWith('image/')) {
-            event.preventDefault(); // Detener el pegado por defecto
-            const file = item.getAsFile();
-            if (file) {
-              console.log('[Urano] Imagen detectada en portapapeles, procesando...', file.name);
-              procesarPegadoDeImagen(file, view);
-            }
-            return true; // Evento manejado
+            file = item.getAsFile();
+            if (file) break;
           }
         }
       }
 
-      // Fallback si items está vacío pero hay files en clipboard
-      const files = event.clipboardData?.files;
-      if (files && files.length > 0) {
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          if (file.type.startsWith('image/') || isImagePath(file.name)) {
-            event.preventDefault();
-            console.log('[Urano] Archivo de imagen detectado en portapapeles:', file.name);
-            procesarPegadoDeImagen(file, view);
-            return true;
+      if (!file && event.clipboardData?.files && event.clipboardData.files.length > 0) {
+        for (let i = 0; i < event.clipboardData.files.length; i++) {
+          const f = event.clipboardData.files[i];
+          if (f.type.startsWith('image/') || isImagePath(f.name)) {
+            file = f;
+            break;
           }
         }
       }
+
+      if (file) {
+        event.preventDefault();
+        procesarPegadoDeImagen(file, view);
+        return true;
+      }
+
+      // Fallback: Read directly from OS clipboard via Tauri command read_clipboard_image
+      invoke<number[] | null>('read_clipboard_image')
+        .then(async (nativeBytes) => {
+          if (nativeBytes && nativeBytes.length > 0) {
+            console.log('[Urano] Imagen obtenida de portapapeles nativo en evento paste');
+            const uint8 = new Uint8Array(nativeBytes);
+            const nativeFile = new File([uint8], 'pasted_image.png', { type: 'image/png' });
+            await procesarPegadoDeImagen(nativeFile, view);
+          }
+        })
+        .catch(() => {});
 
       return false;
     },
 
+    dragover(event) {
+      const types = event.dataTransfer?.types || [];
+      if (
+        types.includes('Files') ||
+        types.includes('text/plain') ||
+        types.includes('application/x-urano-path')
+      ) {
+        event.preventDefault();
+        if (event.dataTransfer) {
+          event.dataTransfer.dropEffect = 'copy';
+        }
+        return true;
+      }
+      return false;
+    },
+
     drop(event, view) {
+      // 1. Files dropped directly from OS
       const files = Array.from(event.dataTransfer?.files || []);
       const imageFiles = files.filter(
         (f) => f.type.startsWith('image/') || isImagePath(f.name)
       );
 
-      // A. Dropping images from OS into Editor
       if (imageFiles.length > 0) {
         event.preventDefault();
+        event.stopPropagation();
         const coords = { x: event.clientX, y: event.clientY };
         const dropPos = view.posAtCoords(coords) ?? view.state.selection.main.head;
 
-        const { activeVault, activeFile, refreshTree } = useVaultStore.getState();
-        let targetDir = activeVault;
-        if (activeFile) {
-          const lastSlash = Math.max(activeFile.lastIndexOf('/'), activeFile.lastIndexOf('\\'));
-          if (lastSlash > 0) {
-            targetDir = activeFile.substring(0, lastSlash);
-          }
-        }
+        const { activeVault, refreshTree } = useVaultStore.getState();
+        if (!activeVault) return true;
 
-        if (!targetDir) return true;
-
-        const separator = targetDir.includes('\\') ? '\\' : '/';
-        const cleanTargetDir = targetDir.endsWith(separator) ? targetDir.slice(0, -1) : targetDir;
+        const separator = activeVault.includes('\\') ? '\\' : '/';
+        const cleanVault = activeVault.endsWith(separator) ? activeVault.slice(0, -1) : activeVault;
 
         Promise.all(
           imageFiles.map(async (file) => {
-            const fullPath = `${cleanTargetDir}${separator}${file.name}`;
+            const fullPath = `${cleanVault}${separator}${file.name}`;
             const arrayBuffer = await file.arrayBuffer();
             const uint8Array = new Uint8Array(arrayBuffer);
+
+            // Pre-cache blob url
+            const mime = file.type || getImageMimeType(file.name);
+            const blob = new Blob([uint8Array], { type: mime });
+            const bUrl = URL.createObjectURL(blob);
+            imageBlobUrlCache.set(fullPath, bUrl);
+            imageBlobUrlCache.set(file.name, bUrl);
+
             await getStorageAdapter().writeBinary(fullPath, uint8Array);
             return file.name;
           })
-        ).then(async (savedNames) => {
-          await refreshTree();
-          const insertText = savedNames.map((n) => `![[${n}]]`).join('\n') + '\n';
-          view.dispatch({
-            changes: { from: dropPos, insert: insertText },
-            selection: { anchor: dropPos + insertText.length },
+        )
+          .then(async (savedNames) => {
+            await refreshTree();
+            const insertText = '\n' + savedNames.map((n) => `![[${n}]]`).join('\n') + '\n';
+            view.dispatch({
+              changes: { from: dropPos, insert: insertText },
+              selection: { anchor: dropPos + insertText.length },
+            });
+            useNoticeStore
+              .getState()
+              .showNotice(
+                `${savedNames.length} imagen(es) añadida(s) al documento`,
+                2500,
+                'success'
+              );
+          })
+          .catch((err) => {
+            console.error('[Urano] Error guardando imagen soltada:', err);
+            useNoticeStore
+              .getState()
+              .showNotice('Error al guardar imagen soltada', 3000, 'error');
           });
-          useNoticeStore
-            .getState()
-            .showNotice(
-              `${savedNames.length} imagen(es) añadida(s) al documento`,
-              2500,
-              'success'
-            );
-        }).catch((err) => {
-          console.error('[Urano] Error guardando imagen soltada:', err);
-          useNoticeStore.getState().showNotice('Error al guardar imagen soltada', 3000, 'error');
-        });
 
         return true;
       }
 
-      // B. Dragging existing image from Urano FileTree into Editor
-      const draggedPath = event.dataTransfer?.getData('text/plain');
-      if (draggedPath && isImagePath(draggedPath)) {
-        event.preventDefault();
-        const coords = { x: event.clientX, y: event.clientY };
-        const dropPos = view.posAtCoords(coords) ?? view.state.selection.main.head;
-        const fileName = draggedPath.split(/[/\\]/).pop() || '';
+      // 2. Dragging existing image or note from Urano FileTree into Editor
+      const uranoPath =
+        event.dataTransfer?.getData('application/x-urano-path') ||
+        event.dataTransfer?.getData('text/plain');
 
-        const insertText = `![[${fileName}]]`;
-        view.dispatch({
-          changes: { from: dropPos, insert: insertText },
-          selection: { anchor: dropPos + insertText.length },
-        });
+      if (uranoPath) {
+        const fileName = uranoPath.split(/[/\\]/).pop() || '';
 
-        return true;
+        if (isImagePath(uranoPath) || isImagePath(fileName)) {
+          event.preventDefault();
+          event.stopPropagation();
+          const coords = { x: event.clientX, y: event.clientY };
+          const dropPos = view.posAtCoords(coords) ?? view.state.selection.main.head;
+
+          const insertText = `\n![[${fileName}]]\n`;
+          view.dispatch({
+            changes: { from: dropPos, insert: insertText },
+            selection: { anchor: dropPos + insertText.length },
+          });
+
+          useNoticeStore
+            .getState()
+            .showNotice(`Imagen añadida: ${fileName}`, 2000, 'success');
+          return true;
+        } else if (
+          uranoPath.endsWith('.md') ||
+          uranoPath.endsWith('.canvas') ||
+          uranoPath.endsWith('.base')
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          const coords = { x: event.clientX, y: event.clientY };
+          const dropPos = view.posAtCoords(coords) ?? view.state.selection.main.head;
+          const cleanName = fileName.replace(/\.(md|canvas|base)$/i, '');
+
+          const insertText = `[[${cleanName}]]`;
+          view.dispatch({
+            changes: { from: dropPos, insert: insertText },
+            selection: { anchor: dropPos + insertText.length },
+          });
+          return true;
+        }
       }
 
       return false;

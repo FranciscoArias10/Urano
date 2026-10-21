@@ -18,7 +18,7 @@ import {
   copyImageBlobToClipboard,
   procesarPegadoDeImagen,
 } from '../../editor/imageExtension';
-import { getStorageAdapter, isImagePath } from '../../services/storageAdapter';
+import { getStorageAdapter } from '../../services/storageAdapter';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
@@ -260,6 +260,22 @@ export const Editor: React.FC<EditorProps> = ({
               return true;
             },
           },
+          {
+            key: 'Mod-v',
+            run: (view) => {
+              invoke<number[] | null>('read_clipboard_image')
+                .then(async (nativeBytes) => {
+                  if (nativeBytes && nativeBytes.length > 0) {
+                    console.log('[Urano] Imagen interceptada con Mod-v desde portapapeles nativo');
+                    const uint8 = new Uint8Array(nativeBytes);
+                    const nativeFile = new File([uint8], 'pasted_image.png', { type: 'image/png' });
+                    await procesarPegadoDeImagen(nativeFile, view);
+                  }
+                })
+                .catch(() => {});
+              return false;
+            },
+          },
         ]),
         markdown({ codeLanguages: languages }),
         obsidianTheme,
@@ -271,41 +287,6 @@ export const Editor: React.FC<EditorProps> = ({
         tableExtension, // Obsidian Markdown Tables in Live Preview
         createImageExtension({
           onOpenInNewTab,
-        }),
-        EditorView.domEventHandlers({
-          paste: (event: ClipboardEvent, view: EditorView) => {
-            const items = event.clipboardData?.items;
-            let file: File | null = null;
-
-            if (items && items.length > 0) {
-              for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                if (item.type.startsWith('image/')) {
-                  file = item.getAsFile();
-                  if (file) break;
-                }
-              }
-            }
-
-            if (!file && event.clipboardData?.files && event.clipboardData.files.length > 0) {
-              for (let i = 0; i < event.clipboardData.files.length; i++) {
-                const f = event.clipboardData.files[i];
-                if (f.type.startsWith('image/') || isImagePath(f.name)) {
-                  file = f;
-                  break;
-                }
-              }
-            }
-
-            if (file) {
-              event.preventDefault(); // Detener el pegado por defecto
-              console.log('[Urano] Imagen detectada en portapapeles, procesando...', file.name);
-              procesarPegadoDeImagen(file, view);
-              return true; // Evento manejado
-            }
-
-            return false;
-          },
         }),
         createImageDropPasteHandler(),
         EditorView.lineWrapping,
@@ -1275,6 +1256,21 @@ export const Editor: React.FC<EditorProps> = ({
     const view = viewRef.current || getActiveEditorView();
     if (!view) return;
     try {
+      // 1. Intentar leer imagen del portapapeles nativo del SO vía Tauri/arboard
+      try {
+        const nativeBytes = await invoke<number[] | null>('read_clipboard_image');
+        if (nativeBytes && nativeBytes.length > 0) {
+          const uint8 = new Uint8Array(nativeBytes);
+          const file = new File([uint8], 'pasted_image.png', { type: 'image/png' });
+          await procesarPegadoDeImagen(file, view);
+          view.focus();
+          return;
+        }
+      } catch (nativeErr) {
+        console.warn('Native clipboard image read failed:', nativeErr);
+      }
+
+      // 2. Intentar leer imagen del portapapeles web
       if (navigator.clipboard && navigator.clipboard.read) {
         try {
           const clipboardItems = await navigator.clipboard.read();
