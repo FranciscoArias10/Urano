@@ -1,6 +1,7 @@
 use crate::services::vault::{FileItem, VaultService};
 use std::collections::HashMap;
 use std::path::Path;
+use tauri::ipc::Response;
 
 #[tauri::command]
 pub fn open_vault(vault_path: String) -> Result<Vec<FileItem>, String> {
@@ -23,8 +24,9 @@ pub fn write_file(file_path: String, content: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn read_file_binary(file_path: String) -> Result<Vec<u8>, String> {
-    VaultService::read_file_binary(Path::new(&file_path))
+pub fn read_file_binary(file_path: String) -> Result<Response, String> {
+    // Raw binary IPC response: avoids serializing every byte as a JSON number.
+    VaultService::read_file_binary(Path::new(&file_path)).map(Response::new)
 }
 
 #[tauri::command]
@@ -32,32 +34,80 @@ pub fn write_file_binary(file_path: String, data: Vec<u8>) -> Result<(), String>
     VaultService::write_file_binary(Path::new(&file_path), &data)
 }
 
+/// Returns the clipboard image as PNG bytes (empty body when the clipboard
+/// holds no image). The body travels as raw binary, never as a JSON array.
 #[tauri::command]
-pub fn read_clipboard_image() -> Result<Option<Vec<u8>>, String> {
-    let mut clipboard = match arboard::Clipboard::new() {
-        Ok(c) => c,
-        Err(_) => return Ok(None),
-    };
+pub fn read_clipboard_image() -> Result<Response, String> {
+    Ok(Response::new(read_clipboard_png().unwrap_or_default()))
+}
 
-    match clipboard.get_image() {
-        Ok(img) => {
-            let width = img.width as u32;
-            let height = img.height as u32;
-            let rgba = img.bytes.into_owned();
+/// Linux: ask GTK for the clipboard's `image/png` target directly. The clipboard
+/// owner already holds an encoded PNG, so no decode/re-encode round-trip happens.
+/// Falls back to GDK decoding + libpng (native C) for owners that only offer
+/// other image targets. Must run on the main thread, which sync commands do.
+#[cfg(any(
+    target_os = "linux",
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "openbsd"
+))]
+fn read_clipboard_png() -> Option<Vec<u8>> {
+    let clipboard = gtk::Clipboard::get(&gtk::gdk::SELECTION_CLIPBOARD);
 
-            let mut png_bytes = Vec::new();
-            let cursor = std::io::Cursor::new(&mut png_bytes);
-            let encoder = image::codecs::png::PngEncoder::new(cursor);
+    let targets: Vec<String> = clipboard
+        .wait_for_targets()
+        .unwrap_or_default()
+        .iter()
+        .map(|atom| atom.name().to_string())
+        .collect();
 
-            use image::ImageEncoder;
-            encoder
-                .write_image(&rgba, width, height, image::ExtendedColorType::Rgba8)
-                .map_err(|e| format!("Failed to encode image to PNG: {}", e))?;
-
-            Ok(Some(png_bytes))
-        }
-        Err(_) => Ok(None),
+    if !targets.iter().any(|t| t.starts_with("image/")) {
+        return None;
     }
+
+    if targets.iter().any(|t| t == "image/png") {
+        if let Some(selection) = clipboard.wait_for_contents(&gtk::gdk::Atom::intern("image/png")) {
+            let bytes = selection.data();
+            if !bytes.is_empty() {
+                return Some(bytes);
+            }
+        }
+    }
+
+    let pixbuf = clipboard.wait_for_image()?;
+    pixbuf.save_to_bufferv("png", &[("compression", "3")]).ok()
+}
+
+/// Other platforms: arboard yields RGBA pixels, encode them with the fastest
+/// PNG settings so the command stays responsive even in debug builds.
+#[cfg(not(any(
+    target_os = "linux",
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "openbsd"
+)))]
+fn read_clipboard_png() -> Option<Vec<u8>> {
+    use image::codecs::png::{CompressionType, FilterType, PngEncoder};
+    use image::ImageEncoder;
+
+    let mut clipboard = arboard::Clipboard::new().ok()?;
+    let img = clipboard.get_image().ok()?;
+    let width = img.width as u32;
+    let height = img.height as u32;
+    let rgba = img.bytes.into_owned();
+
+    let mut png_bytes = Vec::new();
+    let encoder = PngEncoder::new_with_quality(
+        std::io::Cursor::new(&mut png_bytes),
+        CompressionType::Fast,
+        FilterType::Sub,
+    );
+    encoder
+        .write_image(&rgba, width, height, image::ExtendedColorType::Rgba8)
+        .ok()?;
+    Some(png_bytes)
 }
 
 #[tauri::command]
