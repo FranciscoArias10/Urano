@@ -11,6 +11,7 @@ import {
   getStorageAdapter,
   isImagePath,
   getImageMimeType,
+  toUint8Array,
 } from '../services/storageAdapter';
 import { useVaultStore } from '../stores/vaultStore';
 import { useNoticeStore } from '../components/common/Notice';
@@ -202,43 +203,127 @@ export async function copyImageBlobToClipboard(blob: Blob): Promise<void> {
   ]);
 }
 
+export interface ImageEmbedInfo {
+  rawText: string;
+  targetPathOrUrl: string;
+  resolvedFilePath?: string;
+  alt: string;
+  width: number;
+  height: number;
+  from: number;
+  to: number;
+  isWikilink: boolean;
+}
+
+interface ImageWidgetDomState {
+  info: ImageEmbedInfo;
+  img: HTMLImageElement;
+}
+
+/** Live state of each widget DOM node, so `updateDOM` can patch it in place. */
+const widgetDomState = new WeakMap<HTMLElement, ImageWidgetDomState>();
+
+function applyImageDimensions(img: HTMLImageElement, width: number, height: number): void {
+  if (width > 0) {
+    const clampedW = Math.min(Math.max(width, MIN_IMAGE_WIDTH), MAX_IMAGE_WIDTH);
+    img.style.width = `${clampedW}px`;
+    img.style.maxWidth = '100%';
+    if (height > 0) {
+      img.style.height = `${height}px`;
+      img.style.objectFit = 'cover';
+    } else {
+      img.style.height = 'auto';
+      img.style.objectFit = '';
+    }
+  } else {
+    img.style.width = '';
+    img.style.maxWidth = '100%';
+    img.style.height = 'auto';
+    img.style.objectFit = '';
+  }
+}
+
+/**
+ * Re-derives the document range of an embed from its live DOM node.
+ * Positions captured when the widget was built go stale as soon as text above
+ * the image changes, so they are never trusted at interaction time.
+ */
+export function locateEmbedRange(
+  view: EditorView,
+  dom: HTMLElement,
+  rawText: string,
+  fallback: { from: number; to: number }
+): { from: number; to: number } {
+  let pos: number;
+  try {
+    pos = view.posAtDOM(dom);
+  } catch {
+    return fallback;
+  }
+  const doc = view.state.doc;
+  pos = Math.max(0, Math.min(pos, doc.length));
+  const line = doc.lineAt(pos);
+
+  let best: { from: number; to: number } | null = null;
+  let idx = line.text.indexOf(rawText);
+  while (idx !== -1) {
+    const from = line.from + idx;
+    const to = from + rawText.length;
+    if (pos >= from && pos <= to) return { from, to };
+    if (!best || Math.abs(from - pos) < Math.abs(best.from - pos)) best = { from, to };
+    idx = line.text.indexOf(rawText, idx + 1);
+  }
+  return best ?? fallback;
+}
+
 /**
  * Image Embed Widget for CodeMirror 6 Live Preview
- * Stiled as a block element (display: block; margin: 8px 0;) without using block: true.
+ * Styled as a block element (display: block; margin: 8px 0;) without using block: true.
  */
 export class ImageWidget extends WidgetType {
   constructor(
-    readonly info: {
-      rawText: string;
-      targetPathOrUrl: string;
-      resolvedFilePath?: string;
-      alt: string;
-      width: number;
-      height: number;
-      from: number;
-      to: number;
-      isWikilink: boolean;
-    },
+    readonly info: ImageEmbedInfo,
     readonly isBlockPreview: boolean = false,
     readonly onOpenInNewTab?: (filePath: string) => void
   ) {
     super();
   }
 
+  /**
+   * `from`/`to` are intentionally NOT compared: they shift on every edit above
+   * the image, and re-creating the <img> would re-request and re-decode the file.
+   */
   eq(other: ImageWidget): boolean {
     return (
       other.info.rawText === this.info.rawText &&
+      other.info.targetPathOrUrl === this.info.targetPathOrUrl &&
+      (other.info.resolvedFilePath || '') === (this.info.resolvedFilePath || '') &&
+      other.info.alt === this.info.alt &&
       other.info.width === this.info.width &&
       other.info.height === this.info.height &&
-      other.info.from === this.info.from &&
-      other.info.to === this.info.to &&
       other.isBlockPreview === this.isBlockPreview
     );
   }
 
+  /** Same image with different syntax (e.g. typing `|300`): patch the DOM instead of redrawing. */
+  updateDOM(dom: HTMLElement): boolean {
+    const state = widgetDomState.get(dom);
+    if (!state) return false;
+    const sameSource =
+      state.info.targetPathOrUrl === this.info.targetPathOrUrl &&
+      (state.info.resolvedFilePath || '') === (this.info.resolvedFilePath || '') &&
+      state.info.isWikilink === this.info.isWikilink &&
+      dom.classList.contains('cm-image-block-preview') === this.isBlockPreview;
+    if (!sameSource) return false;
+
+    state.info = { ...this.info };
+    applyImageDimensions(state.img, this.info.width, this.info.height);
+    state.img.alt = this.info.alt || this.info.targetPathOrUrl.split(/[/\\]/).pop() || 'Imagen';
+    return true;
+  }
+
   toDOM(view: EditorView): HTMLElement {
-    const { targetPathOrUrl, resolvedFilePath, alt, width, height, from, to, isWikilink } =
-      this.info;
+    const { targetPathOrUrl, resolvedFilePath, alt, width, height } = this.info;
 
     const container = document.createElement('div');
     container.className = `image-embed cm-image-embed ${
@@ -270,6 +355,9 @@ export class ImageWidget extends WidgetType {
     img.style.opacity = '0';
     img.style.transition = 'opacity 0.15s ease';
 
+    const state: ImageWidgetDomState = { info: { ...this.info }, img };
+    widgetDomState.set(container, state);
+
     // Once loaded, remove skeleton and fade in
     const onLoaded = () => {
       skeleton.remove();
@@ -278,20 +366,7 @@ export class ImageWidget extends WidgetType {
     img.addEventListener('load', onLoaded, { once: true });
     img.addEventListener('error', () => skeleton.remove(), { once: true });
 
-    // Apply dimensions if present, clamped to min/max
-    if (width > 0) {
-      const clampedW = Math.min(Math.max(width, MIN_IMAGE_WIDTH), MAX_IMAGE_WIDTH);
-      img.style.width = `${clampedW}px`;
-      if (height > 0) {
-        img.style.height = `${height}px`;
-        img.style.objectFit = 'cover';
-      } else {
-        img.style.height = 'auto';
-      }
-    } else {
-      img.style.maxWidth = '100%';
-      img.style.height = 'auto';
-    }
+    applyImageDimensions(img, width, height);
 
     // Synchronously check memory cache first to eliminate any flicker
     const targetKey = resolvedFilePath || targetPathOrUrl;
@@ -345,7 +420,7 @@ export class ImageWidget extends WidgetType {
       e.stopPropagation();
 
       const startX = e.clientX;
-      const startWidth = img.offsetWidth || width || 300;
+      const startWidth = img.offsetWidth || state.info.width || 300;
       container.classList.add('is-resizing');
 
       let currentNewWidth = startWidth;
@@ -372,15 +447,18 @@ export class ImageWidget extends WidgetType {
 
         // Update document text with new width
         if (currentNewWidth !== startWidth) {
+          const { rawText, targetPathOrUrl: target, alt: currentAlt, isWikilink } = state.info;
+          const { from, to } = locateEmbedRange(view, container, rawText, state.info);
+
           let replacement = '';
           if (isWikilink) {
-            replacement = alt
-              ? `![[${targetPathOrUrl}|${alt}|${currentNewWidth}]]`
-              : `![[${targetPathOrUrl}|${currentNewWidth}]]`;
+            replacement = currentAlt
+              ? `![[${target}|${currentAlt}|${currentNewWidth}]]`
+              : `![[${target}|${currentNewWidth}]]`;
           } else {
-            replacement = alt
-              ? `![${alt}|${currentNewWidth}](${targetPathOrUrl})`
-              : `![${currentNewWidth}](${targetPathOrUrl})`;
+            replacement = currentAlt
+              ? `![${currentAlt}|${currentNewWidth}](${target})`
+              : `![${currentNewWidth}](${target})`;
           }
 
           view.dispatch({
@@ -401,14 +479,15 @@ export class ImageWidget extends WidgetType {
       e.preventDefault();
       e.stopPropagation();
 
+      const { from, to } = locateEmbedRange(view, container, state.info.rawText, state.info);
       const customEvent = new CustomEvent('urano-image-contextmenu', {
         bubbles: true,
         detail: {
           x: e.clientX,
           y: e.clientY,
-          filePath: resolvedFilePath || targetPathOrUrl,
+          filePath: state.info.resolvedFilePath || state.info.targetPathOrUrl,
           src: img.src,
-          alt,
+          alt: state.info.alt,
           from,
           to,
           onOpenInNewTab: this.onOpenInNewTab,
@@ -661,7 +740,7 @@ export async function procesarPegadoDeImagen(
   view: EditorView
 ): Promise<string | null> {
   const nowMs = Date.now();
-  if (nowMs - lastPastedTimestamp < 700) {
+  if (nowMs - lastPastedTimestamp < 300) {
     console.log('[Urano] Pegado de imagen ignorado por debounce');
     return null;
   }
@@ -719,32 +798,26 @@ export async function procesarPegadoDeImagen(
     imageBlobUrlCache.set(rutaDestino, memoryUrl);
     imageBlobUrlCache.set(nombreImagen, memoryUrl);
 
-    // Save physically to disk using storageAdapter
+    // Save physically to disk using storageAdapter (raw bytes over IPC, no JSON)
     const adapter = getStorageAdapter();
     await adapter.writeBinary(rutaDestino, uint8Array);
     console.log('[Urano] Imagen guardada físicamente en disco:', rutaDestino);
 
-    // Fast-path: Convert to native asset protocol URL
-    try {
-      const assetUrl = convertFileSrc(rutaDestino);
-      if (assetUrl) {
-        imageBlobUrlCache.set(rutaDestino, assetUrl);
-        imageBlobUrlCache.set(nombreImagen, assetUrl);
-      }
-    } catch {
-      // Keep memory blob URL in cache
-    }
+    // The bytes are already in memory: the blob URL cached above stays the source for this
+    // session, so the widget renders instantly and survives CodeMirror re-creations without
+    // a round-trip through the asset protocol.
 
-    // Refresh vault file tree (WITHOUT switching active file or opening ImageView tab)
-    await refreshTree();
-
-    // Insert \n![[Pasted Image YYYYMMDDHHmmss.png]]\n at exact cursor position
+    // Insert \n![[Pasted Image YYYYMMDDHHmmss.png]]\n at the exact cursor position right away
     const link = `\n![[${nombreImagen}]]\n`;
     const fromPos = view.state.selection.main.from;
     view.dispatch({
       changes: { from: fromPos, insert: link },
       selection: { anchor: fromPos + link.length },
     });
+
+    // Refresh the explorer in the background: a full vault listing must never block the editor
+    // (active file and tabs are untouched: NO selectFile, NO ImageView).
+    refreshTree().catch((err) => console.warn('[Urano] refreshTree tras pegado falló:', err));
 
     useNoticeStore
       .getState()
@@ -766,9 +839,10 @@ export async function procesarPegadoDeImagen(
 export function createImageDropPasteHandler() {
   return EditorView.domEventHandlers({
     paste(event, view) {
-      const items = event.clipboardData?.items;
+      const data = event.clipboardData;
       let file: File | null = null;
 
+      const items = data?.items;
       if (items && items.length > 0) {
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
@@ -779,9 +853,9 @@ export function createImageDropPasteHandler() {
         }
       }
 
-      if (!file && event.clipboardData?.files && event.clipboardData.files.length > 0) {
-        for (let i = 0; i < event.clipboardData.files.length; i++) {
-          const f = event.clipboardData.files[i];
+      if (!file && data?.files && data.files.length > 0) {
+        for (let i = 0; i < data.files.length; i++) {
+          const f = data.files[i];
           if (f.type.startsWith('image/') || isImagePath(f.name)) {
             file = f;
             break;
@@ -795,19 +869,41 @@ export function createImageDropPasteHandler() {
         return true;
       }
 
-      // Fallback: Read directly from OS clipboard via Tauri command read_clipboard_image
-      invoke<number[] | null>('read_clipboard_image')
-        .then(async (nativeBytes) => {
+      // Plain text paste: let CodeMirror handle it. The native clipboard is NOT consulted
+      // here, so text pasting never pays for an OS clipboard round-trip.
+      const plainText = data?.getData('text/plain') ?? '';
+      const html = data?.getData('text/html') ?? '';
+      const htmlHasImage = /<img\b/i.test(html);
+      if (plainText.length > 0 && !htmlHasImage) {
+        return false;
+      }
+
+      // No usable text (WebKitGTK often exposes no image items for screenshots) or HTML
+      // embedding an image: ask the OS clipboard for raw PNG bytes via Rust.
+      event.preventDefault();
+      const pasteInterceptedText = () => {
+        if (!plainText) return;
+        const sel = view.state.selection.main;
+        view.dispatch({
+          changes: { from: sel.from, to: sel.to, insert: plainText },
+          selection: { anchor: sel.from + plainText.length },
+        });
+      };
+
+      invoke<ArrayBuffer | number[] | null>('read_clipboard_image')
+        .then(async (raw) => {
+          const nativeBytes = toUint8Array(raw);
           if (nativeBytes && nativeBytes.length > 0) {
             console.log('[Urano] Imagen obtenida de portapapeles nativo en evento paste');
-            const uint8 = new Uint8Array(nativeBytes);
-            const nativeFile = new File([uint8], 'pasted_image.png', { type: 'image/png' });
+            const nativeFile = new File([nativeBytes], 'pasted_image.png', { type: 'image/png' });
             await procesarPegadoDeImagen(nativeFile, view);
+          } else {
+            pasteInterceptedText();
           }
         })
-        .catch(() => {});
+        .catch(pasteInterceptedText);
 
-      return false;
+      return true;
     },
 
     dragover(event) {
