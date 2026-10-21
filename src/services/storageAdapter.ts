@@ -54,6 +54,23 @@ export function getImageMimeType(filePath: string): string {
   }
 }
 
+/**
+ * Normalizes a binary `invoke` result. Rust commands returning `tauri::ipc::Response`
+ * arrive as a raw ArrayBuffer; older callers may still receive a JSON number[].
+ */
+export function toUint8Array(data: unknown): Uint8Array<ArrayBuffer> | null {
+  if (!data) return null;
+  if (data instanceof Uint8Array) {
+    // Views over a SharedArrayBuffer are not valid BlobParts: copy into a plain ArrayBuffer.
+    return data.buffer instanceof ArrayBuffer
+      ? (data as Uint8Array<ArrayBuffer>)
+      : new Uint8Array(data);
+  }
+  if (data instanceof ArrayBuffer) return new Uint8Array(data);
+  if (Array.isArray(data)) return data.length ? Uint8Array.from(data as number[]) : null;
+  return null;
+}
+
 export function getImageFormatTag(filePath: string): string | null {
   if (!filePath) return null;
   const ext = filePath.split('.').pop()?.toUpperCase();
@@ -107,8 +124,8 @@ export class LocalAdapter implements StorageAdapter {
       return new Blob([uint8], { type: mime });
     } catch (pluginErr) {
       console.warn('[LocalAdapter] readFile from plugin-fs failed, falling back to invoke read_file_binary:', pluginErr);
-      const rawData = await invoke<number[]>('read_file_binary', { filePath: path });
-      const uint8 = new Uint8Array(rawData);
+      const rawData = await invoke<ArrayBuffer | number[]>('read_file_binary', { filePath: path });
+      const uint8 = toUint8Array(rawData) ?? new Uint8Array();
       return new Blob([uint8], { type: mime });
     }
   }
