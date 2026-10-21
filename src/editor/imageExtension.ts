@@ -17,6 +17,10 @@ import { useNoticeStore } from '../components/common/Notice';
 import { FileItem } from '../types';
 import { invoke } from '@tauri-apps/api/core';
 
+/** Resize constraints (pixels) */
+const MIN_IMAGE_WIDTH = 50;
+const MAX_IMAGE_WIDTH = 1200;
+
 /**
  * Parses image dimension syntax like "300" or "300x200"
  */
@@ -237,13 +241,35 @@ export class ImageWidget extends WidgetType {
     const wrapper = document.createElement('div');
     wrapper.className = 'image-wrapper';
 
+    // Skeleton placeholder — shown while the image loads
+    const skeleton = document.createElement('div');
+    skeleton.className = 'image-skeleton';
+    const skelW = width > 0 ? Math.min(Math.max(width, MIN_IMAGE_WIDTH), MAX_IMAGE_WIDTH) : 320;
+    const skelH = height > 0 ? height : Math.round(skelW * 0.6);
+    skeleton.style.width = `${skelW}px`;
+    skeleton.style.height = `${skelH}px`;
+    wrapper.appendChild(skeleton);
+
     const img = document.createElement('img');
     img.alt = alt || targetPathOrUrl.split(/[/\\]/).pop() || 'Imagen';
     img.draggable = false;
+    img.loading = 'eager';
+    (img as any).decoding = 'async';
+    img.style.opacity = '0';
+    img.style.transition = 'opacity 0.15s ease';
 
-    // Apply dimensions if present
+    // Once loaded, remove skeleton and fade in
+    const onLoaded = () => {
+      skeleton.remove();
+      img.style.opacity = '1';
+    };
+    img.addEventListener('load', onLoaded, { once: true });
+    img.addEventListener('error', () => skeleton.remove(), { once: true });
+
+    // Apply dimensions if present, clamped to min/max
     if (width > 0) {
-      img.style.width = `${width}px`;
+      const clampedW = Math.min(Math.max(width, MIN_IMAGE_WIDTH), MAX_IMAGE_WIDTH);
+      img.style.width = `${clampedW}px`;
       if (height > 0) {
         img.style.height = `${height}px`;
         img.style.objectFit = 'cover';
@@ -264,11 +290,18 @@ export class ImageWidget extends WidgetType {
 
     if (cachedUrl) {
       img.src = cachedUrl;
+      // If already in browser cache too, the load event fires synchronously
+      if (img.complete && img.naturalWidth > 0) {
+        skeleton.remove();
+        img.style.opacity = '1';
+      }
     } else {
       // Asynchronously resolve and load
       resolveImageBlobUrl(targetKey).then((url) => {
         if (url) {
           img.src = url;
+        } else {
+          skeleton.remove();
         }
       });
     }
@@ -280,7 +313,7 @@ export class ImageWidget extends WidgetType {
     resizeCorner.className = 'image-resize-corner';
     resizeCorner.title = 'Arrastrar para redimensionar';
 
-    // Interactive mouse drag resizing
+    // Interactive mouse drag resizing with MIN/MAX constraints and size tooltip
     resizeCorner.addEventListener('mousedown', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -291,17 +324,25 @@ export class ImageWidget extends WidgetType {
 
       let currentNewWidth = startWidth;
 
+      // Create floating size tooltip
+      const tooltip = document.createElement('div');
+      tooltip.className = 'image-resize-tooltip';
+      tooltip.textContent = `${startWidth}px`;
+      container.appendChild(tooltip);
+
       const onMouseMove = (moveEvent: MouseEvent) => {
         const delta = moveEvent.clientX - startX;
-        currentNewWidth = Math.max(40, Math.round(startWidth + delta));
+        currentNewWidth = Math.max(MIN_IMAGE_WIDTH, Math.min(MAX_IMAGE_WIDTH, Math.round(startWidth + delta)));
         img.style.width = `${currentNewWidth}px`;
         img.style.height = 'auto';
+        tooltip.textContent = `${currentNewWidth}px`;
       };
 
       const onMouseUp = () => {
         window.removeEventListener('mousemove', onMouseMove);
         window.removeEventListener('mouseup', onMouseUp);
         container.classList.remove('is-resizing');
+        tooltip.remove();
 
         // Update document text with new width
         if (currentNewWidth !== startWidth) {
@@ -380,6 +421,8 @@ export function createImageExtension(options?: ImageExtensionOptions) {
 
       constructor(view: EditorView) {
         this.decorations = this.computeDecorations(view);
+        // Prefetch visible images on first render to warm cache
+        this.prefetchVisibleImages(view);
       }
 
       update(update: ViewUpdate) {
@@ -389,6 +432,46 @@ export function createImageExtension(options?: ImageExtensionOptions) {
           update.selectionSet
         ) {
           this.decorations = this.computeDecorations(update.view);
+        }
+        // Prefetch whenever viewport changes
+        if (update.viewportChanged) {
+          this.prefetchVisibleImages(update.view);
+        }
+      }
+
+      /** Pre-resolve blob URLs for all image embeds currently in the viewport */
+      prefetchVisibleImages(view: EditorView) {
+        const doc = view.state.doc;
+        for (const { from, to } of view.visibleRanges) {
+          let pos = from;
+          while (pos <= to && pos <= doc.length) {
+            const line = doc.lineAt(pos);
+            const text = line.text;
+            // Quick scan for image patterns
+            WIKILINK_IMAGE_REGEX.lastIndex = 0;
+            let m: RegExpExecArray | null;
+            while ((m = WIKILINK_IMAGE_REGEX.exec(text)) !== null) {
+              const parts = m[1].trim().split('|');
+              const rawTarget = parts[0].trim();
+              if (isImagePath(rawTarget)) {
+                const resolved = resolveVaultImagePath(rawTarget);
+                if (!imageBlobUrlCache.has(resolved) && !imageBlobUrlCache.has(rawTarget)) {
+                  resolveImageBlobUrl(rawTarget); // fire-and-forget prefetch
+                }
+              }
+            }
+            MD_IMAGE_REGEX.lastIndex = 0;
+            while ((m = MD_IMAGE_REGEX.exec(text)) !== null) {
+              const targetUrl = m[2].trim();
+              if (isImagePath(targetUrl) && !/^(https?:|data:|blob:)/i.test(targetUrl)) {
+                const resolved = resolveVaultImagePath(targetUrl);
+                if (!imageBlobUrlCache.has(resolved) && !imageBlobUrlCache.has(targetUrl)) {
+                  resolveImageBlobUrl(targetUrl);
+                }
+              }
+            }
+            pos = line.to + 1;
+          }
         }
       }
 
