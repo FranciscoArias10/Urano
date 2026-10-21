@@ -18,7 +18,7 @@ import {
   copyImageBlobToClipboard,
   procesarPegadoDeImagen,
 } from '../../editor/imageExtension';
-import { getStorageAdapter } from '../../services/storageAdapter';
+import { getStorageAdapter, toUint8Array } from '../../services/storageAdapter';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
@@ -258,22 +258,6 @@ export const Editor: React.FC<EditorProps> = ({
             run: () => {
               toggleInlineFormatting('*', '_');
               return true;
-            },
-          },
-          {
-            key: 'Mod-v',
-            run: (view) => {
-              invoke<number[] | null>('read_clipboard_image')
-                .then(async (nativeBytes) => {
-                  if (nativeBytes && nativeBytes.length > 0) {
-                    console.log('[Urano] Imagen interceptada con Mod-v desde portapapeles nativo');
-                    const uint8 = new Uint8Array(nativeBytes);
-                    const nativeFile = new File([uint8], 'pasted_image.png', { type: 'image/png' });
-                    await procesarPegadoDeImagen(nativeFile, view);
-                  }
-                })
-                .catch(() => {});
-              return false;
             },
           },
         ]),
@@ -1258,10 +1242,11 @@ export const Editor: React.FC<EditorProps> = ({
     try {
       // 1. Intentar leer imagen del portapapeles nativo del SO vía Tauri/arboard
       try {
-        const nativeBytes = await invoke<number[] | null>('read_clipboard_image');
+        const nativeBytes = toUint8Array(
+          await invoke<ArrayBuffer | number[] | null>('read_clipboard_image')
+        );
         if (nativeBytes && nativeBytes.length > 0) {
-          const uint8 = new Uint8Array(nativeBytes);
-          const file = new File([uint8], 'pasted_image.png', { type: 'image/png' });
+          const file = new File([nativeBytes], 'pasted_image.png', { type: 'image/png' });
           await procesarPegadoDeImagen(file, view);
           view.focus();
           return;
