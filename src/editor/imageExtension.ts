@@ -85,19 +85,75 @@ const MD_IMAGE_REGEX = /!\[([^\]]*)\]\(([^)]+)\)/g;
 export const imageBlobUrlCache = new Map<string, string>();
 
 /**
- * Updates cache keys when an image file is renamed so CodeMirror 6 widgets
- * can immediately display the image under its new name without refetching or flicker.
+ * Re-keys the image cache when a file is renamed so CodeMirror 6 widgets and
+ * ImageView display the image under its new name instantly, without flicker.
+ *
+ * `blob:`/`data:` URLs are still valid after the rename, so they are carried over.
+ * `asset://` URLs embed the old path (which no longer exists on disk), so the new
+ * keys get a fresh `convertFileSrc(newPath)` instead.
  */
 export function renameImageInCache(oldPath: string, newPath: string): void {
-  const oldFileName = oldPath.replace(/\\/g, '/').split('/').pop() || '';
-  const newFileName = newPath.replace(/\\/g, '/').split('/').pop() || '';
+  const normOld = oldPath.replace(/\\/g, '/');
+  const normNew = newPath.replace(/\\/g, '/');
+  const oldFileName = normOld.split('/').pop() || '';
+  const newFileName = normNew.split('/').pop() || '';
+  if (!isImagePath(newFileName) && !isImagePath(oldFileName)) return;
+
   const cachedUrl =
     imageBlobUrlCache.get(oldPath) ||
+    imageBlobUrlCache.get(normOld) ||
     imageBlobUrlCache.get(oldFileName);
-  if (cachedUrl) {
-    imageBlobUrlCache.set(newPath, cachedUrl);
-    imageBlobUrlCache.set(newFileName, cachedUrl);
+
+  imageBlobUrlCache.delete(oldPath);
+  imageBlobUrlCache.delete(normOld);
+  imageBlobUrlCache.delete(oldFileName);
+
+  let newUrl: string | undefined;
+  if (cachedUrl && /^(blob:|data:)/i.test(cachedUrl)) {
+    newUrl = cachedUrl;
+  } else {
+    try {
+      newUrl = convertFileSrc(newPath);
+    } catch {
+      newUrl = undefined;
+    }
   }
+
+  if (newUrl) {
+    imageBlobUrlCache.set(newPath, newUrl);
+    imageBlobUrlCache.set(normNew, newUrl);
+    imageBlobUrlCache.set(newFileName, newUrl);
+  }
+}
+
+/**
+ * Synchronously resolves the URL for an embed (cache hit or Tauri asset protocol).
+ * Returns null when only an asynchronous resolution is possible.
+ */
+export function getSyncImageUrl(targetPathOrUrl: string, resolvedFilePath?: string): string | null {
+  if (/^(https?:|blob:|data:|asset:)/i.test(targetPathOrUrl)) {
+    return targetPathOrUrl;
+  }
+  const targetKey = resolvedFilePath || targetPathOrUrl;
+  const cached =
+    imageBlobUrlCache.get(targetKey) ||
+    imageBlobUrlCache.get(targetPathOrUrl) ||
+    (resolvedFilePath ? imageBlobUrlCache.get(resolvedFilePath) : undefined);
+  if (cached) return cached;
+
+  if (resolvedFilePath && !/^(https?:|blob:|data:|asset:)/i.test(resolvedFilePath)) {
+    try {
+      const assetUrl = convertFileSrc(resolvedFilePath);
+      if (assetUrl) {
+        imageBlobUrlCache.set(resolvedFilePath, assetUrl);
+        imageBlobUrlCache.set(targetPathOrUrl, assetUrl);
+        return assetUrl;
+      }
+    } catch {
+      // fall through
+    }
+  }
+  return null;
 }
 
 /**
@@ -330,7 +386,20 @@ export class ImageWidget extends WidgetType {
       (state.info.resolvedFilePath || '') === (this.info.resolvedFilePath || '') &&
       state.info.isWikilink === this.info.isWikilink &&
       dom.classList.contains('cm-image-block-preview') === this.isBlockPreview;
-    if (!sameSource) return false;
+    if (!sameSource) {
+      // Same embed kind but the target changed (e.g. the image file was renamed and the
+      // link rewritten): swap the <img> source in place instead of rebuilding the widget,
+      // so the already-decoded picture stays on screen until the new one is ready.
+      const sameKind =
+        state.info.isWikilink === this.info.isWikilink &&
+        dom.classList.contains('cm-image-block-preview') === this.isBlockPreview;
+      if (!sameKind) return false;
+      const newUrl = getSyncImageUrl(this.info.targetPathOrUrl, this.info.resolvedFilePath);
+      if (!newUrl) return false;
+      if (state.img.src !== newUrl) {
+        state.img.src = newUrl;
+      }
+    }
 
     state.info = { ...this.info };
     applyImageDimensions(state.img, this.info.width, this.info.height);
