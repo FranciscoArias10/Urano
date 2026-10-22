@@ -25,6 +25,33 @@ import { copyImageBlobToClipboard } from '../../editor/imageExtension';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 import { useNoticeStore } from '../common/Notice';
 import { Tooltip } from '../common/Tooltip';
+import { UpdateLinksModal } from '../common/UpdateLinksModal';
+import {
+  scanAffectedLinks,
+  executeLinkRefactor,
+  executeFileRenameOnly,
+  getAlwaysUpdateLinksPref,
+  setAlwaysUpdateLinksPref,
+  LinkScanResult,
+} from '../../services/linkRefactorService';
+
+/**
+ * Extracts the base name (without extension) and extension for any file.
+ * Folders return { baseName: fileName, extension: '' }.
+ */
+export function getBaseNameAndExt(fileName: string, isDir: boolean): { baseName: string; extension: string } {
+  if (isDir) {
+    return { baseName: fileName, extension: '' };
+  }
+  const lastDot = fileName.lastIndexOf('.');
+  if (lastDot > 0) {
+    return {
+      baseName: fileName.substring(0, lastDot),
+      extension: fileName.substring(lastDot),
+    };
+  }
+  return { baseName: fileName, extension: '' };
+}
 
 // Context to coordinate folder expansion and newly created items for inline rename
 interface FileTreeContextValue {
@@ -33,6 +60,7 @@ interface FileTreeContextValue {
   renamingPath: string | null;
   setRenamingPath: (path: string | null) => void;
   onOpenInNewTab?: (filePath: string) => void;
+  requestFileRename: (oldPath: string, finalName: string, isDir: boolean) => Promise<void>;
 }
 
 const FileTreeContext = createContext<FileTreeContextValue | null>(null);
@@ -52,13 +80,107 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
     createUntitledNote,
     createUntitledCanvas,
     createUntitledFolder,
+    activeVault,
+    fileTree,
   } = useVaultStore();
+
+  const { showNotice } = useNoticeStore();
 
   const [collapsedMap, setCollapsedMap] = useState<Record<string, boolean>>({});
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
 
   const [sortMenu, setSortMenu] = useState<{ x: number; y: number } | null>(null);
   const [rootContextMenu, setRootContextMenu] = useState<{ x: number; y: number } | null>(null);
+
+  const [pendingRename, setPendingRename] = useState<{
+    plan: LinkScanResult;
+    oldPath: string;
+    newPath: string;
+  } | null>(null);
+
+  const requestFileRename = async (oldPath: string, finalName: string, isDir: boolean) => {
+    const normOld = oldPath.replace(/\\/g, '/');
+    const parentDir = normOld.substring(0, normOld.lastIndexOf('/'));
+    const newPath = `${parentDir}/${finalName}`.replace(/\/+/g, '/');
+
+    if (normOld === newPath) {
+      return;
+    }
+
+    // Sibling collision (case-insensitive, like Obsidian on case-insensitive filesystems)
+    const target = newPath.toLowerCase();
+    const collides = (items: FileItem[]): boolean =>
+      items.some((f) => {
+        const p = f.path.replace(/\\/g, '/');
+        if (p.toLowerCase() === target && p !== normOld) return true;
+        return f.children ? collides(f.children) : false;
+      });
+    if (collides(fileTree)) {
+      showNotice('Ya existe un archivo o carpeta con ese nombre.', 3000, 'error');
+      return;
+    }
+
+    if (isDir) {
+      try {
+        await useVaultStore.getState().renameItem(oldPath, newPath);
+      } catch (err: any) {
+        showNotice(err?.toString() || 'Error al renombrar carpeta', 3000, 'error');
+      }
+      return;
+    }
+
+    try {
+      const scanResult = await scanAffectedLinks(activeVault || '', oldPath, newPath);
+
+      if (scanResult.totalLinks === 0) {
+        await executeFileRenameOnly(oldPath, newPath);
+        return;
+      }
+
+      const pref = getAlwaysUpdateLinksPref();
+      if (pref === 'always') {
+        await executeLinkRefactor(scanResult, oldPath, newPath);
+        notifyLinksUpdated(scanResult);
+      } else if (pref === 'never') {
+        await executeFileRenameOnly(oldPath, newPath);
+      } else {
+        // 'prompt' -> Obsidian 1:1 "Update links" modal decides
+        setPendingRename({ plan: scanResult, oldPath, newPath });
+      }
+    } catch (err: any) {
+      console.error('Error during rename:', err);
+      showNotice(err?.toString() || 'Error al renombrar archivo', 3000, 'error');
+    }
+  };
+
+  const notifyLinksUpdated = (plan: LinkScanResult) => {
+    showNotice(
+      `Updated ${plan.totalLinks} ${plan.totalLinks === 1 ? 'link' : 'links'} in ${plan.totalFiles} ${plan.totalFiles === 1 ? 'file' : 'files'}.`,
+      3000,
+      'success'
+    );
+  };
+
+  /** Resolves the pending "Update links" modal. */
+  const resolvePendingRename = async (mode: 'always' | 'once' | 'skip') => {
+    const pr = pendingRename;
+    setPendingRename(null);
+    if (!pr) return;
+    try {
+      if (mode === 'skip') {
+        await executeFileRenameOnly(pr.oldPath, pr.newPath);
+        return;
+      }
+      if (mode === 'always') {
+        setAlwaysUpdateLinksPref('always');
+      }
+      await executeLinkRefactor(pr.plan, pr.oldPath, pr.newPath);
+      notifyLinksUpdated(pr.plan);
+    } catch (err: any) {
+      console.error('Error during rename:', err);
+      showNotice(err?.toString() || 'Error al renombrar archivo', 3000, 'error');
+    }
+  };
 
   const setFolderOpen = (path: string, isOpen: boolean) => {
     setCollapsedMap((prev) => ({
@@ -161,6 +283,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
         renamingPath,
         setRenamingPath,
         onOpenInNewTab,
+        requestFileRename,
       }}
     >
       <div className="flex flex-col select-none h-full">
@@ -266,6 +389,18 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
           />
         )}
       </div>
+
+      {/* Obsidian 1:1 "Update links" Modal */}
+      {pendingRename && (
+        <UpdateLinksModal
+          isOpen={true}
+          totalLinks={pendingRename.plan.totalLinks}
+          totalFiles={pendingRename.plan.totalFiles}
+          onAlwaysUpdate={() => resolvePendingRename('always')}
+          onJustOnce={() => resolvePendingRename('once')}
+          onDoNotUpdate={() => resolvePendingRename('skip')}
+        />
+      )}
     </FileTreeContext.Provider>
   );
 };
@@ -289,7 +424,6 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
     createUntitledFolder,
     duplicateNote,
     deleteItem,
-    renameNoteWithLinkRefactor,
     moveItem,
     isBookmarked,
     toggleBookmark,
@@ -301,9 +435,8 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
   const isOpen = !isClosed;
 
   const isRenaming = ctx?.renamingPath === item.path;
-  const [renameValue, setRenameValue] = useState(
-    item.name.replace(/\.(md|canvas|base)$/i, '')
-  );
+  const { baseName: initialBaseName } = getBaseNameAndExt(item.name, item.isDir);
+  const [renameValue, setRenameValue] = useState(initialBaseName);
 
   const [isDragTarget, setIsDragTarget] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
@@ -329,8 +462,9 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
 
   // Keep renameValue in sync
   useEffect(() => {
-    setRenameValue(item.name.replace(/\.(md|canvas|base)$/i, ''));
-  }, [item.name]);
+    const { baseName } = getBaseNameAndExt(item.name, item.isDir);
+    setRenameValue(baseName);
+  }, [item.name, item.isDir]);
 
   useEffect(() => {
     if (isRenaming && renameInputRef.current) {
@@ -362,13 +496,10 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
 
     ctx?.setRenamingPath(null);
 
-    if (trimmed && trimmed !== item.name.replace(/\.(md|canvas|base)$/i, '')) {
-      const res = await renameNoteWithLinkRefactor(item.path, trimmed);
-      if (res.success) {
-        showNotice('Renombrado con éxito', 2000, 'success');
-      } else {
-        showNotice(res.error || 'Error al renombrar', 3000, 'error');
-      }
+    const { baseName: currentBaseName, extension: currentExt } = getBaseNameAndExt(item.name, item.isDir);
+    if (trimmed && trimmed !== currentBaseName) {
+      const finalName = currentExt ? `${trimmed}${currentExt}` : trimmed;
+      await ctx?.requestFileRename(item.path, finalName, item.isDir);
     }
   };
 
@@ -593,8 +724,18 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
                 ref={renameInputRef}
                 type="text"
                 value={renameValue}
+                spellCheck={false}
+                autoComplete="off"
                 onChange={(e) => setRenameValue(e.target.value)}
                 onBlur={() => handleRenameSubmit()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setRenameValue(initialBaseName);
+                    ctx?.setRenamingPath(null);
+                  }
+                }}
                 className="w-full bg-[#161616] text-white px-1.5 py-0.5 rounded outline-none border border-orange-500"
               />
             </form>
@@ -605,8 +746,8 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           )}
         </div>
 
-        {/* Badges for CANVAS, BASE, and IMAGES */}
-        {!isRenaming && (
+        {/* Badges for CANVAS, BASE, and IMAGES (stay visible while renaming, like Obsidian) */}
+        {(isCanvas || isBase || imageTag) && (
           <div className="flex items-center shrink-0">
             {isCanvas && <span className="nav-file-tag">CANVAS</span>}
             {isBase && <span className="nav-file-tag">BASE</span>}
