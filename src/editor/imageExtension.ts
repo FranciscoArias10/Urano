@@ -85,6 +85,22 @@ const MD_IMAGE_REGEX = /!\[([^\]]*)\]\(([^)]+)\)/g;
 export const imageBlobUrlCache = new Map<string, string>();
 
 /**
+ * Updates cache keys when an image file is renamed so CodeMirror 6 widgets
+ * can immediately display the image under its new name without refetching or flicker.
+ */
+export function renameImageInCache(oldPath: string, newPath: string): void {
+  const oldFileName = oldPath.replace(/\\/g, '/').split('/').pop() || '';
+  const newFileName = newPath.replace(/\\/g, '/').split('/').pop() || '';
+  const cachedUrl =
+    imageBlobUrlCache.get(oldPath) ||
+    imageBlobUrlCache.get(oldFileName);
+  if (cachedUrl) {
+    imageBlobUrlCache.set(newPath, cachedUrl);
+    imageBlobUrlCache.set(newFileName, cachedUrl);
+  }
+}
+
+/**
  * Resolves absolute path of an image within active vault and fileTree
  */
 export function resolveVaultImagePath(rawTarget: string): string {
