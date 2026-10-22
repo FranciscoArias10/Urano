@@ -6,8 +6,7 @@ import {
   offsetSidePoint,
   calculateBezier,
   getBezierMidpoint,
-  CANVAS_COLORS,
-  DEFAULT_COLOR,
+  resolveCanvasColor,
   SIDE_ANGLES,
 } from './canvasMath';
 
@@ -52,8 +51,13 @@ export const CanvasEdgeView: React.FC<CanvasEdgeViewProps> = ({
   const bezier = calculateBezier(fromOffset, edge.fromSide, toOffset, edge.toSide);
   const midpoint = getBezierMidpoint(0.5, bezier);
 
-  const colorScheme = edge.color && CANVAS_COLORS[edge.color] ? CANVAS_COLORS[edge.color] : DEFAULT_COLOR;
-  const strokeColor = isSelected ? 'var(--color-accent)' : colorScheme.hex;
+  const colorScheme = resolveCanvasColor(edge.color);
+  // Una arista coloreada conserva su color incluso al seleccionarla.
+  const strokeColor = edge.color
+    ? colorScheme.hex
+    : isSelected
+      ? 'var(--color-accent)'
+      : colorScheme.hex;
 
   // Arrowhead at destination
   const toAngle = SIDE_ANGLES[edge.toSide];
