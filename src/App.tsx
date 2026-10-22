@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { useVaultStore } from './stores/vaultStore';
 import { useSyncStore } from './stores/syncStore';
 import { TabBar, TabItem } from './components/tabs/TabBar';
+import { ViewHeader, ViewMode } from './components/layout/ViewHeader';
 import { FileTree } from './components/vault/FileTree';
 import { Editor, getActiveEditorView } from './components/editor/Editor';
 import { EditorErrorBoundary } from './components/editor/EditorErrorBoundary';
@@ -50,10 +51,42 @@ import {
   Bookmark,
 } from 'lucide-react';
 
+/** Stable, unique identifier for a workspace leaf (tab). */
+let tabIdCounter = 0;
+const makeTabId = () => {
+  tabIdCounter += 1;
+  return `tab_${Date.now()}_${tabIdCounter}`;
+};
+
 export const App: React.FC = () => {
   // Tabs State (Obsidian Workspace Leaf Tabs)
   const [tabs, setTabs] = useState<TabItem[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>('');
+
+  // Per tab navigation history (Obsidian leaf history: historyStack + currentIndex)
+  const [navHistory, setNavHistory] = useState<
+    Record<string, { stack: string[]; index: number }>
+  >({});
+
+  // Live Preview / Reading View (Obsidian "Toggle reading view", Ctrl+E)
+  const [viewMode, setViewMode] = useState<ViewMode>('live-preview');
+
+  // When true the next activeFile change navigates the current tab instead of
+  // opening a new one (Obsidian navigates the leaf in place).
+  const reuseActiveTabRef = useRef(false);
+
+  // Latest shortcut handlers (kept in a ref so the global listener never goes stale)
+  const shortcutsRef = useRef<{
+    back: () => void;
+    forward: () => void;
+    newTab: () => void;
+    toggleViewMode: () => void;
+  }>({
+    back: () => {},
+    forward: () => {},
+    newTab: () => {},
+    toggleViewMode: () => {},
+  });
 
   // Left Sidebar State (Toggle + 3 Tabs: files, search, bookmarks)
   const [showLeftSidebar, setShowLeftSidebar] = useState(true);
@@ -90,6 +123,10 @@ export const App: React.FC = () => {
     openDailyNote,
     createUntitledFolder,
     openOrCreateWikilink,
+    renameNoteWithLinkRefactor,
+    moveItem,
+    duplicateNote,
+    deleteItem,
   } = useVaultStore();
 
   const { checkAuthStatus, triggerSync, isSyncing, setShowConfigModal } = useSyncStore();
@@ -122,19 +159,38 @@ export const App: React.FC = () => {
       const { oldPath, newPath, newFileName, newBaseName } = detail;
       const title = isImagePath(newPath) ? newFileName : newBaseName;
       setTabs((prev) =>
-        prev.map((t) =>
-          t.filePath === oldPath ? { ...t, id: newPath, filePath: newPath, title } : t
-        )
+        prev.map((t) => (t.filePath === oldPath ? { ...t, filePath: newPath, title } : t))
       );
-      setActiveTabId((prev) => (prev === oldPath ? newPath : prev));
     };
     window.addEventListener(FILE_RENAMED_EVENT, onRenamed);
     return () => window.removeEventListener(FILE_RENAMED_EVENT, onRenamed);
   }, []);
 
+  // Registers a file in the history of a leaf (Obsidian leaf history)
+  const recordVisit = useCallback((tabId: string, filePath: string) => {
+    setNavHistory((prev) => {
+      const current = prev[tabId];
+      if (!current) {
+        return { ...prev, [tabId]: { stack: [filePath], index: 0 } };
+      }
+      // Already visited: just move the cursor (Obsidian does not duplicate entries)
+      const existingIndex = current.stack.indexOf(filePath);
+      if (existingIndex !== -1) {
+        if (existingIndex === current.index) return prev;
+        return { ...prev, [tabId]: { ...current, index: existingIndex } };
+      }
+      const stack = current.stack.slice(0, current.index + 1);
+      stack.push(filePath);
+      return { ...prev, [tabId]: { stack, index: stack.length - 1 } };
+    });
+  }, []);
+
   // Synchronize tabs when activeFile changes
   useEffect(() => {
     if (!activeFile) return;
+
+    const reuseActiveTab = reuseActiveTabRef.current;
+    reuseActiveTabRef.current = false;
 
     let type: TabItem['type'] = 'note';
     let ext = '.md';
@@ -153,31 +209,89 @@ export const App: React.FC = () => {
       ? (ext ? activeFileName.replace(new RegExp(`\\${ext}$`, 'i'), '') : activeFileName)
       : 'Archivo';
 
-    setTabs((prev) => {
-      const existingIdx = prev.findIndex((t) => t.filePath === activeFile);
-      if (existingIdx !== -1) {
-        const updated = [...prev];
-        updated[existingIdx] = {
-          ...updated[existingIdx],
-          title: fileName,
-          type,
-          isDirty,
-        };
-        return updated;
-      } else {
-        const newTab: TabItem = {
-          id: activeFile,
+    // Which leaf hosts this file?
+    const existing = tabs.find((t) => t.filePath === activeFile);
+    const reusable =
+      !existing && reuseActiveTab ? tabs.find((t) => t.id === activeTabId) : undefined;
+
+    let nextTabs: TabItem[];
+    let targetTabId: string;
+
+    if (existing) {
+      targetTabId = existing.id;
+      nextTabs = tabs.map((t) =>
+        t.id === existing.id ? { ...t, title: fileName, type, isDirty } : t
+      );
+    } else if (reusable) {
+      // Obsidian navigates the leaf in place (wikilinks, quick switcher)
+      targetTabId = reusable.id;
+      nextTabs = tabs.map((t) =>
+        t.id === reusable.id
+          ? { ...t, filePath: activeFile, title: fileName, type, isDirty }
+          : t
+      );
+    } else {
+      targetTabId = makeTabId();
+      nextTabs = [
+        ...tabs,
+        {
+          id: targetTabId,
           type,
           filePath: activeFile,
           title: fileName,
           isDirty,
-        };
-        return [...prev, newTab];
-      }
-    });
+        },
+      ];
+    }
 
-    setActiveTabId(activeFile);
+    setTabs(nextTabs);
+    setActiveTabId(targetTabId);
+    recordVisit(targetTabId, activeFile);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFile, activeFileName, isDirty]);
+
+  // Navigates the active leaf to another file, reusing the current tab
+  const navigateLeafTo = useCallback(
+    (filePath: string) => {
+      reuseActiveTabRef.current = true;
+      selectFile(filePath);
+    },
+    [selectFile]
+  );
+
+  // Back / forward navigation (Alt+Left / Alt+Right)
+  const handleNavigateBack = useCallback(() => {
+    const history = navHistory[activeTabId];
+    if (!history || history.index <= 0) return;
+    const target = history.stack[history.index - 1];
+    if (!target) return;
+    navigateLeafTo(target);
+  }, [navHistory, activeTabId, navigateLeafTo]);
+
+  const handleNavigateForward = useCallback(() => {
+    const history = navHistory[activeTabId];
+    if (!history || history.index >= history.stack.length - 1) return;
+    const target = history.stack[history.index + 1];
+    if (!target) return;
+    navigateLeafTo(target);
+  }, [navHistory, activeTabId, navigateLeafTo]);
+
+  const canGoBack = (navHistory[activeTabId]?.index ?? -1) > 0;
+  const canGoForward =
+    (() => {
+      const history = navHistory[activeTabId];
+      if (!history) return false;
+      return history.index < history.stack.length - 1;
+    })();
+
+  // Keep the global shortcut listener up to date
+  shortcutsRef.current = {
+    back: handleNavigateBack,
+    forward: handleNavigateForward,
+    newTab: () => handleCreateUntitledNote(),
+    toggleViewMode: () =>
+      setViewMode((mode) => (mode === 'live-preview' ? 'reading' : 'live-preview')),
+  };
 
   // Global Keyboard Shortcuts (Obsidian matching)
   useEffect(() => {
@@ -203,6 +317,25 @@ export const App: React.FC = () => {
       else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
         e.preventDefault();
         handleCreateUntitledNote();
+      }
+      // Ctrl+T: New tab
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        shortcutsRef.current.newTab();
+      }
+      // Ctrl+E: Toggle reading view / live preview
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        shortcutsRef.current.toggleViewMode();
+      }
+      // Alt+Left / Alt+Right: leaf navigation history
+      else if (e.altKey && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        shortcutsRef.current.back();
+      }
+      else if (e.altKey && e.key === 'ArrowRight') {
+        e.preventDefault();
+        shortcutsRef.current.forward();
       }
       // Ctrl+B: Toggle Left Sidebar
       else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b' && !e.shiftKey) {
@@ -384,34 +517,110 @@ export const App: React.FC = () => {
     }
   };
 
-  // Close tabs to right
-  const handleCloseTabsToRight = (tabId: string) => {
-    setTabs((prev) => {
-      const idx = prev.findIndex((t) => t.id === tabId);
-      if (idx === -1) return prev;
-      const newTabs = prev.slice(0, idx + 1);
-      if (!newTabs.some((t) => t.id === activeTabId)) {
-        setActiveTabId(tabId);
-        const tab = prev.find((t) => t.id === tabId);
-        if (tab?.filePath) {
-          selectFile(tab.filePath);
-        }
+  // Close all tabs (Obsidian keeps pinned tabs open)
+  const handleCloseAllTabs = () => {
+    const remaining = tabs.filter((t) => t.pinned);
+    setTabs(remaining);
+    if (!remaining.some((t) => t.id === activeTabId)) {
+      const next = remaining[remaining.length - 1];
+      if (next) {
+        setActiveTabId(next.id);
+        if (next.filePath) selectFile(next.filePath);
+      } else {
+        setActiveTabId('');
       }
-      return newTabs;
-    });
+    }
   };
 
-  // Duplicate tab
-  const handleDuplicateTab = (tabId: string) => {
-    const tab = tabs.find((t) => t.id === tabId);
-    if (!tab) return;
-    const newTabId = `${tab.id}_dup_${Date.now()}`;
-    const newTab: TabItem = {
-      ...tab,
-      id: newTabId,
-    };
-    setTabs((prev) => [...prev, newTab]);
-    setActiveTabId(newTabId);
+  // Pin / unpin a tab
+  const handleTogglePin = (tabId: string) => {
+    setTabs((prev) => prev.map((t) => (t.id === tabId ? { ...t, pinned: !t.pinned } : t)));
+  };
+
+  // Split views are not available in Urano yet
+  const handleSplitUnavailable = () => {
+    showNotice(
+      'Las vistas divididas todavía no están disponibles en Urano.',
+      2500,
+      'info'
+    );
+  };
+
+  /* --------------------------------------------------------------- *
+   * View header actions (Obsidian "More options" menu)
+   * --------------------------------------------------------------- */
+  const handleRenameFile = async (newTitle: string) => {
+    if (!activeFile) return;
+    const result = await renameNoteWithLinkRefactor(activeFile, newTitle);
+    if (!result.success) {
+      showNotice(result.error || 'No se pudo renombrar el archivo', 3000, 'error');
+    }
+  };
+
+  const handleMoveFile = async () => {
+    if (!activeFile) return;
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: 'Mover archivo a...',
+        defaultPath: activeVault || undefined,
+      });
+      if (selected && typeof selected === 'string') {
+        await moveItem(activeFile, selected);
+        showNotice('Archivo movido', 2000, 'success');
+      }
+    } catch (err) {
+      console.error('Error al mover el archivo:', err);
+    }
+  };
+
+  const handleDuplicateFile = async () => {
+    if (!activeFile) return;
+    try {
+      const newPath = await duplicateNote(activeFile);
+      if (newPath) showNotice('Copia creada', 2000, 'success');
+    } catch (err) {
+      console.error('Error al duplicar el archivo:', err);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!activeFileTitle) return;
+    try {
+      await navigator.clipboard.writeText(`[[${activeFileTitle}]]`);
+      showNotice('Enlace copiado al portapapeles', 2000, 'success');
+    } catch {
+      showNotice('No se pudo copiar el enlace', 3000, 'error');
+    }
+  };
+
+  const handleCopyPath = async () => {
+    if (!activeFile) return;
+    try {
+      await navigator.clipboard.writeText(activeFile);
+      showNotice('Ruta copiada al portapapeles', 2000, 'success');
+    } catch {
+      showNotice('No se pudo copiar la ruta', 3000, 'error');
+    }
+  };
+
+  const handleDeleteFile = async () => {
+    if (!activeFile) return;
+    const name = activeFileName || activeFile;
+    if (!window.confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer.`)) return;
+    try {
+      await deleteItem(activeFile);
+      showNotice('Archivo eliminado', 2000, 'success');
+    } catch (err) {
+      console.error('Error al eliminar el archivo:', err);
+    }
+  };
+
+  // Wikilinks navigate the current leaf in place (Obsidian behaviour)
+  const handleWikilinkClick = (name: string) => {
+    reuseActiveTabRef.current = true;
+    openOrCreateWikilink(name);
   };
 
   // Open note in a new tab (or to the right)
@@ -508,6 +717,27 @@ export const App: React.FC = () => {
       }
     }
   };
+
+  // Clean title of the active note (file name without extension)
+  const activeFileTitle = useMemo(() => {
+    if (!activeFile) return '';
+    const parts = activeFile.replace(/\\/g, '/').split('/');
+    const fileName = parts[parts.length - 1] || '';
+    return fileName.replace(/\.(md|canvas|base)$/i, '') || fileName;
+  }, [activeFile]);
+
+  // Folder breadcrumb of the active note (relative to the vault root)
+  const activeParentPath = useMemo(() => {
+    if (!activeFile) return [];
+    const normalized = activeFile.replace(/\\/g, '/');
+    const relative =
+      activeVault && normalized.startsWith(activeVault)
+        ? normalized.slice(activeVault.length)
+        : normalized;
+    const parts = relative.split('/').filter(Boolean);
+    parts.pop();
+    return parts;
+  }, [activeFile, activeVault]);
 
   // Compute backlinks count for the active file
   const backlinksCount = useMemo(() => {
@@ -879,9 +1109,35 @@ export const App: React.FC = () => {
             onSelectTab={handleSelectTab}
             onCloseTab={handleCloseTab}
             onCloseOtherTabs={handleCloseOtherTabs}
-            onCloseTabsToRight={handleCloseTabsToRight}
-            onDuplicateTab={handleDuplicateTab}
+            onCloseAllTabs={handleCloseAllTabs}
             onNewTab={handleCreateUntitledNote}
+            onTogglePin={handleTogglePin}
+            onToggleRightSidebar={() => setShowBacklinks((prev) => !prev)}
+            rightSidebarVisible={showBacklinks}
+            onSplitRight={handleSplitUnavailable}
+            onSplitDown={handleSplitUnavailable}
+          />
+
+          {/* Obsidian View Header (second row) */}
+          <ViewHeader
+            title={activeFileTitle}
+            parentPath={activeParentPath}
+            canGoBack={canGoBack}
+            canGoForward={canGoForward}
+            onNavigateBack={handleNavigateBack}
+            onNavigateForward={handleNavigateForward}
+            viewMode={viewMode}
+            onToggleViewMode={() =>
+              setViewMode((mode) => (mode === 'live-preview' ? 'reading' : 'live-preview'))
+            }
+            onRename={handleRenameFile}
+            onMoveFile={handleMoveFile}
+            onDuplicateFile={handleDuplicateFile}
+            onDeleteFile={handleDeleteFile}
+            onCopyLink={handleCopyLink}
+            onCopyPath={handleCopyPath}
+            onSplitRight={handleSplitUnavailable}
+            onSplitDown={handleSplitUnavailable}
           />
 
           {/* Tab Content Canvas */}
@@ -897,9 +1153,10 @@ export const App: React.FC = () => {
             ) : activeFile ? (
               <EditorErrorBoundary noteName={activeFileName || 'Nota'}>
                 <Editor
-                  onWikilinkClick={(name) => openOrCreateWikilink(name)}
+                  onWikilinkClick={handleWikilinkClick}
                   onOpenInNewTab={handleOpenInNewTab}
                   onOpenToRight={handleOpenInNewTab}
+                  viewMode={viewMode}
                 />
               </EditorErrorBoundary>
             ) : (
@@ -964,7 +1221,10 @@ export const App: React.FC = () => {
         fileTree={fileTree}
         commands={paletteCommands}
         onClose={() => setPaletteOpen(false)}
-        onSelectFile={(path) => selectFile(path)}
+        onSelectFile={(path) => {
+          reuseActiveTabRef.current = true;
+          selectFile(path);
+        }}
         onOpenInNewTab={handleOpenInNewTab}
       />
 

@@ -89,6 +89,7 @@ interface VaultState {
   refreshTree: () => Promise<void>;
   selectFile: (filePath: string) => Promise<void>;
   updateContent: (content: string) => void;
+  updateNoteContent: (filePath: string, content: string) => Promise<void>;
   saveCurrentFile: () => Promise<void>;
   createNote: (parentPath: string, name: string) => Promise<string>;
   createUntitledNote: (parentPath?: string) => Promise<{ path: string; name: string }>;
@@ -244,6 +245,25 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         ? { ...notesContentMap, [activeFile]: content }
         : notesContentMap,
     });
+  },
+
+  /**
+   * Actualiza el contenido de una nota concreta del Vault y lo persiste en disco.
+   * Se usa, entre otros, por los nodos de nota del Canvas (edición en vivo).
+   */
+  updateNoteContent: async (filePath: string, content: string) => {
+    if (!filePath) return;
+    const { activeFile, fileContent, notesContentMap } = get();
+    set({
+      notesContentMap: { ...notesContentMap, [filePath]: content },
+      fileContent: activeFile === filePath ? content : fileContent,
+      isDirty: activeFile === filePath ? true : get().isDirty,
+    });
+    try {
+      await invoke('write_file', { filePath, content });
+    } catch (err) {
+      console.error('Error al guardar la nota editada desde el Canvas:', err);
+    }
   },
 
   saveCurrentFile: async () => {
