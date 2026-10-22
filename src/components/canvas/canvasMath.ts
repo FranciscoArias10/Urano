@@ -14,45 +14,45 @@ export const CANVAS_COLORS: Record<
 > = {
   '1': {
     name: 'Rojo',
-    hex: '#e93147',
-    bg: 'rgba(233, 49, 71, 0.12)',
-    border: '#e93147',
+    hex: '#fb464c',
+    bg: 'rgba(251, 70, 76, 0.12)',
+    border: '#fb464c',
     text: '#ff8591',
   },
   '2': {
     name: 'Naranja',
-    hex: '#ec7500',
-    bg: 'rgba(236, 117, 0, 0.12)',
-    border: '#ec7500',
-    text: '#ffaa55',
+    hex: '#e9973f',
+    bg: 'rgba(233, 151, 63, 0.12)',
+    border: '#e9973f',
+    text: '#ffbe7a',
   },
   '3': {
     name: 'Amarillo',
-    hex: '#e0ac00',
-    bg: 'rgba(224, 172, 0, 0.12)',
-    border: '#e0ac00',
-    text: '#ffd84d',
+    hex: '#e0de71',
+    bg: 'rgba(224, 222, 113, 0.12)',
+    border: '#e0de71',
+    text: '#f0eea0',
   },
   '4': {
     name: 'Verde',
-    hex: '#08b94e',
-    bg: 'rgba(8, 185, 78, 0.12)',
-    border: '#08b94e',
-    text: '#55e08b',
+    hex: '#44cf6e',
+    bg: 'rgba(68, 207, 110, 0.12)',
+    border: '#44cf6e',
+    text: '#7fe4a0',
   },
   '5': {
     name: 'Cian',
-    hex: '#00bfbc',
-    bg: 'rgba(0, 191, 188, 0.12)',
-    border: '#00bfbc',
-    text: '#5ce6e3',
+    hex: '#53dfdd',
+    bg: 'rgba(83, 223, 221, 0.12)',
+    border: '#53dfdd',
+    text: '#8aebea',
   },
   '6': {
     name: 'Púrpura',
-    hex: '#7852ee',
-    bg: 'rgba(120, 82, 238, 0.12)',
-    border: '#7852ee',
-    text: '#a98eff',
+    hex: '#a882ff',
+    bg: 'rgba(168, 130, 255, 0.12)',
+    border: '#a882ff',
+    text: '#c5adff',
   },
 };
 
@@ -64,6 +64,46 @@ export const DEFAULT_COLOR = {
   border: '#383838',
   text: '#d4d4d4',
 };
+
+/** Círculo gris del selector de color (restablece el color del nodo/arista). */
+export const RESET_COLOR = '#808080';
+
+export type CanvasColorScheme = typeof DEFAULT_COLOR;
+
+/** ¿Es un color hexadecimal personalizado (`#rrggbb`)? */
+export function isCustomCanvasColor(color?: string): boolean {
+  return typeof color === 'string' && /^#[0-9a-fA-F]{6}$/.test(color);
+}
+
+/**
+ * Resuelve tanto las claves de la paleta de Obsidian (`"1"`..`"6"`) como los
+ * colores hexadecimales personalizados elegidos con la rueda de color.
+ */
+export function resolveCanvasColor(color?: string): CanvasColorScheme {
+  if (color && CANVAS_COLORS[color]) return CANVAS_COLORS[color];
+  if (isCustomCanvasColor(color)) {
+    return {
+      name: 'Personalizado',
+      hex: color as string,
+      bg: `color-mix(in srgb, ${color} 12%, #1e1e1e)`,
+      border: color as string,
+      text: '#ffffff',
+    };
+  }
+  return DEFAULT_COLOR;
+}
+
+/** Lado de `to` que mira hacia `from` (lado opuesto al origen de la flecha). */
+export function facingSide(from: CanvasBBox, to: CanvasBBox): CanvasNodeSide {
+  const fromX = (from.minX + from.maxX) / 2;
+  const fromY = (from.minY + from.maxY) / 2;
+  const toX = (to.minX + to.maxX) / 2;
+  const toY = (to.minY + to.maxY) / 2;
+  const dx = toX - fromX;
+  const dy = toY - fromY;
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 'left' : 'right';
+  return dy >= 0 ? 'top' : 'bottom';
+}
 
 // Generate 16-hex alphanumeric id (Obsidian standard)
 export function generateCanvasId(): string {
@@ -206,6 +246,25 @@ export function autoSide(fromBbox: CanvasBBox, toBbox: CanvasBBox): CanvasNodeSi
 // Check if a point is inside a bounding box
 export function isPointInBBox(p: CanvasPoint, bbox: CanvasBBox): boolean {
   return p.x >= bbox.minX && p.x <= bbox.maxX && p.y >= bbox.minY && p.y <= bbox.maxY;
+}
+
+/**
+ * Devuelve el lado del bbox más cercano a un punto.
+ * Se usa al soltar una flecha cerca de cualquiera de los 4 lados de un nodo.
+ */
+export function closestSide(bbox: CanvasBBox, point: CanvasPoint): CanvasNodeSide {
+  const sides: CanvasNodeSide[] = ['top', 'right', 'bottom', 'left'];
+  let best: CanvasNodeSide = 'top';
+  let bestDistance = Infinity;
+  for (const side of sides) {
+    const center = getSideCenter(bbox, side);
+    const distance = Math.hypot(center.x - point.x, center.y - point.y);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = side;
+    }
+  }
+  return best;
 }
 
 // Check if two bounding boxes intersect
