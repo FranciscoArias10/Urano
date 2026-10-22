@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import {
   StickyNote,
   FileText,
+  FileImage,
   FolderPlus,
   Maximize,
   Copy,
@@ -11,6 +12,9 @@ import {
   FilePlus,
   Palette,
   CheckSquare,
+  Link2,
+  Frame,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useNoticeStore } from '../common/Notice';
@@ -32,19 +36,51 @@ import {
   offsetSidePoint,
   getSideCenter,
   autoSide,
+  closestSide,
   CANVAS_COLORS,
+  facingSide,
 } from './canvasMath';
 import { CanvasControls } from './CanvasControls';
-import { CanvasCardMenu } from './CanvasCardMenu';
+import { CanvasCardMenu, CanvasCardMenuType } from './CanvasCardMenu';
 import { CanvasFloatingMenu } from './CanvasFloatingMenu';
 import { CanvasNodeView } from './CanvasNodeView';
 import { CanvasEdgeView } from './CanvasEdgeView';
-import { VaultFileModal } from './VaultFileModal';
+import { VaultFileModal, VaultFileModalMode } from './VaultFileModal';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
+import { isImagePath, toUint8Array } from '../../services/storageAdapter';
+import { resolveImageBlobUrl, saveClipboardImageToVault } from '../../editor/imageExtension';
 import './canvasStyles.css';
 
 interface CanvasViewProps {
   filePath: string;
+}
+
+/** Tamaño de la cuadrícula used por "Snap to grid". */
+const GRID_SIZE = 20;
+
+/** Límites de zoom del Canvas (1 = 100 %). */
+const MIN_ZOOM = 0.15;
+const MAX_ZOOM = 3.0;
+
+/** Dimensiones por defecto de los nodos (1:1 con Obsidian). */
+const DEFAULT_TEXT_NODE_SIZE = { width: 250, height: 100 };
+const DEFAULT_FILE_NODE_SIZE = { width: 400, height: 300 };
+const DEFAULT_IMAGE_NODE_SIZE = { width: 400, height: 300 };
+
+const snap = (value: number): number => Math.round(value / GRID_SIZE) * GRID_SIZE;
+
+/** Obtiene el tamaño natural de una imagen a partir de su URL. */
+function getImageNaturalSize(url: string): Promise<{ width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    if (!url) {
+      resolve(null);
+      return;
+    }
+    const img = new window.Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
 }
 
 export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
@@ -54,6 +90,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     selectFile,
     refreshTree,
     activeVault,
+    openOrCreateWikilink,
+    fileTree,
   } = useVaultStore();
   const { showNotice } = useNoticeStore();
 
@@ -61,6 +99,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState<CanvasPoint>({ x: 0, y: 0 });
   const [readonly, setReadonly] = useState(false);
+  const [snapToGrid, setSnapToGrid] = useState(false);
 
   // Selection
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
@@ -75,11 +114,14 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const dragStartMouseRef = useRef<CanvasPoint>({ x: 0, y: 0 });
   const initialNodesStateRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const dragOriginDataRef = useRef<CanvasData | null>(null);
+  const dragMovedRef = useRef(false);
 
   // Node Resizing
   const [resizingHandle, setResizingHandle] = useState<string | null>(null);
   const resizeStartMouseRef = useRef<CanvasPoint>({ x: 0, y: 0 });
   const resizeStartNodeRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
+  const resizeOriginDataRef = useRef<CanvasData | null>(null);
 
   // Connection Dragging (Creating an edge)
   const [connectingFrom, setConnectingFrom] = useState<{
@@ -87,6 +129,22 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     side: CanvasNodeSide;
   } | null>(null);
   const [connectingMouseWorld, setConnectingMouseWorld] = useState<CanvasPoint | null>(null);
+
+  // Flecha temporal congelada sobre el lienzo vacío: mantiene la punta en el
+  // punto de soltado y abre el menú de creación de Obsidian.
+  const [pendingEdgeDrop, setPendingEdgeDrop] = useState<{
+    sourceNodeId: string;
+    sourceSide: CanvasNodeSide;
+    world: CanvasPoint;
+  } | null>(null);
+  const pendingEdgeDropRef = useRef<{
+    sourceNodeId: string;
+    sourceSide: CanvasNodeSide;
+    world: CanvasPoint;
+  } | null>(null);
+  const [edgeDropMenu, setEdgeDropMenu] = useState<{ x: number; y: number } | null>(null);
+  const keepPendingOnMenuCloseRef = useRef(false);
+  const vaultSelectionCommittedRef = useRef(false);
 
   // Selection box (dragging rectangle in empty canvas)
   const [selectionBox, setSelectionBox] = useState<{
@@ -97,7 +155,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   } | null>(null);
 
   // Vault file picker modal
-  const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
+  const [vaultModal, setVaultModal] = useState<{ open: boolean; mode: VaultFileModalMode }>({
+    open: false,
+    mode: 'note',
+  });
   const pendingDropPosRef = useRef<CanvasPoint | null>(null);
 
   // Editing state
@@ -111,8 +172,16 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     items: MenuItemData[];
   } | null>(null);
 
+  // Undo / Redo history
+  const historyRef = useRef<{ past: CanvasData[]; future: CanvasData[] }>({ past: [], future: [] });
+  const [, forceHistoryRender] = useState(0);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* ------------------------------------------------------------------ */
+  /* Persistencia                                                         */
+  /* ------------------------------------------------------------------ */
 
   // 1. Load and parse JSON Canvas 1.0 from fileContent or disk
   useEffect(() => {
@@ -133,6 +202,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
             nodes: Array.isArray(parsed.nodes) ? parsed.nodes : [],
             edges: Array.isArray(parsed.edges) ? parsed.edges : [],
           });
+          historyRef.current = { past: [], future: [] };
+          forceHistoryRender((v) => v + 1);
         }
       } catch (err) {
         console.warn('Error al parsear archivo .canvas:', err);
@@ -148,6 +219,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   // 2. Persist with Debounce (300ms)
   const persistCanvas = useCallback(
     (newData: CanvasData) => {
+      canvasDataRef.current = newData;
       setCanvasData(newData);
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
@@ -165,14 +237,128 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     [filePath, updateContent]
   );
 
-  // Convert screen coordinates to world coordinates
+  /* ------------------------------------------------------------------ */
+  /* Historial (Deshacer / Rehacer)                                       */
+  /* ------------------------------------------------------------------ */
+
+  /**
+   * Espejo del estado actual del lienzo.
+   * Permite que las operaciones asíncronas (pegar, cargar imágenes...) apliquen
+   * sus cambios sobre el estado más reciente y no sobre una copia obsoleta.
+   */
+  const canvasDataRef = useRef<CanvasData>(canvasData);
+  canvasDataRef.current = canvasData;
+
+  const pushHistory = useCallback((snapshot: CanvasData) => {
+    historyRef.current.past.push(snapshot);
+    if (historyRef.current.past.length > 100) historyRef.current.past.shift();
+    historyRef.current.future = [];
+    forceHistoryRender((v) => v + 1);
+  }, []);
+
+  /**
+   * Aplica un cambio al lienzo registrándolo en el historial.
+   * Admite tanto un estado concreto como una función sobre el estado actual.
+   */
+  const applyChange = useCallback(
+    (next: CanvasData | ((prev: CanvasData) => CanvasData)) => {
+      const prev = canvasDataRef.current;
+      const resolved = typeof next === 'function' ? next(prev) : next;
+      pushHistory(prev);
+      canvasDataRef.current = resolved;
+      persistCanvas(resolved);
+    },
+    [persistCanvas, pushHistory]
+  );
+
+  /* ------------------------------------------------------------------ */
+  /* Flecha pendiente sobre lienzo vacío (menú de creación)               */
+  /* ------------------------------------------------------------------ */
+
+  const updatePendingEdgeDrop = useCallback(
+    (drop: { sourceNodeId: string; sourceSide: CanvasNodeSide; world: CanvasPoint } | null) => {
+      pendingEdgeDropRef.current = drop;
+      setPendingEdgeDrop(drop);
+    },
+    []
+  );
+
+  const cancelPendingEdgeDrop = useCallback(() => {
+    pendingEdgeDropRef.current = null;
+    setPendingEdgeDrop(null);
+    setEdgeDropMenu(null);
+    keepPendingOnMenuCloseRef.current = false;
+  }, []);
+
+  /**
+   * Conecta el nodo recién creado con el nodo origen de la flecha pendiente.
+   * Se usa el lado de la nueva tarjeta que mira hacia el origen (lado opuesto
+   * a la dirección en la que se arrastró la flecha).
+   */
+  const connectPendingEdge = useCallback(
+    (newNodeId: string) => {
+      const pending = pendingEdgeDropRef.current;
+      if (!pending) return;
+      const source = canvasDataRef.current.nodes.find((n) => n.id === pending.sourceNodeId);
+      const target = canvasDataRef.current.nodes.find((n) => n.id === newNodeId);
+
+      if (source && target) {
+        const newEdge: CanvasEdge = {
+          id: generateCanvasId(),
+          fromNode: source.id,
+          fromSide: pending.sourceSide,
+          toNode: target.id,
+          toSide: facingSide(getNodeBBox(source), getNodeBBox(target)),
+          toEnd: 'arrow',
+        };
+        applyChange((prev) => ({ ...prev, edges: [...prev.edges, newEdge] }));
+      }
+
+      cancelPendingEdgeDrop();
+    },
+    [applyChange, cancelPendingEdgeDrop]
+  );
+
+  const handleUndo = useCallback(() => {
+    const { past, future } = historyRef.current;
+    if (past.length === 0) return;
+    const previous = past[past.length - 1];
+    historyRef.current.past = past.slice(0, -1);
+    historyRef.current.future = [canvasDataRef.current, ...future].slice(0, 100);
+    canvasDataRef.current = previous;
+    setSelectedNodeIds(new Set());
+    setSelectedEdgeId(null);
+    persistCanvas(previous);
+    forceHistoryRender((v) => v + 1);
+  }, [persistCanvas]);
+
+  const handleRedo = useCallback(() => {
+    const { past, future } = historyRef.current;
+    if (future.length === 0) return;
+    const next = future[0];
+    historyRef.current.future = future.slice(1);
+    historyRef.current.past = [...past, canvasDataRef.current].slice(-100);
+    canvasDataRef.current = next;
+    setSelectedNodeIds(new Set());
+    setSelectedEdgeId(null);
+    persistCanvas(next);
+    forceHistoryRender((v) => v + 1);
+  }, [persistCanvas]);
+
+  const canUndo = historyRef.current.past.length > 0;
+  const canRedo = historyRef.current.future.length > 0;
+
+  /* ------------------------------------------------------------------ */
+  /* Coordenadas                                                          */
+  /* ------------------------------------------------------------------ */
+
   const screenToWorld = useCallback(
     (clientX: number, clientY: number): CanvasPoint => {
       if (!containerRef.current) return { x: 0, y: 0 };
       const rect = containerRef.current.getBoundingClientRect();
       return {
-        x: Math.round((clientX - rect.left - pan.x) / zoom),
-        y: Math.round((clientY - rect.top - pan.y) / zoom),
+        x: (clientX - rect.left - pan.x) / zoom,
+        y: (clientY - rect.top - pan.y) / zoom,
       };
     },
     [pan, zoom]
@@ -183,8 +369,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     if (!containerRef.current) return { x: 200, y: 200 };
     const rect = containerRef.current.getBoundingClientRect();
     return {
-      x: Math.round((rect.width / 2 - pan.x) / zoom),
-      y: Math.round((rect.height / 2 - pan.y) / zoom),
+      x: (rect.width / 2 - pan.x) / zoom,
+      y: (rect.height / 2 - pan.y) / zoom,
     };
   }, [pan, zoom]);
 
@@ -205,10 +391,64 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
     setZoom(newZoom);
     setPan({
-      x: Math.round(rect.width / 2 - centerX * newZoom),
-      y: Math.round(rect.height / 2 - centerY * newZoom),
+      x: rect.width / 2 - centerX * newZoom,
+      y: rect.height / 2 - centerY * newZoom,
     });
   }, [canvasData.nodes]);
+
+  // Zoom a la selección: centra la cámara y ajusta el zoom para encuadrar
+  // el nodo indicado. Equivale a `zoomToBbox` de Obsidian, que nunca amplía
+  // más allá del 100 %: factor = min(W / (1.1 * ancho), H / (1.1 * alto)).
+  const handleZoomToNode = useCallback((nodeId: string) => {
+    const node = canvasDataRef.current.nodes.find((n) => n.id === nodeId);
+    if (!node || !containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const w = Math.max(node.width, 1);
+    const h = Math.max(node.height, 1);
+
+    const factor = Math.min(rect.width / (1.1 * w), rect.height / (1.1 * h));
+    const newZoom = Math.max(MIN_ZOOM, Math.min(1, factor));
+
+    const centerX = node.x + node.width / 2;
+    const centerY = node.y + node.height / 2;
+
+    setZoom(newZoom);
+    setPan({
+      x: rect.width / 2 - centerX * newZoom,
+      y: rect.height / 2 - centerY * newZoom,
+    });
+  }, []);
+
+  // Elimina un nodo concreto (botón "Eliminar" de la barra flotante del nodo).
+  const handleDeleteNode = useCallback(
+    (nodeId: string) => {
+      setSelectedNodeIds(new Set());
+      setSelectedEdgeId(null);
+      setEditingNodeId(null);
+      applyChange((prev) => ({
+        ...prev,
+        nodes: prev.nodes.filter((n) => n.id !== nodeId),
+        edges: prev.edges.filter((e) => e.fromNode !== nodeId && e.toNode !== nodeId),
+      }));
+    },
+    [applyChange]
+  );
+
+  // Aplica uno de los 6 colores del Canvas a un nodo (botón "Color").
+  const handleSetNodeColor = useCallback(
+    (nodeId: string, colorKey?: string) => {
+      applyChange((prev) => ({
+        ...prev,
+        nodes: prev.nodes.map((n) => {
+          if (n.id !== nodeId) return n;
+          const { color: _oldColor, ...rest } = n;
+          return colorKey ? { ...rest, color: colorKey } : rest;
+        }),
+      }));
+    },
+    [applyChange]
+  );
 
   // Reset zoom to 100%
   const handleResetZoom = useCallback(() => {
@@ -221,8 +461,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
           const centerX = (bbox.minX + bbox.maxX) / 2;
           const centerY = (bbox.minY + bbox.maxY) / 2;
           setPan({
-            x: Math.round(rect.width / 2 - centerX),
-            y: Math.round(rect.height / 2 - centerY),
+            x: rect.width / 2 - centerX,
+            y: rect.height / 2 - centerY,
           });
           return;
         }
@@ -231,24 +471,57 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     }
   }, [canvasData.nodes]);
 
-  // Keyboard navigation & Shortcuts (Space pan, Delete, Ctrl+A, Ctrl+D)
+  /* ------------------------------------------------------------------ */
+  /* Atajos de teclado                                                    */
+  /* ------------------------------------------------------------------ */
+
+  // Delete currently selected nodes and/or edge
+  const deleteSelected = useCallback(() => {
+    setSelectedNodeIds(new Set());
+    setSelectedEdgeId(null);
+    applyChange((prev) => ({
+      nodes: prev.nodes.filter((n) => !selectedNodeIds.has(n.id)),
+      edges: prev.edges.filter(
+        (e) =>
+          !selectedNodeIds.has(e.fromNode) &&
+          !selectedNodeIds.has(e.toNode) &&
+          e.id !== selectedEdgeId
+      ),
+    }));
+  }, [selectedNodeIds, selectedEdgeId, applyChange]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const active = document.activeElement;
+      const inEditable =
+        active?.tagName === 'INPUT' ||
+        active?.tagName === 'TEXTAREA' ||
+        active?.getAttribute('contenteditable') === 'true';
+
       // Space for panning
       if (e.code === 'Space' && !isHoldingSpace) {
-        const active = document.activeElement;
-        if (active?.tagName === 'INPUT' || active?.tagName === 'TEXTAREA' || active?.getAttribute('contenteditable') === 'true') {
+        if (inEditable) return;
+        setIsHoldingSpace(true);
+      }
+
+      // Deshacer / Rehacer
+      if ((e.ctrlKey || e.metaKey) && !inEditable) {
+        const key = e.key.toLowerCase();
+        if (key === 'z' && !e.shiftKey) {
+          e.preventDefault();
+          handleUndo();
           return;
         }
-        setIsHoldingSpace(true);
+        if (key === 'y' || (key === 'z' && e.shiftKey)) {
+          e.preventDefault();
+          handleRedo();
+          return;
+        }
       }
 
       // Delete / Backspace
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        const active = document.activeElement;
-        if (active?.tagName === 'INPUT' || active?.tagName === 'TEXTAREA' || active?.getAttribute('contenteditable') === 'true') {
-          return;
-        }
+        if (inEditable) return;
         if (selectedNodeIds.size > 0 || selectedEdgeId) {
           e.preventDefault();
           deleteSelected();
@@ -257,10 +530,15 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
       // Ctrl + A (Select all)
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
-        const active = document.activeElement;
         if (active?.tagName === 'INPUT' || active?.tagName === 'TEXTAREA') return;
         e.preventDefault();
         setSelectedNodeIds(new Set(canvasData.nodes.map((n) => n.id)));
+      }
+
+      // Shift + 1 (Zoom to fit)
+      if (e.shiftKey && e.key === '!') {
+        e.preventDefault();
+        handleZoomToFit();
       }
 
       // Escape (Deselect / Close context menu)
@@ -269,7 +547,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         setSelectedEdgeId(null);
         setConnectingFrom(null);
         setConnectingMouseWorld(null);
+        cancelPendingEdgeDrop();
         setContextMenu(null);
+        setVaultModal({ open: false, mode: 'note' });
       }
     };
 
@@ -285,20 +565,22 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isHoldingSpace, selectedNodeIds, selectedEdgeId, canvasData.nodes]);
+  }, [
+    isHoldingSpace,
+    selectedNodeIds,
+    selectedEdgeId,
+    canvasData.nodes,
+    handleUndo,
+    handleRedo,
+    handleZoomToFit,
+    deleteSelected,
+    cancelPendingEdgeDrop,
+  ]);
 
-  // Delete currently selected nodes and/or edge
-  const deleteSelected = () => {
-    const nextNodes = canvasData.nodes.filter((n) => !selectedNodeIds.has(n.id));
-    const nextEdges = canvasData.edges.filter(
-      (e) => !selectedNodeIds.has(e.fromNode) && !selectedNodeIds.has(e.toNode) && e.id !== selectedEdgeId
-    );
-    setSelectedNodeIds(new Set());
-    setSelectedEdgeId(null);
-    persistCanvas({ nodes: nextNodes, edges: nextEdges });
-  };
+  /* ------------------------------------------------------------------ */
+  /* Zoom / rueda                                                        */
+  /* ------------------------------------------------------------------ */
 
-  // Wheel handling: Ctrl+Wheel -> Zoom to pointer; normal wheel -> Pan
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     if (!containerRef.current) return;
@@ -315,15 +597,314 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       const newPanY = mouseY - (mouseY - pan.y) * (newZoom / zoom);
 
       setZoom(newZoom);
-      setPan({ x: Math.round(newPanX), y: Math.round(newPanY) });
+      setPan({ x: newPanX, y: newPanY });
     } else {
       // Pan with trackpad or mouse wheel
       setPan((prev) => ({
-        x: Math.round(prev.x - e.deltaX),
-        y: Math.round(prev.y - e.deltaY),
+        x: prev.x - e.deltaX,
+        y: prev.y - e.deltaY,
       }));
     }
   };
+
+  /* ------------------------------------------------------------------ */
+  /* Creación de nodos                                                   */
+  /* ------------------------------------------------------------------ */
+
+  /** Inserta un nodo de texto (vacío y en modo edición). */
+  const createTextNode = useCallback(
+    (pos: CanvasPoint, text = '', autoEdit = true) => {
+      const id = generateCanvasId();
+      const newNode: CanvasNode = {
+        id,
+        type: 'text',
+        text,
+        x: pos.x - DEFAULT_TEXT_NODE_SIZE.width / 2,
+        y: pos.y - DEFAULT_TEXT_NODE_SIZE.height / 2,
+        width: DEFAULT_TEXT_NODE_SIZE.width,
+        height: DEFAULT_TEXT_NODE_SIZE.height,
+      };
+      applyChange((prev) => ({ ...prev, nodes: [...prev.nodes, newNode] }));
+      setSelectedNodeIds(new Set([id]));
+      setSelectedEdgeId(null);
+      if (autoEdit) setEditingNodeId(id);
+      return id;
+    },
+    [applyChange]
+  );
+
+  /** Inserta un nodo de archivo (nota o imagen) respetando el tamaño natural. */
+  const createFileNode = useCallback(
+    async (filePath: string, pos: CanvasPoint) => {
+      const id = generateCanvasId();
+      let width = DEFAULT_FILE_NODE_SIZE.width;
+      let height = DEFAULT_FILE_NODE_SIZE.height;
+
+      if (isImagePath(filePath)) {
+        const url = await resolveImageBlobUrl(filePath);
+        const natural = await getImageNaturalSize(url);
+        if (natural && natural.width > 0 && natural.height > 0) {
+          // Respeta la proporción original de la imagen al insertarla
+          const scale = Math.min(
+            DEFAULT_IMAGE_NODE_SIZE.width / natural.width,
+            DEFAULT_IMAGE_NODE_SIZE.height / natural.height,
+            1
+          );
+          width = Math.max(60, Math.round(natural.width * scale));
+          height = Math.max(60, Math.round(natural.height * scale));
+        }
+      }
+
+      const newNode: CanvasNode = {
+        id,
+        type: 'file',
+        file: filePath,
+        x: pos.x - width / 2,
+        y: pos.y - height / 2,
+        width,
+        height,
+      };
+      applyChange((prev) => ({ ...prev, nodes: [...prev.nodes, newNode] }));
+      setSelectedNodeIds(new Set([id]));
+      setSelectedEdgeId(null);
+      return id;
+    },
+    [applyChange]
+  );
+
+  const handleAddTextCard = useCallback(
+    (customPos?: CanvasPoint) => {
+      createTextNode(customPos || getVisibleCenter());
+    },
+    [createTextNode, getVisibleCenter]
+  );
+
+  const handleAddNoteCard = useCallback(
+    (customPos?: CanvasPoint) => {
+      pendingDropPosRef.current = customPos || getVisibleCenter();
+      setVaultModal({ open: true, mode: 'note' });
+    },
+    [getVisibleCenter]
+  );
+
+  const handleAddMediaCard = useCallback(
+    (customPos?: CanvasPoint) => {
+      pendingDropPosRef.current = customPos || getVisibleCenter();
+      setVaultModal({ open: true, mode: 'image' });
+    },
+    [getVisibleCenter]
+  );
+
+  const handleSelectVaultFile = useCallback(
+    async (vaultFilePath: string) => {
+      // La selección del modal es válida aunque el modal se cierre justo
+      // después: conservamos la flecha pendiente hasta terminar de crear el nodo.
+      vaultSelectionCommittedRef.current = true;
+      const pos = pendingDropPosRef.current || getVisibleCenter();
+      pendingDropPosRef.current = null;
+      const newNodeId = await createFileNode(vaultFilePath, pos);
+      if (pendingEdgeDropRef.current) {
+        connectPendingEdge(newNodeId);
+      }
+    },
+    [createFileNode, getVisibleCenter, connectPendingEdge]
+  );
+
+  /* ------------------------------------------------------------------ */
+  /* Acciones del menú al soltar una flecha en el lienzo vacío            */
+  /* ------------------------------------------------------------------ */
+
+  const handleEdgeDropAddCard = useCallback(() => {
+    const pending = pendingEdgeDropRef.current;
+    if (!pending) return;
+    const newCardId = createTextNode(pending.world);
+    connectPendingEdge(newCardId);
+  }, [createTextNode, connectPendingEdge]);
+
+  const handleEdgeDropAddNote = useCallback(() => {
+    const pending = pendingEdgeDropRef.current;
+    if (!pending) return;
+    keepPendingOnMenuCloseRef.current = true;
+    vaultSelectionCommittedRef.current = false;
+    pendingDropPosRef.current = pending.world;
+    setVaultModal({ open: true, mode: 'note' });
+  }, []);
+
+  const handleEdgeDropAddMedia = useCallback(() => {
+    const pending = pendingEdgeDropRef.current;
+    if (!pending) return;
+    keepPendingOnMenuCloseRef.current = true;
+    vaultSelectionCommittedRef.current = false;
+    pendingDropPosRef.current = pending.world;
+    setVaultModal({ open: true, mode: 'image' });
+  }, []);
+
+  const handleEdgeDropMenuClose = useCallback(() => {
+    setEdgeDropMenu(null);
+    if (keepPendingOnMenuCloseRef.current) {
+      // Se abrió el selector del Vault: la flecha debe seguir visible.
+      keepPendingOnMenuCloseRef.current = false;
+      return;
+    }
+    cancelPendingEdgeDrop();
+  }, [cancelPendingEdgeDrop]);
+
+  const handleAddLinkCard = useCallback(
+    (customPos?: CanvasPoint) => {
+      const url = prompt('Introduce la URL web o enlace multimedia:');
+      if (!url) return;
+      const pos = customPos || getVisibleCenter();
+      const id = generateCanvasId();
+      const newNode: CanvasNode = {
+        id,
+        type: 'link',
+        url,
+        x: pos.x - 175,
+        y: pos.y - 125,
+        width: 350,
+        height: 250,
+      };
+      applyChange((prev) => ({ ...prev, nodes: [...prev.nodes, newNode] }));
+      setSelectedNodeIds(new Set([id]));
+    },
+    [applyChange, getVisibleCenter]
+  );
+
+  const handleAddGroup = useCallback(
+    (customPos?: CanvasPoint) => {
+      const pos = customPos || getVisibleCenter();
+      const id = generateCanvasId();
+      const newGroup: CanvasGroupNode = {
+        id,
+        type: 'group',
+        label: 'Nuevo Grupo',
+        x: pos.x - 250,
+        y: pos.y - 200,
+        width: 500,
+        height: 400,
+      };
+      applyChange((prev) => ({ ...prev, nodes: [...prev.nodes, newGroup] }));
+      setSelectedNodeIds(new Set([id]));
+      return id;
+    },
+    [applyChange, getVisibleCenter]
+  );
+
+  const handleEdgeDropAddGroup = useCallback(() => {
+    const pending = pendingEdgeDropRef.current;
+    if (!pending) return;
+    const newGroupId = handleAddGroup(pending.world);
+    connectPendingEdge(newGroupId);
+  }, [handleAddGroup, connectPendingEdge]);
+
+  // Convert selected text card to real Markdown note in vault
+  const handleConvertTextCardToFile = async (node: CanvasNode) => {
+    if (node.type !== 'text') return;
+    const noteName = prompt('Nombre para la nueva nota:', 'Nota desde Lienzo');
+    if (!noteName) return;
+
+    try {
+      const cleanName = noteName.endsWith('.md') ? noteName : `${noteName}.md`;
+      const fullPath = `${activeVault}/${cleanName}`.replace(/\/+/g, '/');
+
+      await invoke('create_file', { filePath: fullPath });
+      await invoke('write_file', { filePath: fullPath, content: node.text });
+      await refreshTree();
+
+      // Transform node to file type
+      applyChange((prev) => ({
+        ...prev,
+        nodes: prev.nodes.map((n) =>
+          n.id === node.id
+            ? {
+                id: n.id,
+                type: 'file',
+                file: fullPath,
+                x: n.x,
+                y: n.y,
+                width: Math.max(350, n.width),
+                height: Math.max(300, n.height),
+                color: n.color,
+              }
+            : n
+        ),
+      }));
+      showNotice(`Nota "${cleanName}" creada en el Vault`, 2500, 'success');
+    } catch (err) {
+      console.error('Error al convertir tarjeta a nota:', err);
+      showNotice('Error al crear la nota', 3000, 'error');
+    }
+  };
+
+  // Group selected nodes
+  const handleGroupSelection = () => {
+    if (selectedNodeIds.size === 0) return;
+    const selectedNodes = canvasData.nodes.filter((n) => selectedNodeIds.has(n.id));
+    const bbox = getBoundingBox(selectedNodes);
+    if (!bbox) return;
+
+    const pad = 35;
+    const id = generateCanvasId();
+    const newGroup: CanvasGroupNode = {
+      id,
+      type: 'group',
+      label: 'Grupo',
+      x: bbox.minX - pad,
+      y: bbox.minY - pad,
+      width: bbox.maxX - bbox.minX + pad * 2,
+      height: bbox.maxY - bbox.minY + pad * 2,
+    };
+
+    applyChange((prev) => ({ ...prev, nodes: [newGroup, ...prev.nodes] }));
+    setSelectedNodeIds(new Set([id]));
+  };
+
+  // Duplicate selection
+  const handleDuplicateSelection = () => {
+    if (selectedNodeIds.size === 0) return;
+    const offset = 40;
+    const duplicatedNodes: CanvasNode[] = [];
+    const duplicatedEdges: CanvasEdge[] = [];
+
+    applyChange((prev) => {
+      const idMap = new Map<string, string>();
+
+      for (const node of prev.nodes) {
+        if (selectedNodeIds.has(node.id)) {
+          const newId = generateCanvasId();
+          idMap.set(node.id, newId);
+          duplicatedNodes.push({
+            ...node,
+            id: newId,
+            x: node.x + offset,
+            y: node.y + offset,
+          });
+        }
+      }
+
+      // Duplicate connecting edges between duplicated nodes
+      for (const edge of prev.edges) {
+        if (idMap.has(edge.fromNode) && idMap.has(edge.toNode)) {
+          duplicatedEdges.push({
+            ...edge,
+            id: generateCanvasId(),
+            fromNode: idMap.get(edge.fromNode)!,
+            toNode: idMap.get(edge.toNode)!,
+          });
+        }
+      }
+
+      return {
+        nodes: [...prev.nodes, ...duplicatedNodes],
+        edges: [...prev.edges, ...duplicatedEdges],
+      };
+    });
+    setSelectedNodeIds(new Set(duplicatedNodes.map((n) => n.id)));
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* Interacción con el lienzo                                            */
+  /* ------------------------------------------------------------------ */
 
   // Double click on canvas background creates text card
   const handleDoubleClick = (e: React.MouseEvent) => {
@@ -334,29 +915,13 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     }
 
     const pos = screenToWorld(e.clientX, e.clientY);
-    const id = generateCanvasId();
-    const newNode: CanvasNode = {
-      id,
-      type: 'text',
-      text: '',
-      x: pos.x - 125,
-      y: pos.y - 35,
-      width: 250,
-      height: 70,
-    };
-
-    const nextData = {
-      ...canvasData,
-      nodes: [...canvasData.nodes, newNode],
-    };
-    persistCanvas(nextData);
-    setSelectedNodeIds(new Set([id]));
-    setEditingNodeId(id);
+    createTextNode(pos);
   };
 
   // Pointer Down on Canvas
   const handlePointerDown = (e: React.MouseEvent) => {
     setContextMenu(null);
+    containerRef.current?.focus({ preventScroll: true });
     const isTargetCanvasBg =
       e.target === containerRef.current ||
       (e.target as HTMLElement).classList.contains('canvas-background') ||
@@ -390,8 +955,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     // 1. Panning canvas
     if (isPanning) {
       setPan({
-        x: Math.round(e.clientX - startPanRef.current.x),
-        y: Math.round(e.clientY - startPanRef.current.y),
+        x: e.clientX - startPanRef.current.x,
+        y: e.clientY - startPanRef.current.y,
       });
       return;
     }
@@ -429,21 +994,30 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       const currentWorld = screenToWorld(e.clientX, e.clientY);
       const deltaX = currentWorld.x - dragStartMouseRef.current.x;
       const deltaY = currentWorld.y - dragStartMouseRef.current.y;
+      if (deltaX !== 0 || deltaY !== 0) {
+        dragMovedRef.current = true;
+      }
 
-      setCanvasData((prev) => ({
-        ...prev,
-        nodes: prev.nodes.map((n) => {
-          const init = initialNodesStateRef.current.get(n.id);
-          if (init) {
-            return {
-              ...n,
-              x: Math.round(init.x + deltaX),
-              y: Math.round(init.y + deltaY),
-            };
-          }
-          return n;
-        }),
-      }));
+      setCanvasData((prev) => {
+        const next: CanvasData = {
+          ...prev,
+          nodes: prev.nodes.map((n) => {
+            const init = initialNodesStateRef.current.get(n.id);
+            if (init) {
+              const nx = init.x + deltaX;
+              const ny = init.y + deltaY;
+              return {
+                ...n,
+                x: snapToGrid ? snap(nx) : Math.round(nx),
+                y: snapToGrid ? snap(ny) : Math.round(ny),
+              };
+            }
+            return n;
+          }),
+        };
+        canvasDataRef.current = next;
+        return next;
+      });
       return;
     }
 
@@ -462,20 +1036,20 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
       const minDim = 50;
 
-      if (resizingHandle.includes('right')) {
+      if (resizingHandle.includes('e')) {
         newW = Math.max(minDim, init.w + dx);
       }
-      if (resizingHandle.includes('left')) {
+      if (resizingHandle.includes('w')) {
         const potentialW = init.w - dx;
         if (potentialW >= minDim) {
           newX = init.x + dx;
           newW = potentialW;
         }
       }
-      if (resizingHandle.includes('bottom')) {
+      if (resizingHandle.includes('s')) {
         newH = Math.max(minDim, init.h + dy);
       }
-      if (resizingHandle.includes('top')) {
+      if (resizingHandle.includes('n')) {
         const potentialH = init.h - dy;
         if (potentialH >= minDim) {
           newY = init.y + dy;
@@ -483,14 +1057,29 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         }
       }
 
-      setCanvasData((prev) => ({
-        ...prev,
-        nodes: prev.nodes.map((n) =>
-          selectedNodeIds.has(n.id)
-            ? { ...n, x: Math.round(newX), y: Math.round(newY), width: Math.round(newW), height: Math.round(newH) }
-            : n
-        ),
-      }));
+      if (snapToGrid) {
+        newW = snap(newW);
+        newH = snap(newH);
+      }
+
+      setCanvasData((prev) => {
+        const next: CanvasData = {
+          ...prev,
+          nodes: prev.nodes.map((n) =>
+            selectedNodeIds.has(n.id)
+              ? {
+                  ...n,
+                  x: snapToGrid ? snap(newX) : Math.round(newX),
+                  y: snapToGrid ? snap(newY) : Math.round(newY),
+                  width: Math.round(newW),
+                  height: Math.round(newH),
+                }
+              : n
+          ),
+        };
+        canvasDataRef.current = next;
+        return next;
+      });
       return;
     }
 
@@ -511,34 +1100,57 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     }
 
     if (draggingNodeId) {
+      const moved = dragMovedRef.current;
+      dragMovedRef.current = false;
       setDraggingNodeId(null);
-      persistCanvas(canvasData);
+      if (moved) {
+        if (dragOriginDataRef.current) {
+          pushHistory(dragOriginDataRef.current);
+        }
+        // Usar el espejo síncrono: evita guardar/restaurar una posición obsoleta
+        // si el último `mousemove` aún no había provocado un render.
+        persistCanvas(canvasDataRef.current);
+      }
+      dragOriginDataRef.current = null;
     }
 
     if (resizingHandle) {
       setResizingHandle(null);
       resizeStartNodeRef.current = null;
-      persistCanvas(canvasData);
+      if (resizeOriginDataRef.current) {
+        pushHistory(resizeOriginDataRef.current);
+        resizeOriginDataRef.current = null;
+      }
+      persistCanvas(canvasDataRef.current);
     }
 
     // Releasing connection point
     if (connectingFrom) {
       const dropWorld = screenToWorld(e.clientX, e.clientY);
 
-      // Check if dropped on a node
+      // Check if dropped on a node (or near any of its 4 sides)
       let targetNode: CanvasNode | null = null;
+      let targetSide: CanvasNodeSide | null = null;
+      let bestDistance = Infinity;
+
       for (const node of canvasData.nodes) {
-        if (node.id !== connectingFrom.nodeId) {
-          const bbox = getNodeBBox(node);
-          if (
-            dropWorld.x >= bbox.minX &&
-            dropWorld.x <= bbox.maxX &&
-            dropWorld.y >= bbox.minY &&
-            dropWorld.y <= bbox.maxY
-          ) {
-            targetNode = node;
-            break;
-          }
+        if (node.id === connectingFrom.nodeId || node.type === 'group') continue;
+        const bbox = getNodeBBox(node);
+        const margin = 28;
+        const inside =
+          dropWorld.x >= bbox.minX - margin &&
+          dropWorld.x <= bbox.maxX + margin &&
+          dropWorld.y >= bbox.minY - margin &&
+          dropWorld.y <= bbox.maxY + margin;
+        if (!inside) continue;
+
+        const side = closestSide(bbox, dropWorld);
+        const center = getSideCenter(bbox, side);
+        const distance = Math.hypot(center.x - dropWorld.x, center.y - dropWorld.y);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          targetNode = node;
+          targetSide = side;
         }
       }
 
@@ -546,7 +1158,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
       if (targetNode && sourceNode) {
         // Connect to target node
-        const toSide = autoSide(getNodeBBox(sourceNode), getNodeBBox(targetNode));
+        const toSide = targetSide || autoSide(getNodeBBox(sourceNode), getNodeBBox(targetNode));
         const newEdge: CanvasEdge = {
           id: generateCanvasId(),
           fromNode: sourceNode.id,
@@ -555,42 +1167,17 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
           toSide,
           toEnd: 'arrow',
         };
-        const nextData = {
-          ...canvasData,
-          edges: [...canvasData.edges, newEdge],
-        };
-        persistCanvas(nextData);
+        applyChange((prev) => ({ ...prev, edges: [...prev.edges, newEdge] }));
         setSelectedEdgeId(newEdge.id);
       } else if (sourceNode) {
-        // Dropped in empty space -> create new connected card automatically! (Obsidian behavior)
-        const newCardId = generateCanvasId();
-        const newNode: CanvasNode = {
-          id: newCardId,
-          type: 'text',
-          text: '',
-          x: dropWorld.x - 125,
-          y: dropWorld.y - 40,
-          width: 250,
-          height: 80,
-        };
-
-        const toSide = autoSide(getNodeBBox(sourceNode), getNodeBBox(newNode));
-        const newEdge: CanvasEdge = {
-          id: generateCanvasId(),
-          fromNode: sourceNode.id,
-          fromSide: connectingFrom.side,
-          toNode: newCardId,
-          toSide,
-          toEnd: 'arrow',
-        };
-
-        const nextData = {
-          nodes: [...canvasData.nodes, newNode],
-          edges: [...canvasData.edges, newEdge],
-        };
-        persistCanvas(nextData);
-        setSelectedNodeIds(new Set([newCardId]));
-        setEditingNodeId(newCardId);
+        // Soltado sobre el lienzo vacío: congelar la punta de la flecha y
+        // preguntar qué nodo crear (Obsidian no crea nada sin elección).
+        updatePendingEdgeDrop({
+          sourceNodeId: sourceNode.id,
+          sourceSide: connectingFrom.side,
+          world: dropWorld,
+        });
+        setEdgeDropMenu({ x: e.clientX, y: e.clientY });
       }
 
       setConnectingFrom(null);
@@ -630,6 +1217,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
     setDraggingNodeId(node.id);
     dragStartMouseRef.current = screenToWorld(e.clientX, e.clientY);
+    dragOriginDataRef.current = canvasDataRef.current;
+    dragMovedRef.current = false;
 
     const map = new Map<string, { x: number; y: number }>();
     for (const id of allMovingNodes) {
@@ -646,6 +1235,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     setResizingHandle(handle);
     resizeStartMouseRef.current = screenToWorld(e.clientX, e.clientY);
     resizeStartNodeRef.current = { x: node.x, y: node.y, w: node.width, h: node.height };
+    resizeOriginDataRef.current = canvasData;
     setSelectedNodeIds(new Set([node.id]));
   };
 
@@ -657,198 +1247,182 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     setConnectingMouseWorld(screenToWorld(e.clientX, e.clientY));
   };
 
-  // Add Cards
-  const handleAddTextCard = (customPos?: CanvasPoint) => {
-    const pos = customPos || getVisibleCenter();
-    const id = generateCanvasId();
-    const newNode: CanvasNode = {
-      id,
-      type: 'text',
-      text: '',
-      x: pos.x - 125,
-      y: pos.y - 50,
-      width: 250,
-      height: 100,
-    };
-    persistCanvas({
-      ...canvasData,
-      nodes: [...canvasData.nodes, newNode],
-    });
-    setSelectedNodeIds(new Set([id]));
-    setEditingNodeId(id);
-  };
+  /* ------------------------------------------------------------------ */
+  /* Arrastrar y soltar (Explorador lateral -> Canvas)                    */
+  /* ------------------------------------------------------------------ */
 
-  const handleAddFileCard = (customPos?: CanvasPoint) => {
-    pendingDropPosRef.current = customPos || getVisibleCenter();
-    setIsVaultModalOpen(true);
-  };
-
-  const handleSelectVaultFile = (vaultFilePath: string) => {
-    const pos = pendingDropPosRef.current || getVisibleCenter();
-    const id = generateCanvasId();
-    const newNode: CanvasNode = {
-      id,
-      type: 'file',
-      file: vaultFilePath,
-      x: pos.x - 200,
-      y: pos.y - 180,
-      width: 400,
-      height: 360,
-    };
-    persistCanvas({
-      ...canvasData,
-      nodes: [...canvasData.nodes, newNode],
-    });
-    setSelectedNodeIds(new Set([id]));
-  };
-
-  const handleAddLinkCard = (customPos?: CanvasPoint) => {
-    const url = prompt('Introduce la URL web o enlace multimedia:');
-    if (!url) return;
-    const pos = customPos || getVisibleCenter();
-    const id = generateCanvasId();
-    const newNode: CanvasNode = {
-      id,
-      type: 'link',
-      url,
-      x: pos.x - 175,
-      y: pos.y - 125,
-      width: 350,
-      height: 250,
-    };
-    persistCanvas({
-      ...canvasData,
-      nodes: [...canvasData.nodes, newNode],
-    });
-    setSelectedNodeIds(new Set([id]));
-  };
-
-  const handleAddGroup = (customPos?: CanvasPoint) => {
-    const pos = customPos || getVisibleCenter();
-    const id = generateCanvasId();
-    const newGroup: CanvasGroupNode = {
-      id,
-      type: 'group',
-      label: 'Nuevo Grupo',
-      x: pos.x - 250,
-      y: pos.y - 200,
-      width: 500,
-      height: 400,
-    };
-    persistCanvas({
-      ...canvasData,
-      nodes: [...canvasData.nodes, newGroup],
-    });
-    setSelectedNodeIds(new Set([id]));
-  };
-
-  // Convert selected text card to real Markdown note in vault
-  const handleConvertTextCardToFile = async (node: CanvasNode) => {
-    if (node.type !== 'text') return;
-    const noteName = prompt('Nombre para la nueva nota:', 'Nota desde Lienzo');
-    if (!noteName) return;
-
-    try {
-      const cleanName = noteName.endsWith('.md') ? noteName : `${noteName}.md`;
-      const fullPath = `${activeVault}/${cleanName}`.replace(/\/+/g, '/');
-
-      await invoke('create_file', { filePath: fullPath });
-      await invoke('write_file', { filePath: fullPath, content: node.text });
-      await refreshTree();
-
-      // Transform node to file type
-      const nextData: CanvasData = {
-        ...canvasData,
-        nodes: canvasData.nodes.map((n) =>
-          n.id === node.id
-            ? {
-                id: n.id,
-                type: 'file',
-                file: fullPath,
-                x: n.x,
-                y: n.y,
-                width: Math.max(350, n.width),
-                height: Math.max(300, n.height),
-                color: n.color,
-              }
-            : n
-        ),
+  /** Busca una ruta del vault en el árbol (coincidencia exacta o por sufijo). */
+  const resolveVaultPath = useCallback(
+    (rawPath: string): string | null => {
+      if (!rawPath) return null;
+      const normalized = rawPath.replace(/\\/g, '/');
+      let found: string | null = null;
+      const traverse = (items: typeof fileTree) => {
+        for (const item of items) {
+          if (!item.isDir) {
+            const itemPath = item.path.replace(/\\/g, '/');
+            if (itemPath === normalized || itemPath.endsWith(`/${normalized}`)) {
+              found = item.path;
+              return;
+            }
+          }
+          if (item.children) {
+            traverse(item.children);
+            if (found) return;
+          }
+        }
       };
-      persistCanvas(nextData);
-      showNotice(`Nota "${cleanName}" creada en el Vault`, 2500, 'success');
-    } catch (err) {
-      console.error('Error al convertir tarjeta a nota:', err);
-      showNotice('Error al crear la nota', 3000, 'error');
-    }
+      traverse(fileTree);
+      return found;
+    },
+    [fileTree]
+  );
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (readonly) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
   };
 
-  // Group selected nodes
-  const handleGroupSelection = () => {
-    if (selectedNodeIds.size === 0) return;
-    const selectedNodes = canvasData.nodes.filter((n) => selectedNodeIds.has(n.id));
-    const bbox = getBoundingBox(selectedNodes);
-    if (!bbox) return;
+  const handleDrop = (e: React.DragEvent) => {
+    if (readonly) return;
+    e.preventDefault();
+    e.stopPropagation();
 
-    const pad = 35;
-    const id = generateCanvasId();
-    const newGroup: CanvasGroupNode = {
-      id,
-      type: 'group',
-      label: 'Grupo',
-      x: bbox.minX - pad,
-      y: bbox.minY - pad,
-      width: bbox.maxX - bbox.minX + pad * 2,
-      height: bbox.maxY - bbox.minY + pad * 2,
+    const pos = screenToWorld(e.clientX, e.clientY);
+
+    // 1. Nodo arrastrado desde la barra inferior de tarjetas
+    const cardType = e.dataTransfer.getData('text/canvas-type') as CanvasCardMenuType | '';
+    if (cardType === 'text') {
+      createTextNode(pos);
+      return;
+    }
+    if (cardType === 'note') {
+      pendingDropPosRef.current = pos;
+      setVaultModal({ open: true, mode: 'note' });
+      return;
+    }
+    if (cardType === 'media') {
+      pendingDropPosRef.current = pos;
+      setVaultModal({ open: true, mode: 'image' });
+      return;
+    }
+
+    // 2. Archivo arrastrado desde el Explorador lateral
+    const rawPath =
+      e.dataTransfer.getData('application/x-urano-path') || e.dataTransfer.getData('text/plain');
+    if (!rawPath) return;
+
+    const vaultPath = resolveVaultPath(rawPath);
+    if (!vaultPath) return;
+
+    const isNote = vaultPath.toLowerCase().endsWith('.md');
+    const isImg = isImagePath(vaultPath);
+    if (!isNote && !isImg) return;
+
+    createFileNode(vaultPath, pos);
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* Pegar (Ctrl+V)                                                      */
+  /* ------------------------------------------------------------------ */
+
+  const handlePasteEvent = useCallback(
+    async (e: ClipboardEvent) => {
+      if (readonly) return;
+
+      const data = e.clipboardData;
+      let file: File | null = null;
+
+      const items = data?.items;
+      if (items && items.length > 0) {
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (item.type.startsWith('image/')) {
+            file = item.getAsFile();
+            if (file) break;
+          }
+        }
+      }
+      if (!file && data?.files && data.files.length > 0) {
+        for (const f of Array.from(data.files)) {
+          if (f.type.startsWith('image/') || isImagePath(f.name)) {
+            file = f;
+            break;
+          }
+        }
+      }
+
+      const text = data?.getData('text/plain') ?? '';
+
+      if (file) {
+        e.preventDefault();
+        const savedName = await saveClipboardImageToVault(file);
+        if (!savedName) return;
+        const { activeVault: vault } = useVaultStore.getState();
+        const separator = vault?.includes('\\') ? '\\' : '/';
+        const cleanVault = vault ? vault.replace(/[\\/]+$/, '') : '';
+        const fullPath = cleanVault ? `${cleanVault}${separator}${savedName}` : savedName;
+        await createFileNode(fullPath, getVisibleCenter());
+        showNotice(`Imagen añadida al lienzo: ${savedName}`, 2500, 'success');
+        return;
+      }
+
+      if (text.trim()) {
+        e.preventDefault();
+        createTextNode(getVisibleCenter(), text, false);
+        return;
+      }
+
+      // Sin imagen ni texto en el portapapeles: se consulta el portapapeles nativo
+      // (capturas de pantalla en WebKitGTK no exponen items de imagen).
+      try {
+        const raw = await invoke<ArrayBuffer | number[] | null>('read_clipboard_image');
+        const nativeBytes = raw ? toUint8Array(raw) : null;
+        if (nativeBytes && nativeBytes.length > 0) {
+          e.preventDefault();
+          const nativeFile = new File([nativeBytes], 'pasted_image.png', { type: 'image/png' });
+          const savedName = await saveClipboardImageToVault(nativeFile);
+          if (!savedName) return;
+          const { activeVault: vault } = useVaultStore.getState();
+          const separator = vault?.includes('\\') ? '\\' : '/';
+          const cleanVault = vault ? vault.replace(/[\\/]+$/, '') : '';
+          const fullPath = cleanVault ? `${cleanVault}${separator}${savedName}` : savedName;
+          await createFileNode(fullPath, getVisibleCenter());
+        }
+      } catch {
+        /* sin imagen nativa disponible */
+      }
+    },
+    [readonly, createTextNode, createFileNode, getVisibleCenter, showNotice]
+  );
+
+  // Escucha global de pegado: sólo actúa si el Canvas tiene el foco.
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      if (!containerRef.current) return;
+      const active = document.activeElement;
+      if (
+        active &&
+        (active.tagName === 'INPUT' ||
+          active.tagName === 'TEXTAREA' ||
+          active.getAttribute('contenteditable') === 'true')
+      ) {
+        return;
+      }
+      if (active && active !== document.body && !containerRef.current.contains(active)) {
+        return;
+      }
+      handlePasteEvent(e);
     };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, [handlePasteEvent]);
 
-    persistCanvas({
-      ...canvasData,
-      nodes: [newGroup, ...canvasData.nodes],
-    });
-    setSelectedNodeIds(new Set([id]));
-  };
+  /* ------------------------------------------------------------------ */
+  /* Menú contextual                                                      */
+  /* ------------------------------------------------------------------ */
 
-  // Duplicate selection
-  const handleDuplicateSelection = () => {
-    if (selectedNodeIds.size === 0) return;
-    const offset = 40;
-    const idMap = new Map<string, string>();
-
-    const duplicatedNodes: CanvasNode[] = [];
-    for (const node of canvasData.nodes) {
-      if (selectedNodeIds.has(node.id)) {
-        const newId = generateCanvasId();
-        idMap.set(node.id, newId);
-        duplicatedNodes.push({
-          ...node,
-          id: newId,
-          x: node.x + offset,
-          y: node.y + offset,
-        });
-      }
-    }
-
-    // Duplicate connecting edges between duplicated nodes
-    const duplicatedEdges: CanvasEdge[] = [];
-    for (const edge of canvasData.edges) {
-      if (idMap.has(edge.fromNode) && idMap.has(edge.toNode)) {
-        duplicatedEdges.push({
-          ...edge,
-          id: generateCanvasId(),
-          fromNode: idMap.get(edge.fromNode)!,
-          toNode: idMap.get(edge.toNode)!,
-        });
-      }
-    }
-
-    persistCanvas({
-      nodes: [...canvasData.nodes, ...duplicatedNodes],
-      edges: [...canvasData.edges, ...duplicatedEdges],
-    });
-    setSelectedNodeIds(new Set(duplicatedNodes.map((n) => n.id)));
-  };
-
-  // Context Menu Handling
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -879,12 +1453,12 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
             {
               title: 'Por defecto (Gris)',
               action: () => {
-                persistCanvas({
-                  ...canvasData,
-                  nodes: canvasData.nodes.map((n) =>
+                applyChange((prev) => ({
+                  ...prev,
+                  nodes: prev.nodes.map((n) =>
                     selectedNodeIds.has(n.id) ? { ...n, color: undefined } : n
                   ),
-                });
+                }));
               },
             },
             ...Object.entries(CANVAS_COLORS).map(([k, col]) => ({
@@ -896,12 +1470,12 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
                 />
               ),
               action: () => {
-                persistCanvas({
-                  ...canvasData,
-                  nodes: canvasData.nodes.map((n) =>
+                applyChange((prev) => ({
+                  ...prev,
+                  nodes: prev.nodes.map((n) =>
                     selectedNodeIds.has(n.id) ? { ...n, color: k } : n
                   ),
-                });
+                }));
               },
             })),
           ],
@@ -948,12 +1522,22 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         {
           title: 'Nueva nota de la bóveda',
           icon: <FileText size={14} />,
-          action: () => handleAddFileCard(worldPos),
+          action: () => handleAddNoteCard(worldPos),
+        },
+        {
+          title: 'Nuevo multimedia de la bóveda',
+          icon: <FileImage size={14} />,
+          action: () => handleAddMediaCard(worldPos),
         },
         {
           title: 'Nuevo grupo',
           icon: <FolderPlus size={14} />,
           action: () => handleAddGroup(worldPos),
+        },
+        {
+          title: 'Nuevo enlace web',
+          icon: <Link2 size={14} />,
+          action: () => handleAddLinkCard(worldPos),
         },
         { type: 'separator' },
         {
@@ -974,23 +1558,19 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     setContextMenu({ x: e.clientX, y: e.clientY, items });
   };
 
-  // Find primary selected element for floating menu position
-  const selectedNode =
-    selectedNodeIds.size === 1
-      ? canvasData.nodes.find((n) => selectedNodeIds.has(n.id))
-      : null;
+  /* ------------------------------------------------------------------ */
+  /* Derivados                                                           */
+  /* ------------------------------------------------------------------ */
 
+  // Nodo seleccionado: la barra de acciones se renderiza dentro del propio
+  // nodo (`CanvasNodeView`), flotando encima de la tarjeta.
   const selectedEdge = selectedEdgeId
     ? canvasData.edges.find((e) => e.id === selectedEdgeId)
     : null;
 
+  // La barra de la arista sigue anclada a coordenadas del canvas.
   let floatingMenuPos: { x: number; y: number } | null = null;
-  if (selectedNode) {
-    floatingMenuPos = {
-      x: selectedNode.x * zoom + pan.x + (selectedNode.width * zoom) / 2,
-      y: selectedNode.y * zoom + pan.y,
-    };
-  } else if (selectedEdge) {
+  if (selectedEdge) {
     const fn = canvasData.nodes.find((n) => n.id === selectedEdge.fromNode);
     const tn = canvasData.nodes.find((n) => n.id === selectedEdge.toNode);
     if (fn && tn) {
@@ -1026,16 +1606,35 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     }
   }
 
+  const sortedNodes = useMemo(
+    () =>
+      [...canvasData.nodes].sort((a, b) => {
+        if (a.type === 'group' && b.type !== 'group') return -1;
+        if (a.type !== 'group' && b.type === 'group') return 1;
+        return 0;
+      }),
+    [canvasData.nodes]
+  );
+
+  /* ------------------------------------------------------------------ */
+  /* Render                                                              */
+  /* ------------------------------------------------------------------ */
+
   return (
     <div
       ref={containerRef}
+      tabIndex={0}
       onWheel={handleWheel}
       onMouseDown={handlePointerDown}
       onMouseMove={handlePointerMove}
       onMouseUp={handlePointerUp}
       onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
-      className={`canvas-wrapper ${isPanning || isHoldingSpace ? 'is-dragging-canvas' : ''}`}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      className={`canvas-wrapper ${isPanning || isHoldingSpace ? 'is-dragging-canvas' : ''} ${
+        readonly ? 'mod-readonly' : ''
+      } ${snapToGrid ? 'mod-snap-to-grid' : ''}`}
       style={{
         backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px)',
         backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
@@ -1055,72 +1654,61 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         />
       )}
 
-      {/* 2. Top-Right Controls */}
+      {/* 2. Top-Right Controls (.canvas-controls) */}
       <CanvasControls
         zoom={zoom}
         readonly={readonly}
-        onZoomIn={() => setZoom((z) => Math.min(3.0, z * 1.15))}
-        onZoomOut={() => setZoom((z) => Math.max(0.15, z * 0.85))}
+        snapToGrid={snapToGrid}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onZoomIn={() => setZoom((z) => Math.min(MAX_ZOOM, z * 1.15))}
+        onZoomOut={() => setZoom((z) => Math.max(MIN_ZOOM, z * 0.85))}
         onZoomToFit={handleZoomToFit}
         onResetZoom={handleResetZoom}
         onToggleReadonly={() => setReadonly(!readonly)}
+        onToggleSnapToGrid={() => setSnapToGrid((v) => !v)}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
       />
 
       {/* 3. Floating Bottom Creation Pill (.canvas-card-menu) */}
       {!readonly && (
         <CanvasCardMenu
           onAddTextCard={() => handleAddTextCard()}
-          onAddFileCard={() => handleAddFileCard()}
-          onAddLinkCard={() => handleAddLinkCard()}
+          onAddNoteCard={() => handleAddNoteCard()}
+          onAddMediaCard={() => handleAddMediaCard()}
           onDragStartType={(type, e) => {
             e.dataTransfer.setData('text/canvas-type', type);
+            e.dataTransfer.effectAllowed = 'copy';
           }}
         />
       )}
 
-      {/* 4. Floating Action Bar (.canvas-menu) */}
-      {floatingMenuPos && !readonly && (
+      {/* 4. Floating Action Bar de la arista (.canvas-menu.is-anchored).
+          La barra de los nodos se renderiza dentro de `CanvasNodeView`. */}
+      {floatingMenuPos && !readonly && selectedEdge && (
         <CanvasFloatingMenu
-          selectedNode={selectedNode}
-          selectedEdge={selectedEdge}
+          edge={selectedEdge}
           position={floatingMenuPos}
           onDelete={deleteSelected}
           onSetColor={(colorKey) => {
-            if (selectedNode) {
-              persistCanvas({
-                ...canvasData,
-                nodes: canvasData.nodes.map((n) =>
-                  selectedNodeIds.has(n.id) ? { ...n, color: colorKey } : n
-                ),
-              });
-            } else if (selectedEdge) {
-              persistCanvas({
-                ...canvasData,
-                edges: canvasData.edges.map((e) =>
-                  e.id === selectedEdge.id ? { ...e, color: colorKey } : e
-                ),
-              });
-            }
+            applyChange((prev) => ({
+              ...prev,
+              edges: prev.edges.map((e) =>
+                e.id === selectedEdge.id ? { ...e, color: colorKey } : e
+              ),
+            }));
           }}
-          onEdit={() => {
-            if (selectedNode) setEditingNodeId(selectedNode.id);
-            if (selectedEdge) setEditingEdgeId(selectedEdge.id);
-          }}
-          onConvertToFile={
-            selectedNode?.type === 'text'
-              ? () => handleConvertTextCardToFile(selectedNode)
-              : undefined
-          }
           onToggleEdgeArrow={
             selectedEdge
               ? () => {
                   const nextFromEnd = selectedEdge.fromEnd === 'arrow' ? 'none' : 'arrow';
-                  persistCanvas({
-                    ...canvasData,
-                    edges: canvasData.edges.map((e) =>
+                  applyChange((prev) => ({
+                    ...prev,
+                    edges: prev.edges.map((e) =>
                       e.id === selectedEdge.id ? { ...e, fromEnd: nextFromEnd } : e
                     ),
-                  });
+                  }));
                 }
               : undefined
           }
@@ -1143,6 +1731,20 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       >
         {/* SVG Edges Layer */}
         <svg className="canvas-edges">
+          <defs>
+            <marker
+              id="canvas-arrow-marker"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#888888" />
+            </marker>
+          </defs>
+
           {canvasData.edges.map((edge) => {
             const from = canvasData.nodes.find((n) => n.id === edge.fromNode);
             const to = canvasData.nodes.find((n) => n.id === edge.toNode);
@@ -1166,12 +1768,12 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
                   setSelectedNodeIds(new Set());
                 }}
                 onUpdateLabel={(edgeId, label) => {
-                  persistCanvas({
-                    ...canvasData,
-                    edges: canvasData.edges.map((eg) =>
+                  applyChange((prev) => ({
+                    ...prev,
+                    edges: prev.edges.map((eg) =>
                       eg.id === edgeId ? { ...eg, label } : eg
                     ),
-                  });
+                  }));
                 }}
                 isEditingLabel={editingEdgeId === edge.id}
                 setIsEditingLabel={(editing) => {
@@ -1185,76 +1787,140 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
           {connectingBezierPath && (
             <path
               d={connectingBezierPath}
-              className="canvas-display-path"
-              style={{
-                stroke: 'var(--color-accent)',
-                strokeWidth: '2.5px',
-                strokeDasharray: '4 4',
-              }}
+              className="canvas-display-path is-connecting"
+              markerEnd="url(#canvas-arrow-marker)"
             />
           )}
+
+          {/* Flecha temporal congelada al soltar sobre lienzo vacío */}
+          {pendingEdgeDrop && (() => {
+            const srcNode = canvasData.nodes.find((n) => n.id === pendingEdgeDrop.sourceNodeId);
+            if (!srcNode) return null;
+            const bbox = getNodeBBox(srcNode);
+            const fromCenter = getSideCenter(bbox, pendingEdgeDrop.sourceSide);
+            const fromOff = offsetSidePoint(fromCenter, pendingEdgeDrop.sourceSide, 4);
+            const toSide = facingSide(bbox, {
+              minX: pendingEdgeDrop.world.x,
+              minY: pendingEdgeDrop.world.y,
+              maxX: pendingEdgeDrop.world.x,
+              maxY: pendingEdgeDrop.world.y,
+            });
+            const bez = calculateBezier(fromOff, pendingEdgeDrop.sourceSide, pendingEdgeDrop.world, toSide);
+            return (
+              <path
+                d={bez.path}
+                className="canvas-display-path is-connecting"
+                markerEnd="url(#canvas-arrow-marker)"
+              />
+            );
+          })()}
         </svg>
 
         {/* Nodes Layer (Groups are sorted behind regular cards) */}
-        {[...canvasData.nodes]
-          .sort((a, b) => {
-            if (a.type === 'group' && b.type !== 'group') return -1;
-            if (a.type !== 'group' && b.type === 'group') return 1;
-            return 0;
-          })
-          .map((node) => (
-            <CanvasNodeView
-              key={node.id}
-              node={node}
-              isSelected={selectedNodeIds.has(node.id)}
-              isDragging={draggingNodeId === node.id}
-              readonly={readonly}
-              onSelect={(e) => {
-                e.stopPropagation();
-                if (e.shiftKey) {
-                  const next = new Set(selectedNodeIds);
-                  if (next.has(node.id)) next.delete(node.id);
-                  else next.add(node.id);
-                  setSelectedNodeIds(next);
-                } else {
-                  setSelectedNodeIds(new Set([node.id]));
-                }
-                setSelectedEdgeId(null);
-              }}
-              onStartDrag={(e) => handleStartDragNode(node, e)}
-              onStartResize={(e, handle) => handleStartResize(node, handle, e)}
-              onStartConnect={(e, side) => handleStartConnect(node.id, side, e)}
-              onUpdateText={(nodeId, text) => {
-                persistCanvas({
-                  ...canvasData,
-                  nodes: canvasData.nodes.map((n) =>
-                    n.id === nodeId ? { ...n, text } : n
-                  ),
-                });
-              }}
-              onUpdateGroupLabel={(nodeId, label) => {
-                persistCanvas({
-                  ...canvasData,
-                  nodes: canvasData.nodes.map((n) =>
-                    n.id === nodeId ? { ...n, label } : n
-                  ),
-                });
-              }}
-              onOpenFile={(filePath) => selectFile(filePath)}
-              isEditingText={editingNodeId === node.id}
-              setIsEditingText={(editing) => {
-                if (!editing) setEditingNodeId(null);
-              }}
-            />
-          ))}
+        {sortedNodes.map((node) => (
+          <CanvasNodeView
+            key={node.id}
+            node={node}
+            isSelected={selectedNodeIds.has(node.id)}
+            isDragging={draggingNodeId === node.id}
+            readonly={readonly}
+            onSelect={(e) => {
+              e.stopPropagation();
+              if (e.shiftKey) {
+                const next = new Set(selectedNodeIds);
+                if (next.has(node.id)) next.delete(node.id);
+                else next.add(node.id);
+                setSelectedNodeIds(next);
+              } else {
+                setSelectedNodeIds(new Set([node.id]));
+              }
+              setSelectedEdgeId(null);
+            }}
+            onStartDrag={(e) => handleStartDragNode(node, e)}
+            onStartResize={(e, handle) => handleStartResize(node, handle, e)}
+            onStartConnect={(e, side) => handleStartConnect(node.id, side, e)}
+            onUpdateText={(nodeId, text) => {
+              applyChange((prev) => ({
+                ...prev,
+                nodes: prev.nodes.map((n) =>
+                  n.id === nodeId ? { ...n, text } : n
+                ),
+              }));
+            }}
+            onUpdateGroupLabel={(nodeId, label) => {
+              applyChange((prev) => ({
+                ...prev,
+                nodes: prev.nodes.map((n) =>
+                  n.id === nodeId ? { ...n, label } : n
+                ),
+              }));
+            }}
+            onOpenFile={(filePath) => selectFile(filePath)}
+            onOpenLink={(target) => {
+              openOrCreateWikilink(target);
+            }}
+            isEditingText={editingNodeId === node.id}
+            setIsEditingText={(editing) => {
+              setEditingNodeId(editing ? node.id : null);
+            }}
+            onDeleteNode={handleDeleteNode}
+            onSetNodeColor={handleSetNodeColor}
+            onZoomToNode={handleZoomToNode}
+          />
+        ))}
       </div>
 
       {/* 6. Vault File Picker Modal */}
       <VaultFileModal
-        isOpen={isVaultModalOpen}
-        onClose={() => setIsVaultModalOpen(false)}
+        isOpen={vaultModal.open}
+        mode={vaultModal.mode}
+        onClose={() => {
+          const wasPending = Boolean(pendingEdgeDropRef.current);
+          if (wasPending && !vaultSelectionCommittedRef.current) {
+            // El usuario cerró el selector sin elegir nada: cancelar todo.
+            cancelPendingEdgeDrop();
+          } else if (wasPending) {
+            // Ya se creó el nodo desde handleSelectVaultFile.
+            cancelPendingEdgeDrop();
+          }
+          vaultSelectionCommittedRef.current = false;
+          keepPendingOnMenuCloseRef.current = false;
+          setVaultModal({ open: false, mode: 'note' });
+          pendingDropPosRef.current = null;
+        }}
         onSelectFile={handleSelectVaultFile}
       />
+
+      {/* Menú al soltar una flecha en el lienzo vacío */}
+      {edgeDropMenu && pendingEdgeDrop && !readonly && (
+        <ObsidianMenu
+          x={edgeDropMenu.x}
+          y={edgeDropMenu.y}
+          items={[
+            {
+              title: 'Añadir tarjeta',
+              icon: <StickyNote size={14} />,
+              action: handleEdgeDropAddCard,
+            },
+            {
+              title: 'Añadir nota de la bóveda...',
+              icon: <FileText size={14} />,
+              action: handleEdgeDropAddNote,
+            },
+            {
+              title: 'Añadir multimedia de la bóveda...',
+              icon: <ImageIcon size={14} />,
+              action: handleEdgeDropAddMedia,
+            },
+            {
+              title: 'Añadir grupo',
+              icon: <Frame size={14} />,
+              action: handleEdgeDropAddGroup,
+            },
+          ]}
+          onClose={handleEdgeDropMenuClose}
+        />
+      )}
 
       {/* 7. Obsidian Context Menu */}
       {contextMenu && (
