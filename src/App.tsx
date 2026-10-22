@@ -11,6 +11,7 @@ import { CanvasView } from './components/canvas/CanvasView';
 import { BaseView } from './components/base/BaseView';
 import { ImageView } from './components/image/ImageView';
 import { isImagePath } from './services/storageAdapter';
+import { FILE_RENAMED_EVENT, FileRenamedDetail } from './services/linkRefactorService';
 import { TemplateModal } from './components/templates/TemplateModal';
 import { GlobalSearchPanel } from './components/search/GlobalSearchPanel';
 import { BookmarksPanel } from './components/bookmarks/BookmarksPanel';
@@ -109,6 +110,26 @@ export const App: React.FC = () => {
         console.warn('No se pudo restaurar la última bóveda:', e);
       });
     }
+  }, []);
+
+  // Keep tabs pointing at the new path when a file is renamed (sidebar inline rename,
+  // editor title rename). Runs before the store re-points activeFile, so the tab sync
+  // effect below updates the existing tab instead of opening a duplicate.
+  useEffect(() => {
+    const onRenamed = (e: Event) => {
+      const detail = (e as CustomEvent<FileRenamedDetail>).detail;
+      if (!detail) return;
+      const { oldPath, newPath, newFileName, newBaseName } = detail;
+      const title = isImagePath(newPath) ? newFileName : newBaseName;
+      setTabs((prev) =>
+        prev.map((t) =>
+          t.filePath === oldPath ? { ...t, id: newPath, filePath: newPath, title } : t
+        )
+      );
+      setActiveTabId((prev) => (prev === oldPath ? newPath : prev));
+    };
+    window.addEventListener(FILE_RENAMED_EVENT, onRenamed);
+    return () => window.removeEventListener(FILE_RENAMED_EVENT, onRenamed);
   }, []);
 
   // Synchronize tabs when activeFile changes
