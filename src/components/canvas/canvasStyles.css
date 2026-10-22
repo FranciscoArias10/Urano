@@ -1,4 +1,4 @@
-/* Urano Canvas Styles - 1:1 with Obsidian Canvas (Urano Orange Accent: #e06c1b) */
+/* Urano Canvas Styles - 1:1 con Obsidian Canvas (acento naranja de Urano: #e06c1b) */
 
 .canvas-wrapper {
   position: absolute;
@@ -15,6 +15,9 @@
   --shadow-border-accent: 0 0 0 2px var(--color-accent);
   --canvas-background: #141414;
   --canvas-dot-pattern: rgba(255, 255, 255, 0.08);
+  --canvas-node-border: #3a3a3a;
+  --canvas-node-bg: #1e1e1e;
+  --canvas-node-label-color: #888888;
   background-color: var(--canvas-background);
   overflow: hidden;
   touch-action: none;
@@ -22,8 +25,16 @@
   outline: none;
 }
 
+.canvas-wrapper:focus-visible {
+  outline: none;
+}
+
 .canvas-wrapper.is-dragging-canvas {
   cursor: grabbing !important;
+}
+
+.canvas-wrapper.mod-readonly {
+  cursor: default;
 }
 
 .canvas-mover {
@@ -59,22 +70,23 @@
   z-index: 10;
 }
 
-/* Floating bottom card menu (.canvas-card-menu) */
+/* ------------------------------------------------------------------ */
+/* Barra inferior (.canvas-card-menu)                                   */
+/* ------------------------------------------------------------------ */
 .canvas-card-menu {
   display: flex;
   position: absolute;
   z-index: 40;
-  bottom: 24px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
   background-color: #1e1e1e;
-  border: 1px solid #333333;
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-  padding: 4px;
-  gap: 2px;
-  align-items: center;
-  backdrop-blur: 10px;
+  padding: 6px 10px;
+  gap: 4px;
+  align-items: stretch;
+  border: 1px solid #2e2e2e;
 }
 
 .canvas-card-menu-button {
@@ -82,16 +94,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 12px;
-  border-radius: 6px;
+  padding: 4px 6px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 120ms ease;
+  transition: color 120ms ease;
   user-select: none;
 }
 
 .canvas-card-menu-button:hover {
-  color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--color-accent);
 }
 
 .canvas-card-menu-button.mod-draggable {
@@ -102,18 +113,21 @@
   cursor: grabbing;
 }
 
-.canvas-card-menu-divider {
-  width: 1px;
-  height: 20px;
-  background-color: #333333;
-  margin: 0 2px;
+.canvas-card-menu-button.mod-draggable svg {
+  transition: 90ms transform ease-out;
 }
 
-/* Top-right floating controls (.canvas-controls) */
+.canvas-card-menu-button.mod-draggable:hover svg {
+  transform: translateY(-4px);
+}
+
+/* ------------------------------------------------------------------ */
+/* Controles flotantes (.canvas-controls)                              */
+/* ------------------------------------------------------------------ */
 .canvas-controls {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 8px;
+  right: 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -134,19 +148,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  padding: 6px 8px;
   color: #a8a8a8;
   cursor: pointer;
   background-color: transparent;
   border-bottom: 1px solid #2e2e2e;
-  transition: all 100ms ease;
+  transition: color 100ms ease, background-color 100ms ease;
+  line-height: 1;
 }
 
 .canvas-control-item:last-child {
   border-bottom: none;
 }
 
-.canvas-control-item:hover {
+.canvas-control-item:hover:not(.is-disabled) {
   color: #ffffff;
   background-color: rgba(255, 255, 255, 0.08);
 }
@@ -155,10 +170,95 @@
   color: var(--color-accent);
 }
 
-/* Canvas node styling */
+.canvas-control-item.is-disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.canvas-control-item svg {
+  pointer-events: none;
+}
+
+/* Popover de ajustes / ayuda */
+.canvas-control-popover {
+  position: fixed;
+  z-index: 120;
+  min-width: 200px;
+  padding: 6px;
+  background-color: #1e1e1e;
+  border: 1px solid #333333;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.canvas-control-popover-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888888;
+  padding: 4px 8px 6px;
+  border-bottom: 1px solid #2e2e2e;
+  margin-bottom: 4px;
+}
+
+.canvas-control-popover-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #dcdcdc;
+  cursor: pointer;
+}
+
+.canvas-control-popover-item:hover {
+  background-color: rgba(255, 255, 255, 0.07);
+}
+
+.canvas-control-popover-item.is-static {
+  cursor: default;
+}
+
+.canvas-control-popover-item.is-static:hover {
+  background-color: transparent;
+}
+
+.canvas-control-popover-label {
+  white-space: nowrap;
+}
+
+.canvas-control-popover-check {
+  color: var(--color-accent);
+}
+
+.canvas-control-popover-item kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: #a8a8a8;
+  background-color: #262626;
+  border: 1px solid #333333;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Nodos                                                                */
+/* ------------------------------------------------------------------ */
 .canvas-node {
   position: absolute;
   box-sizing: border-box;
+  pointer-events: auto;
+  /* La barra flotante (`.canvas-menu`), la etiqueta y los puntos de conexión
+     son hermanos de `.canvas-node-container` (que sí recorta la tarjeta), por
+     lo que el nodo no debe recortar nada. Equivale a la
+     `.canvas-node-interaction-layer` de Obsidian. */
+  overflow: visible;
 }
 
 .canvas-node-container {
@@ -167,34 +267,74 @@
   height: 100%;
   left: 0;
   top: 0;
-  background-color: #1c1c1c;
-  border: 1.5px solid #383838;
-  border-radius: 8px;
+  background: #1e1e1e;
+  border: 1px solid #363636;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: var(--shadow-stationary);
-  transition: border-color 100ms ease, box-shadow 100ms ease;
+  box-shadow: none;
+  transition: border-color 120ms ease;
   box-sizing: border-box;
 }
 
-.canvas-node:hover .canvas-node-container {
-  border-color: #555555;
-}
-
-.canvas-node.is-selected .canvas-node-container {
-  border-color: var(--color-accent) !important;
-  box-shadow: var(--shadow-border-accent), var(--shadow-stationary) !important;
+/* Estado seleccionado: borde naranja de 2px, sin resplandor exterior. */
+.canvas-node.is-selected .canvas-node-container,
+.canvas-node.is-focused .canvas-node-container,
+.canvas-node.is-editing .canvas-node-container {
+  border: 2px solid #e06c1b;
+  box-shadow: none;
 }
 
 .canvas-node.is-dragging .canvas-node-container {
-  box-shadow: var(--shadow-drag) !important;
+  box-shadow: none;
 }
 
-/* Group Node */
+/* El cuerpo es la superficie de arrastre cuando la tarjeta está seleccionada
+   pero no se está editando el texto. */
+.canvas-node.is-selected:not(.is-editing) .canvas-node-content,
+.canvas-node.is-selected:not(.is-editing) .canvas-node-body {
+  cursor: grab;
+}
+
+/* Fuera del modo edición el texto no se selecciona: el clic siempre puede
+   convertirse en un arrastre de la tarjeta. */
+.canvas-node:not(.is-editing) .canvas-node-body {
+  user-select: none;
+}
+
+.canvas-node.is-dragging .canvas-node-content,
+.canvas-node.is-dragging .canvas-node-body,
+.canvas-node.is-dragging .canvas-node-container {
+  cursor: grabbing !important;
+}
+
+/* Etiqueta del archivo FUERA de la tarjeta, sobre la esquina superior izquierda */
+.canvas-node-label {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--canvas-node-label-color);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 2;
+}
+
+.canvas-node.is-selected .canvas-node-label,
+.canvas-node.is-focused .canvas-node-label {
+  color: var(--canvas-node-label-color);
+}
+
+/* Grupo */
 .canvas-node-group .canvas-node-container {
   background-color: transparent !important;
-  border: 1.5px solid #444444;
+  border: 1px solid #444444;
 }
 
 .canvas-node-group .canvas-node-content {
@@ -224,7 +364,7 @@
   cursor: grabbing;
 }
 
-.canvas-group-label[contenteditable="true"] {
+.canvas-group-label[contenteditable='true'] {
   cursor: text;
   background-color: #1e1e1e;
   border-color: var(--color-accent);
@@ -232,141 +372,203 @@
   outline: none;
 }
 
-/* Node content wrapper */
+/* Contenido del nodo */
 .canvas-node-content {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Nodo de texto */
+.canvas-node-content.is-text,
+.canvas-node-container.is-text .canvas-node-content {
+  padding: 10px 12px;
+}
+
+.canvas-node-body {
   width: 100%;
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 12px 14px;
+  box-sizing: border-box;
   font-size: 13px;
   line-height: 1.5;
   color: #dcdcdc;
-  box-sizing: border-box;
+  user-select: text;
 }
 
-/* File Node header */
-.canvas-file-header {
+.canvas-node-text-body {
+  overflow-y: auto;
+}
+
+.canvas-node-textarea {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  color: #dcdcdc;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  box-sizing: border-box;
+  caret-color: var(--color-accent);
+}
+
+.canvas-node-textarea::selection {
+  background: rgba(224, 108, 27, 0.35);
+}
+
+/* Nodo de nota del vault */
+.canvas-node-container.is-file .canvas-node-content {
+  padding: 0;
+}
+
+.canvas-node-note-body {
+  padding: 20px 24px;
+  background-color: var(--canvas-node-bg);
+  overflow-y: auto;
+}
+
+.canvas-node-note-title {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #ffffff;
+  margin: 0 0 12px 0;
+}
+
+.canvas-node-note-textarea {
+  padding: 20px 24px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* Nodo de imagen del vault */
+.canvas-node-container.is-image .canvas-node-content {
+  padding: 0;
+}
+
+.canvas-node-image-body {
+  padding: 0;
+  margin: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-bottom: 1px solid #2e2e2e;
-  background-color: #222222;
-  font-size: 12px;
-  font-weight: 500;
-  color: #c0c0c0;
+  justify-content: center;
+  overflow: hidden;
+  background-color: #141414;
 }
 
-/* 8 Resizers */
+.canvas-node-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+
+.canvas-node-image-loading {
+  font-size: 12px;
+  color: #888888;
+}
+
+/* ------------------------------------------------------------------ */
+/* Redimensionado (4 lados + 4 esquinas)                                */
+/* ------------------------------------------------------------------ */
+/* Zonas invisibles de 6px de grosor, pegadas al borde exterior. Nunca
+   invaden el centro de la tarjeta. */
 .canvas-node-resizer {
   position: absolute;
-  width: var(--resizer-size);
-  height: var(--resizer-size);
-  z-index: 20;
+  z-index: 22;
+  pointer-events: auto;
+  background: transparent;
+  border: none;
 }
 
-.canvas-node-resizer[data-resize='top'] {
-  left: 0;
-  right: 0;
-  width: 100%;
-  top: calc(var(--resizer-size) * -0.5);
+.canvas-node-resizer[data-resize='n'] {
+  left: 6px;
+  right: 6px;
+  top: -3px;
+  height: 6px;
   cursor: ns-resize;
 }
 
-.canvas-node-resizer[data-resize='bottom'] {
-  left: 0;
-  right: 0;
-  width: 100%;
-  bottom: calc(var(--resizer-size) * -0.5);
+.canvas-node-resizer[data-resize='s'] {
+  left: 6px;
+  right: 6px;
+  bottom: -3px;
+  height: 6px;
   cursor: ns-resize;
 }
 
-.canvas-node-resizer[data-resize='left'] {
-  top: 0;
-  bottom: 0;
-  height: 100%;
-  left: calc(var(--resizer-size) * -0.5);
+.canvas-node-resizer[data-resize='w'] {
+  top: 6px;
+  bottom: 6px;
+  left: -3px;
+  width: 6px;
   cursor: ew-resize;
 }
 
-.canvas-node-resizer[data-resize='right'] {
-  top: 0;
-  bottom: 0;
-  height: 100%;
-  right: calc(var(--resizer-size) * -0.5);
+.canvas-node-resizer[data-resize='e'] {
+  top: 6px;
+  bottom: 6px;
+  right: -3px;
+  width: 6px;
   cursor: ew-resize;
 }
 
-.canvas-node-resizer[data-resize='topleft'] {
-  top: calc(var(--resizer-size) * -0.5);
-  left: calc(var(--resizer-size) * -0.5);
+.canvas-node-resizer.is-corner {
+  width: 6px;
+  height: 6px;
+}
+
+.canvas-node-resizer[data-resize='nw'] {
+  top: -3px;
+  left: -3px;
   cursor: nwse-resize;
 }
 
-.canvas-node-resizer[data-resize='topright'] {
-  top: calc(var(--resizer-size) * -0.5);
-  right: calc(var(--resizer-size) * -0.5);
+.canvas-node-resizer[data-resize='ne'] {
+  top: -3px;
+  right: -3px;
   cursor: nesw-resize;
 }
 
-.canvas-node-resizer[data-resize='bottomleft'] {
-  bottom: calc(var(--resizer-size) * -0.5);
-  left: calc(var(--resizer-size) * -0.5);
+.canvas-node-resizer[data-resize='sw'] {
+  bottom: -3px;
+  left: -3px;
   cursor: nesw-resize;
 }
 
-.canvas-node-resizer[data-resize='bottomright'] {
-  bottom: calc(var(--resizer-size) * -0.5);
-  right: calc(var(--resizer-size) * -0.5);
+.canvas-node-resizer[data-resize='se'] {
+  bottom: -3px;
+  right: -3px;
   cursor: nwse-resize;
 }
 
-/* 4 Connection Points */
-.canvas-node-connection-point {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background-color: var(--color-accent);
-  border: 2px solid #1c1c1c;
-  cursor: crosshair;
-  z-index: 25;
-  opacity: 0;
-  transition: opacity 120ms ease, transform 120ms ease;
-  box-sizing: border-box;
+/* ------------------------------------------------------------------ */
+/* Punto de conexión único (18px, centro naranja y anillo gris)          */
+/* ------------------------------------------------------------------ */
+/* La posición concreta (top/right/bottom/left) se aplica inline desde
+   `CanvasNodeView`, siempre centrada sobre la línea del borde. */
+.canvas-node-connection {
+  transition: transform 80ms ease;
 }
 
-.canvas-node:hover .canvas-node-connection-point {
-  opacity: 0.9;
+.canvas-node-connection:hover {
+  filter: brightness(1.15);
 }
 
-.canvas-node-connection-point:hover {
-  opacity: 1;
-  transform: scale(1.3);
-}
-
-.canvas-node-connection-point[data-side='top'] {
-  top: -7px;
-  left: calc(50% - 7px);
-}
-
-.canvas-node-connection-point[data-side='right'] {
-  right: -7px;
-  top: calc(50% - 7px);
-}
-
-.canvas-node-connection-point[data-side='bottom'] {
-  bottom: -7px;
-  left: calc(50% - 7px);
-}
-
-.canvas-node-connection-point[data-side='left'] {
-  left: -7px;
-  top: calc(50% - 7px);
-}
-
-/* Edges / Connections */
+/* ------------------------------------------------------------------ */
+/* Aristas / conexiones                                                 */
+/* ------------------------------------------------------------------ */
 .canvas-edges {
   position: absolute;
   width: 100%;
@@ -377,12 +579,22 @@
   pointer-events: none;
 }
 
+.canvas-edges > * {
+  pointer-events: initial;
+}
+
 .canvas-display-path {
   fill: none;
-  stroke: #7e7e7e;
+  stroke: #888888;
   stroke-width: 2px;
   pointer-events: none;
   transition: stroke-width 100ms ease, stroke 100ms ease;
+}
+
+.canvas-display-path.is-connecting {
+  stroke: #888888;
+  stroke-width: 2px;
+  stroke-dasharray: none;
 }
 
 .canvas-interaction-path {
@@ -407,13 +619,13 @@
 }
 
 .canvas-path-end {
-  fill: #7e7e7e;
-  stroke: #7e7e7e;
+  fill: #888888;
+  stroke: #888888;
   stroke-width: 1px;
   pointer-events: none;
 }
 
-/* Edge Label */
+/* Etiqueta de la arista */
 .canvas-path-label {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -435,35 +647,56 @@
   border-color: var(--color-accent);
 }
 
-/* Floating card / edge action menu (.canvas-menu) */
+/* ------------------------------------------------------------------ */
+/* Menú flotante de acciones (.canvas-menu)                             */
+/* ------------------------------------------------------------------ */
+/* Barra flotante de acciones del nodo (.canvas-menu).
+   Flota FUERA y ARRIBA del nodo seleccionado, centrada horizontalmente
+   (equivalente al posicionamiento en JS de Obsidian: `bottom: 100%` + `left: 50%`). */
 .canvas-menu {
   position: absolute;
-  z-index: 50;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 2px;
-  background-color: #1e1e1e;
-  border: 1px solid #333333;
-  border-radius: 6px;
-  padding: 3px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
-  backdrop-blur: 8px;
+  gap: 4px;
+  padding: 4px 6px;
+  background-color: #242424;
+  border: 1px solid #383838;
+  border-radius: 7px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  z-index: 100;
+}
+
+/* La barra de arista se ancla a coordenadas absolutas del canvas. */
+.canvas-menu.is-anchored {
+  bottom: auto;
+  transform: translate(-50%, -100%) translateY(-10px);
+}
+
+/* Envoltura del botón de color: ancla del submenú de colores. */
+.canvas-menu-color {
+  position: relative;
+  display: flex;
 }
 
 .canvas-menu-button {
-  padding: 5px;
+  padding: 4px;
   border-radius: 4px;
-  color: #b0b0b0;
+  color: #9e9e9e;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 100ms ease;
+  background: transparent;
+  border: none;
 }
 
 .canvas-menu-button:hover {
   color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 .canvas-menu-button.is-active {
@@ -471,36 +704,286 @@
   background-color: var(--color-accent-translucent);
 }
 
-/* Color picker submenu */
+/* Selector de color (6 colores de Obsidian) */
 .canvas-submenu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 5px);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
+  padding: 8px;
+  gap: 1px;
   background-color: #1e1e1e;
-  border: 1px solid #333333;
+  border: 1px solid #363636;
   border-radius: 6px;
-  padding: 4px;
-  gap: 4px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
   z-index: 60;
 }
 
 .canvas-color-dot {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  margin: 2px;
+  border-radius: 12px;
+  border: 2px solid #1e1e1e;
   cursor: pointer;
-  border: 2px solid transparent;
   transition: transform 100ms ease;
 }
 
 .canvas-color-dot:hover {
-  transform: scale(1.15);
-  border-color: #ffffff;
+  transform: scale(1.12);
 }
 
-.canvas-color-dot.is-active {
-  border-color: #ffffff;
+/* ------------------------------------------------------------------ */
+/* Markdown renderizado dentro del Canvas                               */
+/* ------------------------------------------------------------------ */
+.canvas-markdown {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #dcdcdc;
+  word-break: break-word;
+}
+
+.canvas-markdown > *:first-child {
+  margin-top: 0;
+}
+
+.canvas-markdown > *:last-child {
+  margin-bottom: 0;
+}
+
+.canvas-md-h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 12px 0 6px 0;
+  line-height: 1.25;
+}
+
+.canvas-md-h2 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 10px 0 5px 0;
+  line-height: 1.3;
+}
+
+.canvas-md-h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #f0f0f0;
+  margin: 9px 0 4px 0;
+}
+
+.canvas-md-h4,
+.canvas-md-h5,
+.canvas-md-h6 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e6e6e6;
+  margin: 8px 0 4px 0;
+}
+
+.canvas-md-p {
+  margin: 4px 0;
+  min-height: 1em;
+}
+
+.canvas-markdown strong {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.canvas-markdown em {
+  font-style: italic;
+}
+
+.canvas-markdown del {
+  opacity: 0.6;
+}
+
+.canvas-markdown mark {
+  background-color: rgba(224, 108, 27, 0.25);
+  color: #ffffff;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.canvas-md-code {
+  background-color: #262626;
+  border: 1px solid #303030;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: #e8a87c;
+}
+
+.canvas-md-codeblock {
+  position: relative;
+  background-color: #161616;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 8px 0;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #cfcfcf;
+}
+
+.canvas-md-codeblock code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.canvas-md-code-lang {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6f6f6f;
+}
+
+.canvas-md-ul,
+.canvas-md-ol {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+
+.canvas-md-li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 2px 0;
+  list-style: none;
+}
+
+.canvas-md-ul > .canvas-md-li::before {
+  content: '•';
+  color: #888888;
+  margin-left: -12px;
+}
+
+.canvas-md-ol {
+  list-style: decimal;
+}
+
+.canvas-md-ol > .canvas-md-li {
+  list-style: decimal;
+}
+
+.canvas-md-li-text {
+  flex: 1;
+}
+
+.canvas-md-checkbox {
+  color: #888888;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.canvas-md-checkbox.is-checked {
+  color: var(--color-accent);
+}
+
+.canvas-md-quote {
+  margin: 8px 0;
+  padding: 4px 12px;
+  border-left: 3px solid #3f3f3f;
+  color: #b8b8b8;
+}
+
+.canvas-md-callout {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 6px 6px 0;
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.canvas-md-callout-title {
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.canvas-md-hr {
+  border: none;
+  border-top: 1px solid #303030;
+  margin: 10px 0;
+}
+
+.canvas-md-image {
+  max-width: 100%;
+  border-radius: 4px;
+  display: block;
+  margin: 6px 0;
+}
+
+.canvas-md-image-placeholder {
+  display: inline-block;
+  min-width: 32px;
+  min-height: 20px;
+  background-color: #262626;
+  border-radius: 4px;
+  opacity: 0.6;
+}
+
+.canvas-md-wikilink,
+.canvas-md-link {
+  color: var(--color-accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.canvas-md-wikilink:hover,
+.canvas-md-link:hover {
+  text-decoration: underline;
+}
+
+.canvas-md-math-block {
+  margin: 8px 0;
+  overflow-x: auto;
+}
+
+.canvas-md-math-error {
+  color: #e06c1b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}
+
+.canvas-md-table-wrap {
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.canvas-md-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  width: 100%;
+}
+
+.canvas-md-table th,
+.canvas-md-table td {
+  border: 1px solid #303030;
+  padding: 4px 8px;
+  text-align: left;
+}
+
+.canvas-md-table th {
+  background-color: #242424;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.canvas-md-table tr:nth-child(even) td {
+  background-color: rgba(255, 255, 255, 0.02);
 }

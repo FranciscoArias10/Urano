@@ -815,25 +815,14 @@ export function createImageExtension(options?: ImageExtensionOptions) {
 let lastPastedTimestamp = 0;
 
 /**
- * Processes an image file pasted from clipboard.
- * Saves it physically to the active vault root, updates the file tree,
- * keeps the current .md note active (NO tab change, NO ImageView open),
- * and inserts \n![[Pasted Image YYYYMMDDHHmmss.png]]\n at the cursor position.
+ * Saves a clipboard image into the root of the active vault using Obsidian's
+ * naming convention (`Pasted Image YYYYMMDDHHmmss.png`).
+ *
+ * Returns the created file name, or null when it could not be stored.
+ * Shared by the editor (paste) and by the Canvas (paste onto the canvas).
  */
-export async function procesarPegadoDeImagen(
-  file: File,
-  view: EditorView
-): Promise<string | null> {
-  const nowMs = Date.now();
-  if (nowMs - lastPastedTimestamp < 300) {
-    console.log('[Urano] Pegado de imagen ignorado por debounce');
-    return null;
-  }
-  lastPastedTimestamp = nowMs;
-
+export async function saveClipboardImageToVault(file: File): Promise<string | null> {
   try {
-    console.log('[Urano] Imagen detectada en portapapeles, procesando...', file.name);
-
     // Exact Obsidian naming convention: Pasted Image YYYYMMDDHHmmss.png
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -876,7 +865,7 @@ export async function procesarPegadoDeImagen(
     const arrayBuffer = await file.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
 
-    // Pre-cache immediate blob URL in memory so the image widget renders instantly
+    // Pre-cache immediate blob URL in memory so the image renders instantly
     const mime = file.type || getImageMimeType(nombreImagen);
     const memoryBlob = new Blob([uint8Array], { type: mime });
     const memoryUrl = URL.createObjectURL(memoryBlob);
@@ -888,9 +877,41 @@ export async function procesarPegadoDeImagen(
     await adapter.writeBinary(rutaDestino, uint8Array);
     console.log('[Urano] Imagen guardada físicamente en disco:', rutaDestino);
 
-    // The bytes are already in memory: the blob URL cached above stays the source for this
-    // session, so the widget renders instantly and survives CodeMirror re-creations without
-    // a round-trip through the asset protocol.
+    // Refresh the explorer in the background: a full vault listing must never block the UI
+    refreshTree().catch((err) => console.warn('[Urano] refreshTree tras pegado falló:', err));
+
+    return nombreImagen;
+  } catch (err) {
+    console.error('[Urano] Error guardando la imagen del portapapeles:', err);
+    useNoticeStore
+      .getState()
+      .showNotice('Error al guardar imagen del portapapeles', 3000, 'error');
+    return null;
+  }
+}
+
+/**
+ * Processes an image file pasted from clipboard.
+ * Saves it physically to the active vault root, updates the file tree,
+ * keeps the current .md note active (NO tab change, NO ImageView open),
+ * and inserts \n![[Pasted Image YYYYMMDDHHmmss.png]]\n at the cursor position.
+ */
+export async function procesarPegadoDeImagen(
+  file: File,
+  view: EditorView
+): Promise<string | null> {
+  const nowMs = Date.now();
+  if (nowMs - lastPastedTimestamp < 300) {
+    console.log('[Urano] Pegado de imagen ignorado por debounce');
+    return null;
+  }
+  lastPastedTimestamp = nowMs;
+
+  try {
+    console.log('[Urano] Imagen detectada en portapapeles, procesando...', file.name);
+
+    const nombreImagen = await saveClipboardImageToVault(file);
+    if (!nombreImagen) return null;
 
     // Insert \n![[Pasted Image YYYYMMDDHHmmss.png]]\n at the exact cursor position right away
     const link = `\n![[${nombreImagen}]]\n`;
@@ -899,10 +920,6 @@ export async function procesarPegadoDeImagen(
       changes: { from: fromPos, insert: link },
       selection: { anchor: fromPos + link.length },
     });
-
-    // Refresh the explorer in the background: a full vault listing must never block the editor
-    // (active file and tabs are untouched: NO selectFile, NO ImageView).
-    refreshTree().catch((err) => console.warn('[Urano] refreshTree tras pegado falló:', err));
 
     useNoticeStore
       .getState()

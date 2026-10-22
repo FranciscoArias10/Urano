@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Check } from 'lucide-react';
 
 export interface MenuItemData {
   type?: 'item' | 'separator';
@@ -8,6 +8,8 @@ export interface MenuItemData {
   shortcut?: string;
   isWarning?: boolean;
   disabled?: boolean;
+  /** Renders a check mark on the left (Obsidian uses it in the tab list menu) */
+  checked?: boolean;
   action?: () => void;
   submenu?: MenuItemData[];
 }
@@ -83,6 +85,11 @@ const MenuItemRow: React.FC<MenuItemRowProps> = ({ item, onTrigger }) => {
       }}
     >
       {item.icon && <span className="menu-item-icon">{item.icon}</span>}
+      {item.checked && (
+        <span className="menu-item-icon">
+          <Check size={14} className="text-orange-500" />
+        </span>
+      )}
       <span className="menu-item-title flex-1">{item.title}</span>
 
       {item.shortcut && (

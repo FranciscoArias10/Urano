@@ -34,8 +34,6 @@ import {
   MessageSquare,
   Sigma,
   Link,
-  BookOpen,
-  Edit3,
   ExternalLink,
   PlusCircle,
   Columns,
@@ -43,9 +41,6 @@ import {
   Scissors,
   Table,
   Minus,
-  ArrowLeft,
-  ArrowRight,
-  MoreVertical,
   Paintbrush,
   Pilcrow,
   ListPlus,
@@ -78,6 +73,8 @@ interface EditorProps {
   onOpenInNewTab?: (noteName: string) => void;
   onOpenToRight?: (noteName: string) => void;
   onStatsChange?: (stats: { words: number; chars: number }) => void;
+  /** Controlled view mode (driven by the .view-header action button / Ctrl+E) */
+  viewMode?: 'live-preview' | 'reading';
 }
 
 // Module-level reference to the active EditorView
@@ -91,6 +88,7 @@ export const Editor: React.FC<EditorProps> = ({
   onOpenInNewTab,
   onOpenToRight,
   onStatsChange,
+  viewMode,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -98,7 +96,7 @@ export const Editor: React.FC<EditorProps> = ({
   const inlineTitleRef = useRef<HTMLDivElement>(null);
   const lastDispatchedDocRef = useRef<string>('');
 
-  const [editorMode, setEditorMode] = useState<'live-preview' | 'reading'>('live-preview');
+  const editorMode = viewMode ?? 'live-preview';
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -2019,125 +2017,11 @@ export const Editor: React.FC<EditorProps> = ({
     );
   }
 
-  const pathParts = activeFile ? activeFile.replace(/\\/g, '/').split('/') : [];
-
-  const handleHeaderMoreMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const items: MenuItemData[] = [
-      {
-        title: editorMode === 'live-preview' ? 'Cambiar a Vista de Lectura' : 'Cambiar a Vista de Edición',
-        icon: <BookOpen size={14} />,
-        action: () => setEditorMode(editorMode === 'live-preview' ? 'reading' : 'live-preview'),
-      },
-      {
-        title: 'Copiar enlace de Urano',
-        icon: <Copy size={14} />,
-        action: () => {
-          navigator.clipboard.writeText(`[[${cleanTitle}]]`);
-          showNotice('Enlace copiado al portapapeles', 2000, 'success');
-        },
-      },
-      {
-        title: 'Copiar ruta de archivo',
-        icon: <Link size={14} />,
-        action: () => {
-          if (activeFile) {
-            navigator.clipboard.writeText(activeFile);
-            showNotice('Ruta copiada al portapapeles', 2000, 'success');
-          }
-        },
-      },
-      { type: 'separator' },
-      {
-        title: 'Renombrar nota',
-        icon: <Edit3 size={14} />,
-        action: () => {
-          if (inlineTitleRef.current) {
-            inlineTitleRef.current.focus();
-            const range = document.createRange();
-            range.selectNodeContents(inlineTitleRef.current);
-            const sel = window.getSelection();
-            sel?.removeAllRanges();
-            sel?.addRange(range);
-          }
-        },
-      },
-    ];
-    setContextMenu({ x: Math.max(8, rect.left - 180), y: rect.bottom + 6, items });
-  };
-
   return (
     <div
       onContextMenu={handleContextMenu}
       className="flex-1 flex flex-col h-full bg-obsidian-bg overflow-hidden relative"
     >
-      {/* Obsidian Note View Header (.view-header) 1:1 Clean */}
-      <div className="flex items-center justify-between px-4 py-1.5 border-b border-obsidian-border bg-obsidian-sidebar z-10 select-none h-[40px]">
-        {/* Left: Minimalist Navigation Arrows & Breadcrumbs */}
-        <div className="flex items-center gap-2.5 text-xs truncate min-w-0">
-          <div className="flex items-center gap-0.5 text-stone-500 shrink-0">
-            <button
-              onClick={() => window.history.back()}
-              title="Atrás"
-              className="p-1 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
-            >
-              <ArrowLeft size={14} />
-            </button>
-            <button
-              onClick={() => window.history.forward()}
-              title="Adelante"
-              className="p-1 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
-            >
-              <ArrowRight size={14} />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-1.5 text-stone-400 text-xs truncate">
-            {pathParts.map((part, idx) => (
-              <React.Fragment key={idx}>
-                {idx > 0 && <span className="text-stone-600 font-sans">›</span>}
-                <span
-                  className={
-                    idx === pathParts.length - 1
-                      ? 'font-medium text-stone-200 truncate'
-                      : 'truncate text-stone-400 hover:text-stone-200 transition-colors'
-                  }
-                >
-                  {idx === pathParts.length - 1 ? cleanTitle : part}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-
-        {/* Right: Book Mode Switcher & 3-dots Menu */}
-        <div className="flex items-center gap-1 shrink-0 text-stone-400">
-          <button
-            onClick={() =>
-              setEditorMode(editorMode === 'live-preview' ? 'reading' : 'live-preview')
-            }
-            title={
-              editorMode === 'live-preview'
-                ? 'Cambiar a Vista de Lectura'
-                : 'Cambiar a Vista de Edición (Live Preview)'
-            }
-            className="p-1.5 hover:text-orange-400 hover:bg-white/5 rounded transition-colors"
-          >
-            <BookOpen size={15} />
-          </button>
-
-          <button
-            onClick={handleHeaderMoreMenu}
-            title="Más opciones de la nota"
-            className="p-1.5 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
-          >
-            <MoreVertical size={15} />
-          </button>
-        </div>
-      </div>
-
       {/* Clean Document Canvas */}
       <div className="flex-1 overflow-hidden relative flex flex-col">
         {isLoading && (

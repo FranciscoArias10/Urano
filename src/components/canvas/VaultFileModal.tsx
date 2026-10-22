@@ -1,16 +1,26 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, FileText, X } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Search, FileText, FileImage, X } from 'lucide-react';
 import { useVaultStore } from '../../stores/vaultStore';
 import { FileItem } from '../../types';
+import { isImagePath } from '../../services/storageAdapter';
+
+export type VaultFileModalMode = 'note' | 'image';
 
 interface VaultFileModalProps {
   isOpen: boolean;
+  mode?: VaultFileModalMode;
   onClose: () => void;
   onSelectFile: (filePath: string, fileName: string) => void;
 }
 
+/**
+ * Modal buscador de archivos del Vault.
+ *  - mode="note"  -> solo notas `.md`
+ *  - mode="image" -> solo imágenes (png/jpg/webp/gif/svg/…)
+ */
 export const VaultFileModal: React.FC<VaultFileModalProps> = ({
   isOpen,
+  mode = 'note',
   onClose,
   onSelectFile,
 }) => {
@@ -19,23 +29,30 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Flatten markdown files from fileTree
-  const files: { path: string; name: string }[] = [];
-  const collectFiles = (items: FileItem[]) => {
-    for (const item of items) {
-      if (!item.isDir && item.name.toLowerCase().endsWith('.md')) {
-        files.push({
-          path: item.path,
-          name: item.name.replace(/\.md$/i, ''),
-        });
+  // Collect markdown files or images from fileTree
+  const files = useMemo(() => {
+    const collected: { path: string; name: string }[] = [];
+    const collect = (items: FileItem[]) => {
+      for (const item of items) {
+        if (!item.isDir) {
+          const isNote = item.name.toLowerCase().endsWith('.md');
+          const isImg = isImagePath(item.name);
+          if (mode === 'note' && isNote) {
+            collected.push({ path: item.path, name: item.name.replace(/\.md$/i, '') });
+          } else if (mode === 'image' && isImg) {
+            collected.push({ path: item.path, name: item.name });
+          }
+        }
+        if (item.children) collect(item.children);
       }
-      if (item.children) collectFiles(item.children);
-    }
-  };
-  collectFiles(fileTree);
+    };
+    collect(fileTree);
+    return collected;
+  }, [fileTree, mode]);
 
-  const filtered = files.filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase())
+  const filtered = useMemo(
+    () => files.filter((f) => f.name.toLowerCase().includes(search.toLowerCase())),
+    [files, search]
   );
 
   useEffect(() => {
@@ -66,6 +83,8 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
 
   if (!isOpen) return null;
 
+  const isImageMode = mode === 'image';
+
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/60 backdrop-blur-sm animate-fadeIn">
       <div
@@ -84,7 +103,11 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
               setSelectedIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Seleccionar una nota de la bóveda..."
+            placeholder={
+              isImageMode
+                ? 'Seleccionar una imagen de la bóveda...'
+                : 'Seleccionar una nota de la bóveda...'
+            }
             className="w-full bg-transparent text-sm text-stone-100 placeholder-stone-500 outline-none"
           />
           <button
@@ -99,7 +122,9 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
         <div className="max-h-72 overflow-y-auto p-1.5 space-y-0.5">
           {filtered.length === 0 ? (
             <div className="px-3 py-6 text-center text-xs text-stone-500">
-              No se encontraron notas en la bóveda
+              {isImageMode
+                ? 'No se encontraron imágenes en la bóveda'
+                : 'No se encontraron notas en la bóveda'}
             </div>
           ) : (
             filtered.map((file, idx) => (
@@ -115,7 +140,11 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
                     : 'text-stone-300 hover:bg-stone-800 hover:text-white'
                 }`}
               >
-                <FileText size={14} className="shrink-0 opacity-70" />
+                {isImageMode ? (
+                  <FileImage size={14} className="shrink-0 opacity-70" />
+                ) : (
+                  <FileText size={14} className="shrink-0 opacity-70" />
+                )}
                 <span className="truncate flex-1 font-medium">{file.name}</span>
                 <span className="text-[10px] text-stone-500 truncate max-w-[150px]">
                   {file.path.split('/').slice(-2, -1)[0] || 'Raíz'}

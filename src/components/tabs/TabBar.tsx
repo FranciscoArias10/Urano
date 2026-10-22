@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  FileText,
-  GitFork,
-  X,
   Plus,
-  XCircle,
-  ArrowRight,
-  Copy,
+  ChevronDown,
+  X,
   LayoutDashboard,
   LayoutList,
-  FileImage,
+  GitFork,
+  PanelRight,
+  Pin,
+  PinOff,
+  Columns,
+  Rows,
 } from 'lucide-react';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
+import { WindowControls } from '../layout/WindowControls';
 
 export interface TabItem {
   id: string;
@@ -19,6 +21,7 @@ export interface TabItem {
   filePath?: string;
   title: string;
   isDirty?: boolean;
+  pinned?: boolean;
 }
 
 interface TabBarProps {
@@ -27,9 +30,39 @@ interface TabBarProps {
   onSelectTab: (tabId: string) => void;
   onCloseTab: (tabId: string) => void;
   onCloseOtherTabs?: (tabId: string) => void;
-  onCloseTabsToRight?: (tabId: string) => void;
-  onDuplicateTab?: (tabId: string) => void;
+  onCloseAllTabs?: () => void;
   onNewTab: () => void;
+  onTogglePin?: (tabId: string) => void;
+  onToggleRightSidebar?: () => void;
+  rightSidebarVisible?: boolean;
+  onSplitRight?: (tabId: string) => void;
+  onSplitDown?: (tabId: string) => void;
+}
+
+/** Obsidian exposes the view type through the `data-type` attribute of the tab. */
+const TAB_VIEW_TYPE: Record<TabItem['type'], string> = {
+  note: 'markdown',
+  canvas: 'canvas',
+  base: 'bases',
+  graph: 'graph',
+  image: 'image',
+};
+
+/**
+ * Obsidian only renders an icon for special views. Markdown notes keep a
+ * clean title (the icon element is hidden through CSS, exactly like
+ * `.workspace-tab-header[data-type="markdown"]`).
+ */
+const TAB_ICON: Partial<Record<TabItem['type'], React.ReactNode>> = {
+  canvas: <LayoutDashboard size={14} />,
+  base: <LayoutList size={14} />,
+  graph: <GitFork size={14} />,
+};
+
+interface MenuState {
+  x: number;
+  y: number;
+  items: MenuItemData[];
 }
 
 export const TabBar: React.FC<TabBarProps> = ({
@@ -38,116 +71,265 @@ export const TabBar: React.FC<TabBarProps> = ({
   onSelectTab,
   onCloseTab,
   onCloseOtherTabs,
-  onCloseTabsToRight,
-  onDuplicateTab,
+  onCloseAllTabs,
   onNewTab,
+  onTogglePin,
+  onToggleRightSidebar,
+  rightSidebarVisible,
+  onSplitRight,
+  onSplitDown,
 }) => {
-  const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
-    items: MenuItemData[];
-  } | null>(null);
+  const [contextMenu, setContextMenu] = useState<MenuState | null>(null);
+  const [tabListMenu, setTabListMenu] = useState<MenuState | null>(null);
+  const tabListButtonRef = useRef<HTMLSpanElement>(null);
 
-  const handleContextMenu = (e: React.MouseEvent, tab: TabItem) => {
+  const activeIndex = useMemo(
+    () => tabs.findIndex((t) => t.id === activeTabId),
+    [tabs, activeTabId]
+  );
+
+  const closeMenus = useCallback(() => {
+    setContextMenu(null);
+    setTabListMenu(null);
+  }, []);
+
+  /* --------------------------------------------------------------- *
+   * Right click menu of a single tab
+   * --------------------------------------------------------------- */
+  const handleTabContextMenu = (e: React.MouseEvent, tab: TabItem) => {
     e.preventDefault();
     e.stopPropagation();
 
     const items: MenuItemData[] = [
       {
         title: 'Cerrar',
-        shortcut: 'Ctrl+W',
         icon: <X size={14} />,
         action: () => onCloseTab(tab.id),
       },
       {
-        title: 'Cerrar las demás pestañas',
-        icon: <XCircle size={14} />,
-        disabled: tabs.length <= 1,
+        title: 'Cerrar otras',
+        icon: <X size={14} />,
         action: () => onCloseOtherTabs?.(tab.id),
       },
       {
-        title: 'Cerrar pestañas a la derecha',
-        icon: <ArrowRight size={14} />,
-        disabled: tabs.findIndex((t) => t.id === tab.id) === tabs.length - 1,
-        action: () => onCloseTabsToRight?.(tab.id),
+        title: 'Cerrar todo',
+        icon: <X size={14} />,
+        action: () => onCloseAllTabs?.(),
       },
       { type: 'separator' },
       {
-        title: 'Duplicar en nueva pestaña',
-        icon: <Copy size={14} />,
-        action: () => onDuplicateTab?.(tab.id),
+        title: tab.pinned ? 'Desfijar' : 'Fijar',
+        icon: tab.pinned ? <PinOff size={14} /> : <Pin size={14} />,
+        action: () => onTogglePin?.(tab.id),
+      },
+      { type: 'separator' },
+      {
+        title: 'Dividir a la derecha',
+        icon: <Columns size={14} />,
+        action: () => onSplitRight?.(tab.id),
+      },
+      {
+        title: 'Dividir abajo',
+        icon: <Rows size={14} />,
+        action: () => onSplitDown?.(tab.id),
       },
     ];
 
     setContextMenu({ x: e.clientX, y: e.clientY, items });
   };
 
+  /* --------------------------------------------------------------- *
+   * Chevron menu: every open tab + close actions
+   * --------------------------------------------------------------- */
+  const handleOpenTabListMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const items: MenuItemData[] = tabs.map((tab) => ({
+      title: tab.title,
+      icon: TAB_ICON[tab.type] ?? undefined,
+      checked: tab.id === activeTabId,
+      action: () => onSelectTab(tab.id),
+    }));
+
+    items.push({ type: 'separator' });
+    items.push({
+      title: 'Cerrar otras pestañas',
+      icon: <X size={14} />,
+      disabled: tabs.length < 2,
+      action: () => onCloseOtherTabs?.(activeTabId),
+    });
+    items.push({
+      title: 'Cerrar todas las pestañas',
+      icon: <X size={14} />,
+      disabled: tabs.length === 0,
+      action: () => onCloseAllTabs?.(),
+    });
+
+    const rect = tabListButtonRef.current?.getBoundingClientRect();
+    const x = rect ? rect.left : e.clientX;
+    const y = rect ? rect.bottom + 4 : e.clientY;
+    setTabListMenu({ x, y, items });
+  };
+
+  /* Close the menus when clicking anywhere else */
+  useEffect(() => {
+    if (!contextMenu && !tabListMenu) return;
+    const handlePointerDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.menu')) return;
+      closeMenus();
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeMenus();
+    };
+    window.addEventListener('mousedown', handlePointerDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [contextMenu, tabListMenu, closeMenus]);
+
   return (
-    <div className="workspace-tab-header-container select-none">
-      {tabs.map((tab) => {
-        const isActive = tab.id === activeTabId;
+    <div className="workspace">
+      <div className="workspace-tabs mod-top mod-root">
+        <div className="workspace-tab-header-container">
+          {/* Tabs ------------------------------------------------------ */}
+          <div className="workspace-tab-header-container-inner">
+            {tabs.map((tab, index) => {
+              const isActive = tab.id === activeTabId;
+              const isBeforeActive = activeIndex > 0 && index === activeIndex - 1;
 
-        return (
-          <div
-            key={tab.id}
-            onClick={() => onSelectTab(tab.id)}
-            onContextMenu={(e) => handleContextMenu(e, tab)}
-            className={`workspace-tab-header ${isActive ? 'is-active' : ''}`}
-            title={tab.filePath || tab.title}
-          >
-            {tab.type === 'graph' ? (
-              <GitFork size={13} className={isActive ? 'text-orange-500' : 'text-stone-400'} />
-            ) : tab.type === 'canvas' ? (
-              <LayoutDashboard size={13} className={isActive ? 'text-orange-500' : 'text-stone-400'} />
-            ) : tab.type === 'base' ? (
-              <LayoutList size={13} className={isActive ? 'text-orange-500' : 'text-stone-400'} />
-            ) : tab.type === 'image' ? (
-              <FileImage size={13} className={isActive ? 'text-orange-500' : 'text-stone-400'} />
-            ) : (
-              <FileText size={13} className={isActive ? 'text-orange-500' : 'text-stone-400'} />
-            )}
-
-            <span className="workspace-tab-header-title truncate max-w-[140px]">
-              {tab.title}
-            </span>
-
-            {tab.isDirty && (
-              <span
-                className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0"
-                title="Cambios sin guardar"
-              />
-            )}
-
-            <button
-              className="workspace-tab-header-close"
-              onClick={(e) => {
-                e.stopPropagation();
-                onCloseTab(tab.id);
-              }}
-              title="Cerrar pestaña"
-            >
-              <X size={12} />
-            </button>
+              return (
+                <div
+                  key={tab.id}
+                  className={[
+                    'workspace-tab-header',
+                    'tappable',
+                    isActive ? 'is-active' : '',
+                    isBeforeActive ? 'is-before-active' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  data-type={TAB_VIEW_TYPE[tab.type]}
+                  title={tab.title}
+                  onClick={() => onSelectTab(tab.id)}
+                  onAuxClick={(e) => {
+                    /* middle click closes the tab (Obsidian behaviour) */
+                    if (e.button === 1) {
+                      e.preventDefault();
+                      onCloseTab(tab.id);
+                    }
+                  }}
+                  onContextMenu={(e) => handleTabContextMenu(e, tab)}
+                >
+                  <div className="workspace-tab-header-inner">
+                    <div className="workspace-tab-header-inner-icon">
+                      {TAB_ICON[tab.type] ?? null}
+                    </div>
+                    <div className="workspace-tab-header-inner-title">{tab.title}</div>
+                    <div className="workspace-tab-header-status-container">
+                      {tab.isDirty && (
+                        <div
+                          className="workspace-tab-header-status-icon mod-dirty"
+                          title="Cambios sin guardar"
+                        />
+                      )}
+                      {tab.pinned && (
+                        <div
+                          className="workspace-tab-header-status-icon mod-pinned"
+                          title="Pestaña fijada"
+                        >
+                          <Pin size={12} />
+                        </div>
+                      )}
+                    </div>
+                    {!tab.pinned && (
+                      <div
+                        className="workspace-tab-header-inner-close-button"
+                        title="Cerrar pestaña"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCloseTab(tab.id);
+                        }}
+                      >
+                        <X size={14} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
 
-      {/* Add New Note Tab Button */}
-      <button
-        onClick={onNewTab}
-        className="h-7 w-7 flex items-center justify-center text-stone-400 hover:text-orange-400 hover:bg-stone-800/60 rounded mb-0.5 ml-1 transition-colors"
-        title="Nueva nota (Ctrl+N)"
-      >
-        <Plus size={14} />
-      </button>
+          {/* New tab (+) ----------------------------------------------- */}
+          <div className="workspace-tab-header-new-tab">
+            <span
+              className="clickable-icon"
+              title="Nueva pestaña (Ctrl+T)"
+              aria-label="Nueva pestaña"
+              onClick={onNewTab}
+            >
+              <Plus size={16} />
+            </span>
+          </div>
 
-      {/* Obsidian Context Menu for Tabs */}
+          {/* Empty rail: drag region of the native window --------------- */}
+          <div
+            className="workspace-tab-header-spacer"
+            data-tauri-drag-region
+            title="Arrastra para mover la ventana"
+          />
+
+          {/* Tab list dropdown ------------------------------------------ */}
+          <div className="workspace-tab-header-tab-list">
+            <span
+              ref={tabListButtonRef}
+              className="clickable-icon"
+              title="Lista de pestañas"
+              aria-label="Lista de pestañas"
+              onClick={handleOpenTabListMenu}
+              onContextMenu={handleOpenTabListMenu}
+            >
+              <ChevronDown size={16} />
+            </span>
+          </div>
+
+          {/* Right sidebar toggle -------------------------------------- */}
+          {onToggleRightSidebar && (
+            <div
+              className={`sidebar-toggle-button mod-right${
+                rightSidebarVisible ? ' is-active' : ''
+              }`}
+              title="Alternar barra lateral derecha"
+              aria-label="Alternar barra lateral derecha"
+              onClick={onToggleRightSidebar}
+            >
+              <PanelRight size={16} />
+            </div>
+          )}
+
+          {/* Native window controls ------------------------------------- */}
+          <WindowControls />
+        </div>
+      </div>
+
+      {/* Menus --------------------------------------------------------- */}
       {contextMenu && (
         <ObsidianMenu
           x={contextMenu.x}
           y={contextMenu.y}
           items={contextMenu.items}
-          onClose={() => setContextMenu(null)}
+          onClose={closeMenus}
+        />
+      )}
+      {tabListMenu && (
+        <ObsidianMenu
+          x={tabListMenu.x}
+          y={tabListMenu.y}
+          items={tabListMenu.items}
+          onClose={closeMenus}
         />
       )}
     </div>

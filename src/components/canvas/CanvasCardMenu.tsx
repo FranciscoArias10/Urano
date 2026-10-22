@@ -1,56 +1,62 @@
 import React from 'react';
-import { StickyNote, FileText, Globe } from 'lucide-react';
+import { StickyNote, FileText, Image } from 'lucide-react';
 import { Tooltip } from '../common/Tooltip';
+
+export type CanvasCardMenuType = 'text' | 'note' | 'media';
 
 interface CanvasCardMenuProps {
   onAddTextCard: () => void;
-  onAddFileCard: () => void;
-  onAddLinkCard: () => void;
-  onDragStartType: (type: 'text' | 'file' | 'link', e: React.DragEvent) => void;
+  onAddNoteCard: () => void;
+  onAddMediaCard: () => void;
+  onDragStartType: (type: CanvasCardMenuType, e: React.DragEvent) => void;
 }
 
+/**
+ * Barra inferior `.canvas-card-menu` — 1:1 con Obsidian.
+ * Tres botones, sin divisores verticales, que funcionan con clic y también
+ * arrastrándose sobre el lienzo.
+ */
 export const CanvasCardMenu: React.FC<CanvasCardMenuProps> = ({
   onAddTextCard,
-  onAddFileCard,
-  onAddLinkCard,
+  onAddNoteCard,
+  onAddMediaCard,
   onDragStartType,
 }) => {
   return (
     <div className="canvas-card-menu">
-      <Tooltip content="Añadir tarjeta de texto (clic o arrastrar al lienzo)" position="top">
+      <Tooltip content="Añadir tarjeta (clic o arrastrar al lienzo)" position="top">
         <div
           onClick={onAddTextCard}
           draggable
           onDragStart={(e) => onDragStartType('text', e)}
-          className="canvas-card-menu-button mod-draggable group"
+          className="canvas-card-menu-button mod-draggable"
+          title="Añadir tarjeta"
         >
-          <StickyNote size={18} className="group-hover:text-orange-500 transition-colors" />
+          <StickyNote size={18} />
         </div>
       </Tooltip>
-
-      <div className="canvas-card-menu-divider" />
 
       <Tooltip content="Añadir nota de la bóveda (clic o arrastrar al lienzo)" position="top">
         <div
-          onClick={onAddFileCard}
+          onClick={onAddNoteCard}
           draggable
-          onDragStart={(e) => onDragStartType('file', e)}
-          className="canvas-card-menu-button mod-draggable group"
+          onDragStart={(e) => onDragStartType('note', e)}
+          className="canvas-card-menu-button mod-draggable"
+          title="Añadir nota de la bóveda"
         >
-          <FileText size={18} className="group-hover:text-orange-500 transition-colors" />
+          <FileText size={18} />
         </div>
       </Tooltip>
 
-      <div className="canvas-card-menu-divider" />
-
-      <Tooltip content="Añadir enlace web o media (clic o arrastrar al lienzo)" position="top">
+      <Tooltip content="Añadir multimedia de la bóveda (clic o arrastrar al lienzo)" position="top">
         <div
-          onClick={onAddLinkCard}
+          onClick={onAddMediaCard}
           draggable
-          onDragStart={(e) => onDragStartType('link', e)}
-          className="canvas-card-menu-button mod-draggable group"
+          onDragStart={(e) => onDragStartType('media', e)}
+          className="canvas-card-menu-button mod-draggable"
+          title="Añadir multimedia de la bóveda"
         >
-          <Globe size={18} className="group-hover:text-orange-500 transition-colors" />
+          <Image size={18} />
         </div>
       </Tooltip>
     </div>
