@@ -629,7 +629,12 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         }
       }
 
-      // 3. Update activeFile reference if renamed note was open
+      // 3. Notify tabs/breadcrumbs, then update activeFile reference if renamed note was open
+      window.dispatchEvent(
+        new CustomEvent('urano-file-renamed', {
+          detail: { oldPath, newPath, newFileName, newBaseName: cleanTitle },
+        })
+      );
       if (activeFile === oldPath) {
         set({
           activeFile: newPath,
