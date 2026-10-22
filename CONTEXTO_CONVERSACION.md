@@ -313,3 +313,40 @@ La sección 8 atribuía la demora a la carga por IPC; esa parte ya estaba resuel
     - Evento `paste`: si `clipboardData` trae la imagen se usa directo; si trae texto plano (y no HTML con `<img>`) se deja pasar a CodeMirror **sin consultar el portapapeles nativo**; solo si no hay texto utilizable se pide el PNG crudo a Rust.
     - `procesarPegadoDeImagen`: conserva la URL `blob:` en memoria como fuente de la imagen durante la sesión, inserta `![[...]]` inmediatamente después de escribir el archivo y ejecuta `refreshTree()` en segundo plano. Debounce reducido a 300 ms.
     - `ImageWidget`: `eq` ya no compara `from`/`to`; nuevo `updateDOM` actualiza en sitio ancho/alto/alt cuando solo cambia la sintaxis (`|300`); las posiciones para redimensionar o abrir el menú contextual se recalculan en el momento con `locateEmbedRange` (basado en `view.posAtDOM`).
+
+---
+
+## 10. Renombrado 1:1 con Obsidian: edición en línea, escaneo de enlaces, modal "Update links" y refresco en vivo
+
+Flujo equivalente a `FileManager.renameFile` + `MetadataCache.getBacklinksForFile` + modal `shouldUpdateLinks` de Obsidian.
+
+### A. Edición en línea en el árbol lateral ([FileTree.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/vault/FileTree.tsx))
+- `getBaseNameAndExt(name, isDir)` separa nombre base y extensión para **cualquier** archivo (`.md`, `.png`, `.canvas`, `.base`...). El `<input>` muestra y selecciona solo el nombre base (`fotomessi`, no `fotomessi.png`).
+- La insignia de formato (`PNG`, `CANVAS`, `BASE`) permanece visible a la derecha durante la edición.
+- `Enter`/`onBlur` confirman y reconstruyen `nuevoNombre + extensiónOriginal`; `Escape` cancela y restaura el valor.
+- Colisión de nombres: recorrido recursivo del árbol (antes solo se miraba el nivel raíz).
+- Carpetas: `renameItem` del store (sin escaneo de enlaces). Archivos: `requestFileRename` → `scanAffectedLinks` → según preferencia ejecuta o abre el modal.
+
+### B. Escaneo de enlaces ([linkRefactorService.ts](file:///home/fkhalil/Desktop/Proyectos/Urano/src/services/linkRefactorService.ts))
+- `scanAffectedLinks(vault, oldPath, newPath)`: pide `get_vault_notes_content` (notas `.md`/`.markdown` y `.canvas`), sustituye el contenido de la nota activa por el buffer en memoria si está `isDirty`, y omite el archivo renombrado.
+- `findLinkReplacements(text, oldPath, newPath)` devuelve **rangos** `{from, to, insert}` sobre el texto original para `[[x]]`, `![[x]]`, `![[x|300]]`, `[[x|Alias]]`, `[[x#sec]]`, `[alt](x)` y `![alt](x)`. Coincidencia sin distinguir mayúsculas, con o sin extensión, con subcarpetas (`img/x.png`). Alias, dimensiones y anclas se conservan intactos. Regla Obsidian: un enlace escrito sin extensión a una nota `.md` sigue sin extensión; a cualquier otro tipo lleva siempre extensión.
+- `replaceLinksInCanvas` recorre `nodes[]` (`type: 'file'` → campo `file`; `type: 'text'` → markdown embebido).
+- Resultado: `{ totalLinks, totalFiles, changes[] }` con conteos exactos (apariciones y archivos distintos).
+
+### C. Modal "Update links" ([UpdateLinksModal.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/common/UpdateLinksModal.tsx))
+- Preferencia persistente `localStorage['urano_always_update_links']` (`"prompt"` por defecto; `"always"` / `"never"`).
+- Se muestra solo si `totalLinks > 0` y la preferencia es `"prompt"`: fondo `#1e1e1e`, borde `1px solid #363636`, radio 8px, 440px, botón `×`.
+- Texto: `Update links` / `Do you want to update internal links that link to this file?` / `This will affect N link(s) in M file(s).`
+- Botones (derecha, `gap: 8px`): `Always update` (guarda `"always"` y actualiza), `Just once` (actualiza solo ahora), `Do not update` (= `×` / `Esc`: renombra solo el archivo físico).
+
+### D. Ejecución del renombrado y refresco en vivo
+`applyPhysicalRename` (compartido por `executeLinkRefactor` y `executeFileRenameOnly`):
+1. `rename_item` en disco.
+2. `renameImageInCache(old, new)` en [imageExtension.ts](file:///home/fkhalil/Desktop/Proyectos/Urano/src/editor/imageExtension.ts): borra las claves viejas; las URL `blob:`/`data:` se reutilizan, pero una URL `asset://` contiene la ruta vieja (ya inexistente) así que la nueva clave recibe `convertFileSrc(newPath)`.
+3. Despacha `urano-file-renamed` **antes** de cambiar `activeFile`: [App.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/App.tsx) re-apunta `id`/`filePath`/`title` de la pestaña y `activeTabId`, de modo que el efecto de sincronización de pestañas encuentra la pestaña existente y no abre un duplicado. El rename por título dentro del editor (`renameNoteWithLinkRefactor`) despacha el mismo evento.
+4. Actualiza `fileTree` en memoria (`renameInFileTree`), `notesContentMap`, `activeFile`/`activeFileName` (breadcrumb, título del editor e `ImageView` reaccionan solos). `refreshTree()` corre al final para sincronizar tamaños/mtimes.
+
+`executeLinkRefactor` además, por cada archivo afectado:
+- Si es la nota abierta: recalcula los rangos sobre `view.state.doc` y hace `view.dispatch({ changes: rangos })` (solo los enlaces cambian; cursor, scroll e historial de deshacer se conservan). Escribe en disco el documento resultante y marca `isDirty: false`.
+- Si no está abierta: escribe `newContent` y actualiza `notesContentMap`.
+- `ImageWidget.updateDOM` ahora acepta un cambio de destino del mismo tipo de embed: si la URL se resuelve de forma síncrona (caché o `convertFileSrc`) cambia `img.src` en sitio, sin recrear el widget ni mostrar el skeleton.
