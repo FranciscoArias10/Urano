@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 
-export type ViewMode = 'live-preview' | 'reading';
+export type ViewMode = 'live-preview' | 'reading' | 'source';
 
 interface ViewHeaderProps {
   /** Clean file name (without extension) */

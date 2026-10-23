@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { EditorState } from '@codemirror/state';
+import { EditorState, Compartment } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
@@ -17,12 +17,15 @@ import {
   createImageDropPasteHandler,
   copyImageBlobToClipboard,
   procesarPegadoDeImagen,
+  getImageWidgetState,
+  type ImageEmbedInfo,
 } from '../../editor/imageExtension';
 import { getStorageAdapter, toUint8Array } from '../../services/storageAdapter';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 import { useNoticeStore } from '../common/Notice';
+import { ImageLightbox } from '../common/ImageLightbox';
 import { FileItem } from '../../types';
 import {
   FileText,
@@ -74,7 +77,7 @@ interface EditorProps {
   onOpenToRight?: (noteName: string) => void;
   onStatsChange?: (stats: { words: number; chars: number }) => void;
   /** Controlled view mode (driven by the .view-header action button / Ctrl+E) */
-  viewMode?: 'live-preview' | 'reading';
+  viewMode?: 'live-preview' | 'reading' | 'source';
 }
 
 // Module-level reference to the active EditorView
@@ -96,12 +99,46 @@ export const Editor: React.FC<EditorProps> = ({
   const inlineTitleRef = useRef<HTMLDivElement>(null);
   const lastDispatchedDocRef = useRef<string>('');
 
+  // Holds the Live Preview rendering extensions; emptied in Source Mode
+  const livePreviewCompartment = useRef(new Compartment());
+
   const editorMode = viewMode ?? 'live-preview';
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
     items: MenuItemData[];
   } | null>(null);
+
+  // Full-screen image lightbox state (Obsidian `showImage`)
+  const [lightbox, setLightbox] = useState<{
+    images: { src: string; alt?: string; filePath?: string }[];
+    activeIndex: number;
+  } | null>(null);
+
+  // Latest lightbox opener, kept in a ref so the CodeMirror extension (created
+  // once per note) always dispatches to the current handler without re-creating
+  // the editor.
+  const zoomHandlerRef = useRef<(info: ImageEmbedInfo, src: string) => void>(() => {});
+
+  // Every Live Preview decoration. Source Mode swaps this for `[]` so the raw
+  // Markdown is shown (Obsidian "Source mode"). Paste/drop handling is NOT part
+  // of this list: pasting an image must keep working in Source Mode.
+  const buildLivePreviewExtensions = (mode: typeof editorMode) =>
+    mode === 'source'
+      ? []
+      : [
+          liveMarkdownExtension,
+          mathExtension, // KaTeX LaTeX math equations
+          codeBlockExtension, // Code blocks with syntax highlighting & copy button
+          calloutExtension, // Obsidian Callout boxes in Live Preview
+          tableExtension, // Obsidian Markdown Tables in Live Preview
+          createImageExtension({
+            onOpenInNewTab,
+            onZoomImage: (info, src) => zoomHandlerRef.current(info, src),
+          }),
+          formattingClickExtension,
+          createWikilinksExtension({ onWikilinkClick }),
+        ];
 
   // Floating [[ Wikilink suggestion autocompletion state
   const [showSuggest, setShowSuggest] = useState(false);
@@ -262,20 +299,11 @@ export const Editor: React.FC<EditorProps> = ({
         markdown({ codeLanguages: languages }),
         obsidianTheme,
         obsidianSyntax,
-        liveMarkdownExtension,
-        mathExtension, // KaTeX LaTeX math equations
-        codeBlockExtension, // Code blocks with syntax highlighting & copy button
-        calloutExtension, // Obsidian Callout boxes in Live Preview
-        tableExtension, // Obsidian Markdown Tables in Live Preview
-        createImageExtension({
-          onOpenInNewTab,
-        }),
+        // Live Preview rendering lives in a compartment so Source Mode can
+        // disable every decoration and show the raw Markdown (Obsidian "Source mode").
+        livePreviewCompartment.current.of(buildLivePreviewExtensions(editorMode)),
         createImageDropPasteHandler(),
         EditorView.lineWrapping,
-        formattingClickExtension,
-        createWikilinksExtension({
-          onWikilinkClick,
-        }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const newDoc = update.state.doc.toString();
@@ -333,6 +361,19 @@ export const Editor: React.FC<EditorProps> = ({
       viewRef.current = null;
     };
   }, [activeFile]);
+
+  // Toggle Live Preview <-> Source Mode without recreating the editor:
+  // reconfigures the compartment holding every Live Preview decoration.
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: livePreviewCompartment.current.reconfigure(
+        buildLivePreviewExtensions(editorMode)
+      ),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editorMode]);
 
   // Synchronize doc if file content was changed externally
   useEffect(() => {
@@ -400,6 +441,44 @@ export const Editor: React.FC<EditorProps> = ({
     window.addEventListener('keydown', handleSuggestKeys, true);
     return () => window.removeEventListener('keydown', handleSuggestKeys, true);
   }, [showSuggest, availableNotes, suggestIndex]);
+
+  // Collect every image embed in the document and open the clicked one at its
+  // index (1:1 with Obsidian's `showImage`).
+  useEffect(() => {
+    zoomHandlerRef.current = (_info: ImageEmbedInfo, src: string) => {
+      const root = editorRef.current;
+      if (!root) {
+        setLightbox({ images: [{ src }], activeIndex: 0 });
+        return;
+      }
+
+      const nodes = Array.from(root.querySelectorAll<HTMLElement>('.cm-image-embed'));
+      const images = nodes
+        .map((node) => {
+          const state = getImageWidgetState(node);
+          const widgetImg = state?.img ?? node.querySelector('img');
+          if (!widgetImg || !widgetImg.src) return null;
+          const entry: { src: string; alt?: string; filePath?: string } = {
+            src: widgetImg.src,
+            alt: state?.info.alt,
+            filePath: state?.info.resolvedFilePath || state?.info.targetPathOrUrl,
+          };
+          return entry;
+        })
+        .filter((entry): entry is { src: string; alt?: string; filePath?: string } => entry !== null);
+
+      if (images.length === 0) {
+        setLightbox({ images: [{ src }], activeIndex: 0 });
+        return;
+      }
+
+      const activeIndex = Math.max(
+        0,
+        images.findIndex((entry) => entry.src === src)
+      );
+      setLightbox({ images, activeIndex });
+    };
+  }, []);
 
   // Listen for table-specific context menu events (1:1 with Obsidian)
   useEffect(() => {
@@ -2030,8 +2109,21 @@ export const Editor: React.FC<EditorProps> = ({
           </div>
         )}
 
-        {editorMode === 'live-preview' ? (
-          <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+        {editorMode === 'reading' ? (
+          /* Reading View Mode */
+          <div className="h-full overflow-y-auto px-12 py-10 max-w-[820px] mx-auto text-stone-200 leading-relaxed font-sans">
+            <h1 className="text-3xl font-bold text-white mb-6 border-b border-stone-800 pb-3">
+              {cleanTitle}
+            </h1>
+            <div className="whitespace-pre-wrap select-text">{fileContent}</div>
+          </div>
+        ) : (
+          /* Live Preview / Source Mode (CodeMirror 6) */
+          <div
+            className={`flex-1 flex flex-col h-full overflow-hidden relative ${
+              editorMode === 'source' ? 'source-mode' : ''
+            }`}
+          >
             {/* Inline Title (.inline-title) directly above the CodeMirror 6 canvas */}
             <div className="w-full max-w-[820px] mx-auto px-12 pt-6 shrink-0">
               <div
@@ -2049,14 +2141,6 @@ export const Editor: React.FC<EditorProps> = ({
 
             {/* CodeMirror 6 Editor Canvas */}
             <div ref={editorRef} className="flex-1 min-h-0" />
-          </div>
-        ) : (
-          /* Reading View Mode */
-          <div className="h-full overflow-y-auto px-12 py-10 max-w-[820px] mx-auto text-stone-200 leading-relaxed font-sans">
-            <h1 className="text-3xl font-bold text-white mb-6 border-b border-stone-800 pb-3">
-              {cleanTitle}
-            </h1>
-            <div className="whitespace-pre-wrap select-text">{fileContent}</div>
           </div>
         )}
       </div>
@@ -2100,6 +2184,16 @@ export const Editor: React.FC<EditorProps> = ({
           y={contextMenu.y}
           items={contextMenu.items}
           onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      {/* Full-screen image Lightbox (zoom button / Ctrl+click) */}
+      {lightbox && (
+        <ImageLightbox
+          images={lightbox.images}
+          activeIndex={lightbox.activeIndex}
+          onClose={() => setLightbox(null)}
+          onOpenInNewTab={onOpenInNewTab}
         />
       )}
     </div>

@@ -350,3 +350,32 @@ Flujo equivalente a `FileManager.renameFile` + `MetadataCache.getBacklinksForFil
 - Si es la nota abierta: recalcula los rangos sobre `view.state.doc` y hace `view.dispatch({ changes: rangos })` (solo los enlaces cambian; cursor, scroll e historial de deshacer se conservan). Escribe en disco el documento resultante y marca `isDirty: false`.
 - Si no está abierta: escribe `newContent` y actualiza `notesContentMap`.
 - `ImageWidget.updateDOM` ahora acepta un cambio de destino del mismo tipo de embed: si la URL se resuelve de forma síncrona (caché o `convertFileSrc`) cambia `img.src` en sitio, sin recrear el widget ni mostrar el skeleton.
+
+---
+
+## 11. Controles flotantes sobre imágenes incrustadas, Lightbox y Source Mode (1:1 con Obsidian)
+
+Réplica de `.internal-embed.image-embed` de Obsidian: `.embed-actions` (zoom + `edit-block-button`), tirador `┘` de redimensionado, lightbox `showImage` y alternancia Live Preview / Source Mode desde la barra de estado.
+
+### A. Barra de acciones al hacer hover ([imageExtension.ts](file:///home/fkhalil/Desktop/Proyectos/Urano/src/editor/imageExtension.ts), [index.css](file:///home/fkhalil/Desktop/Proyectos/Urano/src/index.css))
+- El contenedor `.image-embed.cm-image-embed` pasa a `position: relative; display: inline-block; margin: 6px 0`.
+- `.embed-actions` (`top: 8px; right: 8px; gap: 6px; opacity: 0 → 1` en `:hover` o `.is-resizing`, `z-index: 20`) con dos botones `.embed-action` de 28×28 (`rgba(24,24,24,.78)`, borde `rgba(255,255,255,.12)`, radio 5px, `#d4d4d4`, blur):
+  1. **Zoom** (`lucide-zoom-in`): `mousedown` con `preventDefault/stopPropagation` → `onZoomImage(info, img.src)`. Con `Ctrl/Cmd` → `onOpenInNewTab(resolvedFilePath)`.
+  2. **`</>`** (`lucide-code-2`, clase `edit-block-button`): localiza el rango con `locateEmbedRange` y hace `view.dispatch({ selection: { anchor: line.from + 3 }, scrollIntoView: true }); view.focus()` para revelar `![[imagen.png]]`.
+- `ImageWidget.ignoreEvent` devuelve `false` para clics dentro de `.embed-actions` y del tirador, para que CodeMirror no se los trague.
+- Nueva opción `onZoomImage` en `ImageExtensionOptions`; `getImageWidgetState(dom)` expone el estado vivo del widget (`info`, `img`).
+
+### B. Tirador de redimensionado `┘`
+- El elemento lleva `image-resize-corner cm-image-resize-handle`: 10×10 px, `right/bottom: 6px`, bordes derecho/inferior `2px solid #dcdcdc`, `cursor: nwse-resize`, `opacity: 0 → .9` en hover (1 mientras `.is-resizing`).
+- Arrastre: `mousedown` → `mousemove` aplica `img.style.width` en vivo (`Math.round(startWidth + delta)` acotado a `[50, 1200]`) con tooltip `image-resize-tooltip`; `mouseup` reescribe el Markdown: `![[img.png|W]]`, `![[img.png|alt|W]]`, `![alt|W](url)`.
+
+### C. Lightbox ([ImageLightbox.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/common/ImageLightbox.tsx), [Editor.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/editor/Editor.tsx))
+- Overlay `position: fixed; inset: 0; z-index: 9999` sobre fondo negro con barra de título (nombre de archivo), controles (−, %, +, restablecer, ×) y paginador `n / total`.
+- Zoom con rueda hacia el puntero (`[0.25, 8]`), arrastre para desplazar, doble clic alterna 1× / 2×, `Escape` o clic en el fondo cierra, `←/→` navega entre las imágenes de la nota, `Ctrl/Cmd+clic` abre el archivo en pestaña nueva.
+- `Editor.tsx` recopila todas las `.cm-image-embed` del documento (vía `getImageWidgetState`) y abre el lightbox en el índice de la imagen pulsada. El handler se guarda en `zoomHandlerRef` para no recrear el editor.
+
+### D. Source Mode y lápiz en la barra de estado ([StatusBar.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/components/layout/StatusBar.tsx), [App.tsx](file:///home/fkhalil/Desktop/Proyectos/Urano/src/App.tsx))
+- `ViewMode = 'live-preview' | 'reading' | 'source'`.
+- Barra de estado: botón `Pencil` (13px) entre `N backlinks` y el contador de palabras; alterna `live-preview` ↔ `source` (`toggleSourceMode`).
+- `Ctrl+E` / botón de cabecera (`toggleReadingView`): `reading` ↔ el último modo de edición usado (`lastEditingModeRef`), igual que Obsidian.
+- `Editor.tsx`: las decoraciones de Live Preview (`liveMarkdownExtension`, math, code blocks, callouts, tablas, imágenes, wikilinks, `formattingClickExtension`) viven en un `Compartment` (`buildLivePreviewExtensions(mode)`); en `source` se reconfigura a `[]` sin recrear el `EditorView`. `createImageDropPasteHandler()` queda fuera del compartimento para que pegar/arrastrar imágenes funcione también en Source Mode. Clase `.source-mode` en el contenedor: fuente monoespaciada y sin ligaduras.

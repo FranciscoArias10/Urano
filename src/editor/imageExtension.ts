@@ -295,6 +295,16 @@ interface ImageWidgetDomState {
 /** Live state of each widget DOM node, so `updateDOM` can patch it in place. */
 const widgetDomState = new WeakMap<HTMLElement, ImageWidgetDomState>();
 
+/**
+ * Reads the live state of an image widget DOM node. Used by the editor to
+ * collect every image in the document when opening the lightbox.
+ */
+export function getImageWidgetState(
+  dom: HTMLElement
+): { info: ImageEmbedInfo; img: HTMLImageElement } | undefined {
+  return widgetDomState.get(dom);
+}
+
 function applyImageDimensions(img: HTMLImageElement, width: number, height: number): void {
   if (width > 0) {
     const clampedW = Math.min(Math.max(width, MIN_IMAGE_WIDTH), MAX_IMAGE_WIDTH);
@@ -356,7 +366,8 @@ export class ImageWidget extends WidgetType {
   constructor(
     readonly info: ImageEmbedInfo,
     readonly isBlockPreview: boolean = false,
-    readonly onOpenInNewTab?: (filePath: string) => void
+    readonly onOpenInNewTab?: (filePath: string) => void,
+    readonly onZoomImage?: (info: ImageEmbedInfo, src: string) => void
   ) {
     super();
   }
@@ -415,8 +426,9 @@ export class ImageWidget extends WidgetType {
       this.isBlockPreview ? 'cm-image-block-preview' : ''
     }`;
     container.tabIndex = -1;
-    container.style.display = 'block';
-    container.style.margin = '8px 0';
+    container.style.position = 'relative';
+    container.style.display = 'inline-block';
+    container.style.margin = '6px 0';
     container.style.maxWidth = '100%';
     container.style.clear = 'both';
 
@@ -494,9 +506,73 @@ export class ImageWidget extends WidgetType {
 
     wrapper.appendChild(img);
 
-    // Resize Handle Corner (Bottom-Right)
+    /* --------------------------------------------------------------- *
+     * Hover action bar (top-right corner) — Obsidian `.embed-actions`
+     * Two buttons: `lucide-zoom-in` (lightbox) and `lucide-code-2`
+     * (edit the `![[image.png]]` markdown source line).
+     * --------------------------------------------------------------- */
+    const actions = document.createElement('div');
+    actions.className = 'embed-actions image-embed-actions';
+
+    // 1. Zoom / lightbox button
+    const zoomBtn = document.createElement('button');
+    zoomBtn.type = 'button';
+    zoomBtn.className = 'embed-action image-embed-action image-zoom-button';
+    zoomBtn.title = 'Ampliar imagen';
+    zoomBtn.setAttribute('aria-label', 'Ampliar imagen');
+    zoomBtn.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zoom-in"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="11" x2="11" y1="8" y2="14"/><line x1="8" x2="14" y1="11" y2="11"/></svg>';
+    zoomBtn.addEventListener('mousedown', (e) => {
+      // Ctrl/Cmd + click opens the file in a new leaf (Obsidian behaviour)
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.onOpenInNewTab) {
+          this.onOpenInNewTab(state.info.resolvedFilePath || state.info.targetPathOrUrl);
+        }
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      if (this.onZoomImage) {
+        this.onZoomImage(state.info, img.src);
+      }
+    });
+    actions.appendChild(zoomBtn);
+
+    // 2. `</>` edit block button
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'embed-action image-embed-action edit-block-button';
+    editBtn.title = 'Editar bloque';
+    editBtn.setAttribute('aria-label', 'Editar bloque');
+    editBtn.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-code-2"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>';
+    editBtn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Move the cursor inside the `![[image.png]]` line so the source is revealed
+      const { from } = locateEmbedRange(view, container, state.info.rawText, state.info);
+      try {
+        const line = view.state.doc.lineAt(from);
+        view.dispatch({
+          selection: { anchor: Math.min(line.from + 3, line.to) },
+          scrollIntoView: true,
+        });
+        view.focus();
+      } catch {
+        // Ignore out-of-range positions after concurrent edits
+      }
+    });
+    actions.appendChild(editBtn);
+
+    container.appendChild(actions);
+
+    /* --------------------------------------------------------------- *
+     * Resize handle (bottom-right corner showcase `┘`)
+     * --------------------------------------------------------------- */
     const resizeCorner = document.createElement('div');
-    resizeCorner.className = 'image-resize-corner';
+    resizeCorner.className = 'image-resize-corner cm-image-resize-handle';
     resizeCorner.title = 'Arrastrar para redimensionar';
 
     // Interactive mouse drag resizing with MIN/MAX constraints and size tooltip
@@ -588,6 +664,9 @@ export class ImageWidget extends WidgetType {
     const target = event.target as HTMLElement;
     if (
       target.classList.contains('image-resize-corner') ||
+      target.classList.contains('cm-image-resize-handle') ||
+      target.closest('.embed-actions') ||
+      target.closest('.image-embed-actions') ||
       event.type === 'contextmenu'
     ) {
       return false;
@@ -598,6 +677,8 @@ export class ImageWidget extends WidgetType {
 
 export interface ImageExtensionOptions {
   onOpenInNewTab?: (filePath: string) => void;
+  /** Opens the full-screen lightbox for the embed (Obsidian `showImage`). */
+  onZoomImage?: (info: ImageEmbedInfo, src: string) => void;
 }
 
 /**
@@ -724,7 +805,8 @@ export function createImageExtension(options?: ImageExtensionOptions) {
                     isWikilink: true,
                   },
                   isCursorInside,
-                  options?.onOpenInNewTab
+                  options?.onOpenInNewTab,
+                  options?.onZoomImage
                 );
 
                 if (!isCursorInside) {
@@ -775,7 +857,8 @@ export function createImageExtension(options?: ImageExtensionOptions) {
                     isWikilink: false,
                   },
                   isCursorInside,
-                  options?.onOpenInNewTab
+                  options?.onOpenInNewTab,
+                  options?.onZoomImage
                 );
 
                 if (!isCursorInside) {

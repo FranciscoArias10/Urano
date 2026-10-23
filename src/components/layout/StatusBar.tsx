@@ -7,18 +7,23 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertCircle,
+  Pencil,
 } from 'lucide-react';
 
 interface StatusBarProps {
   onToggleBacklinks?: () => void;
   backlinksCount?: number;
   onOpenLogs?: () => void;
+  viewMode?: 'live-preview' | 'reading' | 'source';
+  onToggleViewMode?: () => void;
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({
   onToggleBacklinks,
   backlinksCount = 0,
   onOpenLogs,
+  viewMode = 'live-preview',
+  onToggleViewMode,
 }) => {
   const { fileContent } = useVaultStore();
   const { status, isSyncing, isAuthenticated } = useSyncStore();
@@ -31,7 +36,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       {/* Left: Spacer */}
       <div className="flex items-center gap-2" />
 
-      {/* Right: Compact Status Pill (0 backlinks  55 palabras  497 caracteres + sync icon) */}
+      {/* Right: Compact Status Pill (0 backlinks  [pencil]  55 palabras  497 caracteres + sync icon) */}
       <div className="flex items-center">
         <div className="flex items-center gap-2.5 bg-[#141414] hover:bg-[#1a1a1a] px-2.5 py-0.5 rounded-full border border-stone-800/80 text-[11px] text-stone-400 transition-colors">
           <button
@@ -43,6 +48,24 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           </button>
 
           <span className="text-stone-700 select-none">•</span>
+
+          {onToggleViewMode && (
+            <>
+              <button
+                onClick={onToggleViewMode}
+                className="hover:text-orange-400 transition-colors cursor-pointer flex items-center justify-center"
+                title={
+                  viewMode === 'source'
+                    ? 'Cambiar a Live Preview'
+                    : 'Cambiar a Modo código fuente'
+                }
+                aria-label="Alternar modo de vista"
+              >
+                <Pencil size={13} />
+              </button>
+              <span className="text-stone-700 select-none">•</span>
+            </>
+          )}
 
           <span className="font-mono text-[10px] text-stone-300">{words} palabras</span>
 

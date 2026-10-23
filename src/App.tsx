@@ -70,6 +70,17 @@ export const App: React.FC = () => {
 
   // Live Preview / Reading View (Obsidian "Toggle reading view", Ctrl+E)
   const [viewMode, setViewMode] = useState<ViewMode>('live-preview');
+  // Ctrl+E / header button: Reading View <-> the editing mode used before it
+  const lastEditingModeRef = useRef<Exclude<ViewMode, 'reading'>>('live-preview');
+  const toggleReadingView = () =>
+    setViewMode((mode) => {
+      if (mode === 'reading') return lastEditingModeRef.current;
+      lastEditingModeRef.current = mode;
+      return 'reading';
+    });
+  // Status bar pencil: Live Preview <-> Source Mode (raw Markdown)
+  const toggleSourceMode = () =>
+    setViewMode((mode) => (mode === 'source' ? 'live-preview' : 'source'));
 
   // When true the next activeFile change navigates the current tab instead of
   // opening a new one (Obsidian navigates the leaf in place).
@@ -289,8 +300,7 @@ export const App: React.FC = () => {
     back: handleNavigateBack,
     forward: handleNavigateForward,
     newTab: () => handleCreateUntitledNote(),
-    toggleViewMode: () =>
-      setViewMode((mode) => (mode === 'live-preview' ? 'reading' : 'live-preview')),
+    toggleViewMode: toggleReadingView,
   };
 
   // Global Keyboard Shortcuts (Obsidian matching)
@@ -1127,9 +1137,7 @@ export const App: React.FC = () => {
             onNavigateBack={handleNavigateBack}
             onNavigateForward={handleNavigateForward}
             viewMode={viewMode}
-            onToggleViewMode={() =>
-              setViewMode((mode) => (mode === 'live-preview' ? 'reading' : 'live-preview'))
-            }
+            onToggleViewMode={toggleReadingView}
             onRename={handleRenameFile}
             onMoveFile={handleMoveFile}
             onDuplicateFile={handleDuplicateFile}
@@ -1209,6 +1217,8 @@ export const App: React.FC = () => {
         onToggleBacklinks={() => setShowBacklinks((prev) => !prev)}
         backlinksCount={backlinksCount}
         onOpenLogs={() => setShowLogs(true)}
+        viewMode={viewMode}
+        onToggleViewMode={toggleSourceMode}
       />
 
       {/* ========================================================
