@@ -22,6 +22,9 @@ import { CommandPalette, CommandItem } from './components/palette/CommandPalette
 import { StatusBar } from './components/layout/StatusBar';
 import { SyncConfigModal } from './components/sync/SyncConfigModal';
 import { SyncLogsModal } from './components/sync/SyncLogsModal';
+import { SettingsModal } from './components/settings/SettingsModal';
+import { useSettingsStore, URANO_ACCENT } from './stores/settingsStore';
+import { LocalAdapter, GoogleDriveAdapter, setStorageAdapter } from './services/storageAdapter';
 import { UranoLogo } from './components/common/UranoLogo';
 import { NoticeContainer, useNoticeStore } from './components/common/Notice';
 import { ObsidianMenu, MenuItemData } from './components/common/ObsidianMenu';
@@ -143,11 +146,65 @@ export const App: React.FC = () => {
   const { checkAuthStatus, triggerSync, isSyncing, setShowConfigModal } = useSyncStore();
   const { showNotice } = useNoticeStore();
 
+  // Settings (Obsidian-style modal, Ctrl+, / ⚙) — persisted in localStorage + .urano/settings.json
+  const settings = useSettingsStore((s) => s.settings);
+  const openSettings = useSettingsStore((s) => s.openSettings);
+  const toggleSettings = useSettingsStore((s) => s.toggleSettings);
+  const loadSettingsFromVault = useSettingsStore((s) => s.loadFromVault);
+  const markStartupComplete = useSettingsStore((s) => s.markStartupComplete);
+  const corePlugins = settings.corePlugins;
+
   const [vaultMenu, setVaultMenu] = useState<{
     x: number;
     y: number;
     items: MenuItemData[];
   } | null>(null);
+
+  // Startup time (Settings → General → "Notify if startup takes longer than expected")
+  useEffect(() => {
+    markStartupComplete();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Load per-vault settings (.urano/settings.json) whenever the vault changes
+  useEffect(() => {
+    if (activeVault) loadSettingsFromVault(activeVault);
+  }, [activeVault, loadSettingsFromVault]);
+
+  // Storage adapter selected in Settings → Sync (Local / Google Drive)
+  useEffect(() => {
+    setStorageAdapter(settings.storageBackend === 'gdrive' ? new GoogleDriveAdapter() : new LocalAdapter());
+  }, [settings.storageBackend]);
+
+  // Apply Appearance / Editor settings to the document (CSS variables, zoom, theme)
+  useEffect(() => {
+    const root = document.documentElement;
+    const accent = settings.accentColor || URANO_ACCENT;
+    root.style.setProperty('--interactive-accent', accent);
+    root.style.setProperty('--text-accent', accent);
+    root.style.setProperty('--interactive-accent-hover', accent);
+    root.style.setProperty('--background-modifier-border-hover', `${accent}59`);
+    root.style.setProperty('--background-modifier-active-hover', `${accent}26`);
+    root.style.setProperty('--editor-font-size', `${settings.editorFontSize}px`);
+    root.style.setProperty('--file-line-width', settings.readableLineLength ? '820px' : '100%');
+    root.style.setProperty('--editor-tab-size', String(settings.tabSize));
+    (root.style as CSSStyleDeclaration & { zoom?: string }).zoom =
+      settings.zoomLevel === 1 ? '' : String(settings.zoomLevel);
+    root.lang = settings.language;
+
+    const applyTheme = () => {
+      const prefersLight =
+        settings.theme === 'light' ||
+        (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches);
+      document.body.classList.toggle('theme-light', prefersLight);
+      document.body.classList.toggle('theme-dark', !prefersLight);
+      root.classList.toggle('dark', !prefersLight);
+    };
+    applyTheme();
+    const mq = window.matchMedia('(prefers-color-scheme: light)');
+    mq.addEventListener('change', applyTheme);
+    return () => mq.removeEventListener('change', applyTheme);
+  }, [settings]);
 
   // On mount: restore previous vault and Google auth status
   useEffect(() => {
@@ -346,6 +403,11 @@ export const App: React.FC = () => {
       else if (e.altKey && e.key === 'ArrowRight') {
         e.preventDefault();
         shortcutsRef.current.forward();
+      }
+      // Ctrl+, : Open settings (Obsidian `app:open-settings`, hotkey Mod+,)
+      else if ((e.ctrlKey || e.metaKey) && (e.key === ',' || e.code === 'Comma')) {
+        e.preventDefault();
+        toggleSettings();
       }
       // Ctrl+B: Toggle Left Sidebar
       else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b' && !e.shiftKey) {
@@ -618,7 +680,12 @@ export const App: React.FC = () => {
   const handleDeleteFile = async () => {
     if (!activeFile) return;
     const name = activeFileName || activeFile;
-    if (!window.confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer.`)) return;
+    if (
+      useSettingsStore.getState().settings.confirmFileDeletion &&
+      !window.confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer.`)
+    ) {
+      return;
+    }
     try {
       await deleteItem(activeFile);
       showNotice('Archivo eliminado', 2000, 'success');
@@ -860,12 +927,27 @@ export const App: React.FC = () => {
       action: handleOpenFolderDialog,
     },
     {
+      id: 'app:open-settings',
+      name: 'Ajustes: Abrir ajustes',
+      shortcut: 'Ctrl+,',
+      icon: <Settings size={15} />,
+      action: () => openSettings(),
+    },
+    {
       id: 'app:sync-config',
       name: 'Ajustes: Configurar cuenta de Google Drive y sincronización',
       icon: <Settings size={15} />,
-      action: () => setShowConfigModal(true),
+      action: () => openSettings('sync'),
     },
-  ];
+  ].filter((cmd) => {
+    // Commands owned by a disabled core plugin disappear (Obsidian behaviour)
+    if (cmd.id.startsWith('canvas:')) return corePlugins.canvas;
+    if (cmd.id.startsWith('daily-notes:')) return corePlugins['daily-notes'];
+    if (cmd.id.startsWith('templates:')) return corePlugins.templates;
+    if (cmd.id.startsWith('quick-switcher:')) return corePlugins.switcher;
+    if (cmd.id.startsWith('sync:')) return corePlugins.sync;
+    return true;
+  });
 
   return (
     <div className="flex flex-col h-screen w-screen bg-obsidian-bg text-obsidian-text overflow-hidden select-none">
@@ -875,6 +957,7 @@ export const App: React.FC = () => {
             Obsidian Left Ribbon (.side-dock-ribbon)
             Section B: Los 7 Iconos en orden exacto con tooltips oscuros
             ======================================================== */}
+        {settings.showRibbon && (
         <div className="side-dock-ribbon">
           {/* Logo at the top */}
           <div className="mb-2 p-1 flex items-center justify-center">
@@ -894,6 +977,7 @@ export const App: React.FC = () => {
           )}
 
           {/* 1. Open quick switcher (Ctrl+O) */}
+          {corePlugins.switcher && (
           <Tooltip content="Open quick switcher" shortcut="Ctrl+O" position="right">
             <button
               onClick={() => {
@@ -905,6 +989,7 @@ export const App: React.FC = () => {
               <FileSearch size={18} />
             </button>
           </Tooltip>
+          )}
 
           {/* 2. Open graph view (Ctrl+G) */}
           <Tooltip content="Open graph view" shortcut="Ctrl+G" position="right">
@@ -917,6 +1002,7 @@ export const App: React.FC = () => {
           </Tooltip>
 
           {/* 3. Create new canvas */}
+          {corePlugins.canvas && (
           <Tooltip content="Create new canvas" position="right">
             <button
               onClick={handleCreateCanvas}
@@ -925,8 +1011,10 @@ export const App: React.FC = () => {
               <Grid2X2 size={18} />
             </button>
           </Tooltip>
+          )}
 
           {/* 4. Open today's daily note */}
+          {corePlugins['daily-notes'] && (
           <Tooltip content="Open today's daily note" position="right">
             <button
               onClick={handleOpenDailyNote}
@@ -935,8 +1023,10 @@ export const App: React.FC = () => {
               <Calendar size={18} />
             </button>
           </Tooltip>
+          )}
 
           {/* 5. Insert template */}
+          {corePlugins.templates && (
           <Tooltip content="Insert template" position="right">
             <button
               onClick={() => setShowTemplateModal(true)}
@@ -945,8 +1035,10 @@ export const App: React.FC = () => {
               <Copy size={18} />
             </button>
           </Tooltip>
+          )}
 
           {/* 6. Open command palette (Ctrl+P) */}
+          {corePlugins['command-palette'] && (
           <Tooltip content="Open command palette" shortcut="Ctrl+P" position="right">
             <button
               onClick={() => {
@@ -958,6 +1050,7 @@ export const App: React.FC = () => {
               <Terminal size={18} />
             </button>
           </Tooltip>
+          )}
 
           {/* 7. Create new base */}
           <Tooltip content="Create new base" position="right">
@@ -972,6 +1065,7 @@ export const App: React.FC = () => {
           <div className="flex-1" />
 
           {/* Google Drive Sync Trigger */}
+          {corePlugins.sync && (
           <Tooltip content="Sincronizar ahora con Google Drive" position="right">
             <button
               onClick={() => {
@@ -982,17 +1076,19 @@ export const App: React.FC = () => {
               <RefreshCw size={17} className={isSyncing ? 'animate-spin text-sky-400' : ''} />
             </button>
           </Tooltip>
+          )}
 
-          {/* Settings / Google Auth Button at Bottom of Ribbon */}
-          <Tooltip content="Configuración y Google Drive" position="right">
+          {/* Settings (Ctrl+,) at Bottom of Ribbon */}
+          <Tooltip content="Settings" shortcut="Ctrl+," position="right">
             <button
-              onClick={() => setShowConfigModal(true)}
+              onClick={() => openSettings()}
               className="side-dock-ribbon-action mb-1 text-stone-400 hover:text-stone-200"
             >
               <Settings size={18} />
             </button>
           </Tooltip>
         </div>
+        )}
 
         {/* ========================================================
             Obsidian Left Collapsible Sidebar Dock
@@ -1097,8 +1193,9 @@ export const App: React.FC = () => {
                   <HelpCircle size={15} />
                 </button>
                 <button
-                  onClick={() => setShowConfigModal(true)}
-                  title="Ajustes y sincronización"
+                  onClick={() => openSettings()}
+                  title="Settings (Ctrl+,)"
+                  aria-label="Settings"
                   className="p-1.5 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
                 >
                   <Settings size={15} />
@@ -1213,13 +1310,15 @@ export const App: React.FC = () => {
       {/* ========================================================
           Obsidian Bottom Status Bar
           ======================================================== */}
-      <StatusBar
-        onToggleBacklinks={() => setShowBacklinks((prev) => !prev)}
-        backlinksCount={backlinksCount}
-        onOpenLogs={() => setShowLogs(true)}
-        viewMode={viewMode}
-        onToggleViewMode={toggleSourceMode}
-      />
+      {settings.showStatusBar && (
+        <StatusBar
+          onToggleBacklinks={() => setShowBacklinks((prev) => !prev)}
+          backlinksCount={backlinksCount}
+          onOpenLogs={() => setShowLogs(true)}
+          viewMode={viewMode}
+          onToggleViewMode={toggleSourceMode}
+        />
+      )}
 
       {/* ========================================================
           Modals & Overlays
@@ -1243,6 +1342,13 @@ export const App: React.FC = () => {
         isOpen={showTemplateModal}
         onClose={() => setShowTemplateModal(false)}
         onInsert={handleInsertTemplate}
+      />
+
+      {/* Settings modal (Obsidian .modal.mod-settings) — Ctrl+, / ⚙ */}
+      <SettingsModal
+        commands={paletteCommands}
+        onOpenHelp={handleHelpClick}
+        onOpenSyncLogs={() => setShowLogs(true)}
       />
 
       {/* Google Drive Sync Configuration Modal */}
