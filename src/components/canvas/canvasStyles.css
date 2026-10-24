@@ -254,11 +254,24 @@
   position: absolute;
   box-sizing: border-box;
   pointer-events: auto;
+  /* Capa superior: Tarjetas de texto, notas e imágenes por encima de las flechas (z-index: 3) */
+  z-index: 3;
   /* La barra flotante (`.canvas-menu`), la etiqueta y los puntos de conexión
      son hermanos de `.canvas-node-container` (que sí recorta la tarjeta), por
      lo que el nodo no debe recortar nada. Equivale a la
      `.canvas-node-interaction-layer` de Obsidian. */
   overflow: visible;
+}
+
+.canvas-node.canvas-node-group {
+  /* Fondo del lienzo: Grupos al fondo (z-index: 1) */
+  z-index: 1;
+}
+
+.canvas-node.is-selected,
+.canvas-node.is-dragging {
+  /* Nodo activo / en interacción por encima de todo (z-index: 10) */
+  z-index: 10;
 }
 
 .canvas-node-container {
@@ -576,11 +589,12 @@
   left: 0;
   top: 0;
   overflow: visible;
+  /* Capa intermedia: los grupos quedan debajo (z-index: 1) y las tarjetas por
+     encima (z-index: 3 / 10), de modo que una flecha nunca raya el texto de
+     otra nota. */
+  z-index: 2;
+  color: #888888;
   pointer-events: none;
-}
-
-.canvas-edges > * {
-  pointer-events: initial;
 }
 
 .canvas-display-path {

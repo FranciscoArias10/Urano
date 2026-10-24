@@ -334,7 +334,7 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
         transform: `translate(${node.x}px, ${node.y}px)`,
         width: `${node.width}px`,
         height: `${node.height}px`,
-        zIndex: isGroup ? 1 : isSelected ? 30 : 5,
+        zIndex: isGroup ? 1 : isSelected || isDragging ? 10 : 3,
         // La barra flotante y el círculo de conexión viven fuera de la tarjeta.
         overflow: 'visible',
       }}
