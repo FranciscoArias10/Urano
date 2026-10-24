@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { CanvasEdge, CanvasNode } from '../../types/canvas';
 import {
   getNodeBBox,
-  getSideCenter,
-  offsetSidePoint,
+  getSideCoordinates,
   calculateBezier,
   getBezierMidpoint,
   resolveCanvasColor,
@@ -37,17 +36,14 @@ export const CanvasEdgeView: React.FC<CanvasEdgeViewProps> = ({
   const setIsEditing = parentSetIsEditing || setLocalIsEditing;
   const [labelText, setLabelText] = useState(edge.label || '');
 
-  // Calculate coordinates using exact Obsidian geometry
+  // Anclajes exactos sobre el borde exterior de cada tarjeta (2px de margen).
   const fromBbox = getNodeBBox(fromNode);
   const toBbox = getNodeBBox(toNode);
 
-  const fromCenter = getSideCenter(fromBbox, edge.fromSide);
-  const toCenter = getSideCenter(toBbox, edge.toSide);
+  const fromPoint = getSideCoordinates(fromBbox, edge.fromSide);
+  const toPoint = getSideCoordinates(toBbox, edge.toSide);
 
-  const fromOffset = offsetSidePoint(fromCenter, edge.fromSide, 4);
-  const toOffset = offsetSidePoint(toCenter, edge.toSide, 8);
-
-  const bezier = calculateBezier(fromOffset, edge.fromSide, toOffset, edge.toSide);
+  const bezier = calculateBezier(fromPoint, edge.fromSide, toPoint, edge.toSide);
   const midpoint = getBezierMidpoint(0.5, bezier);
 
   const colorScheme = resolveCanvasColor(edge.color);

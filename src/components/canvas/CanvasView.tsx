@@ -33,7 +33,7 @@ import {
   doBBoxesIntersect,
   isNodeInGroup,
   calculateBezier,
-  offsetSidePoint,
+  getSideCoordinates,
   getSideCenter,
   autoSide,
   closestSide,
@@ -1593,15 +1593,14 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     const srcNode = canvasData.nodes.find((n) => n.id === connectingFrom.nodeId);
     if (srcNode) {
       const bbox = getNodeBBox(srcNode);
-      const fromCenter = getSideCenter(bbox, connectingFrom.side);
-      const fromOff = offsetSidePoint(fromCenter, connectingFrom.side, 4);
+      const fromPoint = getSideCoordinates(bbox, connectingFrom.side);
       const toSide = autoSide(bbox, {
         minX: connectingMouseWorld.x,
         minY: connectingMouseWorld.y,
         maxX: connectingMouseWorld.x,
         maxY: connectingMouseWorld.y,
       });
-      const bez = calculateBezier(fromOff, connectingFrom.side, connectingMouseWorld, toSide);
+      const bez = calculateBezier(fromPoint, connectingFrom.side, connectingMouseWorld, toSide);
       connectingBezierPath = bez.path;
     }
   }
@@ -1802,15 +1801,14 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
             const srcNode = canvasData.nodes.find((n) => n.id === pendingEdgeDrop.sourceNodeId);
             if (!srcNode) return null;
             const bbox = getNodeBBox(srcNode);
-            const fromCenter = getSideCenter(bbox, pendingEdgeDrop.sourceSide);
-            const fromOff = offsetSidePoint(fromCenter, pendingEdgeDrop.sourceSide, 4);
+            const fromPoint = getSideCoordinates(bbox, pendingEdgeDrop.sourceSide);
             const toSide = facingSide(bbox, {
               minX: pendingEdgeDrop.world.x,
               minY: pendingEdgeDrop.world.y,
               maxX: pendingEdgeDrop.world.x,
               maxY: pendingEdgeDrop.world.y,
             });
-            const bez = calculateBezier(fromOff, pendingEdgeDrop.sourceSide, pendingEdgeDrop.world, toSide);
+            const bez = calculateBezier(fromPoint, pendingEdgeDrop.sourceSide, pendingEdgeDrop.world, toSide);
             return (
               <path
                 d={bez.path}

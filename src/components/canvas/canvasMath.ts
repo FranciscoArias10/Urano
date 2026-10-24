@@ -157,6 +157,39 @@ export function getSideCenter(bbox: CanvasBBox, side: CanvasNodeSide): CanvasPoi
   }
 }
 
+/** Margen exterior (grosor del borde) que separa el anclaje de la caja. */
+export const EDGE_BORDER_OFFSET = 2;
+
+/**
+ * Punto de anclaje de una arista sobre un lado del nodo (o bbox), sumando
+ * un margen exterior de 2px (el grosor del borde) en la dirección normal
+ * del lado para que ni la línea de salida ni la punta de llegada pisen el borde:
+ * - top:    { x: node.x + node.width / 2,     y: node.y - 2 }
+ * - bottom: { x: node.x + node.width / 2,     y: node.y + node.height + 2 }
+ * - left:   { x: node.x - 2,                  y: node.y + node.height / 2 }
+ * - right:  { x: node.x + node.width + 2,     y: node.y + node.height / 2 }
+ */
+export function getSideCoordinates(
+  target: CanvasBBox | { x: number; y: number; width: number; height: number },
+  side: CanvasNodeSide
+): CanvasPoint {
+  const minX = 'minX' in target ? target.minX : target.x;
+  const minY = 'minY' in target ? target.minY : target.y;
+  const width = 'maxX' in target ? target.maxX - target.minX : target.width;
+  const height = 'maxY' in target ? target.maxY - target.minY : target.height;
+
+  switch (side) {
+    case 'top':
+      return { x: minX + width / 2, y: minY - EDGE_BORDER_OFFSET };
+    case 'bottom':
+      return { x: minX + width / 2, y: minY + height + EDGE_BORDER_OFFSET };
+    case 'left':
+      return { x: minX - EDGE_BORDER_OFFSET, y: minY + height / 2 };
+    case 'right':
+      return { x: minX + width + EDGE_BORDER_OFFSET, y: minY + height / 2 };
+  }
+}
+
 // Offset point outwards by 7px for arrowhead / connection line clearance (Reverse-engineered jee function)
 export function offsetSidePoint(point: CanvasPoint, side: CanvasNodeSide, offset = 7): CanvasPoint {
   const p = { ...point };
