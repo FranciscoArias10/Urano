@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FileText, Calendar, Users, Briefcase, BookOpen, X, Check } from 'lucide-react';
+import { useT } from '../../stores/localeStore';
 
 export interface TemplateItem {
   id: string;
@@ -20,6 +21,9 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({
   onClose,
   onInsert,
 }) => {
+  const t = useT();
+  const [selectedId, setSelectedId] = useState<string>('daily');
+
   if (!isOpen) return null;
 
   const now = new Date();
@@ -32,37 +36,35 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({
   const templates: TemplateItem[] = [
     {
       id: 'daily',
-      name: 'Nota Diaria',
-      description: 'Plantilla estructurada para seguimiento y tareas del día',
+      name: t('templates.daily.name'),
+      description: t('templates.daily.description'),
       icon: <Calendar size={18} className="text-orange-400" />,
       content: `# Nota del Día: ${dateStr}\n\n## 🎯 Objetivos Principales\n- [ ] \n- [ ] \n\n## 📋 Tareas Pendientes\n- [ ] \n- [ ] \n\n## 📝 Notas y Reflexiones\n\n`,
     },
     {
       id: 'meeting',
-      name: 'Acta de Reunión',
-      description: 'Registro de participantes, puntos tratados y acuerdos tomados',
+      name: t('templates.meeting.name'),
+      description: t('templates.meeting.description'),
       icon: <Users size={18} className="text-sky-400" />,
       content: `# Reunión: [Tema de la reunión]\n**Fecha:** ${dateStr}\n**Participantes:** \n\n## 📌 Agenda / Puntos a Tratar\n1. \n2. \n\n## 💬 Discusión y Notas\n- \n\n## ✅ Acuerdos y Próximos Pasos\n- [ ] Responsable: \n`,
     },
     {
       id: 'project',
-      name: 'Plan de Proyecto',
-      description: 'Definición de objetivos, hitos, recursos y entregables',
+      name: t('templates.project.name'),
+      description: t('templates.project.description'),
       icon: <Briefcase size={18} className="text-emerald-400" />,
       content: `# Proyecto: [Nombre del Proyecto]\n**Estado:** 🟡 En progreso\n**Fecha de inicio:** ${dateStr}\n\n## 🎯 Objetivo General\n\n## 🚩 Hitos y Entregables\n- [ ] Hito 1:\n- [ ] Hito 2:\n\n## 🛠️ Recursos y Enlaces\n- \n`,
     },
     {
       id: 'reading',
-      name: 'Ficha de Lectura / Resumen',
-      description: 'Ideas clave, conceptos destacados y citas de libros o artículos',
+      name: t('templates.reading.name'),
+      description: t('templates.reading.description'),
       icon: <BookOpen size={18} className="text-purple-400" />,
       content: `# Ficha: [Título del Libro o Artículo]\n**Autor:** \n**Fecha:** ${dateStr}\n**Tags:** #lectura #resumen\n\n## 💡 Resumen en una frase\n\n## 🔑 Ideas Principales\n1. \n2. \n\n## 💬 Citas Destacadas\n> \n\n## 🧠 Conclusión Personal\n`,
     },
   ];
 
-  const [selectedId, setSelectedId] = useState<string>(templates[0].id);
-
-  const selectedTemplate = templates.find((t) => t.id === selectedId) || templates[0];
+  const selectedTemplate = templates.find((tpl) => tpl.id === selectedId) || templates[0];
 
   return (
     <div
@@ -77,7 +79,7 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#2b2b2b] bg-[#1a1a1a]">
           <div className="flex items-center gap-2">
             <FileText size={16} className="text-orange-500" />
-            <span className="text-sm font-semibold text-white">Insertar Plantilla</span>
+            <span className="text-sm font-semibold text-white">{t('templates.title')}</span>
           </div>
           <button
             onClick={onClose}
@@ -118,7 +120,7 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({
           {/* Preview Panel */}
           <div className="w-1/2 p-4 bg-[#161616] flex flex-col">
             <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-2">
-              Vista previa
+              {t('templates.preview')}
             </span>
             <div className="flex-1 bg-[#121212] border border-[#262626] rounded-md p-3 font-mono text-[11px] text-stone-300 whitespace-pre-wrap overflow-y-auto select-text">
               {selectedTemplate.content}
@@ -129,14 +131,14 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({
         {/* Modal Footer */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-[#2b2b2b] bg-[#1a1a1a]">
           <span className="text-[11px] text-stone-500">
-            Presiona Esc para cancelar
+            {t('templates.escHint')}
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
               className="px-3 py-1.5 text-xs text-stone-400 hover:text-white rounded-md hover:bg-stone-800 transition-colors"
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
             <button
               onClick={() => {
@@ -146,7 +148,7 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({
               className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium bg-orange-600 hover:bg-orange-500 text-white rounded-md transition-colors shadow-sm"
             >
               <Check size={13} />
-              <span>Insertar</span>
+              <span>{t('templates.insert')}</span>
             </button>
           </div>
         </div>

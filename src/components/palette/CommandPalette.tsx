@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Command, FileText, LayoutDashboard, LayoutList } from 'lucide-react';
 import { FileItem } from '../../types';
 import { useVaultStore } from '../../stores/vaultStore';
+import { useT } from '../../stores/localeStore';
 
 export interface CommandItem {
   id: string;
@@ -30,6 +31,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onSelectFile,
   onOpenInNewTab,
 }) => {
+  const t = useT();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -81,6 +83,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   );
 
   const items = mode === 'commands' ? filteredCommands : filteredFiles;
+
+  // "Press {key} to create this note": the key is rendered as a styled element, so the
+  // translated sentence is split around the placeholder instead of concatenating fragments.
+  const [createHintBefore, createHintAfter] = t('commandPalette.pressToCreate').split('{key}');
 
   const handleKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -176,8 +182,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             onKeyDown={handleKeyDown}
             placeholder={
               mode === 'commands'
-                ? 'Escribe un comando...'
-                : 'Escribe para buscar archivos...'
+                ? t('commandPalette.placeholderCommands')
+                : t('commandPalette.placeholderFiles')
             }
             className="flex-1 text-sm text-stone-100 bg-transparent outline-none placeholder:text-stone-500 font-sans"
           />
@@ -190,14 +196,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               {mode === 'files' && query.trim() ? (
                 <div>
                   <p className="text-stone-300 mb-1">
-                    No se encontró &quot;{query}&quot;
+                    {t('commandPalette.notFound', { query })}
                   </p>
                   <p className="text-stone-500 text-[11px]">
-                    Presiona <span className="text-orange-400 font-mono">Shift + Enter</span> para crear esta nota
+                    {createHintBefore}
+                    <span className="text-orange-400 font-mono">Shift + Enter</span>
+                    {createHintAfter}
                   </p>
                 </div>
               ) : (
-                `No se encontraron coincidencias para "${query}"`
+                t('commandPalette.noMatches', { query })
               )}
             </div>
           ) : mode === 'commands' ? (
@@ -282,13 +290,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               <span className="font-mono bg-stone-800 text-stone-300 px-1 py-0.2 rounded border border-stone-700/60">
                 ↑↓
               </span>{' '}
-              para navegar
+              {t('commandPalette.toNavigate')}
             </span>
             <span className="flex items-center gap-1">
               <span className="font-mono bg-stone-800 text-stone-300 px-1 py-0.2 rounded border border-stone-700/60">
                 ↵
               </span>{' '}
-              para abrir
+              {t('commandPalette.toOpen')}
             </span>
             {mode === 'files' && (
               <>
@@ -296,13 +304,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   <span className="font-mono bg-stone-800 text-stone-300 px-1 py-0.2 rounded border border-stone-700/60">
                     Ctrl + ↵
                   </span>{' '}
-                  en pestaña nueva
+                  {t('commandPalette.toOpenInNewTab')}
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="font-mono bg-stone-800 text-stone-300 px-1 py-0.2 rounded border border-stone-700/60">
                     Shift + ↵
                   </span>{' '}
-                  para crear
+                  {t('commandPalette.toCreate')}
                 </span>
               </>
             )}
@@ -311,7 +319,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             <span className="font-mono bg-stone-800 text-stone-300 px-1 py-0.2 rounded border border-stone-700/60">
               Esc
             </span>{' '}
-            para cerrar
+            {t('commandPalette.toDismiss')}
           </span>
         </div>
       </div>

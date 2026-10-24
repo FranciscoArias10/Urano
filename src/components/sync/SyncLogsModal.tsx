@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSyncStore } from '../../stores/syncStore';
+import { useT } from '../../stores/localeStore';
 import { X, Activity, CheckCircle, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 
 interface SyncLogsModalProps {
@@ -9,6 +10,7 @@ interface SyncLogsModalProps {
 
 export const SyncLogsModal: React.FC<SyncLogsModalProps> = ({ isOpen, onClose }) => {
   const { logs } = useSyncStore();
+  const t = useT();
 
   if (!isOpen) return null;
 
@@ -19,7 +21,7 @@ export const SyncLogsModal: React.FC<SyncLogsModalProps> = ({ isOpen, onClose })
         <div className="flex items-center justify-between px-6 py-4 border-b border-obsidian-border bg-obsidian-bg/50">
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-orange-400" />
-            <h2 className="text-base font-semibold text-white">Registro de Sincronización</h2>
+            <h2 className="text-base font-semibold text-white">{t('sync.logsModal.title')}</h2>
           </div>
           <button
             onClick={onClose}
@@ -33,7 +35,7 @@ export const SyncLogsModal: React.FC<SyncLogsModalProps> = ({ isOpen, onClose })
         <div className="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-[11px]">
           {logs.length === 0 ? (
             <div className="text-center text-obsidian-muted py-8 font-sans text-xs">
-              No hay registros de sincronización aún.
+              {t('sync.logsModal.empty')}
             </div>
           ) : (
             logs.map((log) => {
@@ -81,7 +83,7 @@ export const SyncLogsModal: React.FC<SyncLogsModalProps> = ({ isOpen, onClose })
             onClick={onClose}
             className="px-4 py-1.5 rounded-lg bg-obsidian-active hover:bg-obsidian-hover text-white text-xs transition-colors"
           >
-            Cerrar
+            {t('common.close')}
           </button>
         </div>
       </div>

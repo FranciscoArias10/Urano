@@ -1,8 +1,24 @@
 import React, { useState } from 'react';
 import { useSyncStore } from '../../stores/syncStore';
+import { useT } from '../../stores/localeStore';
 import { X, Key, FolderSync, ShieldCheck, ExternalLink, HelpCircle } from 'lucide-react';
 
+/**
+ * Sustituye los marcadores `{name}` de una cadena traducida por nodos React (para
+ * conservar <strong>/<code>/<em> dentro de un único texto traducible).
+ */
+function richText(template: string, parts: Record<string, React.ReactNode>): React.ReactNode[] {
+  return template.split(/(\{\w+\})/).map((chunk, i) => {
+    const match = /^\{(\w+)\}$/.exec(chunk);
+    if (match && match[1] in parts) {
+      return <React.Fragment key={i}>{parts[match[1]]}</React.Fragment>;
+    }
+    return chunk;
+  });
+}
+
 export const SyncConfigModal: React.FC = () => {
+  const t = useT();
   const {
     showConfigModal,
     setShowConfigModal,
@@ -39,7 +55,7 @@ export const SyncConfigModal: React.FC = () => {
         <div className="flex items-center justify-between px-6 py-4 border-b border-obsidian-border bg-obsidian-bg/50">
           <div className="flex items-center gap-2">
             <FolderSync className="w-5 h-5 text-orange-400" />
-            <h2 className="text-base font-semibold text-white">Configuración de Google Drive</h2>
+            <h2 className="text-base font-semibold text-white">{t('sync.config.title')}</h2>
           </div>
           <button
             onClick={() => setShowConfigModal(false)}
@@ -71,16 +87,20 @@ export const SyncConfigModal: React.FC = () => {
                 onClick={logout}
                 className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2.5 py-1 rounded transition-colors"
               >
-                Cerrar sesión
+                {t('sync.config.logout')}
               </button>
             </div>
           ) : (
             <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg text-obsidian-text flex items-start gap-2.5">
               <ShieldCheck className="w-5 h-5 text-orange-400 shrink-0 mt-0.5" />
               <div>
-                <span className="font-medium text-white">Privacidad 100% Garantizada:</span>
+                <span className="font-medium text-white">{t('sync.config.privacyTitle')}</span>
                 <p className="text-[11px] text-obsidian-muted mt-0.5">
-                  Urano utiliza exclusivamente el permiso <code className="text-orange-300 bg-orange-950/40 px-1 py-0.5 rounded">drive.file</code>. La aplicación solo tiene acceso a las notas y carpetas que ella misma crea en tu cuenta personal de Google Drive.
+                  {richText(t('sync.config.privacyBody'), {
+                    scope: (
+                      <code className="text-orange-300 bg-orange-950/40 px-1 py-0.5 rounded">drive.file</code>
+                    ),
+                  })}
                 </p>
               </div>
             </div>
@@ -90,7 +110,7 @@ export const SyncConfigModal: React.FC = () => {
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-obsidian-text font-medium flex items-center gap-1.5">
                 <Key className="w-3.5 h-3.5 text-orange-400" />
-                Google Client ID (OAuth 2.0)
+                {t('sync.config.clientIdLabel')}
               </label>
               <button
                 type="button"
@@ -98,12 +118,12 @@ export const SyncConfigModal: React.FC = () => {
                 className="text-orange-400 hover:text-orange-300 flex items-center gap-1 text-[11px]"
               >
                 <HelpCircle className="w-3 h-3" />
-                ¿Cómo obtenerlo?
+                {t('sync.config.howToGet')}
               </button>
             </div>
             <input
               type="text"
-              placeholder="ej: 123456789-xxxxxx.apps.googleusercontent.com"
+              placeholder={t('sync.config.clientIdPlaceholder')}
               value={localClientId}
               onChange={(e) => setLocalClientId(e.target.value)}
               required
@@ -113,7 +133,7 @@ export const SyncConfigModal: React.FC = () => {
 
           <div>
             <label className="text-obsidian-text font-medium block mb-1.5">
-              Client Secret (Opcional si usas cliente de escritorio PKCE)
+              {t('sync.config.clientSecretLabel')}
             </label>
             <input
               type="password"
@@ -126,7 +146,7 @@ export const SyncConfigModal: React.FC = () => {
 
           <div>
             <label className="text-obsidian-text font-medium block mb-1.5">
-              Nombre de la carpeta remota en Google Drive
+              {t('sync.config.folderNameLabel')}
             </label>
             <input
               type="text"
@@ -141,22 +161,27 @@ export const SyncConfigModal: React.FC = () => {
           {showHelp && (
             <div className="p-3 bg-obsidian-active rounded-lg border border-obsidian-border text-[11px] text-obsidian-muted space-y-1.5">
               <div className="font-semibold text-white flex items-center gap-1">
-                <span>Pasos en Google Cloud Console:</span>
+                <span>{t('sync.config.stepsTitle')}</span>
                 <a
                   href="https://console.cloud.google.com/apis/credentials"
                   target="_blank"
                   rel="noreferrer"
                   className="text-orange-400 hover:underline flex items-center gap-0.5 ml-1"
                 >
-                  Abrir consola <ExternalLink className="w-2.5 h-2.5" />
+                  {t('sync.config.openConsole')} <ExternalLink className="w-2.5 h-2.5" />
                 </a>
               </div>
               <ol className="list-decimal list-inside space-y-0.5">
-                <li>Crea un proyecto (ej: "Urano Notes").</li>
-                <li>Habilita la <strong>Google Drive API</strong> en Biblioteca de APIs.</li>
-                <li>En Pantalla de consentimiento OAuth, selecciona "Externo" y añade el scope <code>drive.file</code>.</li>
-                <li>En Credenciales, crea un <strong>ID de cliente de OAuth</strong> de tipo <em>App de escritorio</em>.</li>
-                <li>Copia el Client ID resultante aquí. ¡Listo!</li>
+                <li>{t('sync.config.step1')}</li>
+                <li>{richText(t('sync.config.step2'), { api: <strong>Google Drive API</strong> })}</li>
+                <li>{richText(t('sync.config.step3'), { scope: <code>drive.file</code> })}</li>
+                <li>
+                  {richText(t('sync.config.step4'), {
+                    clientId: <strong>{t('sync.config.step4ClientId')}</strong>,
+                    appType: <em>{t('sync.config.step4AppType')}</em>,
+                  })}
+                </li>
+                <li>{t('sync.config.step5')}</li>
               </ol>
             </div>
           )}
@@ -168,13 +193,13 @@ export const SyncConfigModal: React.FC = () => {
               onClick={() => setShowConfigModal(false)}
               className="px-4 py-2 rounded-lg text-obsidian-muted hover:text-white hover:bg-obsidian-hover transition-colors"
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               className="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-medium transition-colors shadow-lg shadow-orange-600/20"
             >
-              {isAuthenticated ? 'Guardar Cambios' : 'Guardar y Conectar con Google'}
+              {isAuthenticated ? t('sync.config.saveChanges') : t('sync.config.saveAndConnect')}
             </button>
           </div>
         </form>

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { SyncState, SyncLog, GoogleUser } from '../types';
+import { t } from '../locales/i18n';
 
 interface SyncStoreState {
   status: SyncState;
@@ -73,14 +74,14 @@ export const useSyncStore = create<SyncStoreState>((set, get) => ({
     const { clientId, clientSecret, addLog } = get();
     if (!clientId) {
       set({ showConfigModal: true });
-      addLog('Ingresa tus credenciales de Google OAuth para continuar.', 'warn');
+      addLog(t('sync.log.enterCredentials'), 'warn');
       return;
     }
 
     try {
       set({ status: 'syncing' });
-      addLog('Iniciando flujo de autenticación OAuth 2.0 PKCE...', 'info');
-      
+      addLog(t('sync.log.startingAuth'), 'info');
+
       const success = await invoke<boolean>('start_oauth_login', {
         clientId,
         clientSecret,
@@ -89,14 +90,17 @@ export const useSyncStore = create<SyncStoreState>((set, get) => ({
       if (success) {
         const user = await invoke<GoogleUser | null>('get_google_user');
         set({ isAuthenticated: true, user, status: 'synced' });
-        addLog(`Autenticación exitosa${user?.name ? `: ${user.name}` : ''}`, 'success');
+        addLog(
+          user?.name ? t('sync.log.authSuccessUser', { name: user.name }) : t('sync.log.authSuccess'),
+          'success'
+        );
       } else {
         set({ status: 'error' });
-        addLog('No se completó la autorización de Google.', 'error');
+        addLog(t('sync.log.authNotCompleted'), 'error');
       }
     } catch (err: any) {
       set({ status: 'error' });
-      addLog(`Error en autenticación: ${err?.message || err}`, 'error');
+      addLog(t('sync.log.authError', { error: err?.message || err }), 'error');
     }
   },
 
@@ -104,7 +108,7 @@ export const useSyncStore = create<SyncStoreState>((set, get) => ({
     try {
       await invoke('logout_google');
       set({ isAuthenticated: false, user: null, status: 'idle' });
-      get().addLog('Sesión de Google Drive cerrada.', 'info');
+      get().addLog(t('sync.log.loggedOut'), 'info');
     } catch (err) {
       console.error('Error al cerrar sesión:', err);
     }
@@ -115,14 +119,14 @@ export const useSyncStore = create<SyncStoreState>((set, get) => ({
     if (isSyncing) return;
 
     if (!isAuthenticated) {
-      addLog('Inicia sesión en Google Drive para sincronizar.', 'warn');
+      addLog(t('sync.log.loginRequired'), 'warn');
       get().loginWithGoogle();
       return;
     }
 
     try {
       set({ isSyncing: true, status: 'syncing' });
-      addLog('Iniciando sincronización diferencial con Google Drive...', 'info');
+      addLog(t('sync.log.startingSync'), 'info');
 
       const result = await invoke<{
         uploaded: number;
@@ -140,19 +144,23 @@ export const useSyncStore = create<SyncStoreState>((set, get) => ({
       if (result.conflicts > 0) {
         set({ status: 'conflict', lastSynced: now, isSyncing: false });
         addLog(
-          `Sincronización finalizada con ${result.conflicts} conflicto(s) resueltos sin pérdida. Subidos: ${result.uploaded}, Descargados: ${result.downloaded}`,
+          t('sync.log.syncConflicts', {
+            conflicts: result.conflicts,
+            uploaded: result.uploaded,
+            downloaded: result.downloaded,
+          }),
           'warn'
         );
       } else {
         set({ status: 'synced', lastSynced: now, isSyncing: false });
         addLog(
-          `Bóveda sincronizada. Subidos: ${result.uploaded}, Descargados: ${result.downloaded}`,
+          t('sync.log.syncDone', { uploaded: result.uploaded, downloaded: result.downloaded }),
           'success'
         );
       }
     } catch (err: any) {
       set({ status: 'error', isSyncing: false });
-      addLog(`Error de sincronización: ${err?.message || err}`, 'error');
+      addLog(t('sync.log.syncError', { error: err?.message || err }), 'error');
     }
   },
 }));
