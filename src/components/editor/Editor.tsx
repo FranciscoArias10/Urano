@@ -99,7 +99,7 @@ export const Editor: React.FC<EditorProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const currentPathRef = useRef<string | null>(null);
-  const inlineTitleRef = useRef<HTMLDivElement>(null);
+  const inlineTitleRef = useRef<HTMLInputElement>(null);
   const lastDispatchedDocRef = useRef<string>('');
 
   // Holds the Live Preview rendering extensions; emptied in Source Mode
@@ -186,6 +186,8 @@ export const Editor: React.FC<EditorProps> = ({
     renameNoteWithLinkRefactor,
     autoFocusTitle,
     setAutoFocusTitle,
+    shouldSelectTitleOnOpen,
+    setShouldSelectTitleOnOpen,
     isLoading,
     refreshTree,
   } = useVaultStore();
@@ -196,6 +198,14 @@ export const Editor: React.FC<EditorProps> = ({
   const cleanTitle = activeFileName
     ? activeFileName.replace(/\.md$/i, '')
     : t('common.untitled');
+
+  // Estado local para edición de título sin renombrar en cada pulsación
+  const [draftTitle, setDraftTitle] = useState(cleanTitle);
+
+  // Sincronización bidireccional: si el archivo se renombra externamente, actualizar draftTitle
+  useEffect(() => {
+    setDraftTitle(cleanTitle);
+  }, [cleanTitle]);
 
   // Compute available notes for autocompletion
   const availableNotes = useMemo(() => {
@@ -230,25 +240,15 @@ export const Editor: React.FC<EditorProps> = ({
     return () => clearTimeout(timer);
   }, [fileContent, isDirty, activeFile, saveCurrentFile]);
 
-  // Synchronize inline-title innerText when note changes
+  // Auto-focus y selección completa de "Untitled" en .inline-title al crear una nota nueva
   useEffect(() => {
-    if (inlineTitleRef.current && document.activeElement !== inlineTitleRef.current) {
-      inlineTitleRef.current.innerText = cleanTitle;
-    }
-  }, [cleanTitle]);
-
-  // Auto-focus and select all text in .inline-title when a note is newly created
-  useEffect(() => {
-    if (autoFocusTitle && inlineTitleRef.current) {
+    if ((shouldSelectTitleOnOpen || autoFocusTitle) && inlineTitleRef.current) {
       inlineTitleRef.current.focus();
-      const range = document.createRange();
-      range.selectNodeContents(inlineTitleRef.current);
-      const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
+      inlineTitleRef.current.select();
+      setShouldSelectTitleOnOpen(false);
       setAutoFocusTitle(false);
     }
-  }, [autoFocusTitle, setAutoFocusTitle]);
+  }, [shouldSelectTitleOnOpen, autoFocusTitle, activeFile, setShouldSelectTitleOnOpen, setAutoFocusTitle]);
 
   // Create or switch editor document
   useEffect(() => {
@@ -629,21 +629,21 @@ export const Editor: React.FC<EditorProps> = ({
     };
   }, [onOpenInNewTab, deleteItem, showNotice, t]);
 
-  // Handle .inline-title keyboard events (Enter / Escape)
-  const handleTitleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter') {
+  // Handle .inline-title keyboard events (Enter / Tab / ArrowDown / Escape)
+  const handleTitleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === 'Tab' || e.key === 'ArrowDown') {
       e.preventDefault();
-      const newTitle = inlineTitleRef.current?.innerText.trim() || '';
+      const newTitle = draftTitle.trim();
 
       if (newTitle && newTitle !== cleanTitle && activeFile) {
         const result = await renameNoteWithLinkRefactor(activeFile, newTitle);
         if (!result.success) {
           showNotice(result.error || t('editor.notices.invalidFileName'), 4000, 'error');
-          if (inlineTitleRef.current) {
-            inlineTitleRef.current.innerText = cleanTitle;
-          }
+          setDraftTitle(cleanTitle);
           return;
         }
+      } else if (!newTitle) {
+        setDraftTitle(cleanTitle);
       }
 
       // Smoothly transition focus to beginning of CodeMirror 6 editor
@@ -656,21 +656,16 @@ export const Editor: React.FC<EditorProps> = ({
       }
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      if (inlineTitleRef.current) {
-        inlineTitleRef.current.innerText = cleanTitle;
-        inlineTitleRef.current.blur();
-      }
+      setDraftTitle(cleanTitle);
+      inlineTitleRef.current?.blur();
     }
   };
 
   // Handle .inline-title onBlur (auto-commit rename)
   const handleTitleBlur = async () => {
-    const newTitle = inlineTitleRef.current?.innerText.trim() || '';
+    const newTitle = draftTitle.trim();
     if (!newTitle) {
-      if (inlineTitleRef.current) {
-        inlineTitleRef.current.innerText = cleanTitle;
-      }
-      showNotice(t('editor.notices.emptyFileName'), 3500, 'error');
+      setDraftTitle(cleanTitle);
       return;
     }
 
@@ -678,9 +673,7 @@ export const Editor: React.FC<EditorProps> = ({
       const result = await renameNoteWithLinkRefactor(activeFile, newTitle);
       if (!result.success) {
         showNotice(result.error || t('editor.notices.invalidFileName'), 4000, 'error');
-        if (inlineTitleRef.current) {
-          inlineTitleRef.current.innerText = cleanTitle;
-        }
+        setDraftTitle(cleanTitle);
       }
     }
   };
@@ -2180,17 +2173,16 @@ export const Editor: React.FC<EditorProps> = ({
                 showInlineTitle ? '' : ' hidden'
               }`}
             >
-              <div
+              <input
                 ref={inlineTitleRef}
+                type="text"
                 className="inline-title"
-                contentEditable="true"
-                suppressContentEditableWarning
+                value={draftTitle}
                 spellCheck={false}
+                onChange={(e) => setDraftTitle(e.target.value)}
                 onKeyDown={handleTitleKeyDown}
                 onBlur={handleTitleBlur}
-              >
-                {cleanTitle}
-              </div>
+              />
             </div>
 
             {/* CodeMirror 6 Editor Canvas */}
