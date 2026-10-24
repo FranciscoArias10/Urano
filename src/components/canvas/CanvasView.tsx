@@ -715,9 +715,40 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       }
     };
 
+    // Caso B — WebKitGTK (Tauri en Linux) emite GestureEvent no estándar para el
+    // pellizco: `scale > 1` al abrir los dedos, `< 1` al cerrarlos. El zoom se
+    // calcula siempre respecto al zoom capturado en `gesturestart`.
+    interface WebKitGestureEvent extends UIEvent {
+      scale: number;
+      rotation: number;
+      clientX: number;
+      clientY: number;
+    }
+    let gestureStartZoom = viewportRef.current.zoom;
+
+    const onGestureStart = (e: Event) => {
+      e.preventDefault();
+      gestureStartZoom = viewportRef.current.zoom;
+    };
+    const onGestureChange = (e: Event) => {
+      e.preventDefault();
+      const g = e as WebKitGestureEvent;
+      if (!Number.isFinite(g.scale) || g.scale <= 0) return;
+      zoomAtPoint(gestureStartZoom * g.scale, g.clientX, g.clientY);
+    };
+    const onGestureEnd = (e: Event) => {
+      e.preventDefault();
+    };
+
     el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('gesturestart', onGestureStart, { passive: false });
+    el.addEventListener('gesturechange', onGestureChange, { passive: false });
+    el.addEventListener('gestureend', onGestureEnd, { passive: false });
     return () => {
       el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('gesturestart', onGestureStart);
+      el.removeEventListener('gesturechange', onGestureChange);
+      el.removeEventListener('gestureend', onGestureEnd);
     };
   }, [zoomAtPoint, panBy]);
 
