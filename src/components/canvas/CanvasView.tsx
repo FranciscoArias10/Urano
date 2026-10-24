@@ -1733,15 +1733,20 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         <svg className="canvas-edges">
           <defs>
             <marker
-              id="canvas-arrow-marker"
-              viewBox="0 0 10 10"
+              id="canvas-arrow"
+              viewBox="0 0 12 12"
               refX="9"
-              refY="5"
-              markerWidth="7"
-              markerHeight="7"
+              refY="6"
+              markerWidth="10"
+              markerHeight="10"
+              markerUnits="userSpaceOnUse"
               orient="auto-start-reverse"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#888888" />
+              <path
+                className="canvas-arrow-head"
+                d="M 0 1.5 L 10 6 L 0 10.5 z"
+                fill="currentColor"
+              />
             </marker>
           </defs>
 
@@ -1788,7 +1793,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
             <path
               d={connectingBezierPath}
               className="canvas-display-path is-connecting"
-              markerEnd="url(#canvas-arrow-marker)"
+              markerEnd="url(#canvas-arrow)"
             />
           )}
 
@@ -1810,7 +1815,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
               <path
                 d={bez.path}
                 className="canvas-display-path is-connecting"
-                markerEnd="url(#canvas-arrow-marker)"
+                markerEnd="url(#canvas-arrow)"
               />
             );
           })()}

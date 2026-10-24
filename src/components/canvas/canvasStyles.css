@@ -612,17 +612,8 @@
   stroke-width: 3.5px;
 }
 
-.canvas-edge-group.is-focused .canvas-path-end,
-.canvas-edge-group:hover .canvas-path-end {
-  fill: var(--color-accent) !important;
-  stroke: var(--color-accent) !important;
-}
-
-.canvas-path-end {
-  fill: #888888;
-  stroke: #888888;
-  stroke-width: 1px;
-  pointer-events: none;
+.canvas-arrow-head {
+  fill: currentColor;
 }
 
 /* Etiqueta de la arista */

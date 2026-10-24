@@ -7,7 +7,6 @@ import {
   calculateBezier,
   getBezierMidpoint,
   resolveCanvasColor,
-  SIDE_ANGLES,
 } from './canvasMath';
 
 interface CanvasEdgeViewProps {
@@ -59,11 +58,6 @@ export const CanvasEdgeView: React.FC<CanvasEdgeViewProps> = ({
       ? 'var(--color-accent)'
       : colorScheme.hex;
 
-  // Arrowhead at destination
-  const toAngle = SIDE_ANGLES[edge.toSide];
-  // Arrowhead at source if fromEnd === 'arrow'
-  const fromAngle = (SIDE_ANGLES[edge.fromSide] + 180) % 360;
-
   const handleLabelBlur = () => {
     setIsEditing(false);
     if (onUpdateLabel) {
@@ -83,43 +77,20 @@ export const CanvasEdgeView: React.FC<CanvasEdgeViewProps> = ({
         className="canvas-interaction-path"
       />
 
-      {/* Visible styled SVG curve */}
+      {/* Visible styled SVG curve. La punta de flecha es un `<marker>` del
+          lienzo (`#canvas-arrow`): queda apoyada en el borde exterior y la
+          base del triángulo se solapa con la línea, sin hueco. */}
       <path
         d={bezier.path}
         className="canvas-display-path"
         style={{
           stroke: strokeColor,
+          color: strokeColor,
           strokeWidth: isSelected ? '3.5px' : '2px',
         }}
+        markerEnd={edge.toEnd !== 'none' ? 'url(#canvas-arrow)' : undefined}
+        markerStart={edge.fromEnd === 'arrow' ? 'url(#canvas-arrow)' : undefined}
       />
-
-      {/* Destination Arrowhead */}
-      {edge.toEnd !== 'none' && (
-        <polygon
-          points="-5,0 5,0 0,-10"
-          className="canvas-path-end"
-          style={{
-            fill: strokeColor,
-            stroke: strokeColor,
-            transform: `translate(${toCenter.x}px, ${toCenter.y}px) rotate(${toAngle}deg)`,
-            transformOrigin: '0 0',
-          }}
-        />
-      )}
-
-      {/* Source Arrowhead (if bidirectional) */}
-      {edge.fromEnd === 'arrow' && (
-        <polygon
-          points="-5,0 5,0 0,-10"
-          className="canvas-path-end"
-          style={{
-            fill: strokeColor,
-            stroke: strokeColor,
-            transform: `translate(${fromCenter.x}px, ${fromCenter.y}px) rotate(${fromAngle}deg)`,
-            transformOrigin: '0 0',
-          }}
-        />
-      )}
 
       {/* Edge label at midpoint */}
       {(edge.label || isEditing) && (
