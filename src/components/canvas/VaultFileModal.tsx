@@ -3,6 +3,7 @@ import { Search, FileText, FileImage, X } from 'lucide-react';
 import { useVaultStore } from '../../stores/vaultStore';
 import { FileItem } from '../../types';
 import { isImagePath } from '../../services/storageAdapter';
+import { useT } from '../../stores/localeStore';
 
 export type VaultFileModalMode = 'note' | 'image';
 
@@ -24,6 +25,7 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
   onClose,
   onSelectFile,
 }) => {
+  const t = useT();
   const { fileTree } = useVaultStore();
   const [search, setSearch] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -105,8 +107,8 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
             onKeyDown={handleKeyDown}
             placeholder={
               isImageMode
-                ? 'Seleccionar una imagen de la bóveda...'
-                : 'Seleccionar una nota de la bóveda...'
+                ? t('canvas.vaultModal.selectImage')
+                : t('canvas.vaultModal.selectNote')
             }
             className="w-full bg-transparent text-sm text-stone-100 placeholder-stone-500 outline-none"
           />
@@ -123,8 +125,8 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
           {filtered.length === 0 ? (
             <div className="px-3 py-6 text-center text-xs text-stone-500">
               {isImageMode
-                ? 'No se encontraron imágenes en la bóveda'
-                : 'No se encontraron notas en la bóveda'}
+                ? t('canvas.vaultModal.noImages')
+                : t('canvas.vaultModal.noNotes')}
             </div>
           ) : (
             filtered.map((file, idx) => (
@@ -147,7 +149,7 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
                 )}
                 <span className="truncate flex-1 font-medium">{file.name}</span>
                 <span className="text-[10px] text-stone-500 truncate max-w-[150px]">
-                  {file.path.split('/').slice(-2, -1)[0] || 'Raíz'}
+                  {file.path.split('/').slice(-2, -1)[0] || t('canvas.vaultModal.root')}
                 </span>
               </div>
             ))

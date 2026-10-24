@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import {
   StickyNote,
   FileText,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useNoticeStore } from '../common/Notice';
+import { useT } from '../../stores/localeStore';
 import {
   CanvasNode,
   CanvasEdge,
@@ -71,6 +73,27 @@ const MAX_ZOOM = 4.0;
 const WHEEL_ZOOM_SENSITIVITY_PINCH = 0.012;
 const WHEEL_ZOOM_SENSITIVITY_MOUSE = 0.0025;
 
+/**
+ * Pellizco de touchpad en Linux / WebKitGTK. El webview consume el gesto de
+ * forma nativa (GtkGestureZoom → page zoom de toda la ventana) sin emitir
+ * ningún evento DOM, así que `src-tauri/src/commands/canvas.rs` lo intercepta
+ * mientras el puntero está sobre un Canvas y lo reenvía con este evento Tauri.
+ */
+const CANVAS_PINCH_EVENT = 'canvas:touchpad-pinch';
+
+interface TouchpadPinchPayload {
+  phase: 'begin' | 'update' | 'end' | 'cancel';
+  /** Escala acumulada respecto al inicio del gesto (1.0 en `begin`). */
+  scale: number;
+  /** Foco del gesto en píxeles CSS relativos al webview (≡ clientX / clientY). */
+  x: number;
+  y: number;
+  /** Desplazamiento del foco desde el evento anterior. */
+  dx: number;
+  dy: number;
+  fingers: number;
+}
+
 /** Dimensiones por defecto de los nodos (1:1 con Obsidian). */
 const DEFAULT_TEXT_NODE_SIZE = { width: 250, height: 100 };
 const DEFAULT_FILE_NODE_SIZE = { width: 400, height: 300 };
@@ -103,6 +126,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     fileTree,
   } = useVaultStore();
   const { showNotice } = useNoticeStore();
+  const t = useT();
 
   const [canvasData, setCanvasData] = useState<CanvasData>({ nodes: [], edges: [] });
   const [zoom, setZoom] = useState(1);
@@ -729,9 +753,11 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       }
     };
 
-    // Caso B — WebKitGTK (Tauri en Linux) emite GestureEvent no estándar para el
-    // pellizco: `scale > 1` al abrir los dedos, `< 1` al cerrarlos. El zoom se
-    // calcula siempre respecto al zoom capturado en `gesturestart`.
+    // Caso B — WebKit en macOS (Safari / WKWebView) emite GestureEvent no
+    // estándar para el pellizco: `scale > 1` al abrir los dedos, `< 1` al
+    // cerrarlos. El zoom se calcula siempre respecto al zoom capturado en
+    // `gesturestart`. (WebKitGTK NO emite estos eventos: en Linux el pellizco
+    // llega por el puente Tauri de más abajo, `CANVAS_PINCH_EVENT`.)
     interface WebKitGestureEvent extends UIEvent {
       scale: number;
       rotation: number;
@@ -812,6 +838,79 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       el.removeEventListener('gesturestart', onGestureStart);
       el.removeEventListener('gesturechange', onGestureChange);
       el.removeEventListener('gestureend', onGestureEnd);
+    };
+  }, [zoomAtPoint, panBy]);
+
+  /* ------------------------------------------------------------------ */
+  /* Pellizco de touchpad en Linux / WebKitGTK (puente desde Rust)        */
+  /* ------------------------------------------------------------------ */
+
+  // Caso D — En WebKitGTK el pellizco del touchpad nunca llega al DOM: el
+  // propio webview lo consume con un GtkGestureZoom y escala la PÁGINA ENTERA
+  // (toda la interfaz de Urano). Por eso ni el `wheel` no pasivo ni los
+  // GestureEvent de arriba podían confinarlo. Rust intercepta GDK_TOUCHPAD_PINCH
+  // solo mientras le digamos que el puntero está sobre este lienzo y nos lo
+  // reenvía como evento Tauri; aquí lo aplicamos a la cámara con el mismo
+  // `zoomAtPoint` / `panBy` que el resto de entradas. Las demás vistas (.md,
+  // imágenes…) conservan el comportamiento nativo intacto.
+  const pinchCaptureRef = useRef(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const setCapture = (enabled: boolean) => {
+      if (pinchCaptureRef.current === enabled) return;
+      pinchCaptureRef.current = enabled;
+      // Fuera de Tauri (vite en navegador) el comando no existe: ignorar.
+      invoke('set_canvas_pinch_capture', { enabled }).catch(() => {});
+    };
+    const onEnter = () => setCapture(true);
+    const onLeave = () => setCapture(false);
+
+    el.addEventListener('mouseenter', onEnter);
+    // Cubre abrir/cambiar a la pestaña del Canvas con el puntero ya encima
+    // (no se dispara `mouseenter` hasta que el puntero se mueve).
+    el.addEventListener('mousemove', onEnter);
+    el.addEventListener('mouseleave', onLeave);
+    if (el.matches(':hover')) setCapture(true);
+
+    let gestureStartZoom = viewportRef.current.zoom;
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+
+    listen<TouchpadPinchPayload>(CANVAS_PINCH_EVENT, ({ payload }) => {
+      // Con varios lienzos montados (paneles divididos) solo responde el que
+      // tiene el puntero encima.
+      if (!pinchCaptureRef.current) return;
+
+      if (payload.phase === 'begin') {
+        gestureStartZoom = viewportRef.current.zoom;
+        return;
+      }
+      if (payload.phase !== 'update') return;
+
+      // Desplazamiento del punto medio entre los dedos = pan de dos dedos.
+      if (payload.dx || payload.dy) panBy(-payload.dx, -payload.dy);
+      // Separación de los dedos = zoom anclado al foco del gesto. `x`/`y` son
+      // coordenadas del webview, que sin decoraciones coinciden con clientX/Y.
+      if (Number.isFinite(payload.scale) && payload.scale > 0) {
+        zoomAtPoint(gestureStartZoom * payload.scale, payload.x, payload.y);
+      }
+    })
+      .then((fn) => {
+        if (disposed) fn();
+        else unlisten = fn;
+      })
+      .catch(() => {});
+
+    return () => {
+      disposed = true;
+      unlisten?.();
+      el.removeEventListener('mouseenter', onEnter);
+      el.removeEventListener('mousemove', onEnter);
+      el.removeEventListener('mouseleave', onLeave);
+      setCapture(false);
     };
   }, [zoomAtPoint, panBy]);
 
@@ -959,7 +1058,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
   const handleAddLinkCard = useCallback(
     (customPos?: CanvasPoint) => {
-      const url = prompt('Introduce la URL web o enlace multimedia:');
+      const url = prompt(t('canvas.prompts.linkUrl'));
       if (!url) return;
       const pos = customPos || getVisibleCenter();
       const id = generateCanvasId();
@@ -975,7 +1074,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       applyChange((prev) => ({ ...prev, nodes: [...prev.nodes, newNode] }));
       setSelectedNodeIds(new Set([id]));
     },
-    [applyChange, getVisibleCenter]
+    [applyChange, getVisibleCenter, t]
   );
 
   const handleAddGroup = useCallback(
@@ -985,7 +1084,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       const newGroup: CanvasGroupNode = {
         id,
         type: 'group',
-        label: 'Nuevo Grupo',
+        label: t('canvas.node.newGroup'),
         x: pos.x - 250,
         y: pos.y - 200,
         width: 500,
@@ -995,7 +1094,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       setSelectedNodeIds(new Set([id]));
       return id;
     },
-    [applyChange, getVisibleCenter]
+    [applyChange, getVisibleCenter, t]
   );
 
   const handleEdgeDropAddGroup = useCallback(() => {
@@ -1008,7 +1107,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   // Convert selected text card to real Markdown note in vault
   const handleConvertTextCardToFile = async (node: CanvasNode) => {
     if (node.type !== 'text') return;
-    const noteName = prompt('Nombre para la nueva nota:', 'Nota desde Lienzo');
+    const noteName = prompt(t('canvas.prompts.noteName'), t('canvas.prompts.noteNameDefault'));
     if (!noteName) return;
 
     try {
@@ -1037,10 +1136,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
             : n
         ),
       }));
-      showNotice(`Nota "${cleanName}" creada en el Vault`, 2500, 'success');
+      showNotice(t('canvas.notices.noteCreated', { name: cleanName }), 2500, 'success');
     } catch (err) {
       console.error('Error al convertir tarjeta a nota:', err);
-      showNotice('Error al crear la nota', 3000, 'error');
+      showNotice(t('canvas.notices.noteCreateError'), 3000, 'error');
     }
   };
 
@@ -1056,7 +1155,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     const newGroup: CanvasGroupNode = {
       id,
       type: 'group',
-      label: 'Grupo',
+      label: t('canvas.node.group'),
       x: bbox.minX - pad,
       y: bbox.minY - pad,
       width: bbox.maxX - bbox.minX + pad * 2,
@@ -1572,7 +1671,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         const cleanVault = vault ? vault.replace(/[\\/]+$/, '') : '';
         const fullPath = cleanVault ? `${cleanVault}${separator}${savedName}` : savedName;
         await createFileNode(fullPath, getVisibleCenter());
-        showNotice(`Imagen añadida al lienzo: ${savedName}`, 2500, 'success');
+        showNotice(t('canvas.notices.imageAdded', { name: savedName }), 2500, 'success');
         return;
       }
 
@@ -1602,7 +1701,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         /* sin imagen nativa disponible */
       }
     },
-    [readonly, createTextNode, createFileNode, getVisibleCenter, showNotice]
+    [readonly, createTextNode, createFileNode, getVisibleCenter, showNotice, t]
   );
 
   // Escucha global de pegado: sólo actúa si el Canvas tiene el foco.
@@ -1650,16 +1749,16 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
       items.push(
         {
-          title: 'Editar',
+          title: t('common.edit'),
           icon: <Edit2 size={14} />,
           action: () => setEditingNodeId(clickedNode.id),
         },
         {
-          title: 'Color',
+          title: t('canvas.menu.color'),
           icon: <Palette size={14} />,
           submenu: [
             {
-              title: 'Por defecto (Gris)',
+              title: t('canvas.colors.default'),
               action: () => {
                 applyChange((prev) => ({
                   ...prev,
@@ -1670,7 +1769,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
               },
             },
             ...Object.entries(CANVAS_COLORS).map(([k, col]) => ({
-              title: col.name,
+              title: t(col.nameKey),
               icon: (
                 <span
                   className="w-3 h-3 rounded-full inline-block"
@@ -1692,7 +1791,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
       if (clickedNode.type === 'text') {
         items.push({
-          title: 'Convertir en archivo...',
+          title: t('canvas.menu.convertToFile'),
           icon: <FilePlus size={14} />,
           action: () => handleConvertTextCardToFile(clickedNode),
         });
@@ -1700,20 +1799,20 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
       items.push(
         {
-          title: 'Crear grupo con la selección',
+          title: t('canvas.menu.createGroupFromSelection'),
           icon: <FolderPlus size={14} />,
           action: handleGroupSelection,
         },
         {
-          title: 'Duplicar',
+          title: t('common.duplicate'),
           shortcut: 'Ctrl+D',
           icon: <Copy size={14} />,
           action: handleDuplicateSelection,
         },
         { type: 'separator' },
         {
-          title: 'Eliminar',
-          shortcut: 'Supr',
+          title: t('common.delete'),
+          shortcut: t('canvas.keys.delete'),
           icon: <Trash2 size={14} />,
           isWarning: true,
           action: deleteSelected,
@@ -1723,39 +1822,39 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       // Background Context Menu
       items.push(
         {
-          title: 'Nueva tarjeta',
+          title: t('canvas.menu.newCard'),
           icon: <StickyNote size={14} />,
           action: () => handleAddTextCard(worldPos),
         },
         {
-          title: 'Nueva nota de la bóveda',
+          title: t('canvas.menu.newNote'),
           icon: <FileText size={14} />,
           action: () => handleAddNoteCard(worldPos),
         },
         {
-          title: 'Nuevo multimedia de la bóveda',
+          title: t('canvas.menu.newMedia'),
           icon: <FileImage size={14} />,
           action: () => handleAddMediaCard(worldPos),
         },
         {
-          title: 'Nuevo grupo',
+          title: t('canvas.menu.newGroup'),
           icon: <FolderPlus size={14} />,
           action: () => handleAddGroup(worldPos),
         },
         {
-          title: 'Nuevo enlace web',
+          title: t('canvas.menu.newWebPage'),
           icon: <Link2 size={14} />,
           action: () => handleAddLinkCard(worldPos),
         },
         { type: 'separator' },
         {
-          title: 'Seleccionar todo',
+          title: t('canvas.menu.selectAll'),
           shortcut: 'Ctrl+A',
           icon: <CheckSquare size={14} />,
           action: () => setSelectedNodeIds(new Set(canvasData.nodes.map((n) => n.id))),
         },
         {
-          title: 'Ajustar vista (Zoom to fit)',
+          title: t('canvas.menu.zoomToFit'),
           shortcut: 'Shift+1',
           icon: <Maximize size={14} />,
           action: handleZoomToFit,
@@ -2111,22 +2210,22 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
           y={edgeDropMenu.y}
           items={[
             {
-              title: 'Añadir tarjeta',
+              title: t('canvas.menu.addCard'),
               icon: <StickyNote size={14} />,
               action: handleEdgeDropAddCard,
             },
             {
-              title: 'Añadir nota de la bóveda...',
+              title: t('canvas.menu.addNote'),
               icon: <FileText size={14} />,
               action: handleEdgeDropAddNote,
             },
             {
-              title: 'Añadir multimedia de la bóveda...',
+              title: t('canvas.menu.addMedia'),
               icon: <ImageIcon size={14} />,
               action: handleEdgeDropAddMedia,
             },
             {
-              title: 'Añadir grupo',
+              title: t('canvas.menu.addGroup'),
               icon: <Frame size={14} />,
               action: handleEdgeDropAddGroup,
             },

@@ -14,6 +14,7 @@ import {
   isCustomCanvasColor,
 } from './canvasMath';
 import { Tooltip } from '../common/Tooltip';
+import { useT } from '../../stores/localeStore';
 import { CanvasNode, CanvasEdge } from '../../types/canvas';
 
 interface CanvasFloatingMenuProps {
@@ -56,6 +57,7 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
   onToggleEdgeArrow,
   onEditEdgeLabel,
 }) => {
+  const t = useT();
   const [showColorPicker, setShowColorPicker] = useState(false);
   const customColorInputRef = useRef<HTMLInputElement>(null);
 
@@ -100,19 +102,19 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
       onDoubleClick={(e) => e.stopPropagation()}
     >
       {/* 1. Eliminar */}
-      <Tooltip content="Eliminar" position="top">
-        <button className="canvas-menu-button" onClick={onDelete} aria-label="Eliminar">
+      <Tooltip content={t('common.delete')} position="top">
+        <button className="canvas-menu-button" onClick={onDelete} aria-label={t('common.delete')}>
           <Trash2 size={16} />
         </button>
       </Tooltip>
 
       {/* 2. Color */}
       <div className="canvas-menu-color">
-        <Tooltip content="Color" position="top">
+        <Tooltip content={t('canvas.menu.color')} position="top">
           <button
             className={`canvas-menu-button ${showColorPicker ? 'is-active' : ''}`}
             onClick={() => setShowColorPicker((v) => !v)}
-            aria-label="Color"
+            aria-label={t('canvas.menu.color')}
           >
             <Palette size={16} />
           </button>
@@ -125,8 +127,8 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
               type="button"
               className="canvas-color-picker-item canvas-color-picker-reset"
               style={{ backgroundColor: RESET_COLOR }}
-              title="Por defecto"
-              aria-label="Sin color"
+              title={t('canvas.colors.default')}
+              aria-label={t('canvas.colors.noColor')}
               onClick={(e) => {
                 e.stopPropagation();
                 chooseColor(undefined);
@@ -142,8 +144,8 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
                   currentColor === key ? 'is-active' : ''
                 }`}
                 style={{ backgroundColor: col.hex }}
-                title={col.name}
-                aria-label={col.name}
+                title={t(col.nameKey)}
+                aria-label={t(col.nameKey)}
                 onClick={(e) => {
                   e.stopPropagation();
                   chooseColor(key);
@@ -156,7 +158,7 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
               className={`canvas-color-picker-item canvas-color-picker-custom ${
                 isCustomColor ? 'is-active' : ''
               }`}
-              title="Color personalizado"
+              title={t('canvas.colors.customColor')}
               onClick={(e) => {
                 e.stopPropagation();
                 customColorInputRef.current?.click();
@@ -166,7 +168,7 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
                 ref={customColorInputRef}
                 type="color"
                 value={isCustomColor ? currentColor ?? '#000000' : '#000000'}
-                aria-label="Elegir color personalizado"
+                aria-label={t('canvas.colors.pickCustomColor')}
                 onChange={(e) => {
                   e.stopPropagation();
                   onSetColor(e.target.value);
@@ -186,11 +188,11 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
 
       {/* 3. Zoom a la selección (siempre presente en la barra de un nodo) */}
       {node && (
-        <Tooltip content="Zoom a la selección" position="top">
+        <Tooltip content={t('canvas.menu.zoomToSelection')} position="top">
           <button
             className="canvas-menu-button"
             onClick={onZoomToSelection}
-            aria-label="Zoom a la selección"
+            aria-label={t('canvas.menu.zoomToSelection')}
           >
             <ScanSearch size={16} />
           </button>
@@ -199,8 +201,8 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
 
       {/* 4. Editar (siempre presente en la barra de un nodo) */}
       {node && (
-        <Tooltip content="Editar" position="top">
-          <button className="canvas-menu-button" onClick={onEdit} aria-label="Editar">
+        <Tooltip content={t('common.edit')} position="top">
+          <button className="canvas-menu-button" onClick={onEdit} aria-label={t('common.edit')}>
             <SquarePen size={16} />
           </button>
         </Tooltip>
@@ -208,11 +210,11 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
 
       {/* Botones exclusivos de arista */}
       {edge && onEditEdgeLabel && (
-        <Tooltip content="Editar etiqueta" position="top">
+        <Tooltip content={t('canvas.menu.editLabel')} position="top">
           <button
             className="canvas-menu-button"
             onClick={onEditEdgeLabel}
-            aria-label="Editar etiqueta"
+            aria-label={t('canvas.menu.editLabel')}
           >
             <Type size={16} />
           </button>
@@ -220,11 +222,11 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
       )}
 
       {edge && onToggleEdgeArrow && (
-        <Tooltip content="Alternar flecha / dirección" position="top">
+        <Tooltip content={t('canvas.menu.toggleArrowHint')} position="top">
           <button
             className="canvas-menu-button"
             onClick={onToggleEdgeArrow}
-            aria-label="Alternar flecha"
+            aria-label={t('canvas.menu.toggleArrow')}
           >
             {edge.fromEnd === 'arrow' ? <ArrowLeftRight size={16} /> : <ArrowRight size={16} />}
           </button>

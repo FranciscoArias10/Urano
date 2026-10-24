@@ -11,6 +11,7 @@ import { isImagePath } from '../../services/storageAdapter';
 import { resolveImageBlobUrl } from '../../editor/imageExtension';
 import { CanvasMarkdown } from './CanvasMarkdown';
 import { CanvasFloatingMenu } from './CanvasFloatingMenu';
+import { useT } from '../../stores/localeStore';
 
 interface CanvasNodeViewProps {
   node: CanvasNode;
@@ -80,13 +81,14 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
   onSetNodeColor,
   onZoomToNode,
 }) => {
+  const t = useT();
   const [localIsEditing, setLocalIsEditing] = useState(false);
   const isEditing = parentIsEditing !== undefined ? parentIsEditing : localIsEditing;
   const setIsEditing = parentSetIsEditing || setLocalIsEditing;
 
   const [editText, setEditText] = useState(node.type === 'text' ? node.text : '');
   const [groupLabelEdit, setGroupLabelEdit] = useState(
-    node.type === 'group' ? node.label || 'Grupo' : ''
+    node.type === 'group' ? node.label || t('canvas.node.group') : ''
   );
   const [isEditingGroupLabel, setIsEditingGroupLabel] = useState(false);
 
@@ -319,7 +321,7 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
             draggable={false}
           />
         ) : (
-          <div className="canvas-node-image-loading">Cargando imagen…</div>
+          <div className="canvas-node-image-loading">{t('canvas.node.loadingImage')}</div>
         )}
       </div>
     );
@@ -388,7 +390,7 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
               className="bg-transparent text-white outline-none font-semibold text-xs min-w-[80px]"
             />
           ) : (
-            <span>{node.label || 'Grupo'}</span>
+            <span>{node.label || t('canvas.node.group')}</span>
           )}
         </div>
       )}
@@ -436,7 +438,7 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
               {node.url.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) ? (
                 <img
                   src={node.url}
-                  alt="Link media"
+                  alt={t('canvas.node.linkMedia')}
                   className="max-w-full max-h-full object-contain rounded select-none"
                 />
               ) : (
@@ -499,7 +501,7 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
         <div
           className="canvas-node-connection"
           data-side={connectionSide}
-          title="Conectar"
+          title={t('canvas.node.connect')}
           style={connectionPointStyle}
           onMouseDown={(e) => {
             e.stopPropagation();

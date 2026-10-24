@@ -7,48 +7,49 @@ import {
   CanvasGroupNode,
 } from '../../types/canvas';
 
-// Official Obsidian Canvas 6 palette colors + default neutral
+// Official Obsidian Canvas 6 palette colors + default neutral.
+// `nameKey` es la clave i18n del nombre (se resuelve con `t()` al renderizar).
 export const CANVAS_COLORS: Record<
   string,
-  { name: string; hex: string; bg: string; border: string; text: string }
+  { nameKey: string; hex: string; bg: string; border: string; text: string }
 > = {
   '1': {
-    name: 'Rojo',
+    nameKey: 'canvas.colors.red',
     hex: '#fb464c',
     bg: 'rgba(251, 70, 76, 0.12)',
     border: '#fb464c',
     text: '#ff8591',
   },
   '2': {
-    name: 'Naranja',
+    nameKey: 'canvas.colors.orange',
     hex: '#e9973f',
     bg: 'rgba(233, 151, 63, 0.12)',
     border: '#e9973f',
     text: '#ffbe7a',
   },
   '3': {
-    name: 'Amarillo',
+    nameKey: 'canvas.colors.yellow',
     hex: '#e0de71',
     bg: 'rgba(224, 222, 113, 0.12)',
     border: '#e0de71',
     text: '#f0eea0',
   },
   '4': {
-    name: 'Verde',
+    nameKey: 'canvas.colors.green',
     hex: '#44cf6e',
     bg: 'rgba(68, 207, 110, 0.12)',
     border: '#44cf6e',
     text: '#7fe4a0',
   },
   '5': {
-    name: 'Cian',
+    nameKey: 'canvas.colors.cyan',
     hex: '#53dfdd',
     bg: 'rgba(83, 223, 221, 0.12)',
     border: '#53dfdd',
     text: '#8aebea',
   },
   '6': {
-    name: 'Púrpura',
+    nameKey: 'canvas.colors.purple',
     hex: '#a882ff',
     bg: 'rgba(168, 130, 255, 0.12)',
     border: '#a882ff',
@@ -58,7 +59,7 @@ export const CANVAS_COLORS: Record<
 
 // Default styling when no color is assigned
 export const DEFAULT_COLOR = {
-  name: 'Por defecto',
+  nameKey: 'canvas.colors.default',
   hex: '#7e7e7e',
   bg: '#1e1e1e',
   border: '#383838',
@@ -83,7 +84,7 @@ export function resolveCanvasColor(color?: string): CanvasColorScheme {
   if (color && CANVAS_COLORS[color]) return CANVAS_COLORS[color];
   if (isCustomCanvasColor(color)) {
     return {
-      name: 'Personalizado',
+      nameKey: 'canvas.colors.custom',
       hex: color as string,
       bg: `color-mix(in srgb, ${color} 12%, #1e1e1e)`,
       border: color as string,

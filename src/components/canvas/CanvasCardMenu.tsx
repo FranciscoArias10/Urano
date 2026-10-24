@@ -1,6 +1,7 @@
 import React from 'react';
 import { StickyNote, FileText, Image } from 'lucide-react';
 import { Tooltip } from '../common/Tooltip';
+import { useT } from '../../stores/localeStore';
 
 export type CanvasCardMenuType = 'text' | 'note' | 'media';
 
@@ -22,39 +23,40 @@ export const CanvasCardMenu: React.FC<CanvasCardMenuProps> = ({
   onAddMediaCard,
   onDragStartType,
 }) => {
+  const t = useT();
   return (
     <div className="canvas-card-menu">
-      <Tooltip content="Añadir tarjeta (clic o arrastrar al lienzo)" position="top">
+      <Tooltip content={t('canvas.cardMenu.addCardHint')} position="top">
         <div
           onClick={onAddTextCard}
           draggable
           onDragStart={(e) => onDragStartType('text', e)}
           className="canvas-card-menu-button mod-draggable"
-          title="Añadir tarjeta"
+          title={t('canvas.menu.addCard')}
         >
           <StickyNote size={18} />
         </div>
       </Tooltip>
 
-      <Tooltip content="Añadir nota de la bóveda (clic o arrastrar al lienzo)" position="top">
+      <Tooltip content={t('canvas.cardMenu.addNoteHint')} position="top">
         <div
           onClick={onAddNoteCard}
           draggable
           onDragStart={(e) => onDragStartType('note', e)}
           className="canvas-card-menu-button mod-draggable"
-          title="Añadir nota de la bóveda"
+          title={t('canvas.menu.addNote')}
         >
           <FileText size={18} />
         </div>
       </Tooltip>
 
-      <Tooltip content="Añadir multimedia de la bóveda (clic o arrastrar al lienzo)" position="top">
+      <Tooltip content={t('canvas.cardMenu.addMediaHint')} position="top">
         <div
           onClick={onAddMediaCard}
           draggable
           onDragStart={(e) => onDragStartType('media', e)}
           className="canvas-card-menu-button mod-draggable"
-          title="Añadir multimedia de la bóveda"
+          title={t('canvas.menu.addMedia')}
         >
           <Image size={18} />
         </div>
