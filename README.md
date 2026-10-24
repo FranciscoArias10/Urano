@@ -150,6 +150,29 @@ Urano connects securely to your personal Google Drive account using OAuth 2.0 PK
 
 ---
 
+## 🌍 Idiomas
+
+Urano habla el idioma que elijas en **Ajustes → General → Idioma**. El cambio se aplica al instante en toda la interfaz (barra superior, pestañas, explorador, menús contextuales, Canvas y la propia ventana de Ajustes), sin reiniciar. El idioma se guarda en `localStorage` (`urano_language`) y en `.urano/settings.json` de la bóveda.
+
+El catálogo replica el de Obsidian (51 idiomas con su autónimo: *Español*, *Deutsch*, *日本語*, *العربية*…). Urano incluye diccionarios completos para `en` y `es`; cualquier otro idioma muestra en inglés los textos que aún no tienen traducción.
+
+### Añadir o corregir un idioma sin recompilar
+
+1. Abre la carpeta `.urano/locales/` de tu bóveda (el enlace *"Learn how to add a new language to Urano."* de Ajustes la abre por ti).
+2. Crea `<código>.json`, por ejemplo `fr.json`, `pt-br.json` o `es.json` si solo quieres corregir una cadena. Las claves son las de [`src/locales/en.json`](src/locales/en.json); puedes anidarlas o escribirlas planas con puntos (`"settings.general.language": "Langue"`). Solo necesitas las claves que quieras cambiar: el resto cae en inglés.
+3. Para un idioma que no está en el catálogo, añade un bloque `_meta`:
+
+```json
+{
+  "_meta": { "name": "Esperanto", "nativeName": "Esperanto", "dir": "ltr" },
+  "settings": { "general": { "language": "Lingvo" } }
+}
+```
+
+4. Vuelve a abrir la bóveda (o reinicia Urano): el idioma aparece en el desplegable y tus textos se superponen a los embebidos. `dir: "rtl"` activa la disposición de derecha a izquierda de menús y modales, como en Obsidian.
+
+Para contribuir un idioma al repositorio, copia tu archivo a `src/locales/<código>.json` y ejecuta `npm run i18n:check`, que lista las claves que faltan respecto a `en.json`.
+
 ## 📂 Included Sample Vault
 
 A ready-to-use sample vault is provided in `./sample-vault` with interconnected notes, LaTeX math formulas, callout examples, and wikilinks to immediately test graph visualization and live editing.
