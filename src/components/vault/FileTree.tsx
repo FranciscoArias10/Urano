@@ -232,7 +232,11 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
   const handleCreateNewNote = async () => {
     const { path } = await createUntitledNote();
     if (path) {
-      setRenamingPath(path);
+      if (onOpenInNewTab) {
+        onOpenInNewTab(path);
+      } else {
+        selectFile(path);
+      }
     }
   };
 
@@ -528,7 +532,13 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           action: async () => {
             const { path } = await createUntitledNote(item.path);
             ctx?.setFolderOpen(item.path, true);
-            if (path) ctx?.setRenamingPath(path);
+            if (path) {
+              if (ctx?.onOpenInNewTab) {
+                ctx.onOpenInNewTab(path);
+              } else {
+                selectFile(path);
+              }
+            }
           },
         },
         {
@@ -727,7 +737,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           isDragTarget ? 'bg-orange-500/20 ring-1 ring-orange-500' : ''
         } ${
           isSelected
-            ? 'bg-orange-500/15 text-orange-400 font-medium rounded-r-md'
+            ? 'bg-[#363636] text-white font-medium rounded-md'
             : 'text-obsidian-text hover:bg-obsidian-hover rounded-md'
         }`}
       >
