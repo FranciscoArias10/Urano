@@ -7,6 +7,7 @@ import {
   WidgetType,
 } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/state';
+import { t } from '../locales/i18n';
 
 class CodeCopyWidget extends WidgetType {
   constructor(readonly getCode: () => string) {
@@ -20,7 +21,7 @@ class CodeCopyWidget extends WidgetType {
     const copyBtn = document.createElement('button');
     copyBtn.className = 'copy-code-button';
     copyBtn.type = 'button';
-    copyBtn.title = 'Copiar código';
+    copyBtn.title = t('codeBlock.copyCode');
     copyBtn.innerHTML = `
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect width="13" height="13" x="9" y="9" rx="2" ry="2"/>

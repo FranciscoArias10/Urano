@@ -16,6 +16,7 @@ import {
   Quote,
   Link,
 } from 'lucide-react';
+import { useT } from '../../stores/localeStore';
 
 export interface FormattingMenuProps {
   view: EditorView | null;
@@ -31,6 +32,7 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
   onClose,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
+  const t = useT();
 
   // Close when clicking outside
   useEffect(() => {
@@ -48,7 +50,11 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
   if (!isOpen || !position || !view) return null;
 
   // Helper to wrap selected text with prefix & suffix (e.g. **bold**, ==highlight==, etc.)
-  const applyInlineWrap = (prefix: string, suffix: string, defaultPlaceholder = 'texto') => {
+  const applyInlineWrap = (
+    prefix: string,
+    suffix: string,
+    defaultPlaceholder: string = t('formattingMenu.placeholder.text')
+  ) => {
     const selection = view.state.selection.main;
     const selectedText = view.state.sliceDoc(selection.from, selection.to);
 
@@ -165,7 +171,8 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
   const applyCodeBlock = () => {
     const selection = view.state.selection.main;
     const line = view.state.doc.lineAt(selection.from);
-    const selectedText = view.state.sliceDoc(selection.from, selection.to) || '// escribe tu código aquí';
+    const selectedText = view.state.sliceDoc(selection.from, selection.to) ||
+      t('formattingMenu.placeholder.code');
     const prefix = line.text.trim().length > 0 ? '\n```javascript\n' : '```javascript\n';
     const codeBlock = `${prefix}${selectedText}\n\`\`\`\n`;
 
@@ -190,128 +197,136 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
       className="fixed z-50 bg-obsidian-sidebar border border-obsidian-border rounded-xl shadow-2xl p-1.5 w-64 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 text-xs select-none"
     >
       <div className="px-2 py-1 text-[10px] uppercase font-bold tracking-wider text-obsidian-muted border-b border-obsidian-border/50 mb-1 flex items-center justify-between">
-        <span>Formato de Texto</span>
+        <span>{t('formattingMenu.title')}</span>
         <span className="text-orange-500 font-semibold">Urano</span>
       </div>
 
       {/* Inline styles group */}
       <div className="grid grid-cols-4 gap-1 p-1 bg-obsidian-bg rounded-lg mb-1.5 border border-obsidian-border/40">
         <button
-          onClick={() => applyInlineWrap('==', '==', 'resaltado')}
+          onClick={() => applyInlineWrap('==', '==', t('formattingMenu.placeholder.highlight'))}
           className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-orange-500/20 text-orange-400 hover:text-orange-300 transition-colors"
-          title="Resaltar texto (==texto==)"
+          title={t('formattingMenu.highlightTooltip')}
         >
           <Highlighter className="w-4 h-4" />
-          <span className="text-[9px] mt-0.5">Resaltar</span>
+          <span className="text-[9px] mt-0.5">{t('formattingMenu.highlight')}</span>
         </button>
         <button
-          onClick={() => applyInlineWrap('**', '**', 'negrita')}
+          onClick={() => applyInlineWrap('**', '**', t('formattingMenu.placeholder.bold'))}
           className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors"
-          title="Negrita (**texto**)"
+          title={t('formattingMenu.boldTooltip')}
         >
           <Bold className="w-4 h-4" />
-          <span className="text-[9px] mt-0.5">Negrita</span>
+          <span className="text-[9px] mt-0.5">{t('formattingMenu.bold')}</span>
         </button>
         <button
-          onClick={() => applyInlineWrap('*', '*', 'cursiva')}
+          onClick={() => applyInlineWrap('*', '*', t('formattingMenu.placeholder.italic'))}
           className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors"
-          title="Cursiva (*texto*)"
+          title={t('formattingMenu.italicTooltip')}
         >
           <Italic className="w-4 h-4" />
-          <span className="text-[9px] mt-0.5">Cursiva</span>
+          <span className="text-[9px] mt-0.5">{t('formattingMenu.italic')}</span>
         </button>
         <button
-          onClick={() => applyInlineWrap('~~', '~~', 'tachado')}
+          onClick={() =>
+            applyInlineWrap('~~', '~~', t('formattingMenu.placeholder.strikethrough'))
+          }
           className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors"
-          title="Tachado (~~texto~~)"
+          title={t('formattingMenu.strikethroughTooltip')}
         >
           <Strikethrough className="w-4 h-4" />
-          <span className="text-[9px] mt-0.5">Tachado</span>
+          <span className="text-[9px] mt-0.5">{t('formattingMenu.strikethrough')}</span>
         </button>
       </div>
 
       {/* Headings */}
       <div className="space-y-0.5 mb-1.5">
-        <div className="px-2 py-0.5 text-[10px] text-obsidian-muted font-medium">Tamaño / Encabezados</div>
+        <div className="px-2 py-0.5 text-[10px] text-obsidian-muted font-medium">
+          {t('formattingMenu.sectionHeadings')}
+        </div>
         <button
           onClick={() => applyLinePrefix('# ')}
           className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-orange-500/10 hover:text-orange-300 text-obsidian-text transition-colors text-left"
         >
           <Heading1 className="w-4 h-4 text-orange-400 shrink-0" />
-          <span className="font-bold text-sm">Título Principal (H1)</span>
+          <span className="font-bold text-sm">{t('formattingMenu.heading1')}</span>
         </button>
         <button
           onClick={() => applyLinePrefix('## ')}
           className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-orange-500/10 hover:text-orange-300 text-obsidian-text transition-colors text-left"
         >
           <Heading2 className="w-4 h-4 text-orange-400 shrink-0" />
-          <span className="font-semibold text-xs">Subtítulo (H2)</span>
+          <span className="font-semibold text-xs">{t('formattingMenu.heading2')}</span>
         </button>
         <button
           onClick={() => applyLinePrefix('### ')}
           className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-orange-500/10 hover:text-orange-300 text-obsidian-text transition-colors text-left"
         >
           <Heading3 className="w-4 h-4 text-orange-400 shrink-0" />
-          <span className="font-medium text-xs">Sección (H3)</span>
+          <span className="font-medium text-xs">{t('formattingMenu.heading3')}</span>
         </button>
       </div>
 
       {/* Lists & Bullets */}
       <div className="space-y-0.5 mb-1.5 border-t border-obsidian-border/50 pt-1">
-        <div className="px-2 py-0.5 text-[10px] text-obsidian-muted font-medium">Listas y Viñetas</div>
+        <div className="px-2 py-0.5 text-[10px] text-obsidian-muted font-medium">
+          {t('formattingMenu.sectionLists')}
+        </div>
         <button
           onClick={() => applyLinePrefix('- ')}
           className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors text-left"
         >
           <List className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-          <span>Lista con viñetas</span>
+          <span>{t('formattingMenu.bulletList')}</span>
         </button>
         <button
           onClick={() => applyLinePrefix('1. ')}
           className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors text-left"
         >
           <ListOrdered className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-          <span>Lista numerada</span>
+          <span>{t('formattingMenu.numberedList')}</span>
         </button>
         <button
           onClick={() => applyLinePrefix('- [ ] ')}
           className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors text-left"
         >
           <CheckSquare className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-          <span>Lista de tareas (checkbox)</span>
+          <span>{t('formattingMenu.taskList')}</span>
         </button>
       </div>
 
       {/* Math, Code & Advanced */}
       <div className="space-y-0.5 border-t border-obsidian-border/50 pt-1">
-        <div className="px-2 py-0.5 text-[10px] text-obsidian-muted font-medium">Ecuaciones y Código</div>
+        <div className="px-2 py-0.5 text-[10px] text-obsidian-muted font-medium">
+          {t('formattingMenu.sectionAdvanced')}
+        </div>
         <button
           onClick={applyMathBlock}
           className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors text-left"
         >
           <Sigma className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-          <span>Ecuación matemática ($$...)</span>
+          <span>{t('formattingMenu.mathBlock')}</span>
         </button>
         <button
           onClick={applyCodeBlock}
           className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors text-left"
         >
           <Code className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-          <span>Bloque de código (```)</span>
+          <span>{t('formattingMenu.codeBlock')}</span>
         </button>
         <button
-          onClick={() => applyInlineWrap('[[', ']]', 'Nota')}
+          onClick={() => applyInlineWrap('[[', ']]', t('formattingMenu.placeholder.note'))}
           className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-orange-500/10 text-orange-400 hover:text-orange-300 transition-colors text-left font-medium"
         >
           <Link className="w-3.5 h-3.5 shrink-0" />
-          <span>Enlace bidireccional [[...]]</span>
+          <span>{t('formattingMenu.wikilink')}</span>
         </button>
         <button
           onClick={() => applyLinePrefix('> ')}
           className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors text-left"
         >
           <Quote className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-          <span>Cita en bloque</span>
+          <span>{t('formattingMenu.quote')}</span>
         </button>
       </div>
     </div>

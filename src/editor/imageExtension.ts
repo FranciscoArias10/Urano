@@ -16,6 +16,7 @@ import {
 import { useVaultStore } from '../stores/vaultStore';
 import { resolveAttachmentDir } from '../stores/settingsStore';
 import { useNoticeStore } from '../components/common/Notice';
+import { t } from '../locales/i18n';
 import { FileItem } from '../types';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 
@@ -519,8 +520,8 @@ export class ImageWidget extends WidgetType {
     const zoomBtn = document.createElement('button');
     zoomBtn.type = 'button';
     zoomBtn.className = 'embed-action image-embed-action image-zoom-button';
-    zoomBtn.title = 'Ampliar imagen';
-    zoomBtn.setAttribute('aria-label', 'Ampliar imagen');
+    zoomBtn.title = t('imageEmbed.zoom');
+    zoomBtn.setAttribute('aria-label', t('imageEmbed.zoom'));
     zoomBtn.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zoom-in"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="11" x2="11" y1="8" y2="14"/><line x1="8" x2="14" y1="11" y2="11"/></svg>';
     zoomBtn.addEventListener('mousedown', (e) => {
@@ -545,8 +546,8 @@ export class ImageWidget extends WidgetType {
     const editBtn = document.createElement('button');
     editBtn.type = 'button';
     editBtn.className = 'embed-action image-embed-action edit-block-button';
-    editBtn.title = 'Editar bloque';
-    editBtn.setAttribute('aria-label', 'Editar bloque');
+    editBtn.title = t('imageEmbed.editBlock');
+    editBtn.setAttribute('aria-label', t('imageEmbed.editBlock'));
     editBtn.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-code-2"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>';
     editBtn.addEventListener('mousedown', (e) => {
@@ -574,7 +575,7 @@ export class ImageWidget extends WidgetType {
      * --------------------------------------------------------------- */
     const resizeCorner = document.createElement('div');
     resizeCorner.className = 'image-resize-corner cm-image-resize-handle';
-    resizeCorner.title = 'Arrastrar para redimensionar';
+    resizeCorner.title = t('imageEmbed.dragToResize');
 
     // Interactive mouse drag resizing with MIN/MAX constraints and size tooltip
     resizeCorner.addEventListener('mousedown', (e) => {
@@ -969,7 +970,7 @@ export async function saveClipboardImageToVault(file: File): Promise<string | nu
     console.error('[Urano] Error guardando la imagen del portapapeles:', err);
     useNoticeStore
       .getState()
-      .showNotice('Error al guardar imagen del portapapeles', 3000, 'error');
+      .showNotice(t('imageEmbed.notices.pasteSaveFailed'), 3000, 'error');
     return null;
   }
 }
@@ -1007,14 +1008,14 @@ export async function procesarPegadoDeImagen(
 
     useNoticeStore
       .getState()
-      .showNotice(`Imagen guardada: ${nombreImagen}`, 2500, 'success');
+      .showNotice(t('imageEmbed.notices.saved', { name: nombreImagen }), 2500, 'success');
 
     return nombreImagen;
   } catch (err) {
     console.error('[Urano] Error procesando pegado de imagen:', err);
     useNoticeStore
       .getState()
-      .showNotice('Error al guardar imagen del portapapeles', 3000, 'error');
+      .showNotice(t('imageEmbed.notices.pasteSaveFailed'), 3000, 'error');
     return null;
   }
 }
@@ -1154,7 +1155,7 @@ export function createImageDropPasteHandler() {
             useNoticeStore
               .getState()
               .showNotice(
-                `${savedNames.length} imagen(es) añadida(s) al documento`,
+                t('imageEmbed.notices.addedCount', { count: savedNames.length }),
                 2500,
                 'success'
               );
@@ -1163,7 +1164,7 @@ export function createImageDropPasteHandler() {
             console.error('[Urano] Error guardando imagen soltada:', err);
             useNoticeStore
               .getState()
-              .showNotice('Error al guardar imagen soltada', 3000, 'error');
+              .showNotice(t('imageEmbed.notices.dropSaveFailed'), 3000, 'error');
           });
 
         return true;
@@ -1191,7 +1192,7 @@ export function createImageDropPasteHandler() {
 
           useNoticeStore
             .getState()
-            .showNotice(`Imagen añadida: ${fileName}`, 2000, 'success');
+            .showNotice(t('imageEmbed.notices.added', { name: fileName }), 2000, 'success');
           return true;
         } else if (
           uranoPath.endsWith('.md') ||

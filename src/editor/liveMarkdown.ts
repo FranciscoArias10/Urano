@@ -7,6 +7,7 @@ import {
   WidgetType,
 } from '@codemirror/view';
 import { Range } from '@codemirror/state';
+import { t } from '../locales/i18n';
 
 // Line decorations for Obsidian-style typography
 const h1Line = Decoration.line({ class: 'cm-h1-line' });
@@ -46,7 +47,7 @@ class FootnoteWidget extends WidgetType {
     sup.className = 'cm-footnote-ref';
     sup.textContent = `[${this.n}]`;
     sup.setAttribute('data-footnote', this.n);
-    sup.title = `Nota al pie [${this.n}] (clic para ir a la definición)`;
+    sup.title = t('editor.footnote.tooltip', { n: this.n });
 
     sup.addEventListener('mousedown', (e) => {
       e.preventDefault();

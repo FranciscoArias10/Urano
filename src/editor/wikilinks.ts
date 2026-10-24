@@ -8,6 +8,17 @@ import {
 } from '@codemirror/view';
 import { Range } from '@codemirror/state';
 import { isImagePath } from '../services/storageAdapter';
+import { t } from '../locales/i18n';
+
+// Los textos traducidos se insertan vía innerHTML: escapar por si un paquete de idioma
+// de la bóveda (.urano/locales) trae marcado.
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 // Regex for [[Target Note]] or [[Target Note|Display Text]], strictly ignoring ![[Embeds]]
 const WIKILINK_REGEX = /(?<!\!)\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
@@ -53,7 +64,7 @@ class BaseEmbedWidget extends WidgetType {
     const right = document.createElement('div');
     right.className =
       'text-[11px] text-stone-400 hover:text-orange-400 flex items-center gap-1 font-medium transition-colors';
-    right.innerHTML = `<span>Abrir base de datos</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+    right.innerHTML = `<span>${escapeHtml(t('editor.baseEmbed.open'))}</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
 
     header.appendChild(left);
     header.appendChild(right);
@@ -61,7 +72,7 @@ class BaseEmbedWidget extends WidgetType {
 
     const desc = document.createElement('div');
     desc.className = 'pt-2 text-[11px] text-stone-400 flex items-center justify-between';
-    desc.innerHTML = `<span>Vista de tabla de documentos del Vault</span><span class="text-stone-500 font-mono text-[10px]">${this.fileName}</span>`;
+    desc.innerHTML = `<span>${escapeHtml(t('editor.baseEmbed.description'))}</span><span class="text-stone-500 font-mono text-[10px]">${this.fileName}</span>`;
     card.appendChild(desc);
 
     card.addEventListener('click', (e) => {

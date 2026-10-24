@@ -6,6 +6,7 @@ import {
 } from '@codemirror/view';
 import { StateField, RangeSetBuilder, EditorState } from '@codemirror/state';
 import katex from 'katex';
+import { t } from '../locales/i18n';
 
 /**
  * Widget for multiline block equations ($$ ... $$)
@@ -36,9 +37,7 @@ class MathBlockWidget extends WidgetType {
     codeBtn.style.cssText =
       'position: absolute; top: 8px; right: 12px; font-family: monospace; font-size: 13px; font-weight: 600; color: #888; background: transparent; border: none; cursor: pointer; padding: 2px 6px; border-radius: 4px; user-select: none; transition: color 0.15s, background-color 0.15s, opacity 0.15s; z-index: 10;';
     codeBtn.textContent = '</>';
-    codeBtn.title = this.isExpanded
-      ? 'Ocultar código fuente LaTeX'
-      : 'Editar código fuente LaTeX';
+    codeBtn.title = this.isExpanded ? t('math.hideSource') : t('math.editSource');
 
     // In Estado 2 (collapsed), button is hidden until hovering the box
     if (!this.isExpanded) {
@@ -141,7 +140,7 @@ class MathInlineWidget extends WidgetType {
   toDOM(view: EditorView): HTMLElement {
     const dom = document.createElement('span');
     dom.className = 'cm-katex-inline-widget select-none cursor-pointer';
-    dom.title = 'Haz clic para editar LaTeX';
+    dom.title = t('math.clickToEdit');
 
     try {
       katex.render(this.math.trim(), dom, {

@@ -27,6 +27,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 import { useNoticeStore } from '../common/Notice';
+import { useT } from '../../stores/localeStore';
 import { ImageLightbox } from '../common/ImageLightbox';
 import { FileItem } from '../../types';
 import {
@@ -190,8 +191,11 @@ export const Editor: React.FC<EditorProps> = ({
   } = useVaultStore();
 
   const { showNotice } = useNoticeStore();
+  const t = useT();
 
-  const cleanTitle = activeFileName ? activeFileName.replace(/\.md$/i, '') : 'Sin título';
+  const cleanTitle = activeFileName
+    ? activeFileName.replace(/\.md$/i, '')
+    : t('common.untitled');
 
   // Compute available notes for autocompletion
   const availableNotes = useMemo(() => {
@@ -558,7 +562,7 @@ export const Editor: React.FC<EditorProps> = ({
 
       const items: MenuItemData[] = [
         {
-          title: 'Copiar imagen',
+          title: t('editor.image.copyImage'),
           icon: <Copy size={14} />,
           action: async () => {
             try {
@@ -570,15 +574,15 @@ export const Editor: React.FC<EditorProps> = ({
                 blob = await getStorageAdapter().readBinary(filePath);
               }
               await copyImageBlobToClipboard(blob);
-              showNotice('Imagen copiada al portapapeles', 2000, 'success');
+              showNotice(t('editor.notices.imageCopied'), 2000, 'success');
             } catch (err) {
               console.error('Error copying image:', err);
-              showNotice('Error al copiar imagen', 2500, 'error');
+              showNotice(t('editor.notices.imageCopyFailed'), 2500, 'error');
             }
           },
         },
         {
-          title: 'Abrir en una pestaña nueva',
+          title: t('editor.contextMenu.openInNewTab'),
           icon: <FileImage size={14} />,
           action: () => {
             if (eventOnOpen) {
@@ -590,7 +594,7 @@ export const Editor: React.FC<EditorProps> = ({
         },
         { type: 'separator' },
         {
-          title: 'Eliminar del documento',
+          title: t('editor.image.removeFromDocument'),
           icon: <ImageMinus size={14} />,
           action: () => {
             if (viewRef.current) {
@@ -601,12 +605,12 @@ export const Editor: React.FC<EditorProps> = ({
           },
         },
         {
-          title: 'Eliminar archivo',
+          title: t('editor.image.deleteFile'),
           icon: <Trash2 size={14} />,
           isWarning: true,
           action: async () => {
             await deleteItem(filePath);
-            showNotice('Archivo eliminado', 2000, 'info');
+            showNotice(t('editor.notices.fileDeleted'), 2000, 'info');
             if (viewRef.current) {
               viewRef.current.dispatch({
                 changes: { from, to, insert: '' },
@@ -623,7 +627,7 @@ export const Editor: React.FC<EditorProps> = ({
     return () => {
       window.removeEventListener('urano-image-contextmenu', handleImageContextMenu);
     };
-  }, [onOpenInNewTab, deleteItem, showNotice]);
+  }, [onOpenInNewTab, deleteItem, showNotice, t]);
 
   // Handle .inline-title keyboard events (Enter / Escape)
   const handleTitleKeyDown = async (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -634,7 +638,7 @@ export const Editor: React.FC<EditorProps> = ({
       if (newTitle && newTitle !== cleanTitle && activeFile) {
         const result = await renameNoteWithLinkRefactor(activeFile, newTitle);
         if (!result.success) {
-          showNotice(result.error || 'Nombre de archivo inválido', 4000, 'error');
+          showNotice(result.error || t('editor.notices.invalidFileName'), 4000, 'error');
           if (inlineTitleRef.current) {
             inlineTitleRef.current.innerText = cleanTitle;
           }
@@ -666,14 +670,14 @@ export const Editor: React.FC<EditorProps> = ({
       if (inlineTitleRef.current) {
         inlineTitleRef.current.innerText = cleanTitle;
       }
-      showNotice('El nombre de archivo no puede estar vacío.', 3500, 'error');
+      showNotice(t('editor.notices.emptyFileName'), 3500, 'error');
       return;
     }
 
     if (newTitle !== cleanTitle && activeFile) {
       const result = await renameNoteWithLinkRefactor(activeFile, newTitle);
       if (!result.success) {
-        showNotice(result.error || 'Nombre de archivo inválido', 4000, 'error');
+        showNotice(result.error || t('editor.notices.invalidFileName'), 4000, 'error');
         if (inlineTitleRef.current) {
           inlineTitleRef.current.innerText = cleanTitle;
         }
@@ -1210,10 +1214,11 @@ export const Editor: React.FC<EditorProps> = ({
     const line = view.state.doc.lineAt(sel.from);
     const prefix = line.text.trim().length > 0 ? '\n' : '';
     const selected = view.state.sliceDoc(sel.from, sel.to);
-    const content = selected ? selected : 'Contenido';
-    const insert = `${prefix}> [!NOTE] Título\n> ${content}\n`;
+    const content = selected ? selected : t('editor.insert.calloutContent');
+    const calloutTitle = t('editor.insert.calloutTitle');
+    const insert = `${prefix}> [!NOTE] ${calloutTitle}\n> ${content}\n`;
     const titleStart = sel.from + prefix.length + 10;
-    const titleEnd = titleStart + 6;
+    const titleEnd = titleStart + calloutTitle.length;
     view.dispatch({
       changes: { from: sel.from, to: sel.to, insert },
       selection: { anchor: titleStart, head: titleEnd },
@@ -1319,10 +1324,10 @@ export const Editor: React.FC<EditorProps> = ({
       lastDispatchedDocRef.current = newDoc;
       updateContent(newDoc);
       view.focus();
-      showNotice(`Base de datos creada: ${res.fileName}`, 3000, 'success');
+      showNotice(t('editor.notices.baseCreated', { name: res.fileName }), 3000, 'success');
     } catch (err) {
       console.error('Error al insertar nueva base:', err);
-      showNotice('Error al crear nueva base', 3000, 'error');
+      showNotice(t('editor.notices.baseCreateFailed'), 3000, 'error');
     }
   };
 
@@ -1514,12 +1519,12 @@ export const Editor: React.FC<EditorProps> = ({
     const view = viewRef.current || getActiveEditorView();
     if (!view || !selectedText) return;
 
-    const noteTitle = window.prompt('Título de la nueva nota:');
+    const noteTitle = window.prompt(t('editor.prompt.newNoteTitle'));
     if (!noteTitle || !noteTitle.trim()) return;
 
     const cleanName = noteTitle.trim().replace(ILLEGAL_FILENAME_CHARS, '');
     if (!cleanName) {
-      showNotice('Nombre de nota no válido', 2500, 'warning');
+      showNotice(t('editor.notices.invalidNoteName'), 2500, 'warning');
       return;
     }
 
@@ -1545,10 +1550,10 @@ export const Editor: React.FC<EditorProps> = ({
       lastDispatchedDocRef.current = newDoc;
       updateContent(newDoc);
       view.focus();
-      showNotice(`Nota "${cleanName}" extraída con éxito`, 2500, 'success');
+      showNotice(t('editor.notices.noteExtracted', { name: cleanName }), 2500, 'success');
     } catch (err) {
       console.error('Error al extraer selección:', err);
-      showNotice('Error al extraer nota', 3000, 'error');
+      showNotice(t('editor.notices.noteExtractFailed'), 3000, 'error');
     }
   };
 
@@ -1777,26 +1782,26 @@ export const Editor: React.FC<EditorProps> = ({
     if (clickedWikilink) {
       items.push(
         {
-          title: 'Abrir enlace',
+          title: t('editor.contextMenu.openLink'),
           icon: <ExternalLink size={14} />,
           action: () => onWikilinkClick(clickedWikilink!),
         },
         {
-          title: 'Abrir en una pestaña nueva',
+          title: t('editor.contextMenu.openInNewTab'),
           icon: <PlusCircle size={14} />,
           action: () => onOpenInNewTab?.(clickedWikilink!),
         },
         {
-          title: 'Abrir a la derecha',
+          title: t('editor.contextMenu.openToTheRight'),
           icon: <Columns size={14} />,
           action: () => onOpenToRight?.(clickedWikilink!),
         },
         {
-          title: 'Copiar enlace de Urano',
+          title: t('editor.contextMenu.copyUranoUrl'),
           icon: <Copy size={14} />,
           action: () => {
             navigator.clipboard.writeText(`[[${clickedWikilink}]]`);
-            showNotice('Enlace copiado al portapapeles', 2500, 'success');
+            showNotice(t('editor.notices.linkCopied'), 2500, 'success');
           },
         },
         { type: 'separator' }
@@ -1808,12 +1813,12 @@ export const Editor: React.FC<EditorProps> = ({
     // =========================================================================
     items.push(
       {
-        title: 'Añadir enlace',
+        title: t('editor.contextMenu.addLink'),
         icon: <Link size={14} />,
         action: handleAddInternalLink,
       },
       {
-        title: 'Añadir enlace externo',
+        title: t('editor.contextMenu.addExternalLink'),
         icon: <ExternalLink size={14} />,
         action: handleAddExternalLink,
       }
@@ -1828,12 +1833,12 @@ export const Editor: React.FC<EditorProps> = ({
 
       items.push(
         {
-          title: `Buscar "${safeTitle}"`,
+          title: t('editor.contextMenu.search', { query: safeTitle }),
           icon: <Search size={14} />,
           action: () => handleSearchSelection(selectedText.trim()),
         },
         {
-          title: 'Extraer selección actual...',
+          title: t('editor.contextMenu.extractSelection'),
           icon: <FolderInput size={14} />,
           action: () =>
             handleExtractSelection(
@@ -1855,30 +1860,30 @@ export const Editor: React.FC<EditorProps> = ({
     // =========================================================================
     items.push(
       {
-        title: 'Formato',
+        title: t('editor.contextMenu.format'),
         icon: <Paintbrush size={14} />,
         submenu: [
           {
-            title: 'Negrita',
+            title: t('editor.formatting.bold'),
             icon: <Bold size={14} />,
             action: () => toggleInlineFormatting('**', '__'),
           },
           {
-            title: 'Cursiva',
+            title: t('editor.formatting.italic'),
             icon: <Italic size={14} />,
             action: () => toggleInlineFormatting('*', '_'),
           },
           {
-            title: 'Tachado',
+            title: t('editor.formatting.strikethrough'),
             icon: <Strikethrough size={14} />,
             action: () => toggleInlineFormatting('~~'),
           },
           {
-            title: 'Resaltado',
+            title: t('editor.formatting.highlight'),
             icon: <Highlighter size={14} />,
             submenu: [
               {
-                title: 'Default (Por defecto)',
+                title: t('editor.highlightColor.default'),
                 icon: (
                   <span
                     className="w-2.5 h-2.5 rounded-full inline-block border border-yellow-600/40"
@@ -1888,7 +1893,7 @@ export const Editor: React.FC<EditorProps> = ({
                 action: () => applyHighlight('default'),
               },
               {
-                title: 'Red (Rojo)',
+                title: t('editor.highlightColor.red'),
                 icon: (
                   <span
                     className="w-2.5 h-2.5 rounded-full inline-block border border-red-600/40"
@@ -1898,7 +1903,7 @@ export const Editor: React.FC<EditorProps> = ({
                 action: () => applyHighlight('red'),
               },
               {
-                title: 'Orange (Naranja)',
+                title: t('editor.highlightColor.orange'),
                 icon: (
                   <span
                     className="w-2.5 h-2.5 rounded-full inline-block border border-orange-600/40"
@@ -1908,7 +1913,7 @@ export const Editor: React.FC<EditorProps> = ({
                 action: () => applyHighlight('orange'),
               },
               {
-                title: 'Yellow (Amarillo)',
+                title: t('editor.highlightColor.yellow'),
                 icon: (
                   <span
                     className="w-2.5 h-2.5 rounded-full inline-block border border-yellow-600/40"
@@ -1918,7 +1923,7 @@ export const Editor: React.FC<EditorProps> = ({
                 action: () => applyHighlight('yellow'),
               },
               {
-                title: 'Green (Verde)',
+                title: t('editor.highlightColor.green'),
                 icon: (
                   <span
                     className="w-2.5 h-2.5 rounded-full inline-block border border-green-600/40"
@@ -1928,7 +1933,7 @@ export const Editor: React.FC<EditorProps> = ({
                 action: () => applyHighlight('green'),
               },
               {
-                title: 'Blue (Azul)',
+                title: t('editor.highlightColor.blue'),
                 icon: (
                   <span
                     className="w-2.5 h-2.5 rounded-full inline-block border border-blue-600/40"
@@ -1938,7 +1943,7 @@ export const Editor: React.FC<EditorProps> = ({
                 action: () => applyHighlight('blue'),
               },
               {
-                title: 'Purple (Púrpura)',
+                title: t('editor.highlightColor.purple'),
                 icon: (
                   <span
                     className="w-2.5 h-2.5 rounded-full inline-block border border-purple-600/40"
@@ -1951,127 +1956,127 @@ export const Editor: React.FC<EditorProps> = ({
           },
           { type: 'separator' },
           {
-            title: 'Código',
+            title: t('editor.formatting.code'),
             icon: <Code size={14} />,
             action: () => toggleInlineFormatting('`'),
           },
           {
-            title: 'Matemáticas',
+            title: t('editor.formatting.math'),
             icon: <Sigma size={14} />,
             action: () => toggleInlineFormatting('$'),
           },
           {
-            title: 'Comentario',
+            title: t('editor.formatting.comment'),
             icon: <MessageSquare size={14} />,
             action: () => toggleInlineFormatting('%%'),
           },
           { type: 'separator' },
           {
-            title: 'Borrar formato',
+            title: t('editor.formatting.clearFormatting'),
             icon: <Eraser size={14} />,
             action: handleClearFormatting,
           },
         ],
       },
       {
-        title: 'Párrafo',
+        title: t('editor.contextMenu.paragraph'),
         icon: <Pilcrow size={14} />,
         submenu: [
           {
-            title: 'Texto normal',
+            title: t('editor.paragraph.body'),
             icon: <Pilcrow size={14} />,
             action: () => applyParagraphPrefix('body'),
           },
           {
-            title: 'Encabezado 1',
+            title: t('editor.paragraph.heading', { level: 1 }),
             icon: <Heading1 size={14} />,
             action: () => applyParagraphPrefix('h1'),
           },
           {
-            title: 'Encabezado 2',
+            title: t('editor.paragraph.heading', { level: 2 }),
             icon: <Heading2 size={14} />,
             action: () => applyParagraphPrefix('h2'),
           },
           {
-            title: 'Encabezado 3',
+            title: t('editor.paragraph.heading', { level: 3 }),
             icon: <Heading3 size={14} />,
             action: () => applyParagraphPrefix('h3'),
           },
           {
-            title: 'Encabezado 4',
+            title: t('editor.paragraph.heading', { level: 4 }),
             icon: <Heading4 size={14} />,
             action: () => applyParagraphPrefix('h4'),
           },
           {
-            title: 'Encabezado 5',
+            title: t('editor.paragraph.heading', { level: 5 }),
             icon: <Heading5 size={14} />,
             action: () => applyParagraphPrefix('h5'),
           },
           {
-            title: 'Encabezado 6',
+            title: t('editor.paragraph.heading', { level: 6 }),
             icon: <Heading6 size={14} />,
             action: () => applyParagraphPrefix('h6'),
           },
           { type: 'separator' },
           {
-            title: 'Lista con viñetas',
+            title: t('editor.paragraph.bulletList'),
             icon: <List size={14} />,
             action: () => applyParagraphPrefix('bullet'),
           },
           {
-            title: 'Lista numerada',
+            title: t('editor.paragraph.numberedList'),
             icon: <ListOrdered size={14} />,
             action: () => applyParagraphPrefix('numbered'),
           },
           {
-            title: 'Lista de tareas',
+            title: t('editor.paragraph.taskList'),
             icon: <ListTodo size={14} />,
             action: () => applyParagraphPrefix('todo'),
           },
           {
-            title: 'Cita',
+            title: t('editor.paragraph.quote'),
             icon: <Quote size={14} />,
             action: () => applyParagraphPrefix('quote'),
           },
         ],
       },
       {
-        title: 'Insertar',
+        title: t('editor.contextMenu.insert'),
         icon: <ListPlus size={14} />,
         submenu: [
           {
-            title: 'Nota al pie',
+            title: t('editor.insert.footnote'),
             icon: <FilePen size={14} />,
             action: handleInsertFootnote,
           },
           {
-            title: 'Tabla',
+            title: t('editor.insert.table'),
             icon: <Table size={14} />,
             action: handleInsertTable,
           },
           {
-            title: 'Callout',
+            title: t('editor.insert.callout'),
             icon: <Quote size={14} />,
             action: handleInsertCallout,
           },
           {
-            title: 'Línea horizontal',
+            title: t('editor.insert.horizontalRule'),
             icon: <Minus size={14} />,
             action: handleInsertHr,
           },
           { type: 'separator' },
           {
-            title: 'Bloque de código',
+            title: t('editor.insert.codeBlock'),
             icon: <Code size={14} />,
             action: handleInsertCode,
           },
           {
-            title: 'Bloque matemático',
+            title: t('editor.insert.mathBlock'),
             icon: <SquareSigma size={14} />,
             action: handleInsertMath,
           },
           {
-            title: 'Nueva base',
+            title: t('editor.insert.newBase'),
             icon: <TableProperties size={14} />,
             action: handleInsertNewBase,
           },
@@ -2091,29 +2096,29 @@ export const Editor: React.FC<EditorProps> = ({
     // =========================================================================
     items.push(
       {
-        title: 'Cortar',
+        title: t('common.cut'),
         icon: <Scissors size={14} />,
         disabled: !hasSelection,
         action: handleCut,
       },
       {
-        title: 'Copiar',
+        title: t('common.copy'),
         icon: <Copy size={14} />,
         disabled: !hasSelection,
         action: handleCopy,
       },
       {
-        title: 'Pegar',
+        title: t('common.paste'),
         icon: <ClipboardCheck size={14} />,
         action: handlePaste,
       },
       {
-        title: 'Pegar sin formato',
+        title: t('editor.contextMenu.pastePlainText'),
         icon: <ClipboardType size={14} />,
         action: handlePastePlainText,
       },
       {
-        title: 'Seleccionar todo',
+        title: t('editor.contextMenu.selectAll'),
         icon: <SquareDashed size={14} />,
         action: handleSelectAll,
       }
@@ -2126,10 +2131,10 @@ export const Editor: React.FC<EditorProps> = ({
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-obsidian-muted p-8 text-center bg-obsidian-bg">
         <FileText className="w-16 h-16 mb-4 text-obsidian-border stroke-1" />
-        <h2 className="text-xl font-medium text-obsidian-text mb-2">Ninguna nota seleccionada</h2>
-        <p className="text-sm max-w-sm text-obsidian-muted">
-          Crea una nueva nota haciendo clic en '+' o presiona Ctrl+N.
-        </p>
+        <h2 className="text-xl font-medium text-obsidian-text mb-2">
+          {t('editor.emptyState.noFileOpen')}
+        </h2>
+        <p className="text-sm max-w-sm text-obsidian-muted">{t('editor.emptyState.hint')}</p>
       </div>
     );
   }
@@ -2201,7 +2206,7 @@ export const Editor: React.FC<EditorProps> = ({
           style={{ top: `${suggestCoords.top}px`, left: `${suggestCoords.left}px` }}
         >
           <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-orange-400/80 border-b border-stone-800 font-semibold bg-[#141210]">
-            Enlazar a nota del Vault
+            {t('editor.suggest.linkToNote')}
           </div>
           <div className="max-h-48 overflow-y-auto p-1 flex flex-col gap-0.5">
             {availableNotes.map((name, idx) => (

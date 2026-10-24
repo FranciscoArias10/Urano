@@ -2,6 +2,7 @@ import { StateField, RangeSetBuilder, Text } from '@codemirror/state';
 import { EditorView, Decoration, DecorationSet, WidgetType } from '@codemirror/view';
 import { MenuItemData } from '../components/common/ObsidianMenu';
 import { useNoticeStore } from '../components/common/Notice';
+import { t } from '../locales/i18n';
 import {
   Rows,
   Columns,
@@ -379,11 +380,11 @@ export class TableWidget extends WidgetType {
       const items: MenuItemData[] = [
         // Fila Submenu (1:1 with Obsidian)
         {
-          title: 'Fila',
+          title: t('table.row'),
           icon: <Rows size={14} />,
           submenu: [
             {
-              title: 'Insertar fila arriba',
+              title: t('table.addRowAbove'),
               icon: <ArrowUp size={14} />,
               action: () => {
                 if (row === 0) {
@@ -399,7 +400,7 @@ export class TableWidget extends WidgetType {
               },
             },
             {
-              title: 'Insertar fila abajo',
+              title: t('table.addRowBelow'),
               icon: <ArrowDown size={14} />,
               action: () => {
                 const newRow = new Array(totalCols).fill('');
@@ -413,7 +414,7 @@ export class TableWidget extends WidgetType {
               },
             },
             {
-              title: 'Mover fila arriba',
+              title: t('table.moveRowUp'),
               icon: <MoveUp size={14} />,
               disabled: row <= 1,
               action: () => {
@@ -426,7 +427,7 @@ export class TableWidget extends WidgetType {
               },
             },
             {
-              title: 'Mover fila abajo',
+              title: t('table.moveRowDown'),
               icon: <MoveDown size={14} />,
               disabled: row === 0 || row >= totalRows - 1,
               action: () => {
@@ -439,7 +440,7 @@ export class TableWidget extends WidgetType {
               },
             },
             {
-              title: 'Duplicar fila',
+              title: t('table.duplicateRow'),
               icon: <Copy size={14} />,
               action: () => {
                 if (row === 0) {
@@ -453,7 +454,7 @@ export class TableWidget extends WidgetType {
               },
             },
             {
-              title: 'Eliminar fila',
+              title: t('table.deleteRow'),
               icon: <Trash2 size={14} />,
               action: () => {
                 if (row === 0) {
@@ -475,11 +476,11 @@ export class TableWidget extends WidgetType {
         },
         // Columna Submenu (1:1 with Obsidian)
         {
-          title: 'Columna',
+          title: t('table.column'),
           icon: <Columns size={14} />,
           submenu: [
             {
-              title: 'Insertar columna a la izquierda',
+              title: t('table.addColumnLeft'),
               icon: <ArrowLeft size={14} />,
               action: () => {
                 currentHeaders.splice(col, 0, '');
@@ -489,7 +490,7 @@ export class TableWidget extends WidgetType {
               },
             },
             {
-              title: 'Insertar columna a la derecha',
+              title: t('table.addColumnRight'),
               icon: <ArrowRight size={14} />,
               action: () => {
                 currentHeaders.splice(col + 1, 0, '');
@@ -499,7 +500,7 @@ export class TableWidget extends WidgetType {
               },
             },
             {
-              title: 'Mover columna a la izquierda',
+              title: t('table.moveColumnLeft'),
               icon: <MoveLeft size={14} />,
               disabled: col === 0,
               action: () => {
@@ -522,7 +523,7 @@ export class TableWidget extends WidgetType {
               },
             },
             {
-              title: 'Mover columna a la derecha',
+              title: t('table.moveColumnRight'),
               icon: <MoveRight size={14} />,
               disabled: col >= totalCols - 1,
               action: () => {
@@ -545,7 +546,7 @@ export class TableWidget extends WidgetType {
               },
             },
             {
-              title: 'Duplicar columna',
+              title: t('table.duplicateColumn'),
               icon: <Copy size={14} />,
               action: () => {
                 currentHeaders.splice(col + 1, 0, currentHeaders[col]);
@@ -557,7 +558,7 @@ export class TableWidget extends WidgetType {
               },
             },
             {
-              title: 'Eliminar columna',
+              title: t('table.deleteColumn'),
               icon: <Trash2 size={14} />,
               disabled: totalCols <= 1,
               action: () => {
@@ -578,11 +579,11 @@ export class TableWidget extends WidgetType {
         },
         // Alineación de columna
         {
-          title: 'Alineación de columna',
+          title: t('table.alignment'),
           icon: <AlignLeft size={14} />,
           submenu: [
             {
-              title: 'Alinear a la izquierda',
+              title: t('table.alignLeft'),
               icon: <AlignLeft size={14} />,
               action: () => {
                 currentAlignments[col] = 'left';
@@ -590,7 +591,7 @@ export class TableWidget extends WidgetType {
               },
             },
             {
-              title: 'Centrar',
+              title: t('table.alignCenter'),
               icon: <AlignCenter size={14} />,
               action: () => {
                 currentAlignments[col] = 'center';
@@ -598,7 +599,7 @@ export class TableWidget extends WidgetType {
               },
             },
             {
-              title: 'Alinear a la derecha',
+              title: t('table.alignRight'),
               icon: <AlignRight size={14} />,
               action: () => {
                 currentAlignments[col] = 'right';
@@ -609,11 +610,11 @@ export class TableWidget extends WidgetType {
         },
         // Ordenar
         {
-          title: 'Ordenar',
+          title: t('table.sort'),
           icon: <ArrowUpDown size={14} />,
           submenu: [
             {
-              title: 'Ordenar ascendente (A → Z)',
+              title: t('table.sortAscending'),
               icon: <ArrowUpDown size={14} />,
               action: () => {
                 currentRows.sort((a, b) =>
@@ -625,7 +626,7 @@ export class TableWidget extends WidgetType {
               },
             },
             {
-              title: 'Ordenar descendente (Z → A)',
+              title: t('table.sortDescending'),
               icon: <ArrowUpDown size={14} />,
               action: () => {
                 currentRows.sort((a, b) =>
@@ -640,7 +641,7 @@ export class TableWidget extends WidgetType {
         },
         { type: 'separator' },
         {
-          title: 'Cortar',
+          title: t('common.cut'),
           shortcut: 'Ctrl+X',
           icon: <Scissors size={14} />,
           action: () => {
@@ -653,18 +654,18 @@ export class TableWidget extends WidgetType {
           },
         },
         {
-          title: 'Copiar',
+          title: t('common.copy'),
           shortcut: 'Ctrl+C',
           icon: <Copy size={14} />,
           action: () => {
             const cellVal =
               row === 0 ? currentHeaders[col] : currentRows[row - 1][col];
             navigator.clipboard.writeText(cellVal);
-            useNoticeStore.getState().showNotice('Celda copiada', 2000, 'success');
+            useNoticeStore.getState().showNotice(t('table.notices.cellCopied'), 2000, 'success');
           },
         },
         {
-          title: 'Pegar',
+          title: t('common.paste'),
           shortcut: 'Ctrl+V',
           icon: <Clipboard size={14} />,
           action: async () => {
@@ -681,7 +682,7 @@ export class TableWidget extends WidgetType {
         },
         { type: 'separator' },
         {
-          title: 'Eliminar tabla',
+          title: t('table.deleteTable'),
           icon: <Trash2 size={14} />,
           isWarning: true,
           action: () => {
@@ -703,7 +704,7 @@ export class TableWidget extends WidgetType {
               changes: { from: tbl.from, to: endPos, insert: '' },
               selection: { anchor: tbl.from },
             });
-            useNoticeStore.getState().showNotice('Tabla eliminada', 2500, 'info');
+            useNoticeStore.getState().showNotice(t('table.notices.tableDeleted'), 2500, 'info');
           },
         },
       ];
@@ -915,7 +916,7 @@ export class TableWidget extends WidgetType {
     const addColBtn = document.createElement('button');
     addColBtn.type = 'button';
     addColBtn.className = 'urano-table-col-btn';
-    addColBtn.title = 'Añadir columna a la derecha';
+    addColBtn.title = t('table.addColumnRight');
     addColBtn.innerHTML =
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
 
@@ -944,7 +945,7 @@ export class TableWidget extends WidgetType {
     const addRowBtn = document.createElement('button');
     addRowBtn.type = 'button';
     addRowBtn.className = 'urano-table-row-btn';
-    addRowBtn.title = 'Añadir fila abajo';
+    addRowBtn.title = t('table.addRowBelow');
     addRowBtn.innerHTML =
       '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
 
