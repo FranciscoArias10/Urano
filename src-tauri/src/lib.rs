@@ -21,6 +21,17 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            // Linux / WebKitGTK: el pellizco del touchpad escala la página entera
+            // de forma nativa. Mientras el puntero esté sobre un Canvas lo
+            // interceptamos y se lo reenviamos al lienzo (ver commands/canvas.rs).
+            #[cfg(target_os = "linux")]
+            {
+                use tauri::Manager;
+                if let Some(window) = app.get_webview_window("main") {
+                    commands::canvas::install_touchpad_pinch_interceptor(&window);
+                }
+            }
             Ok(())
         })
         .manage(oauth_service)
@@ -42,6 +53,10 @@ pub fn run() {
             commands::auth::get_google_user,
             commands::auth::logout_google,
             commands::sync::sync_vault,
+            commands::canvas::set_canvas_pinch_capture,
+            commands::locales::list_custom_locales,
+            commands::locales::get_custom_locales_dir,
+            commands::locales::open_path,
         ])
         .run(tauri::generate_context!())
         .expect("error while building tauri application");
