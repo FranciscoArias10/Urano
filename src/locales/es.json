@@ -1,0 +1,975 @@
+{
+  "_meta": {
+    "name": "Spanish",
+    "nativeName": "Español",
+    "dir": "ltr"
+  },
+  "common": {
+    "ok": "Aceptar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "delete": "Eliminar",
+    "rename": "Cambiar nombre",
+    "save": "Guardar",
+    "open": "Abrir",
+    "copy": "Copiar",
+    "cut": "Cortar",
+    "paste": "Pegar",
+    "edit": "Editar",
+    "duplicate": "Duplicar",
+    "search": "Buscar",
+    "loading": "Cargando…",
+    "retry": "Reintentar",
+    "none": "Ninguno",
+    "untitled": "Sin título"
+  },
+  "language": {
+    "title": "Idioma",
+    "description": "Cambia el idioma de la interfaz.",
+    "addNew": "Aprende cómo añadir un nuevo idioma a Urano.",
+    "selectAriaLabel": "Idioma de la interfaz",
+    "loading": "Cargando idioma…",
+    "openLocalesFolder": "Abrir la carpeta de idiomas",
+    "customBadge": "Bóveda",
+    "missingKeys": "{count} textos se muestran en inglés en este idioma."
+  },
+  "settings": {
+    "tab": {
+      "general": "General",
+      "appearance": "Apariencia",
+      "interface": "Interfaz",
+      "editor": "Editor",
+      "files": "Archivos y enlaces",
+      "hotkeys": "Atajos de teclado",
+      "keychain": "Llavero",
+      "corePlugins": "Plugins principales",
+      "communityPlugins": "Plugins de la comunidad",
+      "backlinks": "Backlinks",
+      "canvas": "Lienzo",
+      "commandPalette": "Paleta de comandos",
+      "dailyNotes": "Notas diarias",
+      "fileRecovery": "Recuperación de archivos",
+      "noteComposer": "Compositor de notas",
+      "pagePreview": "Vista previa de página",
+      "quickSwitcher": "Selector rápido",
+      "sync": "Sincronización",
+      "templates": "Plantillas"
+    },
+    "sidebar": {
+      "options": "Opciones",
+      "corePlugins": "Plugins principales",
+      "searchPlaceholder": "Buscar ajustes..."
+    },
+    "search": {
+      "noResults": "No se encontraron ajustes."
+    },
+    "modal": {
+      "title": "Ajustes",
+      "close": "Cerrar"
+    },
+    "general": {
+      "version": "Versión {{version}}",
+      "installerVersion": "Versión del instalador: {{version}}",
+      "readChangelog": "Leer el registro de cambios.",
+      "checkForUpdates": "Buscar actualizaciones",
+      "upToDate": "Urano está actualizado.",
+      "autoUpdate": "Actualizaciones automáticas",
+      "autoUpdateDesc": "Desactívalo para evitar que la aplicación busque actualizaciones.",
+      "language": "Idioma",
+      "languageDesc": "Cambia el idioma de la interfaz.",
+      "addLanguage": "Aprende cómo añadir un nuevo idioma a Urano.",
+      "help": "Ayuda",
+      "helpDesc": "Aprende a usar Obsidian y obtén ayuda de la comunidad.",
+      "open": "Abrir",
+      "account": "Cuenta",
+      "yourAccount": "Tu cuenta",
+      "yourAccountDescNoLogin": "No has iniciado sesión. Solo necesitas una cuenta para Obsidian Sync, Obsidian Publish y versiones de acceso anticipado.",
+      "yourAccountDesc": "Has iniciado sesión como {{name}} ({{email}}).",
+      "logIn": "Iniciar sesión",
+      "signUp": "Registrarse",
+      "logOut": "Cerrar sesión",
+      "manage": "Gestionar",
+      "commercialLicense": "Licencia comercial",
+      "commercialLicenseDesc": "Ayuda a mantener Obsidian 100% financiado por sus usuarios.",
+      "learnMore": "Más información",
+      "activate": "Activar",
+      "purchase": "Comprar",
+      "advanced": "Avanzado",
+      "slowStartup": "Avisar si el arranque tarda más de lo esperado",
+      "slowStartupDesc": "Diagnostica problemas viendo qué hace que la aplicación tarde en cargar.",
+      "checkStartup": "Comprobar ahora",
+      "startupTime": "Tiempo de arranque de Urano: {{ms}} ms",
+      "cli": "Interfaz de línea de comandos",
+      "cliDesc": "Permite interactuar con Obsidian desde la línea de comandos.",
+      "hwAccel": "Aceleración por hardware",
+      "hwAccelDesc": "Activa la aceleración por hardware, que usa tu GPU para que Obsidian vaya más fluido.",
+      "hwAccelWarning": "Si lo desactivas, el rendimiento de la aplicación se degradará gravemente.",
+      "relaunchNeeded": "Este ajuste se guarda y se aplica la próxima vez que inicies Urano."
+    },
+    "appearance": {
+      "baseTheme": "Esquema de color base",
+      "baseThemeDesc": "Elige el esquema de color predeterminado.",
+      "themeDark": "Oscuro",
+      "themeLight": "Claro",
+      "themeSystem": "Adaptar al sistema",
+      "accent": "Color de acento",
+      "accentDesc": "Elige el color de acento usado en toda la interfaz.",
+      "restoreDefault": "Restaurar predeterminado",
+      "fontSize": "Tamaño de fuente",
+      "fontSizeDesc": "Tamaño de fuente en píxeles para leer y editar.",
+      "zoom": "Nivel de zoom",
+      "zoomDesc": "Ajusta el nivel de zoom de toda la ventana.",
+      "interfaceFont": "Fuente de la interfaz",
+      "interfaceFontDesc": "Fuente base para toda la interfaz."
+    },
+    "interface": {
+      "showRibbon": "Mostrar cinta lateral",
+      "showRibbonDesc": "Muestra la cinta de iconos a la izquierda de la ventana.",
+      "showInlineTitle": "Mostrar título en línea",
+      "showInlineTitleDesc": "Muestra el título de la nota en la parte superior.",
+      "showStatusBar": "Mostrar barra de estado",
+      "showStatusBarDesc": "Muestra la barra de estado en la parte inferior de la ventana."
+    },
+    "editor": {
+      "behavior": "Comportamiento",
+      "display": "Visualización",
+      "indentation": "Sangría",
+      "spellcheck": "Corrector ortográfico",
+      "spellcheckDesc": "Activa el corrector ortográfico.",
+      "readableLineLength": "Longitud de línea legible",
+      "readableLineLengthDesc": "Limita el ancho máximo de línea.",
+      "strictLineBreaks": "Saltos de línea estrictos",
+      "strictLineBreaksDesc": "En vista de lectura, ignora los saltos de línea simples según la especificación Markdown. Desactívalo para que se muestren.",
+      "showLineNumbers": "Mostrar número de línea",
+      "showLineNumbersDesc": "Muestra los números de línea en el margen del editor.",
+      "useTabs": "Sangrar con tabulaciones",
+      "useTabsDesc": "Usa tabulaciones en vez de espacios para la sangría.",
+      "tabSize": "Tamaño de tabulación",
+      "tabSizeDesc": "Número de espacios equivalentes a una tabulación."
+    },
+    "files": {
+      "confirmDeletion": "Confirmar eliminación de archivos",
+      "confirmDeletionDesc": "Evita borrar archivos por accidente.",
+      "updateLinksName": "Actualizar enlaces internos automáticamente",
+      "updateLinksDesc": "Actualiza los enlaces internos al renombrar o mover un archivo.",
+      "updateLinks": {
+        "always": "Actualizar siempre",
+        "prompt": "Preguntar",
+        "never": "No actualizar"
+      },
+      "attachmentLocation": "Ubicación predeterminada de los adjuntos",
+      "attachmentLocationDesc": "Dónde se guardan los adjuntos nuevos (como imágenes pegadas).",
+      "attachment": {
+        "root": "Carpeta de la bóveda",
+        "folder": "En la carpeta indicada abajo",
+        "current": "Misma carpeta que el archivo actual"
+      },
+      "attachmentFolder": "Ruta de la carpeta de adjuntos",
+      "attachmentFolderDesc": "Los adjuntos nuevos, como imágenes, se guardarán en esta carpeta.",
+      "folderPlaceholder": "Ejemplo: carpeta 1/carpeta 2"
+    },
+    "hotkeys": {
+      "search": "Buscar atajos",
+      "showing": "Mostrando {{count}} atajos.",
+      "blank": "Sin asignar",
+      "readOnly": "Los atajos son fijos en esta versión de Urano."
+    },
+    "keychain": {
+      "desc": "Los secretos como claves de API y tokens se guardan de forma segura en este dispositivo.",
+      "secrets": "Secretos",
+      "empty": "No hay secretos guardados.",
+      "gdrive": "Cliente OAuth de Google Drive",
+      "gdriveDesc": "Client ID y secreto usados para conectar la bóveda con Google Drive.",
+      "configured": "Configurado",
+      "notConfigured": "Sin configurar",
+      "edit": "Editar"
+    },
+    "corePlugins": {
+      "desc": "Los plugins principales vienen integrados en Urano. Actívalos o desactívalos aquí.",
+      "options": "Opciones"
+    },
+    "plugin": {
+      "backlinks": {
+        "desc": "Muestra las notas que enlazan a la nota actual."
+      },
+      "canvas": {
+        "desc": "Crea lienzos infinitos con notas, imágenes y tarjetas."
+      },
+      "commandPalette": {
+        "desc": "Abre la paleta de comandos con Ctrl+P."
+      },
+      "dailyNotes": {
+        "desc": "Crea o abre la nota de hoy."
+      },
+      "fileRecovery": {
+        "desc": "Guarda instantáneas de tus notas para recuperarlas ante accidentes."
+      },
+      "noteComposer": {
+        "desc": "Fusiona, divide y refactoriza notas."
+      },
+      "pagePreview": {
+        "desc": "Pasa el cursor sobre un enlace para previsualizar la nota."
+      },
+      "quickSwitcher": {
+        "desc": "Cambia de archivo rápidamente con Ctrl+O."
+      },
+      "sync": {
+        "desc": "Sincroniza tu bóveda con Google Drive."
+      },
+      "templates": {
+        "desc": "Inserta plantillas en la nota actual."
+      }
+    },
+    "community": {
+      "restrictedMode": "Modo restringido",
+      "restrictedModeDesc": "Activa el modo restringido para usar la aplicación sin plugins de la comunidad.",
+      "notAvailable": "Los plugins de la comunidad aún no están disponibles en Urano."
+    },
+    "backlinks": {
+      "showInDocument": "Backlinks en el documento",
+      "showInDocumentDesc": "Muestra los backlinks al final de las notas."
+    },
+    "canvas": {
+      "snapToGrid": "Ajustar a la cuadrícula",
+      "snapToGridDesc": "Alinea las tarjetas a la cuadrícula al arrastrarlas.",
+      "snapToObjects": "Ajustar a objetos",
+      "snapToObjectsDesc": "Alinea las tarjetas con las tarjetas cercanas al arrastrarlas.",
+      "zoomThreshold": "Umbral de zoom",
+      "zoomThresholdDesc": "Oculta el contenido de las tarjetas al alejar más de este nivel."
+    },
+    "commandPalette": {
+      "pinned": "Comandos fijados",
+      "pinnedDesc": "Los comandos fijados aparecen al principio de la paleta.",
+      "none": "No hay comandos fijados."
+    },
+    "dailyNotes": {
+      "format": "Formato de fecha",
+      "formatDesc": "Las notas diarias se nombran AAAA-MM-DD.",
+      "folder": "Ubicación de archivos nuevos",
+      "folderDesc": "Las notas diarias nuevas se crearán aquí.",
+      "openOnStartup": "Abrir la nota diaria al iniciar",
+      "openOnStartupDesc": "Abre la nota de hoy cuando se inicia Urano."
+    },
+    "fileRecovery": {
+      "interval": "Intervalo de instantáneas",
+      "intervalDesc": "Minutos entre instantáneas de los archivos modificados.",
+      "history": "Duración del historial",
+      "historyDesc": "Días que se conservan las instantáneas."
+    },
+    "noteComposer": {
+      "templateFile": "Texto tras la extracción",
+      "templateFileDesc": "Texto que queda al extraer una selección a una nota nueva.",
+      "confirm": "Confirmar fusión de notas",
+      "confirmDesc": "Pregunta antes de fusionar dos notas."
+    },
+    "pagePreview": {
+      "requireCtrl": "Requerir Ctrl para activar",
+      "requireCtrlDesc": "Muestra la vista previa solo mientras se mantiene Ctrl."
+    },
+    "quickSwitcher": {
+      "showAttachments": "Mostrar adjuntos",
+      "showAttachmentsDesc": "Muestra imágenes y otros adjuntos en el selector rápido.",
+      "showExisting": "Mostrar solo existentes",
+      "showExistingDesc": "Muestra solo archivos que existen en la bóveda."
+    },
+    "templates": {
+      "folder": "Carpeta de plantillas",
+      "folderDesc": "Los archivos de esta carpeta estarán disponibles como plantillas.",
+      "dateFormat": "Formato de fecha",
+      "timeFormat": "Formato de hora"
+    },
+    "sync": {
+      "storage": "Almacenamiento",
+      "adapterName": "Adaptador de almacenamiento",
+      "adapterDesc": "Dónde lee y escribe Urano los archivos de la bóveda.",
+      "adapter": {
+        "local": "Local",
+        "gdrive": "Google Drive"
+      },
+      "account": "Cuenta de Google Drive",
+      "notConnected": "Sin conectar. Inicia sesión para sincronizar esta bóveda con Google Drive.",
+      "connectedAs": "Conectado como {{name}} ({{email}}).",
+      "connect": "Conectar",
+      "disconnect": "Desconectar",
+      "configure": "Configurar...",
+      "remoteFolder": "Nombre de la carpeta remota",
+      "remoteFolderDesc": "Carpeta de Google Drive que replica esta bóveda.",
+      "statusName": "Estado de sincronización",
+      "status": {
+        "idle": "Inactivo",
+        "syncing": "Sincronizando...",
+        "synced": "Sincronizado",
+        "conflict": "Conflictos resueltos",
+        "error": "Error",
+        "offline": "Sin conexión"
+      },
+      "lastSynced": "Última sincronización: {{time}}",
+      "never": "Nunca sincronizado",
+      "syncNow": "Sincronizar ahora",
+      "viewLog": "Ver registro",
+      "noVault": "Abre una bóveda para sincronizarla."
+    }
+  },
+  "app": {
+    "notices": {
+      "canvasCreated": "Lienzo canvas creado",
+      "baseCreated": "Base de datos creada",
+      "templateInserted": "Plantilla insertada correctamente",
+      "noteCreatedWithTemplate": "Nueva nota creada con la plantilla",
+      "shortcutsHelp": "Atajos: Ctrl+N (Nota nueva) • Ctrl+O (Buscar) • Ctrl+P (Comandos) • Ctrl+B (Barra lateral) • Ctrl+G (Grafo)",
+      "splitUnavailable": "Las vistas divididas todavía no están disponibles en Urano.",
+      "renameFailed": "No se pudo renombrar el archivo",
+      "fileMoved": "Archivo movido",
+      "copyCreated": "Copia creada",
+      "linkCopied": "Enlace copiado al portapapeles",
+      "linkCopyFailed": "No se pudo copiar el enlace",
+      "pathCopied": "Ruta copiada al portapapeles",
+      "pathCopyFailed": "No se pudo copiar la ruta",
+      "fileDeleted": "Archivo eliminado"
+    },
+    "dialogs": {
+      "selectVaultFolder": "Seleccionar carpeta de bóveda para Urano",
+      "moveFileTo": "Mover archivo a...",
+      "confirmDelete": "¿Eliminar \"{name}\"? Esta acción no se puede deshacer."
+    },
+    "vaultMenu": {
+      "currentVault": "Bóveda actual: {name}",
+      "localVault": "Bóveda local",
+      "openAnotherVault": "Abrir otra carpeta de bóveda...",
+      "syncLogs": "Registros de sincronización...",
+      "defaultVaultName": "Bóveda"
+    },
+    "ribbon": {
+      "showSidebar": "Mostrar barra lateral",
+      "hideSidebar": "Ocultar barra lateral",
+      "openQuickSwitcher": "Abrir selector rápido",
+      "openGraphView": "Abrir vista gráfica",
+      "createNewCanvas": "Crear nuevo lienzo",
+      "openDailyNote": "Abrir la nota diaria de hoy",
+      "insertTemplate": "Insertar plantilla",
+      "openCommandPalette": "Abrir paleta de comandos",
+      "createNewBase": "Crear nueva base",
+      "syncNow": "Sincronizar ahora con Google Drive",
+      "settings": "Ajustes"
+    },
+    "sidebar": {
+      "files": "Archivos",
+      "search": "Buscar",
+      "bookmarks": "Marcadores",
+      "vaultSwitcher": "Bóveda actual / Cambiar entre Local y Google Drive",
+      "help": "Ayuda y atajos de teclado",
+      "settingsTitle": "Ajustes (Ctrl+,)"
+    },
+    "emptyState": {
+      "title": "Bóveda de Urano",
+      "description": "Crea una nueva nota (Ctrl+N) o presiona Ctrl+O para abrir una nota existente.",
+      "createNote": "Crear nueva nota",
+      "openFolder": "Abrir otra carpeta"
+    }
+  },
+  "backlinks": {
+    "selectNote": "Selecciona una nota para ver sus enlaces y backlinks",
+    "title": "Enlaces y menciones",
+    "closePanel": "Cerrar panel de backlinks",
+    "incoming": "Entrantes ({count})",
+    "outgoing": "Salientes ({count})",
+    "linkTo": "Enlace a [[{name}]]",
+    "noIncoming": "No hay notas que enlacen a esta nota. Escribe {link} en otra nota para vincularlas.",
+    "noOutgoing": "Esta nota no tiene enlaces salientes. Escribe {link} para vincular a otra página.",
+    "noOutgoingExample": "[[NombreNota]]",
+    "existingNote": "Nota existente",
+    "notCreatedYet": "Nota no creada aún",
+    "create": "Crear"
+  },
+  "base": {
+    "defaultName": "Base de datos",
+    "indexedNotes": "{shown} de {total} notas indexadas",
+    "filterPlaceholder": "Filtrar por nombre, carpeta o etiqueta...",
+    "newNote": "Nueva nota",
+    "noResults": "No se encontraron notas que coincidan con la búsqueda.",
+    "columns": {
+      "name": "Nombre",
+      "folder": "Carpeta",
+      "tags": "Etiquetas",
+      "modified": "Modificado",
+      "size": "Tamaño"
+    }
+  },
+  "bookmarks": {
+    "title": "Marcadores",
+    "countOne": "{count} marcador",
+    "countOther": "{count} marcadores",
+    "empty": "No hay marcadores aún.",
+    "emptyHint": "Haz clic derecho en cualquier nota o carpeta en el explorador de archivos y selecciona \"Añadir a marcadores\".",
+    "remove": "Quitar marcador"
+  },
+  "canvas": {
+    "menu": {
+      "color": "Color",
+      "convertToFile": "Convertir en archivo...",
+      "createGroupFromSelection": "Crear grupo con la selección",
+      "newCard": "Nueva tarjeta",
+      "newNote": "Nueva nota de la bóveda",
+      "newMedia": "Nuevo multimedia de la bóveda",
+      "newGroup": "Nuevo grupo",
+      "newWebPage": "Nuevo enlace web",
+      "addCard": "Añadir tarjeta",
+      "addNote": "Añadir nota de la bóveda",
+      "addMedia": "Añadir multimedia de la bóveda",
+      "addGroup": "Añadir grupo",
+      "selectAll": "Seleccionar todo",
+      "zoomToFit": "Ajustar vista",
+      "zoomToSelection": "Zoom a la selección",
+      "editLabel": "Editar etiqueta",
+      "toggleArrow": "Alternar flecha",
+      "toggleArrowHint": "Alternar flecha / dirección"
+    },
+    "cardMenu": {
+      "addCardHint": "Añadir tarjeta (clic o arrastrar al lienzo)",
+      "addNoteHint": "Añadir nota de la bóveda (clic o arrastrar al lienzo)",
+      "addMediaHint": "Añadir multimedia de la bóveda (clic o arrastrar al lienzo)"
+    },
+    "controls": {
+      "settings": "Ajustes del Canvas",
+      "snapToGrid": "Ajustar a la cuadrícula",
+      "readonly": "Solo lectura",
+      "zoomIn": "Acercar zoom",
+      "zoomOut": "Alejar zoom",
+      "resetZoom": "Restablecer zoom (100%)",
+      "zoomToFitHint": "Ajustar vista para encuadrar todos los elementos",
+      "zoomToFit": "Ajustar vista (Shift+1)",
+      "zoomLevelHint": "Nivel de zoom actual",
+      "zoomLevel": "Nivel de zoom (clic para restablecer)",
+      "undo": "Deshacer (Ctrl+Z)",
+      "redoHint": "Rehacer (Ctrl+Y / Ctrl+Shift+Z)",
+      "redo": "Rehacer (Ctrl+Y)",
+      "help": "Ayuda del Canvas"
+    },
+    "help": {
+      "title": "Atajos del Canvas",
+      "createCard": "Crear tarjeta",
+      "undo": "Deshacer",
+      "redo": "Rehacer",
+      "selectAll": "Seleccionar todo",
+      "zoomToFit": "Ajustar vista",
+      "zoom": "Zoom",
+      "pan": "Desplazar lienzo",
+      "currentZoom": "Zoom actual"
+    },
+    "keys": {
+      "delete": "Supr",
+      "ctrlWheel": "Ctrl+rueda",
+      "space": "Espacio"
+    },
+    "colors": {
+      "default": "Por defecto",
+      "noColor": "Sin color",
+      "red": "Rojo",
+      "orange": "Naranja",
+      "yellow": "Amarillo",
+      "green": "Verde",
+      "cyan": "Cian",
+      "purple": "Púrpura",
+      "custom": "Personalizado",
+      "customColor": "Color personalizado",
+      "pickCustomColor": "Elegir color personalizado"
+    },
+    "node": {
+      "group": "Grupo",
+      "newGroup": "Nuevo grupo",
+      "loadingImage": "Cargando imagen…",
+      "linkMedia": "Multimedia del enlace",
+      "connect": "Conectar"
+    },
+    "prompts": {
+      "linkUrl": "Introduce la URL web o enlace multimedia:",
+      "noteName": "Nombre para la nueva nota:",
+      "noteNameDefault": "Nota desde Lienzo"
+    },
+    "notices": {
+      "noteCreated": "Nota \"{name}\" creada en la bóveda",
+      "noteCreateError": "Error al crear la nota",
+      "imageAdded": "Imagen añadida al lienzo: {name}"
+    },
+    "vaultModal": {
+      "selectNote": "Seleccionar una nota de la bóveda...",
+      "selectImage": "Seleccionar una imagen de la bóveda...",
+      "noNotes": "No se encontraron notas en la bóveda",
+      "noImages": "No se encontraron imágenes en la bóveda",
+      "root": "Raíz"
+    }
+  },
+  "codeBlock": {
+    "copyCode": "Copiar código"
+  },
+  "commandPalette": {
+    "placeholderCommands": "Escribe un comando...",
+    "placeholderFiles": "Escribe para buscar archivos...",
+    "notFound": "No se encontró \"{query}\"",
+    "pressToCreate": "Presiona {key} para crear esta nota",
+    "noMatches": "No se encontraron coincidencias para \"{query}\"",
+    "toNavigate": "para navegar",
+    "toOpen": "para abrir",
+    "toOpenInNewTab": "en pestaña nueva",
+    "toCreate": "para crear",
+    "toDismiss": "para cerrar"
+  },
+  "commands": {
+    "fileExplorer": {
+      "newNote": "Explorador de archivos: Crear nueva nota (sin título)",
+      "newFolder": "Explorador de archivos: Nueva carpeta en la raíz",
+      "refresh": "Explorador de archivos: Recargar archivos de la bóveda"
+    },
+    "quickSwitcher": {
+      "open": "Selector rápido: Buscar nota en la bóveda (Quick Switcher)"
+    },
+    "graph": {
+      "open": "Vista gráfica: Abrir vista gráfica interactiva (Graph View)"
+    },
+    "canvas": {
+      "new": "Canvas: Crear nuevo lienzo (.canvas)"
+    },
+    "dailyNotes": {
+      "today": "Notas diarias: Abrir nota de hoy"
+    },
+    "templates": {
+      "insert": "Plantillas: Insertar plantilla"
+    },
+    "bases": {
+      "new": "Bases: Crear nueva base de datos (.base)"
+    },
+    "workspace": {
+      "toggleLeftSidebar": "Espacio de trabajo: Alternar barra lateral izquierda",
+      "toggleBacklinks": "Espacio de trabajo: Alternar panel de Backlinks y menciones"
+    },
+    "sync": {
+      "now": "Sincronización: Sincronizar ahora con Google Drive"
+    },
+    "app": {
+      "openVault": "Bóveda: Abrir otra carpeta de bóveda...",
+      "openSettings": "Ajustes: Abrir ajustes",
+      "syncConfig": "Ajustes: Configurar cuenta de Google Drive y sincronización"
+    }
+  },
+  "editor": {
+    "emptyState": {
+      "noFileOpen": "Ninguna nota seleccionada",
+      "hint": "Crea una nueva nota haciendo clic en '+' o presiona Ctrl+N."
+    },
+    "suggest": {
+      "linkToNote": "Enlazar a nota del Vault"
+    },
+    "contextMenu": {
+      "openLink": "Abrir enlace",
+      "openInNewTab": "Abrir en una pestaña nueva",
+      "openToTheRight": "Abrir a la derecha",
+      "copyUranoUrl": "Copiar enlace de Urano",
+      "addLink": "Añadir enlace",
+      "addExternalLink": "Añadir enlace externo",
+      "search": "Buscar \"{query}\"",
+      "extractSelection": "Extraer selección actual...",
+      "format": "Formato",
+      "paragraph": "Párrafo",
+      "insert": "Insertar",
+      "pastePlainText": "Pegar sin formato",
+      "selectAll": "Seleccionar todo"
+    },
+    "formatting": {
+      "bold": "Negrita",
+      "italic": "Cursiva",
+      "strikethrough": "Tachado",
+      "highlight": "Resaltado",
+      "code": "Código",
+      "math": "Matemáticas",
+      "comment": "Comentario",
+      "clearFormatting": "Borrar formato"
+    },
+    "highlightColor": {
+      "default": "Por defecto",
+      "red": "Rojo",
+      "orange": "Naranja",
+      "yellow": "Amarillo",
+      "green": "Verde",
+      "blue": "Azul",
+      "purple": "Púrpura"
+    },
+    "paragraph": {
+      "body": "Texto normal",
+      "heading": "Encabezado {level}",
+      "bulletList": "Lista con viñetas",
+      "numberedList": "Lista numerada",
+      "taskList": "Lista de tareas",
+      "quote": "Cita"
+    },
+    "insert": {
+      "footnote": "Nota al pie",
+      "table": "Tabla",
+      "callout": "Callout",
+      "horizontalRule": "Línea horizontal",
+      "codeBlock": "Bloque de código",
+      "mathBlock": "Bloque matemático",
+      "newBase": "Nueva base",
+      "calloutTitle": "Título",
+      "calloutContent": "Contenido"
+    },
+    "image": {
+      "copyImage": "Copiar imagen",
+      "removeFromDocument": "Eliminar del documento",
+      "deleteFile": "Eliminar archivo"
+    },
+    "baseEmbed": {
+      "open": "Abrir base de datos",
+      "description": "Vista de tabla de documentos del Vault"
+    },
+    "footnote": {
+      "tooltip": "Nota al pie [{n}] (clic para ir a la definición)"
+    },
+    "prompt": {
+      "newNoteTitle": "Título de la nueva nota:"
+    },
+    "notices": {
+      "imageCopied": "Imagen copiada al portapapeles",
+      "imageCopyFailed": "Error al copiar imagen",
+      "fileDeleted": "Archivo eliminado",
+      "invalidFileName": "Nombre de archivo inválido",
+      "emptyFileName": "El nombre de archivo no puede estar vacío.",
+      "linkCopied": "Enlace copiado al portapapeles",
+      "baseCreated": "Base de datos creada: {name}",
+      "baseCreateFailed": "Error al crear nueva base",
+      "invalidNoteName": "Nombre de nota no válido",
+      "noteExtracted": "Nota \"{name}\" extraída con éxito",
+      "noteExtractFailed": "Error al extraer nota"
+    }
+  },
+  "errorBoundary": {
+    "title": "Error al renderizar la nota",
+    "document": "Documento",
+    "description": "Ocurrió un problema con las extensiones de Markdown o la sintaxis de esta nota. El resto de la aplicación y tus archivos siguen completamente seguros.",
+    "openReadingMode": "Ver en modo lectura"
+  },
+  "fileTree": {
+    "newNote": "Nueva nota",
+    "newCanvas": "Nuevo lienzo",
+    "newFolder": "Nueva carpeta",
+    "changeSortOrder": "Cambiar orden",
+    "enableAutoReveal": "Activar auto-revelar archivo actual",
+    "disableAutoReveal": "Desactivar auto-revelar archivo actual",
+    "expandCollapseAll": "Expandir / Colapsar todo",
+    "confirmDelete": "¿Eliminar \"{name}\"? Esta acción no se puede deshacer.",
+    "sort": {
+      "nameAsc": "Nombre del archivo (A a la Z)",
+      "nameDesc": "Nombre del archivo (Z a la A)",
+      "mtimeDesc": "Tiempo de modificación (de más nuevo a más antiguo)",
+      "mtimeAsc": "Tiempo de modificación (de más antiguo a más nuevo)",
+      "ctimeDesc": "Fecha de creación (de más nuevo a más antiguo)",
+      "ctimeAsc": "Fecha de creación (de más antiguo a más nuevo)"
+    },
+    "contextMenu": {
+      "openInNewTab": "Abrir en una pestaña nueva",
+      "addBookmark": "Añadir a marcadores",
+      "removeBookmark": "Quitar de marcadores",
+      "rename": "Cambiar nombre",
+      "deleteFolder": "Eliminar carpeta",
+      "deleteFile": "Eliminar archivo",
+      "makeCopy": "Hacer una copia",
+      "copyImage": "Copiar imagen"
+    },
+    "notices": {
+      "nameExists": "Ya existe un archivo o carpeta con ese nombre.",
+      "renameFolderError": "Error al renombrar carpeta",
+      "renameFileError": "Error al renombrar archivo",
+      "invalidName": "Nombre inválido",
+      "linkUpdatedInFile": "Se actualizó {links} enlace en {files} archivo.",
+      "linkUpdatedInFiles": "Se actualizó {links} enlace en {files} archivos.",
+      "linksUpdatedInFile": "Se actualizaron {links} enlaces en {files} archivo.",
+      "linksUpdatedInFiles": "Se actualizaron {links} enlaces en {files} archivos.",
+      "bookmarkAdded": "Añadido a marcadores",
+      "bookmarkRemoved": "Marcador eliminado",
+      "imageCopied": "Imagen copiada al portapapeles",
+      "imageCopyError": "Error al copiar imagen",
+      "noteDuplicated": "Nota duplicada",
+      "filesSaved": "{count} archivo(s) guardado(s)",
+      "itemMoved": "Elemento movido a la carpeta"
+    }
+  },
+  "formattingMenu": {
+    "title": "Formato de texto",
+    "highlight": "Resaltar",
+    "highlightTooltip": "Resaltar texto (==texto==)",
+    "bold": "Negrita",
+    "boldTooltip": "Negrita (**texto**)",
+    "italic": "Cursiva",
+    "italicTooltip": "Cursiva (*texto*)",
+    "strikethrough": "Tachado",
+    "strikethroughTooltip": "Tachado (~~texto~~)",
+    "sectionHeadings": "Tamaño / encabezados",
+    "heading1": "Título principal (H1)",
+    "heading2": "Subtítulo (H2)",
+    "heading3": "Sección (H3)",
+    "sectionLists": "Listas y viñetas",
+    "bulletList": "Lista con viñetas",
+    "numberedList": "Lista numerada",
+    "taskList": "Lista de tareas (checkbox)",
+    "sectionAdvanced": "Ecuaciones y código",
+    "mathBlock": "Ecuación matemática ($$...)",
+    "codeBlock": "Bloque de código (```)",
+    "wikilink": "Enlace bidireccional [[...]]",
+    "quote": "Cita en bloque",
+    "placeholder": {
+      "text": "texto",
+      "highlight": "resaltado",
+      "bold": "negrita",
+      "italic": "cursiva",
+      "strikethrough": "tachado",
+      "note": "Nota",
+      "code": "// escribe tu código aquí"
+    }
+  },
+  "graph": {
+    "title": "Grafo de conexiones",
+    "stats": "({notes} notas, {links} enlaces)",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "resetView": "Restablecer vista"
+  },
+  "header": {
+    "selectVaultFolder": "Seleccionar carpeta de bóveda para Urano",
+    "syncing": "Sincronizando...",
+    "syncedAt": "Sincronizado ({time})",
+    "synced": "Sincronizado",
+    "conflictResolved": "Conflicto resuelto",
+    "syncError": "Error de sync",
+    "syncNow": "Sincronizar ahora",
+    "changeVaultFolder": "Cambiar carpeta de bóveda local",
+    "openVault": "Abrir bóveda...",
+    "notes": "Notas",
+    "graph": "Grafo",
+    "syncVault": "Sincronizar bóveda con Google Drive",
+    "syncLogs": "Ver registro de actividad de sincronización",
+    "driveSettings": "Configuración de Google Drive"
+  },
+  "image": {
+    "defaultName": "Imagen",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "resetZoom": "Restablecer zoom (100%)",
+    "zoomToFit": "Ajustar a la ventana",
+    "copyImage": "Copiar imagen",
+    "deleteFile": "Eliminar archivo",
+    "notices": {
+      "copied": "Imagen copiada al portapapeles",
+      "copyError": "Error al copiar imagen",
+      "deleted": "Imagen eliminada"
+    }
+  },
+  "imageEmbed": {
+    "zoom": "Ampliar imagen",
+    "editBlock": "Editar bloque",
+    "dragToResize": "Arrastrar para redimensionar",
+    "notices": {
+      "saved": "Imagen guardada: {name}",
+      "added": "Imagen añadida: {name}",
+      "addedCount": "{count} imagen(es) añadida(s) al documento",
+      "pasteSaveFailed": "Error al guardar imagen del portapapeles",
+      "dropSaveFailed": "Error al guardar imagen soltada"
+    }
+  },
+  "lightbox": {
+    "defaultName": "Imagen",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "reset": "Restablecer",
+    "close": "Cerrar (Escape)"
+  },
+  "math": {
+    "editSource": "Editar código fuente LaTeX",
+    "hideSource": "Ocultar código fuente LaTeX",
+    "clickToEdit": "Haz clic para editar LaTeX"
+  },
+  "search": {
+    "placeholder": "Buscar en todas las notas...",
+    "matchOne": "{count} coincidencia",
+    "matchOther": "{count} coincidencias",
+    "fileOne": "{count} archivo",
+    "fileOther": "{count} archivos",
+    "summary": "{matches} en {files}",
+    "emptyHint": "Escribe para buscar en el contenido de todas las notas de la bóveda.",
+    "noMatches": "No se encontraron coincidencias para \"{query}\".",
+    "lineNumber": "L{line}:"
+  },
+  "statusBar": {
+    "toggleBacklinks": "Alternar panel de Backlinks",
+    "backlinks": "{count} backlinks",
+    "switchToLivePreview": "Cambiar a Live Preview",
+    "switchToSourceMode": "Cambiar a Modo código fuente",
+    "toggleViewMode": "Alternar modo de vista",
+    "words": "{count} palabras",
+    "characters": "{count} caracteres",
+    "syncing": "Sincronizando con Google Drive...",
+    "synced": "Sincronizado con Google Drive",
+    "syncError": "Error de sincronización con Google Drive",
+    "connected": "Google Drive conectado",
+    "localVault": "Bóveda local (sin sincronizar)"
+  },
+  "sync": {
+    "config": {
+      "title": "Configuración de Google Drive",
+      "logout": "Cerrar sesión",
+      "privacyTitle": "Privacidad 100% garantizada:",
+      "privacyBody": "Urano utiliza exclusivamente el permiso {scope}. La aplicación solo tiene acceso a las notas y carpetas que ella misma crea en tu cuenta personal de Google Drive.",
+      "clientIdLabel": "Google Client ID (OAuth 2.0)",
+      "howToGet": "¿Cómo obtenerlo?",
+      "clientIdPlaceholder": "ej: 123456789-xxxxxx.apps.googleusercontent.com",
+      "clientSecretLabel": "Client Secret (opcional si usas cliente de escritorio PKCE)",
+      "folderNameLabel": "Nombre de la carpeta remota en Google Drive",
+      "stepsTitle": "Pasos en Google Cloud Console:",
+      "openConsole": "Abrir consola",
+      "step1": "Crea un proyecto (ej: \"Urano Notes\").",
+      "step2": "Habilita la {api} en Biblioteca de APIs.",
+      "step3": "En Pantalla de consentimiento OAuth, selecciona \"Externo\" y añade el scope {scope}.",
+      "step4": "En Credenciales, crea un {clientId} de tipo {appType}.",
+      "step4ClientId": "ID de cliente de OAuth",
+      "step4AppType": "App de escritorio",
+      "step5": "Copia el Client ID resultante aquí. ¡Listo!",
+      "saveChanges": "Guardar cambios",
+      "saveAndConnect": "Guardar y conectar con Google"
+    },
+    "logsModal": {
+      "title": "Registro de sincronización",
+      "empty": "No hay registros de sincronización aún."
+    },
+    "log": {
+      "enterCredentials": "Ingresa tus credenciales de Google OAuth para continuar.",
+      "startingAuth": "Iniciando flujo de autenticación OAuth 2.0 PKCE...",
+      "authSuccess": "Autenticación exitosa",
+      "authSuccessUser": "Autenticación exitosa: {name}",
+      "authNotCompleted": "No se completó la autorización de Google.",
+      "authError": "Error en autenticación: {error}",
+      "loggedOut": "Sesión de Google Drive cerrada.",
+      "loginRequired": "Inicia sesión en Google Drive para sincronizar.",
+      "startingSync": "Iniciando sincronización diferencial con Google Drive...",
+      "syncConflicts": "Sincronización finalizada con {conflicts} conflicto(s) resueltos sin pérdida. Subidos: {uploaded}, Descargados: {downloaded}",
+      "syncDone": "Bóveda sincronizada. Subidos: {uploaded}, Descargados: {downloaded}",
+      "syncError": "Error de sincronización: {error}"
+    }
+  },
+  "table": {
+    "row": "Fila",
+    "column": "Columna",
+    "addRowAbove": "Insertar fila arriba",
+    "addRowBelow": "Insertar fila abajo",
+    "moveRowUp": "Mover fila arriba",
+    "moveRowDown": "Mover fila abajo",
+    "duplicateRow": "Duplicar fila",
+    "deleteRow": "Eliminar fila",
+    "addColumnLeft": "Insertar columna a la izquierda",
+    "addColumnRight": "Insertar columna a la derecha",
+    "moveColumnLeft": "Mover columna a la izquierda",
+    "moveColumnRight": "Mover columna a la derecha",
+    "duplicateColumn": "Duplicar columna",
+    "deleteColumn": "Eliminar columna",
+    "alignment": "Alineación de columna",
+    "alignLeft": "Alinear a la izquierda",
+    "alignCenter": "Centrar",
+    "alignRight": "Alinear a la derecha",
+    "sort": "Ordenar",
+    "sortAscending": "Ordenar ascendente (A → Z)",
+    "sortDescending": "Ordenar descendente (Z → A)",
+    "deleteTable": "Eliminar tabla",
+    "notices": {
+      "cellCopied": "Celda copiada",
+      "tableDeleted": "Tabla eliminada"
+    }
+  },
+  "tabs": {
+    "closeOthers": "Cerrar otras",
+    "closeAll": "Cerrar todo",
+    "pin": "Fijar",
+    "unpin": "Desfijar",
+    "splitRight": "Dividir a la derecha",
+    "splitDown": "Dividir abajo",
+    "closeOtherTabs": "Cerrar otras pestañas",
+    "closeAllTabs": "Cerrar todas las pestañas",
+    "unsavedChanges": "Cambios sin guardar",
+    "pinnedTab": "Pestaña fijada",
+    "closeTab": "Cerrar pestaña",
+    "newTab": "Nueva pestaña (Ctrl+T)",
+    "newTabLabel": "Nueva pestaña",
+    "dragToMoveWindow": "Arrastra para mover la ventana",
+    "tabList": "Lista de pestañas",
+    "toggleRightSidebar": "Alternar barra lateral derecha",
+    "graphView": "Vista gráfica"
+  },
+  "templates": {
+    "title": "Insertar plantilla",
+    "preview": "Vista previa",
+    "escHint": "Presiona Esc para cancelar",
+    "insert": "Insertar",
+    "daily": {
+      "name": "Nota diaria",
+      "description": "Plantilla estructurada para seguimiento y tareas del día"
+    },
+    "meeting": {
+      "name": "Acta de reunión",
+      "description": "Registro de participantes, puntos tratados y acuerdos tomados"
+    },
+    "project": {
+      "name": "Plan de proyecto",
+      "description": "Definición de objetivos, hitos, recursos y entregables"
+    },
+    "reading": {
+      "name": "Ficha de lectura / resumen",
+      "description": "Ideas clave, conceptos destacados y citas de libros o artículos"
+    }
+  },
+  "updateLinks": {
+    "title": "Actualizar enlaces",
+    "question": "¿Quieres actualizar los enlaces internos que apuntan a este archivo?",
+    "affects": "Esto afectará a {links} en {files}.",
+    "linkOne": "{count} enlace",
+    "linkOther": "{count} enlaces",
+    "fileOne": "{count} archivo",
+    "fileOther": "{count} archivos",
+    "alwaysUpdate": "Actualizar siempre",
+    "justOnce": "Solo esta vez",
+    "doNotUpdate": "No actualizar",
+    "close": "Cerrar (Esc)"
+  },
+  "vault": {
+    "untitledFolder": "Carpeta sin título",
+    "defaultVaultName": "Bóveda",
+    "defaultNoteName": "Nota",
+    "dailyNoteBody": "# {date}\n\n## Objetivos del día\n- [ ] \n\n## Notas\n\n",
+    "errors": {
+      "nameEmpty": "El nombre de archivo no puede estar vacío.",
+      "nameInvalidChars": "El nombre de archivo no puede contener ninguno de los siguientes caracteres: * \" \\ / < > : | ? # ^ [ ]",
+      "nameExists": "Ya existe un archivo o carpeta con ese nombre.",
+      "renameFailed": "Error al renombrar archivo."
+    }
+  },
+  "viewHeader": {
+    "splitRight": "Dividir a la derecha",
+    "splitDown": "Dividir abajo",
+    "rename": "Cambiar nombre...",
+    "moveFileTo": "Mover archivo a...",
+    "makeCopy": "Hacer una copia",
+    "copyUranoUrl": "Copiar enlace de Urano",
+    "copyFilePath": "Copiar ruta de archivo",
+    "deleteFile": "Eliminar archivo",
+    "back": "Atrás (Alt+←)",
+    "backLabel": "Atrás",
+    "forward": "Adelante (Alt+→)",
+    "forwardLabel": "Adelante",
+    "clickToRename": "Haz clic para renombrar",
+    "switchToLivePreview": "Cambiar a Live Preview (Ctrl+E)",
+    "switchToLivePreviewLabel": "Cambiar a Live Preview",
+    "toggleReadingView": "Alternar Vista de Lectura (Ctrl+E)",
+    "toggleReadingViewLabel": "Alternar Vista de Lectura",
+    "moreOptions": "Más opciones"
+  },
+  "window": {
+    "minimize": "Minimizar",
+    "maximize": "Maximizar",
+    "restore": "Restaurar"
+  }
+}

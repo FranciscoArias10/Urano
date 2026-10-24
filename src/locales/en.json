@@ -1,0 +1,975 @@
+{
+  "_meta": {
+    "name": "English",
+    "nativeName": "English",
+    "dir": "ltr"
+  },
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "rename": "Rename",
+    "save": "Save",
+    "open": "Open",
+    "copy": "Copy",
+    "cut": "Cut",
+    "paste": "Paste",
+    "edit": "Edit",
+    "duplicate": "Duplicate",
+    "search": "Search",
+    "loading": "Loading…",
+    "retry": "Retry",
+    "none": "None",
+    "untitled": "Untitled"
+  },
+  "language": {
+    "title": "Language",
+    "description": "Change the display language.",
+    "addNew": "Learn how to add a new language to Urano.",
+    "selectAriaLabel": "Display language",
+    "loading": "Loading language…",
+    "openLocalesFolder": "Open the locales folder",
+    "customBadge": "Vault",
+    "missingKeys": "{count} strings fall back to English in this language."
+  },
+  "settings": {
+    "tab": {
+      "general": "General",
+      "appearance": "Appearance",
+      "interface": "Interface",
+      "editor": "Editor",
+      "files": "Files and links",
+      "hotkeys": "Hotkeys",
+      "keychain": "Keychain",
+      "corePlugins": "Core plugins",
+      "communityPlugins": "Community plugins",
+      "backlinks": "Backlinks",
+      "canvas": "Canvas",
+      "commandPalette": "Command palette",
+      "dailyNotes": "Daily notes",
+      "fileRecovery": "File recovery",
+      "noteComposer": "Note composer",
+      "pagePreview": "Page preview",
+      "quickSwitcher": "Quick switcher",
+      "sync": "Sync",
+      "templates": "Templates"
+    },
+    "sidebar": {
+      "options": "Options",
+      "corePlugins": "Core plugins",
+      "searchPlaceholder": "Search settings..."
+    },
+    "search": {
+      "noResults": "No settings found."
+    },
+    "modal": {
+      "title": "Settings",
+      "close": "Close"
+    },
+    "general": {
+      "version": "Version {{version}}",
+      "installerVersion": "Installer version: {{version}}",
+      "readChangelog": "Read the changelog.",
+      "checkForUpdates": "Check for updates",
+      "upToDate": "Urano is up to date.",
+      "autoUpdate": "Automatic updates",
+      "autoUpdateDesc": "Turn this off to prevent the app from checking for updates.",
+      "language": "Language",
+      "languageDesc": "Change the display language.",
+      "addLanguage": "Learn how to add a new language to Urano.",
+      "help": "Help",
+      "helpDesc": "Learn how to use Obsidian and get help from the community.",
+      "open": "Open",
+      "account": "Account",
+      "yourAccount": "Your account",
+      "yourAccountDescNoLogin": "You're not logged in right now. An account is only needed for Obsidian Sync, Obsidian Publish, and early access versions.",
+      "yourAccountDesc": "You're currently signed in as {{name}} ({{email}}).",
+      "logIn": "Log in",
+      "signUp": "Sign up",
+      "logOut": "Log out",
+      "manage": "Manage",
+      "commercialLicense": "Commercial license",
+      "commercialLicenseDesc": "Help keep Obsidian 100% user-supported.",
+      "learnMore": "Learn more",
+      "activate": "Activate",
+      "purchase": "Purchase",
+      "advanced": "Advanced",
+      "slowStartup": "Notify if startup takes longer than expected",
+      "slowStartupDesc": "Diagnose issues with your app by seeing what is causing the app to load slowly.",
+      "checkStartup": "Check now",
+      "startupTime": "Urano startup time: {{ms}} ms",
+      "cli": "Command line interface",
+      "cliDesc": "Allow interactions with Obsidian from the command line.",
+      "hwAccel": "Hardware acceleration",
+      "hwAccelDesc": "Turns on Hardware Acceleration, which uses your GPU to make Obsidian smoother.",
+      "hwAccelWarning": "If you turn this off, app performance will be severely degraded.",
+      "relaunchNeeded": "This setting is saved and applies the next time Urano starts."
+    },
+    "appearance": {
+      "baseTheme": "Base color scheme",
+      "baseThemeDesc": "Choose Obsidian's default color scheme.",
+      "themeDark": "Dark",
+      "themeLight": "Light",
+      "themeSystem": "Adapt to system",
+      "accent": "Accent color",
+      "accentDesc": "Choose the accent color used across the interface.",
+      "restoreDefault": "Restore default",
+      "fontSize": "Font size",
+      "fontSizeDesc": "Set the font size in pixels for reading and editing.",
+      "zoom": "Zoom level",
+      "zoomDesc": "Adjust the zoom level of the whole app window.",
+      "interfaceFont": "Interface font",
+      "interfaceFontDesc": "Set base font for all of Obsidian."
+    },
+    "interface": {
+      "showRibbon": "Show ribbon",
+      "showRibbonDesc": "Show the ribbon on the left side of the window.",
+      "showInlineTitle": "Show inline title",
+      "showInlineTitleDesc": "Show the note title at the top of the note.",
+      "showStatusBar": "Show status bar",
+      "showStatusBarDesc": "Show the status bar at the bottom of the window."
+    },
+    "editor": {
+      "behavior": "Behavior",
+      "display": "Display",
+      "indentation": "Indentation",
+      "spellcheck": "Spellcheck",
+      "spellcheckDesc": "Turn on the spellchecker.",
+      "readableLineLength": "Readable line length",
+      "readableLineLengthDesc": "Limit maximum line length.",
+      "strictLineBreaks": "Strict line breaks",
+      "strictLineBreaksDesc": "In preview mode, ignore single line breaks according to the Markdown specification. Turn this off for single line breaks to show in preview.",
+      "showLineNumbers": "Show line number",
+      "showLineNumbersDesc": "Show line numbers in the editor gutter.",
+      "useTabs": "Indent using tabs",
+      "useTabsDesc": "Use tab characters instead of spaces for indentation.",
+      "tabSize": "Tab indent size",
+      "tabSizeDesc": "Number of spaces a tab is equal to."
+    },
+    "files": {
+      "confirmDeletion": "Confirm file deletion",
+      "confirmDeletionDesc": "Avoid accidentally deleting files.",
+      "updateLinksName": "Automatically update internal links",
+      "updateLinksDesc": "Automatically update internal links when renaming or moving a file.",
+      "updateLinks": {
+        "always": "Always update",
+        "prompt": "Prompt",
+        "never": "Do not update"
+      },
+      "attachmentLocation": "Default location for new attachments",
+      "attachmentLocationDesc": "Where newly added attachments (such as pasted images) are placed.",
+      "attachment": {
+        "root": "Vault folder",
+        "folder": "In the folder specified below",
+        "current": "Same folder as current file"
+      },
+      "attachmentFolder": "Attachment folder path",
+      "attachmentFolderDesc": "Place newly created attachment files, such as images, in this folder.",
+      "folderPlaceholder": "Example: folder 1/folder 2"
+    },
+    "hotkeys": {
+      "search": "Search hotkeys",
+      "showing": "Showing {{count}} hotkeys.",
+      "blank": "Blank",
+      "readOnly": "Hotkeys are fixed in this version of Urano."
+    },
+    "keychain": {
+      "desc": "Secrets such as API keys and tokens are stored securely on this device.",
+      "secrets": "Secrets",
+      "empty": "No secrets stored.",
+      "gdrive": "Google Drive OAuth client",
+      "gdriveDesc": "Client ID and secret used to connect your vault to Google Drive.",
+      "configured": "Configured",
+      "notConfigured": "Not configured",
+      "edit": "Edit"
+    },
+    "corePlugins": {
+      "desc": "Core plugins are built into Urano. Turn them on or off here.",
+      "options": "Options"
+    },
+    "plugin": {
+      "backlinks": {
+        "desc": "Show the notes that link to the current note."
+      },
+      "canvas": {
+        "desc": "Create infinite canvases of notes, images and cards."
+      },
+      "commandPalette": {
+        "desc": "Open the command palette with Ctrl+P."
+      },
+      "dailyNotes": {
+        "desc": "Create or open a note for today."
+      },
+      "fileRecovery": {
+        "desc": "Keep snapshots of your notes to recover from accidents."
+      },
+      "noteComposer": {
+        "desc": "Merge, split and refactor notes."
+      },
+      "pagePreview": {
+        "desc": "Hover over a link to preview the note."
+      },
+      "quickSwitcher": {
+        "desc": "Switch between files quickly with Ctrl+O."
+      },
+      "sync": {
+        "desc": "Sync your vault with Google Drive."
+      },
+      "templates": {
+        "desc": "Insert templates into the current note."
+      }
+    },
+    "community": {
+      "restrictedMode": "Restricted mode",
+      "restrictedModeDesc": "Turn on Restricted mode to use the app without community plugins.",
+      "notAvailable": "Community plugins are not available in Urano yet."
+    },
+    "backlinks": {
+      "showInDocument": "Backlink in document",
+      "showInDocumentDesc": "Show backlinks at the bottom of notes."
+    },
+    "canvas": {
+      "snapToGrid": "Snap to grid",
+      "snapToGridDesc": "Align cards to the canvas grid while dragging.",
+      "snapToObjects": "Snap to objects",
+      "snapToObjectsDesc": "Align cards to nearby cards while dragging.",
+      "zoomThreshold": "Zoom threshold",
+      "zoomThresholdDesc": "Hide card content when zoomed out past this level."
+    },
+    "commandPalette": {
+      "pinned": "Pinned commands",
+      "pinnedDesc": "Pinned commands appear at the top of the command palette.",
+      "none": "No pinned commands."
+    },
+    "dailyNotes": {
+      "format": "Date format",
+      "formatDesc": "Daily notes are named YYYY-MM-DD.",
+      "folder": "New file location",
+      "folderDesc": "New daily notes will be placed here.",
+      "openOnStartup": "Open daily note on startup",
+      "openOnStartupDesc": "Open today's daily note when Urano starts."
+    },
+    "fileRecovery": {
+      "interval": "Snapshot interval",
+      "intervalDesc": "Minutes between snapshots of modified files.",
+      "history": "History length",
+      "historyDesc": "Days to keep snapshots."
+    },
+    "noteComposer": {
+      "templateFile": "Text after extraction",
+      "templateFileDesc": "Text left behind after extracting a selection to a new note.",
+      "confirm": "Confirm note merge",
+      "confirmDesc": "Ask before merging two notes."
+    },
+    "pagePreview": {
+      "requireCtrl": "Require Ctrl to trigger",
+      "requireCtrlDesc": "Only show the page preview while holding Ctrl."
+    },
+    "quickSwitcher": {
+      "showAttachments": "Show attachments",
+      "showAttachmentsDesc": "Show images and other attachments in the quick switcher.",
+      "showExisting": "Show existing only",
+      "showExistingDesc": "Only show files that exist in the vault."
+    },
+    "templates": {
+      "folder": "Template folder location",
+      "folderDesc": "Files in this folder will be available as templates.",
+      "dateFormat": "Date format",
+      "timeFormat": "Time format"
+    },
+    "sync": {
+      "storage": "Storage",
+      "adapterName": "Storage adapter",
+      "adapterDesc": "Where Urano reads and writes your vault files.",
+      "adapter": {
+        "local": "Local",
+        "gdrive": "Google Drive"
+      },
+      "account": "Google Drive account",
+      "notConnected": "Not connected. Log in to sync this vault with Google Drive.",
+      "connectedAs": "Connected as {{name}} ({{email}}).",
+      "connect": "Connect",
+      "disconnect": "Disconnect",
+      "configure": "Configure...",
+      "remoteFolder": "Remote folder name",
+      "remoteFolderDesc": "Folder in Google Drive that mirrors this vault.",
+      "statusName": "Sync status",
+      "status": {
+        "idle": "Idle",
+        "syncing": "Syncing...",
+        "synced": "Synced",
+        "conflict": "Conflicts resolved",
+        "error": "Error",
+        "offline": "Offline"
+      },
+      "lastSynced": "Last synced: {{time}}",
+      "never": "Never synced",
+      "syncNow": "Sync now",
+      "viewLog": "View log",
+      "noVault": "Open a vault to sync it."
+    }
+  },
+  "app": {
+    "notices": {
+      "canvasCreated": "Canvas created",
+      "baseCreated": "Base created",
+      "templateInserted": "Template inserted",
+      "noteCreatedWithTemplate": "New note created with the template",
+      "shortcutsHelp": "Shortcuts: Ctrl+N (New note) • Ctrl+O (Quick switcher) • Ctrl+P (Command palette) • Ctrl+B (Sidebar) • Ctrl+G (Graph)",
+      "splitUnavailable": "Split views are not available in Urano yet.",
+      "renameFailed": "Could not rename the file",
+      "fileMoved": "File moved",
+      "copyCreated": "Copy created",
+      "linkCopied": "Link copied to clipboard",
+      "linkCopyFailed": "Could not copy the link",
+      "pathCopied": "Path copied to clipboard",
+      "pathCopyFailed": "Could not copy the path",
+      "fileDeleted": "File deleted"
+    },
+    "dialogs": {
+      "selectVaultFolder": "Select vault folder for Urano",
+      "moveFileTo": "Move file to...",
+      "confirmDelete": "Delete \"{name}\"? This action cannot be undone."
+    },
+    "vaultMenu": {
+      "currentVault": "Current vault: {name}",
+      "localVault": "Local vault",
+      "openAnotherVault": "Open another vault...",
+      "syncLogs": "Sync logs...",
+      "defaultVaultName": "Vault"
+    },
+    "ribbon": {
+      "showSidebar": "Show sidebar",
+      "hideSidebar": "Hide sidebar",
+      "openQuickSwitcher": "Open quick switcher",
+      "openGraphView": "Open graph view",
+      "createNewCanvas": "Create new canvas",
+      "openDailyNote": "Open today's daily note",
+      "insertTemplate": "Insert template",
+      "openCommandPalette": "Open command palette",
+      "createNewBase": "Create new base",
+      "syncNow": "Sync now with Google Drive",
+      "settings": "Settings"
+    },
+    "sidebar": {
+      "files": "Files",
+      "search": "Search",
+      "bookmarks": "Bookmarks",
+      "vaultSwitcher": "Current vault / Switch between Local and Google Drive",
+      "help": "Help and keyboard shortcuts",
+      "settingsTitle": "Settings (Ctrl+,)"
+    },
+    "emptyState": {
+      "title": "Urano vault",
+      "description": "Create a new note (Ctrl+N) or press Ctrl+O to open an existing note.",
+      "createNote": "Create new note",
+      "openFolder": "Open another folder"
+    }
+  },
+  "backlinks": {
+    "selectNote": "Select a note to see its links and backlinks",
+    "title": "Links and mentions",
+    "closePanel": "Close backlinks panel",
+    "incoming": "Incoming ({count})",
+    "outgoing": "Outgoing ({count})",
+    "linkTo": "Link to [[{name}]]",
+    "noIncoming": "No notes link to this note. Type {link} in another note to link them.",
+    "noOutgoing": "This note has no outgoing links. Type {link} to link to another page.",
+    "noOutgoingExample": "[[Note name]]",
+    "existingNote": "Existing note",
+    "notCreatedYet": "Not created yet",
+    "create": "Create"
+  },
+  "base": {
+    "defaultName": "Database",
+    "indexedNotes": "{shown} of {total} indexed notes",
+    "filterPlaceholder": "Filter by name, folder or tag...",
+    "newNote": "New note",
+    "noResults": "No notes match your search.",
+    "columns": {
+      "name": "Name",
+      "folder": "Folder",
+      "tags": "Tags",
+      "modified": "Modified",
+      "size": "Size"
+    }
+  },
+  "bookmarks": {
+    "title": "Bookmarks",
+    "countOne": "{count} bookmark",
+    "countOther": "{count} bookmarks",
+    "empty": "No bookmarks yet.",
+    "emptyHint": "Right-click any note or folder in the file explorer and choose \"Add to bookmarks\".",
+    "remove": "Remove bookmark"
+  },
+  "canvas": {
+    "menu": {
+      "color": "Color",
+      "convertToFile": "Convert to file...",
+      "createGroupFromSelection": "Create group from selection",
+      "newCard": "Add card",
+      "newNote": "Add note from vault",
+      "newMedia": "Add media from vault",
+      "newGroup": "Add group",
+      "newWebPage": "Add web page",
+      "addCard": "Add card",
+      "addNote": "Add note from vault",
+      "addMedia": "Add media from vault",
+      "addGroup": "Add group",
+      "selectAll": "Select all",
+      "zoomToFit": "Zoom to fit",
+      "zoomToSelection": "Zoom to selection",
+      "editLabel": "Edit label",
+      "toggleArrow": "Toggle arrow",
+      "toggleArrowHint": "Toggle arrow / direction"
+    },
+    "cardMenu": {
+      "addCardHint": "Add card (click or drag onto the canvas)",
+      "addNoteHint": "Add note from vault (click or drag onto the canvas)",
+      "addMediaHint": "Add media from vault (click or drag onto the canvas)"
+    },
+    "controls": {
+      "settings": "Canvas settings",
+      "snapToGrid": "Snap to grid",
+      "readonly": "Read-only",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "resetZoom": "Reset zoom (100%)",
+      "zoomToFitHint": "Zoom to fit all items",
+      "zoomToFit": "Zoom to fit (Shift+1)",
+      "zoomLevelHint": "Current zoom level",
+      "zoomLevel": "Zoom level (click to reset)",
+      "undo": "Undo (Ctrl+Z)",
+      "redoHint": "Redo (Ctrl+Y / Ctrl+Shift+Z)",
+      "redo": "Redo (Ctrl+Y)",
+      "help": "Canvas help"
+    },
+    "help": {
+      "title": "Canvas shortcuts",
+      "createCard": "Create card",
+      "undo": "Undo",
+      "redo": "Redo",
+      "selectAll": "Select all",
+      "zoomToFit": "Zoom to fit",
+      "zoom": "Zoom",
+      "pan": "Pan",
+      "currentZoom": "Current zoom"
+    },
+    "keys": {
+      "delete": "Del",
+      "ctrlWheel": "Ctrl+scroll",
+      "space": "Space"
+    },
+    "colors": {
+      "default": "Default",
+      "noColor": "No color",
+      "red": "Red",
+      "orange": "Orange",
+      "yellow": "Yellow",
+      "green": "Green",
+      "cyan": "Cyan",
+      "purple": "Purple",
+      "custom": "Custom",
+      "customColor": "Custom color",
+      "pickCustomColor": "Pick a custom color"
+    },
+    "node": {
+      "group": "Group",
+      "newGroup": "New group",
+      "loadingImage": "Loading image…",
+      "linkMedia": "Link media",
+      "connect": "Connect"
+    },
+    "prompts": {
+      "linkUrl": "Enter URL:",
+      "noteName": "Name for the new note:",
+      "noteNameDefault": "Note from canvas"
+    },
+    "notices": {
+      "noteCreated": "Note \"{name}\" created in vault",
+      "noteCreateError": "Could not create the note",
+      "imageAdded": "Image added to canvas: {name}"
+    },
+    "vaultModal": {
+      "selectNote": "Select a note from vault...",
+      "selectImage": "Select an image from vault...",
+      "noNotes": "No notes found in vault",
+      "noImages": "No images found in vault",
+      "root": "Root"
+    }
+  },
+  "codeBlock": {
+    "copyCode": "Copy code"
+  },
+  "commandPalette": {
+    "placeholderCommands": "Type a command...",
+    "placeholderFiles": "Type to search files...",
+    "notFound": "\"{query}\" not found",
+    "pressToCreate": "Press {key} to create this note",
+    "noMatches": "No matches found for \"{query}\"",
+    "toNavigate": "to navigate",
+    "toOpen": "to open",
+    "toOpenInNewTab": "to open in new tab",
+    "toCreate": "to create",
+    "toDismiss": "to dismiss"
+  },
+  "commands": {
+    "fileExplorer": {
+      "newNote": "File explorer: Create new note",
+      "newFolder": "File explorer: Create new folder in vault root",
+      "refresh": "File explorer: Reload vault files"
+    },
+    "quickSwitcher": {
+      "open": "Quick switcher: Open quick switcher"
+    },
+    "graph": {
+      "open": "Graph view: Open graph view"
+    },
+    "canvas": {
+      "new": "Canvas: Create new canvas"
+    },
+    "dailyNotes": {
+      "today": "Daily notes: Open today's daily note"
+    },
+    "templates": {
+      "insert": "Templates: Insert template"
+    },
+    "bases": {
+      "new": "Bases: Create new base"
+    },
+    "workspace": {
+      "toggleLeftSidebar": "Workspace: Toggle left sidebar",
+      "toggleBacklinks": "Workspace: Toggle backlinks and mentions panel"
+    },
+    "sync": {
+      "now": "Sync: Sync now with Google Drive"
+    },
+    "app": {
+      "openVault": "Vault: Open another vault...",
+      "openSettings": "Settings: Open settings",
+      "syncConfig": "Settings: Configure Google Drive account and sync"
+    }
+  },
+  "editor": {
+    "emptyState": {
+      "noFileOpen": "No file is open",
+      "hint": "Create a new note by clicking '+' or press Ctrl+N."
+    },
+    "suggest": {
+      "linkToNote": "Link to a note in the vault"
+    },
+    "contextMenu": {
+      "openLink": "Open link",
+      "openInNewTab": "Open in new tab",
+      "openToTheRight": "Open to the right",
+      "copyUranoUrl": "Copy Urano URL",
+      "addLink": "Add link",
+      "addExternalLink": "Add external link",
+      "search": "Search \"{query}\"",
+      "extractSelection": "Extract current selection...",
+      "format": "Format",
+      "paragraph": "Paragraph",
+      "insert": "Insert",
+      "pastePlainText": "Paste as plain text",
+      "selectAll": "Select all"
+    },
+    "formatting": {
+      "bold": "Bold",
+      "italic": "Italic",
+      "strikethrough": "Strikethrough",
+      "highlight": "Highlight",
+      "code": "Code",
+      "math": "Math",
+      "comment": "Comment",
+      "clearFormatting": "Clear formatting"
+    },
+    "highlightColor": {
+      "default": "Default",
+      "red": "Red",
+      "orange": "Orange",
+      "yellow": "Yellow",
+      "green": "Green",
+      "blue": "Blue",
+      "purple": "Purple"
+    },
+    "paragraph": {
+      "body": "Body",
+      "heading": "Heading {level}",
+      "bulletList": "Bullet list",
+      "numberedList": "Numbered list",
+      "taskList": "Task list",
+      "quote": "Quote"
+    },
+    "insert": {
+      "footnote": "Footnote",
+      "table": "Table",
+      "callout": "Callout",
+      "horizontalRule": "Horizontal rule",
+      "codeBlock": "Code block",
+      "mathBlock": "Math block",
+      "newBase": "New base",
+      "calloutTitle": "Title",
+      "calloutContent": "Contents"
+    },
+    "image": {
+      "copyImage": "Copy image",
+      "removeFromDocument": "Remove from document",
+      "deleteFile": "Delete file"
+    },
+    "baseEmbed": {
+      "open": "Open base",
+      "description": "Table view of the vault's documents"
+    },
+    "footnote": {
+      "tooltip": "Footnote [{n}] (click to go to the definition)"
+    },
+    "prompt": {
+      "newNoteTitle": "Title of the new note:"
+    },
+    "notices": {
+      "imageCopied": "Image copied to clipboard",
+      "imageCopyFailed": "Could not copy image",
+      "fileDeleted": "File deleted",
+      "invalidFileName": "Invalid file name",
+      "emptyFileName": "File name cannot be empty.",
+      "linkCopied": "Link copied to clipboard",
+      "baseCreated": "Base created: {name}",
+      "baseCreateFailed": "Could not create new base",
+      "invalidNoteName": "Invalid note name",
+      "noteExtracted": "Note \"{name}\" extracted successfully",
+      "noteExtractFailed": "Could not extract note"
+    }
+  },
+  "errorBoundary": {
+    "title": "Error rendering the note",
+    "document": "Document",
+    "description": "There was a problem with the Markdown extensions or the syntax of this note. The rest of the app and your files are completely safe.",
+    "openReadingMode": "View in reading mode"
+  },
+  "fileTree": {
+    "newNote": "New note",
+    "newCanvas": "New canvas",
+    "newFolder": "New folder",
+    "changeSortOrder": "Change sort order",
+    "enableAutoReveal": "Enable auto-reveal current file",
+    "disableAutoReveal": "Disable auto-reveal current file",
+    "expandCollapseAll": "Expand / collapse all",
+    "confirmDelete": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+    "sort": {
+      "nameAsc": "File name (A to Z)",
+      "nameDesc": "File name (Z to A)",
+      "mtimeDesc": "Modified time (new to old)",
+      "mtimeAsc": "Modified time (old to new)",
+      "ctimeDesc": "Created time (new to old)",
+      "ctimeAsc": "Created time (old to new)"
+    },
+    "contextMenu": {
+      "openInNewTab": "Open in new tab",
+      "addBookmark": "Add bookmark",
+      "removeBookmark": "Remove bookmark",
+      "rename": "Rename",
+      "deleteFolder": "Delete folder",
+      "deleteFile": "Delete file",
+      "makeCopy": "Make a copy",
+      "copyImage": "Copy image"
+    },
+    "notices": {
+      "nameExists": "A file or folder with that name already exists.",
+      "renameFolderError": "Failed to rename folder",
+      "renameFileError": "Failed to rename file",
+      "invalidName": "Invalid name",
+      "linkUpdatedInFile": "Updated {links} link in {files} file.",
+      "linkUpdatedInFiles": "Updated {links} link in {files} files.",
+      "linksUpdatedInFile": "Updated {links} links in {files} file.",
+      "linksUpdatedInFiles": "Updated {links} links in {files} files.",
+      "bookmarkAdded": "Added to bookmarks",
+      "bookmarkRemoved": "Bookmark removed",
+      "imageCopied": "Image copied to clipboard",
+      "imageCopyError": "Failed to copy image",
+      "noteDuplicated": "Note duplicated",
+      "filesSaved": "{count} file(s) saved",
+      "itemMoved": "Item moved to folder"
+    }
+  },
+  "formattingMenu": {
+    "title": "Text formatting",
+    "highlight": "Highlight",
+    "highlightTooltip": "Highlight text (==text==)",
+    "bold": "Bold",
+    "boldTooltip": "Bold (**text**)",
+    "italic": "Italic",
+    "italicTooltip": "Italic (*text*)",
+    "strikethrough": "Strikethrough",
+    "strikethroughTooltip": "Strikethrough (~~text~~)",
+    "sectionHeadings": "Size / headings",
+    "heading1": "Main title (H1)",
+    "heading2": "Subtitle (H2)",
+    "heading3": "Section (H3)",
+    "sectionLists": "Lists and bullets",
+    "bulletList": "Bullet list",
+    "numberedList": "Numbered list",
+    "taskList": "Task list (checkbox)",
+    "sectionAdvanced": "Equations and code",
+    "mathBlock": "Math equation ($$...)",
+    "codeBlock": "Code block (```)",
+    "wikilink": "Internal link [[...]]",
+    "quote": "Block quote",
+    "placeholder": {
+      "text": "text",
+      "highlight": "highlight",
+      "bold": "bold",
+      "italic": "italic",
+      "strikethrough": "strikethrough",
+      "note": "Note",
+      "code": "// write your code here"
+    }
+  },
+  "graph": {
+    "title": "Graph view",
+    "stats": "({notes} notes, {links} links)",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "resetView": "Reset view"
+  },
+  "header": {
+    "selectVaultFolder": "Select vault folder for Urano",
+    "syncing": "Syncing...",
+    "syncedAt": "Synced ({time})",
+    "synced": "Synced",
+    "conflictResolved": "Conflict resolved",
+    "syncError": "Sync error",
+    "syncNow": "Sync now",
+    "changeVaultFolder": "Change local vault folder",
+    "openVault": "Open vault...",
+    "notes": "Notes",
+    "graph": "Graph",
+    "syncVault": "Sync vault with Google Drive",
+    "syncLogs": "View sync activity log",
+    "driveSettings": "Google Drive settings"
+  },
+  "image": {
+    "defaultName": "Image",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "resetZoom": "Reset zoom (100%)",
+    "zoomToFit": "Zoom to fit",
+    "copyImage": "Copy image",
+    "deleteFile": "Delete file",
+    "notices": {
+      "copied": "Image copied to clipboard",
+      "copyError": "Failed to copy image",
+      "deleted": "Image deleted"
+    }
+  },
+  "imageEmbed": {
+    "zoom": "Zoom image",
+    "editBlock": "Edit this block",
+    "dragToResize": "Drag to resize",
+    "notices": {
+      "saved": "Image saved: {name}",
+      "added": "Image added: {name}",
+      "addedCount": "{count} image(s) added to the document",
+      "pasteSaveFailed": "Could not save pasted image",
+      "dropSaveFailed": "Could not save dropped image"
+    }
+  },
+  "lightbox": {
+    "defaultName": "Image",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "reset": "Reset",
+    "close": "Close (Escape)"
+  },
+  "math": {
+    "editSource": "Edit LaTeX source",
+    "hideSource": "Hide LaTeX source",
+    "clickToEdit": "Click to edit LaTeX"
+  },
+  "search": {
+    "placeholder": "Search in all notes...",
+    "matchOne": "{count} match",
+    "matchOther": "{count} matches",
+    "fileOne": "{count} file",
+    "fileOther": "{count} files",
+    "summary": "{matches} in {files}",
+    "emptyHint": "Type to search the content of every note in the vault.",
+    "noMatches": "No matches found for \"{query}\".",
+    "lineNumber": "L{line}:"
+  },
+  "statusBar": {
+    "toggleBacklinks": "Toggle backlinks panel",
+    "backlinks": "{count} backlinks",
+    "switchToLivePreview": "Switch to Live Preview",
+    "switchToSourceMode": "Switch to Source mode",
+    "toggleViewMode": "Toggle view mode",
+    "words": "{count} words",
+    "characters": "{count} characters",
+    "syncing": "Syncing with Google Drive...",
+    "synced": "Synced with Google Drive",
+    "syncError": "Google Drive sync error",
+    "connected": "Google Drive connected",
+    "localVault": "Local vault (not synced)"
+  },
+  "sync": {
+    "config": {
+      "title": "Google Drive settings",
+      "logout": "Log out",
+      "privacyTitle": "100% privacy guaranteed:",
+      "privacyBody": "Urano only uses the {scope} permission. The app can only access the notes and folders it creates itself in your personal Google Drive account.",
+      "clientIdLabel": "Google Client ID (OAuth 2.0)",
+      "howToGet": "How do I get it?",
+      "clientIdPlaceholder": "e.g. 123456789-xxxxxx.apps.googleusercontent.com",
+      "clientSecretLabel": "Client Secret (optional if you use a PKCE desktop client)",
+      "folderNameLabel": "Remote folder name in Google Drive",
+      "stepsTitle": "Steps in Google Cloud Console:",
+      "openConsole": "Open console",
+      "step1": "Create a project (e.g. \"Urano Notes\").",
+      "step2": "Enable the {api} in the API Library.",
+      "step3": "In the OAuth consent screen, choose \"External\" and add the {scope} scope.",
+      "step4": "In Credentials, create an {clientId} of type {appType}.",
+      "step4ClientId": "OAuth client ID",
+      "step4AppType": "Desktop app",
+      "step5": "Copy the resulting Client ID here. Done!",
+      "saveChanges": "Save changes",
+      "saveAndConnect": "Save and connect with Google"
+    },
+    "logsModal": {
+      "title": "Sync log",
+      "empty": "No sync logs yet."
+    },
+    "log": {
+      "enterCredentials": "Enter your Google OAuth credentials to continue.",
+      "startingAuth": "Starting OAuth 2.0 PKCE authentication flow...",
+      "authSuccess": "Authentication successful",
+      "authSuccessUser": "Authentication successful: {name}",
+      "authNotCompleted": "Google authorization was not completed.",
+      "authError": "Authentication error: {error}",
+      "loggedOut": "Signed out of Google Drive.",
+      "loginRequired": "Sign in to Google Drive to sync.",
+      "startingSync": "Starting differential sync with Google Drive...",
+      "syncConflicts": "Sync finished with {conflicts} conflict(s) resolved without data loss. Uploaded: {uploaded}, Downloaded: {downloaded}",
+      "syncDone": "Vault synced. Uploaded: {uploaded}, Downloaded: {downloaded}",
+      "syncError": "Sync error: {error}"
+    }
+  },
+  "table": {
+    "row": "Row",
+    "column": "Column",
+    "addRowAbove": "Add row above",
+    "addRowBelow": "Add row below",
+    "moveRowUp": "Move row up",
+    "moveRowDown": "Move row down",
+    "duplicateRow": "Duplicate row",
+    "deleteRow": "Delete row",
+    "addColumnLeft": "Add column to the left",
+    "addColumnRight": "Add column to the right",
+    "moveColumnLeft": "Move column left",
+    "moveColumnRight": "Move column right",
+    "duplicateColumn": "Duplicate column",
+    "deleteColumn": "Delete column",
+    "alignment": "Column alignment",
+    "alignLeft": "Align left",
+    "alignCenter": "Align center",
+    "alignRight": "Align right",
+    "sort": "Sort",
+    "sortAscending": "Sort ascending (A → Z)",
+    "sortDescending": "Sort descending (Z → A)",
+    "deleteTable": "Delete table",
+    "notices": {
+      "cellCopied": "Cell copied",
+      "tableDeleted": "Table deleted"
+    }
+  },
+  "tabs": {
+    "closeOthers": "Close others",
+    "closeAll": "Close all",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "splitRight": "Split right",
+    "splitDown": "Split down",
+    "closeOtherTabs": "Close other tabs",
+    "closeAllTabs": "Close all tabs",
+    "unsavedChanges": "Unsaved changes",
+    "pinnedTab": "Pinned tab",
+    "closeTab": "Close tab",
+    "newTab": "New tab (Ctrl+T)",
+    "newTabLabel": "New tab",
+    "dragToMoveWindow": "Drag to move the window",
+    "tabList": "Tab list",
+    "toggleRightSidebar": "Toggle right sidebar",
+    "graphView": "Graph view"
+  },
+  "templates": {
+    "title": "Insert template",
+    "preview": "Preview",
+    "escHint": "Press Esc to cancel",
+    "insert": "Insert",
+    "daily": {
+      "name": "Daily note",
+      "description": "Structured template for tracking the day's progress and tasks"
+    },
+    "meeting": {
+      "name": "Meeting notes",
+      "description": "Record of attendees, topics discussed and decisions made"
+    },
+    "project": {
+      "name": "Project plan",
+      "description": "Definition of goals, milestones, resources and deliverables"
+    },
+    "reading": {
+      "name": "Reading notes / summary",
+      "description": "Key ideas, highlighted concepts and quotes from books or articles"
+    }
+  },
+  "updateLinks": {
+    "title": "Update links",
+    "question": "Do you want to update internal links that link to this file?",
+    "affects": "This will affect {links} in {files}.",
+    "linkOne": "{count} link",
+    "linkOther": "{count} links",
+    "fileOne": "{count} file",
+    "fileOther": "{count} files",
+    "alwaysUpdate": "Always update",
+    "justOnce": "Just once",
+    "doNotUpdate": "Do not update",
+    "close": "Close (Esc)"
+  },
+  "vault": {
+    "untitledFolder": "Untitled",
+    "defaultVaultName": "Vault",
+    "defaultNoteName": "Note",
+    "dailyNoteBody": "# {date}\n\n## Goals for the day\n- [ ] \n\n## Notes\n\n",
+    "errors": {
+      "nameEmpty": "File name cannot be empty.",
+      "nameInvalidChars": "File name cannot contain any of these characters: * \" \\ / < > : | ? # ^ [ ]",
+      "nameExists": "A file or folder with that name already exists.",
+      "renameFailed": "Failed to rename file."
+    }
+  },
+  "viewHeader": {
+    "splitRight": "Split right",
+    "splitDown": "Split down",
+    "rename": "Rename...",
+    "moveFileTo": "Move file to...",
+    "makeCopy": "Make a copy",
+    "copyUranoUrl": "Copy Urano URL",
+    "copyFilePath": "Copy file path",
+    "deleteFile": "Delete file",
+    "back": "Navigate back (Alt+←)",
+    "backLabel": "Navigate back",
+    "forward": "Navigate forward (Alt+→)",
+    "forwardLabel": "Navigate forward",
+    "clickToRename": "Click to rename",
+    "switchToLivePreview": "Switch to Live Preview (Ctrl+E)",
+    "switchToLivePreviewLabel": "Switch to Live Preview",
+    "toggleReadingView": "Toggle reading view (Ctrl+E)",
+    "toggleReadingViewLabel": "Toggle reading view",
+    "moreOptions": "More options"
+  },
+  "window": {
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore down"
+  }
+}
