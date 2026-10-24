@@ -1299,25 +1299,32 @@ mark.hl-purple {
    Obsidian Inline Title (.inline-title)
    ======================================================== */
 .inline-title {
-  font-size: 2.1rem;
-  font-weight: 700;
-  color: #ffffff;
-  line-height: 1.25;
-  letter-spacing: -0.02em;
-  margin-bottom: 1.25rem;
-  padding: 0.25rem 0;
+  border: none;
+  border-bottom: none;
   outline: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.15s ease;
+  background: transparent;
+  font-size: 1.802em;
+  font-weight: 700;
+  color: #dcddde;
+  line-height: 1.2;
+  margin-bottom: 16px;
+  width: 100%;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: var(--font-interface, inherit);
   word-break: break-word;
 }
 
-.inline-title:hover {
-  border-bottom-color: rgba(255, 255, 255, 0.1);
+.inline-title::selection {
+  background-color: rgba(224, 108, 27, 0.35);
+  color: #ffffff;
 }
 
+.inline-title:hover,
 .inline-title:focus {
-  border-bottom-color: var(--interactive-accent);
+  border: none;
+  border-bottom: none;
+  outline: none;
 }
 
 /* ========================================================
