@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { FileItem, SortOrder, BookmarkItem } from '../types';
 import { isImagePath } from '../services/storageAdapter';
+import { useSettingsStore } from './settingsStore';
 
 // Prohibited characters matching Obsidian specification: \ / : * ? " < > | # ^ [ ]
 export const ILLEGAL_FILENAME_CHARS = /[\\/:*?"<>|#^[\]]/;
@@ -496,8 +497,12 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       return existingPath;
     }
 
-    // Create daily note in root
-    const fullPath = `${activeVault}/${targetFileName}`.replace(/\/+/g, '/');
+    // Create daily note in the folder configured in Settings → Daily notes (vault root by default)
+    const dailyFolder = useSettingsStore
+      .getState()
+      .settings.dailyNotesFolder.trim()
+      .replace(/^[\\/]+|[\\/]+$/g, '');
+    const fullPath = `${activeVault}/${dailyFolder ? `${dailyFolder}/` : ''}${targetFileName}`.replace(/\/+/g, '/');
     const initialContent = `# ${dateStr}\n\n## Objetivos del día\n- [ ] \n\n## Notas\n\n`;
     await invoke('create_file', { filePath: fullPath });
     await invoke('write_file', { filePath: fullPath, content: initialContent });
