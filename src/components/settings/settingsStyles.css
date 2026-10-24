@@ -1,0 +1,840 @@
+/* ============================================================================
+   Urano Settings modal — Obsidian 1.14.4 `.modal.mod-settings` reconstruction
+   ----------------------------------------------------------------------------
+   Evidence (REA extraction of /usr/lib/obsidian/obsidian.asar → app.css/app.js):
+     DOM   .modal-container > .modal-bg + .modal.mod-settings.mod-sidebar-layout
+             > .modal-header-button.clickable-icon (×)
+             > .modal-content.vertical-tabs-container
+                 > .vertical-tab-header
+                     > .setting-search-container > .search-input-container > input[type=search]
+                     > .vertical-tab-header-group-container
+                         > .vertical-tab-header-group
+                             > .vertical-tab-header-group-title
+                             > .vertical-tab-header-group-items[data-section]
+                                 > .vertical-tab-nav-item[data-setting-id].is-active
+                                     > .vertical-tab-nav-item-icon + -title + -chevron
+                 > .vertical-tab-content-container > .vertical-tab-content
+                     > .setting-group > .setting-item.setting-item-heading + .setting-items
+                         > .setting-item > .setting-item-info (-name, -description) + .setting-item-control
+     Toggle  label.checkbox-container.is-enabled > input[type=checkbox]   (40×22, thumb 18, border 2)
+     Tokens  --radius-l 12px · --setting-items-padding 20px · --font-ui-small 13px ·
+             --font-ui-smaller 12px · --font-ui-medium 15px · divider 1px · --modal-width 90vw ·
+             --modal-height 85vh · toggle transition 0.15s ease-in-out
+   Colors follow the Urano capture spec (#161616 / #1e1e1e / #282828 / #2a2a2a / #e06c1b).
+   ============================================================================ */
+
+.urano-settings-root {
+  --settings-background: #161616;
+  --settings-sidebar-border: #262626;
+  --settings-group-bg: #1e1e1e;
+  --settings-group-border: #282828;
+  --settings-divider: #2a2a2a;
+  --settings-nav-active: #2a2a2a;
+  --settings-text: #dcddde;
+  --settings-text-muted: #888888;
+  --settings-text-faint: #666666;
+  --settings-heading: #e0e0e0;
+  --settings-button-bg: #2a2a2a;
+  --settings-button-border: #383838;
+  --settings-button-hover: #333333;
+  --settings-input-bg: #222222;
+  --settings-input-border: #333333;
+  --settings-toggle-off: #3a3a3a;
+  --settings-accent: var(--interactive-accent, #e06c1b);
+  --settings-warning: #e08a3c;
+
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-interface);
+  color: var(--settings-text);
+  -webkit-app-region: no-drag;
+}
+
+.urano-settings-root .modal-bg {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(10, 10, 10, 0.4);
+  opacity: 0.85;
+}
+
+/* --- .modal.mod-settings ------------------------------------------------- */
+.urano-settings-root .modal.mod-settings {
+  position: relative;
+  width: 90vw;
+  max-width: 1050px;
+  height: 85vh;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--settings-background);
+  border: 1px solid #2e2e2e;
+  box-shadow:
+    0px 1.8px 7.3px rgba(0, 0, 0, 0.071),
+    0px 6.3px 24.7px rgba(0, 0, 0, 0.112),
+    0px 15px 30px rgba(0, 0, 0, 0.1);
+  animation: urano-settings-in 120ms ease-out;
+}
+
+@keyframes urano-settings-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* × — Obsidian .modal-header-button.mod-raised.clickable-icon */
+.urano-settings-root .modal-header-button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--settings-text-muted);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  transition: color 0.1s ease, background-color 0.1s ease;
+}
+.urano-settings-root .modal-header-button:hover {
+  color: var(--settings-text);
+  background-color: rgba(255, 255, 255, 0.067);
+}
+.urano-settings-root .modal-header-button svg {
+  opacity: 0.85;
+}
+
+.urano-settings-root .modal-content.vertical-tabs-container {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+/* --- Sidebar: .vertical-tab-header -------------------------------------- */
+.urano-settings-root .vertical-tab-header {
+  flex: 0 0 240px;
+  width: 240px;
+  min-width: 240px;
+  background: var(--settings-background);
+  border-right: 1px solid var(--settings-sidebar-border);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.urano-settings-root .setting-search-container {
+  flex-shrink: 0;
+  padding: 0 0 4px;
+}
+
+.urano-settings-root .search-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.urano-settings-root .search-input-container .search-input-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--settings-text-muted);
+  pointer-events: none;
+  display: flex;
+}
+.urano-settings-root .search-input-container input {
+  width: 100%;
+  background: var(--settings-input-bg);
+  border: 1px solid var(--settings-input-border);
+  border-radius: 6px;
+  padding: 6px 28px 6px 32px;
+  height: 30px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--settings-text);
+  outline: none;
+  transition: border-color 0.1s ease;
+}
+.urano-settings-root .search-input-container input::placeholder {
+  color: var(--settings-text-faint);
+}
+.urano-settings-root .search-input-container input:focus {
+  border-color: #555555;
+  box-shadow: 0 0 0 2px rgba(85, 85, 85, 0.35);
+}
+.urano-settings-root .search-input-container input::-webkit-search-decoration,
+.urano-settings-root .search-input-container input::-webkit-search-cancel-button {
+  display: none;
+}
+.urano-settings-root .search-input-clear-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  color: var(--settings-text-muted);
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+}
+.urano-settings-root .search-input-clear-button:hover {
+  color: var(--settings-text);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.urano-settings-root .vertical-tab-header-group-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.urano-settings-root .vertical-tab-header-group-container.is-scrolled {
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, #000 24px);
+}
+
+.urano-settings-root .vertical-tab-header-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #777777;
+  padding: 12px 10px 4px;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.urano-settings-root .vertical-tab-header-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.urano-settings-root .vertical-tab-nav-item {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  border-radius: 6px;
+  color: var(--settings-text);
+  cursor: default;
+  user-select: none;
+  outline: none;
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+.urano-settings-root .vertical-tab-nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.urano-settings-root .vertical-tab-nav-item:focus-visible {
+  box-shadow: 0 0 0 2px #555555;
+}
+.urano-settings-root .vertical-tab-nav-item.is-active {
+  background-color: var(--settings-nav-active);
+  color: #ffffff;
+}
+.urano-settings-root .vertical-tab-nav-item.is-dimmed {
+  opacity: 0.4;
+}
+.urano-settings-root .vertical-tab-nav-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  flex-shrink: 0;
+  color: var(--settings-text-muted);
+}
+.urano-settings-root .vertical-tab-nav-item.is-active .vertical-tab-nav-item-icon {
+  color: #ffffff;
+}
+.urano-settings-root .vertical-tab-nav-item-title {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+}
+.urano-settings-root .vertical-tab-nav-item-chevron {
+  display: none;
+}
+.urano-settings-root .vertical-tab-nav-item-count {
+  font-size: 11px;
+  color: var(--settings-text-muted);
+  background: rgba(255, 255, 255, 0.067);
+  border-radius: 2em;
+  padding: 0 6px;
+  margin-left: 6px;
+  line-height: 16px;
+}
+
+/* --- Content: .vertical-tab-content ------------------------------------- */
+.urano-settings-root .vertical-tab-content-container {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--settings-background);
+}
+.urano-settings-root .vertical-tab-content {
+  height: 100%;
+  overflow-y: auto;
+  padding: 32px 48px 64px;
+  scroll-padding-block: 16px;
+  outline: none;
+}
+.urano-settings-root .vertical-tab-content-inner {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.urano-settings-root .setting-group {
+  width: 100%;
+  margin-bottom: 24px;
+}
+.urano-settings-root .setting-group:last-child {
+  margin-bottom: 0;
+}
+
+/* "Account", "Advanced" group headings */
+.urano-settings-root .setting-item.setting-item-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--settings-heading);
+  margin: 24px 0 10px 2px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+.urano-settings-root .setting-group:first-child .setting-item.setting-item-heading {
+  margin-top: 0;
+}
+.urano-settings-root .setting-item-heading .setting-item-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--settings-heading);
+}
+.urano-settings-root .setting-item-heading .setting-item-description {
+  font-weight: 400;
+  flex-basis: 100%;
+  padding-top: 2px;
+}
+
+/* The card */
+.urano-settings-root .setting-items {
+  background: var(--settings-group-bg);
+  border: 1px solid var(--settings-group-border);
+  border-radius: 10px;
+  padding: 4px 20px;
+}
+.urano-settings-root .setting-items:empty {
+  display: none;
+}
+
+.urano-settings-root .setting-item {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--settings-divider);
+  outline: none;
+}
+.urano-settings-root .setting-items > .setting-item:last-child {
+  border-bottom: none;
+}
+.urano-settings-root .setting-item:focus-visible::after {
+  content: '';
+  position: absolute;
+  inset: 4px -8px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 2px #555555;
+  pointer-events: none;
+}
+.urano-settings-root .setting-item.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.urano-settings-root .setting-item-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.urano-settings-root .setting-item-name {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--settings-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.urano-settings-root .setting-item-description {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--settings-text-muted);
+  padding-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.urano-settings-root .setting-item-description:empty {
+  display: none;
+}
+.urano-settings-root .setting-item-description a,
+.urano-settings-root .setting-item-description .setting-link {
+  color: var(--settings-text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  transition: color 0.1s ease;
+}
+.urano-settings-root .setting-item-description a:hover,
+.urano-settings-root .setting-item-description .setting-link:hover {
+  color: var(--settings-text);
+}
+.urano-settings-root .setting-item-description .mod-warning {
+  color: var(--settings-warning);
+}
+.urano-settings-root .setting-item-description code {
+  font-family: var(--font-monospace);
+  font-size: 0.875em;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  padding: 0 3px 1px;
+}
+
+.urano-settings-root .setting-item-control {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  text-align: end;
+}
+.urano-settings-root .setting-item-control:empty {
+  display: none;
+}
+.urano-settings-root .setting-item-control.mod-vertical {
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+/* --- Toggle: .checkbox-container --------------------------------------- */
+.urano-settings-root .checkbox-container {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background-color: var(--settings-toggle-off);
+  box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.07);
+  cursor: pointer;
+  user-select: none;
+  outline: 0 solid #555555;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease,
+    outline 0.15s ease,
+    opacity 0.15s ease;
+}
+.urano-settings-root .checkbox-container input[type='checkbox'] {
+  position: absolute;
+  opacity: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+}
+.urano-settings-root .checkbox-container::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  top: 2px;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  transform: translate3d(2px, 0, 0);
+  transition:
+    transform 0.15s ease,
+    width 0.1s ease 0.05s,
+    left 0.1s ease 0.05s;
+}
+.urano-settings-root .checkbox-container.is-enabled {
+  background-color: var(--settings-accent);
+}
+.urano-settings-root .checkbox-container.is-enabled::after {
+  transform: translate3d(20px, 0, 0);
+}
+.urano-settings-root .checkbox-container:not(.is-disabled):active::after {
+  width: 22px;
+}
+.urano-settings-root .checkbox-container.is-enabled:not(.is-disabled):active::after {
+  left: -4px;
+}
+.urano-settings-root .checkbox-container:focus-visible {
+  outline: 2px solid #555555;
+}
+.urano-settings-root .checkbox-container.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* --- Buttons (Obsidian `button`, `button.mod-cta`) ---------------------- */
+.urano-settings-root .setting-item-control button:not(.clickable-icon):not(.setting-link),
+.urano-settings-root .setting-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--settings-button-bg);
+  border: 1px solid var(--settings-button-border);
+  border-radius: 5px;
+  padding: 5px 12px;
+  height: 30px;
+  color: var(--settings-text);
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+.urano-settings-root .setting-button:hover {
+  background: var(--settings-button-hover);
+}
+.urano-settings-root .setting-button:focus-visible {
+  box-shadow: 0 0 0 3px rgba(85, 85, 85, 0.6);
+}
+.urano-settings-root .setting-button[disabled] {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.urano-settings-root .setting-button.mod-cta {
+  background: var(--settings-accent);
+  border-color: transparent;
+  color: #ffffff;
+}
+.urano-settings-root .setting-button.mod-cta:hover {
+  filter: brightness(1.08);
+}
+.urano-settings-root .setting-button.mod-warning {
+  color: #f87171;
+}
+.urano-settings-root .setting-button.mod-loading {
+  color: transparent;
+  position: relative;
+  pointer-events: none;
+}
+.urano-settings-root .setting-button.mod-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 12px;
+  height: 12px;
+  border: 2px solid transparent;
+  border-top-color: var(--settings-text);
+  border-radius: 50%;
+  animation: urano-settings-spin 1s ease infinite;
+}
+@keyframes urano-settings-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Icon-only extra button (Obsidian `.extra-setting-button.clickable-icon`) */
+.urano-settings-root .extra-setting-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--settings-text-muted);
+  cursor: pointer;
+  transition: color 0.1s ease, background-color 0.1s ease;
+}
+.urano-settings-root .extra-setting-button:hover {
+  color: var(--settings-text);
+  background-color: rgba(255, 255, 255, 0.067);
+}
+.urano-settings-root .extra-setting-button:focus-visible {
+  box-shadow: 0 0 0 2px #555555;
+  outline: none;
+}
+
+/* --- Dropdown (Obsidian `select.dropdown`) ------------------------------- */
+.urano-settings-root .dropdown-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.urano-settings-root select.dropdown {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--settings-button-bg);
+  border: 1px solid var(--settings-button-border);
+  border-radius: 5px;
+  padding: 5px 30px 5px 10px;
+  height: 30px;
+  color: var(--settings-text);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  max-width: 400px;
+  transition: background-color 0.1s ease;
+}
+.urano-settings-root select.dropdown:hover {
+  background: var(--settings-button-hover);
+}
+.urano-settings-root select.dropdown:focus-visible {
+  box-shadow: 0 0 0 3px rgba(85, 85, 85, 0.6);
+}
+.urano-settings-root select.dropdown option {
+  background: #1e1e1e;
+  color: var(--settings-text);
+}
+.urano-settings-root .dropdown-icon {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--settings-text-muted);
+  pointer-events: none;
+  display: flex;
+}
+
+/* --- Text / number / color / range inputs ------------------------------- */
+.urano-settings-root .setting-item-control input[type='text'],
+.urano-settings-root .setting-item-control input[type='number'] {
+  background: #1c1c1c;
+  border: 1px solid var(--settings-input-border);
+  border-radius: 5px;
+  height: 30px;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--settings-text);
+  outline: none;
+  width: 220px;
+  max-width: 100%;
+  transition: border-color 0.1s ease;
+}
+.urano-settings-root .setting-item-control input[type='number'] {
+  width: 72px;
+  text-align: end;
+}
+.urano-settings-root .setting-item-control input[type='text']::placeholder {
+  color: var(--settings-text-faint);
+}
+.urano-settings-root .setting-item-control input[type='text']:focus,
+.urano-settings-root .setting-item-control input[type='number']:focus {
+  border-color: #555555;
+  box-shadow: 0 0 0 2px rgba(85, 85, 85, 0.35);
+}
+
+.urano-settings-root .setting-item-control input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 160px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--settings-toggle-off);
+  outline: none;
+  cursor: pointer;
+}
+.urano-settings-root .setting-item-control input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid var(--settings-button-border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+.urano-settings-root .slider-value {
+  font-size: 12px;
+  color: var(--settings-text-muted);
+  min-width: 42px;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.urano-settings-root .color-input-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.urano-settings-root .color-input-container input[type='color'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--settings-button-border);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  overflow: hidden;
+}
+.urano-settings-root .color-input-container input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.urano-settings-root .color-input-container input[type='color']::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+.urano-settings-root .color-input-value {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--settings-text-muted);
+}
+
+/* --- Status / display values -------------------------------------------- */
+.urano-settings-root .setting-item-value {
+  color: var(--settings-text-muted);
+  font-size: 13px;
+  text-align: end;
+  white-space: nowrap;
+}
+.urano-settings-root .setting-item-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--settings-text-muted);
+}
+.urano-settings-root .setting-item-status .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--settings-text-faint);
+}
+.urano-settings-root .setting-item-status.mod-success .status-dot {
+  background: #22c55e;
+}
+.urano-settings-root .setting-item-status.mod-warning .status-dot {
+  background: #eab308;
+}
+.urano-settings-root .setting-item-status.mod-error .status-dot {
+  background: #ef4444;
+}
+.urano-settings-root .setting-item-status.mod-active .status-dot {
+  background: var(--settings-accent);
+}
+
+/* --- Hotkeys (Obsidian `.setting-hotkey`, `.setting-command-hotkeys`) --- */
+.urano-settings-root .setting-command-hotkeys {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.urano-settings-root .setting-hotkey {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-interface);
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.067);
+  border-radius: 2em;
+  padding: 2px 8px;
+  white-space: nowrap;
+  color: var(--settings-text);
+}
+.urano-settings-root .setting-hotkey.mod-empty {
+  color: var(--settings-text-faint);
+}
+
+/* --- Search results ------------------------------------------------------ */
+.urano-settings-root .setting-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 0;
+}
+.urano-settings-root .setting-search-result-group {
+  margin-bottom: 24px;
+}
+.urano-settings-root .setting-search-result-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--settings-heading);
+  margin: 0 0 10px 2px;
+}
+.urano-settings-root .setting-search-result-group-title .vertical-tab-nav-item-icon {
+  margin-right: 0;
+}
+.urano-settings-root .setting-search-highlight {
+  background: color-mix(in srgb, var(--settings-accent) 30%, transparent);
+  color: #ffffff;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+.urano-settings-root .setting-search-empty {
+  color: var(--settings-text-muted);
+  font-size: 13px;
+  padding: 8px 2px;
+}
+.urano-settings-root .setting-empty-state {
+  color: var(--settings-text-muted);
+  font-size: 13px;
+  padding: 16px 0;
+}
+
+/* Plugin list rows (Obsidian `.setting-group.mod-list`) */
+.urano-settings-root .setting-group.mod-list .setting-items {
+  padding: 4px 16px;
+}
+.urano-settings-root .setting-group.mod-list .setting-item {
+  padding: 12px 0;
+}
+.urano-settings-root .setting-item-icon {
+  display: flex;
+  align-items: center;
+  color: var(--settings-text-muted);
+  min-width: 16px;
+}
+
+/* Scrollbars inside the modal */
+.urano-settings-root ::-webkit-scrollbar {
+  width: 8px;
+}
+.urano-settings-root ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
