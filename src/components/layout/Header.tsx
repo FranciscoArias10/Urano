@@ -3,6 +3,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useSyncStore } from '../../stores/syncStore';
 import { UranoLogo } from '../common/UranoLogo';
+import { useT } from '../../stores/localeStore';
 import {
   FolderOpen,
   Cloud,
@@ -23,6 +24,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpenLogs }) => {
+  const t = useT();
   const { activeVault, vaultName, setVault } = useVaultStore();
   const {
     status,
@@ -39,7 +41,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
       const selected = await open({
         directory: true,
         multiple: false,
-        title: 'Seleccionar carpeta de Bóveda para Urano',
+        title: t('header.selectVaultFolder'),
       });
 
       if (selected && typeof selected === 'string') {
@@ -74,16 +76,16 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
   };
 
   const renderSyncLabel = () => {
-    if (isSyncing) return 'Sincronizando...';
+    if (isSyncing) return t('header.syncing');
     switch (status) {
       case 'synced':
-        return lastSynced ? `Sincronizado (${lastSynced})` : 'Sincronizado';
+        return lastSynced ? t('header.syncedAt', { time: lastSynced }) : t('header.synced');
       case 'conflict':
-        return 'Conflicto resuelto';
+        return t('header.conflictResolved');
       case 'error':
-        return 'Error de sync';
+        return t('header.syncError');
       default:
-        return 'Sincronizar ahora';
+        return t('header.syncNow');
     }
   };
 
@@ -103,11 +105,11 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
         <button
           onClick={handleSelectVault}
           className="flex items-center gap-1.5 text-xs text-obsidian-text hover:text-white bg-obsidian-bg hover:bg-obsidian-hover border border-obsidian-border px-2.5 py-1 rounded-md transition-colors"
-          title="Cambiar carpeta de bóveda local"
+          title={t('header.changeVaultFolder')}
         >
           <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
           <span className="max-w-[140px] truncate font-medium">
-            {vaultName || 'Abrir Bóveda...'}
+            {vaultName || t('header.openVault')}
           </span>
         </button>
       </div>
@@ -123,7 +125,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
           }`}
         >
           <Edit3 className="w-3.5 h-3.5" />
-          <span>Notas</span>
+          <span>{t('header.notes')}</span>
         </button>
         <button
           onClick={() => onToggleView('graph')}
@@ -134,7 +136,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
           }`}
         >
           <Network className="w-3.5 h-3.5" />
-          <span>Grafo</span>
+          <span>{t('header.graph')}</span>
         </button>
       </div>
 
@@ -156,7 +158,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
                 ? 'bg-orange-500/10 border-orange-500/40 text-orange-300 animate-pulse'
                 : 'bg-obsidian-bg border-obsidian-border text-obsidian-text hover:bg-obsidian-hover'
             }`}
-            title="Sincronizar bóveda con Google Drive"
+            title={t('header.syncVault')}
           >
             {renderSyncIcon()}
             <span className="hidden sm:inline font-medium">{renderSyncLabel()}</span>
@@ -167,7 +169,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
         <button
           onClick={onOpenLogs}
           className="p-1.5 text-obsidian-muted hover:text-white hover:bg-obsidian-hover rounded-md transition-colors"
-          title="Ver registro de actividad de sincronización"
+          title={t('header.syncLogs')}
         >
           <Activity className="w-4 h-4" />
         </button>
@@ -176,7 +178,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
         <button
           onClick={() => setShowConfigModal(true)}
           className="flex items-center gap-1.5 text-xs bg-obsidian-bg hover:bg-obsidian-hover border border-obsidian-border p-1 rounded-md transition-colors"
-          title="Configuración de Google Drive"
+          title={t('header.driveSettings')}
         >
           {isAuthenticated && user?.picture ? (
             <img src={user.picture} alt={user.name} className="w-5 h-5 rounded-full" />

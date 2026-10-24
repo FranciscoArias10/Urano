@@ -15,6 +15,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
+import { useT } from '../../stores/localeStore';
 
 export type ViewMode = 'live-preview' | 'reading' | 'source';
 
@@ -59,6 +60,7 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
   onSplitRight,
   onSplitDown,
 }) => {
+  const t = useT();
   const [isRenaming, setIsRenaming] = useState(false);
   const [draft, setDraft] = useState(title);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
@@ -103,45 +105,45 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
 
   const menuItems: MenuItemData[] = [
     {
-      title: 'Dividir a la derecha',
+      title: t('viewHeader.splitRight'),
       icon: <Columns size={14} />,
       action: () => onSplitRight?.(),
     },
     {
-      title: 'Dividir abajo',
+      title: t('viewHeader.splitDown'),
       icon: <Rows size={14} />,
       action: () => onSplitDown?.(),
     },
     { type: 'separator' },
     {
-      title: 'Cambiar nombre...',
+      title: t('viewHeader.rename'),
       icon: <TextCursorInput size={14} />,
       action: () => setIsRenaming(true),
     },
     {
-      title: 'Mover archivo a...',
+      title: t('viewHeader.moveFileTo'),
       icon: <FolderInput size={14} />,
       action: () => onMoveFile?.(),
     },
     {
-      title: 'Hacer una copia',
+      title: t('viewHeader.makeCopy'),
       icon: <Copy size={14} />,
       action: () => onDuplicateFile?.(),
     },
     { type: 'separator' },
     {
-      title: 'Copiar enlace de Urano',
+      title: t('viewHeader.copyUranoUrl'),
       icon: <Link size={14} />,
       action: () => onCopyLink?.(),
     },
     {
-      title: 'Copiar ruta de archivo',
+      title: t('viewHeader.copyFilePath'),
       icon: <FileText size={14} />,
       action: () => onCopyPath?.(),
     },
     { type: 'separator' },
     {
-      title: 'Eliminar archivo',
+      title: t('viewHeader.deleteFile'),
       icon: <Trash2 size={14} />,
       isWarning: true,
       action: () => onDeleteFile?.(),
@@ -158,8 +160,8 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
           <button
             type="button"
             className="view-header-nav-button"
-            title="Atrás (Alt+←)"
-            aria-label="Atrás"
+            title={t('viewHeader.back')}
+            aria-label={t('viewHeader.backLabel')}
             aria-disabled={!canGoBack}
             disabled={!canGoBack}
             onClick={() => canGoBack && onNavigateBack()}
@@ -169,8 +171,8 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
           <button
             type="button"
             className="view-header-nav-button"
-            title="Adelante (Alt+→)"
-            aria-label="Adelante"
+            title={t('viewHeader.forward')}
+            aria-label={t('viewHeader.forwardLabel')}
             aria-disabled={!canGoForward}
             disabled={!canGoForward}
             onClick={() => canGoForward && onNavigateForward()}
@@ -216,7 +218,7 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
         ) : (
           <div
             className="view-header-title"
-            title="Haz clic para renombrar"
+            title={t('viewHeader.clickToRename')}
             onClick={() => setIsRenaming(true)}
           >
             {title}
@@ -230,11 +232,13 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
           type="button"
           className="view-action"
           title={
-            isReading
-              ? 'Cambiar a Live Preview (Ctrl+E)'
-              : 'Alternar Vista de Lectura (Ctrl+E)'
+            isReading ? t('viewHeader.switchToLivePreview') : t('viewHeader.toggleReadingView')
           }
-          aria-label={isReading ? 'Cambiar a Live Preview' : 'Alternar Vista de Lectura'}
+          aria-label={
+            isReading
+              ? t('viewHeader.switchToLivePreviewLabel')
+              : t('viewHeader.toggleReadingViewLabel')
+          }
           onClick={onToggleViewMode}
         >
           {isReading ? <Pencil size={16} /> : <BookOpen size={16} />}
@@ -243,8 +247,8 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
           ref={menuButtonRef}
           type="button"
           className="view-action"
-          title="Más opciones"
-          aria-label="Más opciones"
+          title={t('viewHeader.moreOptions')}
+          aria-label={t('viewHeader.moreOptions')}
           onClick={openMenu}
         >
           <MoreVertical size={16} />

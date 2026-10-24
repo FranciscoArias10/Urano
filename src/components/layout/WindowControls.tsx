@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Minus, Square, Copy, X } from 'lucide-react';
+import { useT } from '../../stores/localeStore';
 
 /**
  * Native window controls backed by the Tauri window API.
@@ -8,6 +9,7 @@ import { Minus, Square, Copy, X } from 'lucide-react';
  * minimise / maximise / close buttons itself.
  */
 export const WindowControls: React.FC = () => {
+  const t = useT();
   const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
@@ -82,8 +84,8 @@ export const WindowControls: React.FC = () => {
       <button
         type="button"
         className="window-control-button mod-minimize"
-        title="Minimizar"
-        aria-label="Minimizar"
+        title={t('window.minimize')}
+        aria-label={t('window.minimize')}
         onClick={handleMinimize}
       >
         <Minus size={14} strokeWidth={1.6} />
@@ -91,8 +93,8 @@ export const WindowControls: React.FC = () => {
       <button
         type="button"
         className="window-control-button mod-maximize"
-        title={isMaximized ? 'Restaurar' : 'Maximizar'}
-        aria-label={isMaximized ? 'Restaurar' : 'Maximizar'}
+        title={isMaximized ? t('window.restore') : t('window.maximize')}
+        aria-label={isMaximized ? t('window.restore') : t('window.maximize')}
         onClick={handleToggleMaximize}
       >
         {isMaximized ? (
@@ -104,8 +106,8 @@ export const WindowControls: React.FC = () => {
       <button
         type="button"
         className="window-control-button mod-close"
-        title="Cerrar"
-        aria-label="Cerrar"
+        title={t('common.close')}
+        aria-label={t('common.close')}
         onClick={handleClose}
       >
         <X size={14} strokeWidth={1.6} />

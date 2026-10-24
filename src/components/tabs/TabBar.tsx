@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 import { WindowControls } from '../layout/WindowControls';
+import { useT } from '../../stores/localeStore';
 
 export interface TabItem {
   id: string;
@@ -79,6 +80,7 @@ export const TabBar: React.FC<TabBarProps> = ({
   onSplitRight,
   onSplitDown,
 }) => {
+  const t = useT();
   const [contextMenu, setContextMenu] = useState<MenuState | null>(null);
   const [tabListMenu, setTabListMenu] = useState<MenuState | null>(null);
   const tabListButtonRef = useRef<HTMLSpanElement>(null);
@@ -87,6 +89,9 @@ export const TabBar: React.FC<TabBarProps> = ({
     () => tabs.findIndex((t) => t.id === activeTabId),
     [tabs, activeTabId]
   );
+
+  /** Graph tabs resolve their label at render time so it follows the active language. */
+  const tabLabel = (tab: TabItem) => (tab.type === 'graph' ? t('tabs.graphView') : tab.title);
 
   const closeMenus = useCallback(() => {
     setContextMenu(null);
@@ -102,34 +107,34 @@ export const TabBar: React.FC<TabBarProps> = ({
 
     const items: MenuItemData[] = [
       {
-        title: 'Cerrar',
+        title: t('common.close'),
         icon: <X size={14} />,
         action: () => onCloseTab(tab.id),
       },
       {
-        title: 'Cerrar otras',
+        title: t('tabs.closeOthers'),
         icon: <X size={14} />,
         action: () => onCloseOtherTabs?.(tab.id),
       },
       {
-        title: 'Cerrar todo',
+        title: t('tabs.closeAll'),
         icon: <X size={14} />,
         action: () => onCloseAllTabs?.(),
       },
       { type: 'separator' },
       {
-        title: tab.pinned ? 'Desfijar' : 'Fijar',
+        title: tab.pinned ? t('tabs.unpin') : t('tabs.pin'),
         icon: tab.pinned ? <PinOff size={14} /> : <Pin size={14} />,
         action: () => onTogglePin?.(tab.id),
       },
       { type: 'separator' },
       {
-        title: 'Dividir a la derecha',
+        title: t('tabs.splitRight'),
         icon: <Columns size={14} />,
         action: () => onSplitRight?.(tab.id),
       },
       {
-        title: 'Dividir abajo',
+        title: t('tabs.splitDown'),
         icon: <Rows size={14} />,
         action: () => onSplitDown?.(tab.id),
       },
@@ -146,7 +151,7 @@ export const TabBar: React.FC<TabBarProps> = ({
     e.stopPropagation();
 
     const items: MenuItemData[] = tabs.map((tab) => ({
-      title: tab.title,
+      title: tabLabel(tab),
       icon: TAB_ICON[tab.type] ?? undefined,
       checked: tab.id === activeTabId,
       action: () => onSelectTab(tab.id),
@@ -154,13 +159,13 @@ export const TabBar: React.FC<TabBarProps> = ({
 
     items.push({ type: 'separator' });
     items.push({
-      title: 'Cerrar otras pestañas',
+      title: t('tabs.closeOtherTabs'),
       icon: <X size={14} />,
       disabled: tabs.length < 2,
       action: () => onCloseOtherTabs?.(activeTabId),
     });
     items.push({
-      title: 'Cerrar todas las pestañas',
+      title: t('tabs.closeAllTabs'),
       icon: <X size={14} />,
       disabled: tabs.length === 0,
       action: () => onCloseAllTabs?.(),
@@ -200,6 +205,7 @@ export const TabBar: React.FC<TabBarProps> = ({
             {tabs.map((tab, index) => {
               const isActive = tab.id === activeTabId;
               const isBeforeActive = activeIndex > 0 && index === activeIndex - 1;
+              const label = tabLabel(tab);
 
               return (
                 <div
@@ -213,7 +219,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                     .filter(Boolean)
                     .join(' ')}
                   data-type={TAB_VIEW_TYPE[tab.type]}
-                  title={tab.title}
+                  title={label}
                   onClick={() => onSelectTab(tab.id)}
                   onAuxClick={(e) => {
                     /* middle click closes the tab (Obsidian behaviour) */
@@ -228,18 +234,18 @@ export const TabBar: React.FC<TabBarProps> = ({
                     <div className="workspace-tab-header-inner-icon">
                       {TAB_ICON[tab.type] ?? null}
                     </div>
-                    <div className="workspace-tab-header-inner-title">{tab.title}</div>
+                    <div className="workspace-tab-header-inner-title">{label}</div>
                     <div className="workspace-tab-header-status-container">
                       {tab.isDirty && (
                         <div
                           className="workspace-tab-header-status-icon mod-dirty"
-                          title="Cambios sin guardar"
+                          title={t('tabs.unsavedChanges')}
                         />
                       )}
                       {tab.pinned && (
                         <div
                           className="workspace-tab-header-status-icon mod-pinned"
-                          title="Pestaña fijada"
+                          title={t('tabs.pinnedTab')}
                         >
                           <Pin size={12} />
                         </div>
@@ -248,7 +254,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                     {!tab.pinned && (
                       <div
                         className="workspace-tab-header-inner-close-button"
-                        title="Cerrar pestaña"
+                        title={t('tabs.closeTab')}
                         onClick={(e) => {
                           e.stopPropagation();
                           onCloseTab(tab.id);
@@ -267,8 +273,8 @@ export const TabBar: React.FC<TabBarProps> = ({
           <div className="workspace-tab-header-new-tab">
             <span
               className="clickable-icon"
-              title="Nueva pestaña (Ctrl+T)"
-              aria-label="Nueva pestaña"
+              title={t('tabs.newTab')}
+              aria-label={t('tabs.newTabLabel')}
               onClick={onNewTab}
             >
               <Plus size={16} />
@@ -279,7 +285,7 @@ export const TabBar: React.FC<TabBarProps> = ({
           <div
             className="workspace-tab-header-spacer"
             data-tauri-drag-region
-            title="Arrastra para mover la ventana"
+            title={t('tabs.dragToMoveWindow')}
           />
 
           {/* Tab list dropdown ------------------------------------------ */}
@@ -287,8 +293,8 @@ export const TabBar: React.FC<TabBarProps> = ({
             <span
               ref={tabListButtonRef}
               className="clickable-icon"
-              title="Lista de pestañas"
-              aria-label="Lista de pestañas"
+              title={t('tabs.tabList')}
+              aria-label={t('tabs.tabList')}
               onClick={handleOpenTabListMenu}
               onContextMenu={handleOpenTabListMenu}
             >
@@ -302,8 +308,8 @@ export const TabBar: React.FC<TabBarProps> = ({
               className={`sidebar-toggle-button mod-right${
                 rightSidebarVisible ? ' is-active' : ''
               }`}
-              title="Alternar barra lateral derecha"
-              aria-label="Alternar barra lateral derecha"
+              title={t('tabs.toggleRightSidebar')}
+              aria-label={t('tabs.toggleRightSidebar')}
               onClick={onToggleRightSidebar}
             >
               <PanelRight size={16} />

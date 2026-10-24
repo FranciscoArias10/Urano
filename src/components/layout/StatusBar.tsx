@@ -1,6 +1,7 @@
 import React from 'react';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useSyncStore } from '../../stores/syncStore';
+import { useT } from '../../stores/localeStore';
 import {
   HardDrive,
   Cloud,
@@ -25,6 +26,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   viewMode = 'live-preview',
   onToggleViewMode,
 }) => {
+  const t = useT();
   const { fileContent } = useVaultStore();
   const { status, isSyncing, isAuthenticated } = useSyncStore();
 
@@ -42,9 +44,9 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           <button
             onClick={onToggleBacklinks}
             className="hover:text-orange-400 transition-colors cursor-pointer"
-            title="Alternar panel de Backlinks"
+            title={t('statusBar.toggleBacklinks')}
           >
-            {backlinksCount} backlinks
+            {t('statusBar.backlinks', { count: backlinksCount })}
           </button>
 
           <span className="text-stone-700 select-none">•</span>
@@ -56,10 +58,10 @@ export const StatusBar: React.FC<StatusBarProps> = ({
                 className="hover:text-orange-400 transition-colors cursor-pointer flex items-center justify-center"
                 title={
                   viewMode === 'source'
-                    ? 'Cambiar a Live Preview'
-                    : 'Cambiar a Modo código fuente'
+                    ? t('statusBar.switchToLivePreview')
+                    : t('statusBar.switchToSourceMode')
                 }
-                aria-label="Alternar modo de vista"
+                aria-label={t('statusBar.toggleViewMode')}
               >
                 <Pencil size={13} />
               </button>
@@ -67,11 +69,15 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             </>
           )}
 
-          <span className="font-mono text-[10px] text-stone-300">{words} palabras</span>
+          <span className="font-mono text-[10px] text-stone-300">
+            {t('statusBar.words', { count: words })}
+          </span>
 
           <span className="text-stone-700 select-none">•</span>
 
-          <span className="font-mono text-[10px] text-stone-300">{chars} caracteres</span>
+          <span className="font-mono text-[10px] text-stone-300">
+            {t('statusBar.characters', { count: chars })}
+          </span>
 
           <span className="text-stone-700 select-none">•</span>
 
@@ -81,13 +87,13 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             title={
               isAuthenticated
                 ? isSyncing
-                  ? 'Sincronizando con Google Drive...'
+                  ? t('statusBar.syncing')
                   : status === 'synced'
-                  ? 'Sincronizado con Google Drive'
+                  ? t('statusBar.synced')
                   : status === 'error'
-                  ? 'Error de sincronización con Google Drive'
-                  : 'Google Drive conectado'
-                : 'Bóveda local (sin sincronizar)'
+                  ? t('statusBar.syncError')
+                  : t('statusBar.connected')
+                : t('statusBar.localVault')
             }
           >
             {isAuthenticated ? (
