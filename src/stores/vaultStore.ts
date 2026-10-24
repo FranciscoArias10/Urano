@@ -71,6 +71,7 @@ interface VaultState {
   isLoading: boolean;
   notesContentMap: Record<string, string>; // path -> content for graph & backlinks
   autoFocusTitle: boolean;
+  shouldSelectTitleOnOpen: boolean;
 
   // Bookmarks
   bookmarks: BookmarkItem[];
@@ -112,6 +113,7 @@ interface VaultState {
   openOrCreateWikilink: (noteName: string) => Promise<void>;
   loadAllNotesContent: () => Promise<void>;
   setAutoFocusTitle: (focus: boolean) => void;
+  setShouldSelectTitleOnOpen: (focus: boolean) => void;
 }
 
 export const useVaultStore = create<VaultState>((set, get) => ({
@@ -125,6 +127,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   isLoading: false,
   notesContentMap: {},
   autoFocusTitle: false,
+  shouldSelectTitleOnOpen: false,
 
   // Bookmarks
   bookmarks: JSON.parse(localStorage.getItem('urano_bookmarks') || '[]'),
@@ -169,6 +172,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   },
 
   setAutoFocusTitle: (focus: boolean) => set({ autoFocusTitle: focus }),
+  setShouldSelectTitleOnOpen: (focus: boolean) => set({ shouldSelectTitleOnOpen: focus }),
 
   setVault: async (vaultPath: string) => {
     try {
@@ -325,7 +329,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
     await refreshTree();
     await selectFile(fullPath);
-    set({ autoFocusTitle: true });
+    set({ autoFocusTitle: true, shouldSelectTitleOnOpen: true });
 
     return { path: fullPath, name: candidateName.replace(/\.md$/, '') };
   },
@@ -370,7 +374,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
     await refreshTree();
     await selectFile(fullPath);
-    set({ autoFocusTitle: true });
+    set({ autoFocusTitle: true, shouldSelectTitleOnOpen: true });
 
     return { path: fullPath, name: candidateName.replace(/\.canvas$/, '') };
   },
@@ -417,7 +421,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
     await refreshTree();
     await selectFile(fullPath);
-    set({ autoFocusTitle: true });
+    set({ autoFocusTitle: true, shouldSelectTitleOnOpen: true });
 
     return { path: fullPath, name: candidateName.replace(/\.base$/, '') };
   },
