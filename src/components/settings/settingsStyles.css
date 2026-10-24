@@ -838,3 +838,147 @@
   background: rgba(255, 255, 255, 0.12);
   border-radius: 999px;
 }
+
+/* --- Language dropdown (Ajustes → General → Language) -------------------------
+   Evidencia Obsidian (`obsidian.asar/app.css`, REA):
+     .dropdown { height: var(--input-height); font-size: var(--font-ui-small);
+                 border-radius: var(--input-radius); background: var(--dropdown-background);
+                 padding: 0 2.4em 0 0.8em; background-image: url(chevrons ↕) }
+     .menu     { background: var(--menu-background); border: 1px solid var(--menu-border-color);
+                 border-radius: var(--menu-radius); box-shadow: var(--menu-shadow) }
+     .menu-item.selected { background: var(--background-modifier-hover) }
+     .mod-rtl .menu { direction: rtl }
+   El popover replica el `<select>` nativo de la captura; el ítem activo usa el acento de Urano. */
+.urano-settings-root .language-dropdown-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 130px;
+  max-width: 400px;
+  height: 30px;
+  padding: 4px 10px;
+  background: #2a2a2a;
+  border: 1px solid #363636;
+  border-radius: 5px;
+  color: #dcddde;
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.3;
+  cursor: pointer;
+  outline: none;
+  transition: background-color 0.1s ease;
+}
+.urano-settings-root .language-dropdown-button:hover,
+.urano-settings-root .language-dropdown-button.is-open {
+  background: var(--settings-button-hover, #333333);
+}
+.urano-settings-root .language-dropdown-button:focus-visible {
+  box-shadow: 0 0 0 3px rgba(85, 85, 85, 0.6);
+}
+.urano-settings-root .language-dropdown-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.urano-settings-root .language-dropdown-button svg {
+  flex-shrink: 0;
+  color: var(--settings-text-muted, #9a9a9a);
+}
+.urano-settings-root .language-dropdown-button-label {
+  flex: 1 1 auto;
+  text-align: start;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.language-dropdown-menu {
+  position: fixed;
+  z-index: 200;
+  box-sizing: border-box;
+  min-width: 180px;
+  max-height: 290px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 0;
+  background: #181818;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  font-family: var(--font-interface, inherit);
+  font-size: 13px;
+  color: #d0d0d0;
+  outline: none;
+  user-select: none;
+  animation: language-dropdown-in 90ms ease-out;
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a3a transparent;
+}
+.language-dropdown-menu.is-top {
+  animation-name: language-dropdown-in-top;
+}
+.language-dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+.language-dropdown-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+.language-dropdown-menu::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 3px;
+}
+.language-dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: #4a4a4a;
+}
+@keyframes language-dropdown-in {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes language-dropdown-in-top {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.language-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 2px 4px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #d0d0d0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.language-dropdown-item.is-rtl {
+  direction: rtl;
+  text-align: right;
+}
+.language-dropdown-item.is-active {
+  background: #262626;
+}
+.language-dropdown-item.is-selected,
+.language-dropdown-item.is-selected.is-active {
+  background: var(--interactive-accent, #72aeff);
+  color: #111111;
+  font-weight: 500;
+}
+.language-dropdown-item-label {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.language-dropdown-item-badge {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  font-family: var(--font-monospace, monospace);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: inherit;
+  opacity: 0.8;
+}
