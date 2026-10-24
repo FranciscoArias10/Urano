@@ -7,7 +7,7 @@ export const obsidianTheme = EditorView.theme(
     '&': {
       color: 'var(--text-normal, #dcddde)',
       backgroundColor: 'transparent',
-      fontSize: '15px',
+      fontSize: 'var(--editor-font-size, 15px)',
       lineHeight: '1.7',
       height: '100%',
     },
@@ -17,7 +17,7 @@ export const obsidianTheme = EditorView.theme(
       overflow: 'auto',
     },
     '.cm-content': {
-      maxWidth: '820px',
+      maxWidth: 'var(--file-line-width, 820px)',
       margin: '0 auto',
       caretColor: '#e06c1b',
       fontFamily: "var(--font-interface, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif)",
@@ -35,14 +35,23 @@ export const obsidianTheme = EditorView.theme(
     '&.cm-focused .cm-selectionBackground, ::selection': {
       backgroundColor: 'rgba(224, 108, 27, 0.25) !important',
     },
+    // Gutters only exist when "Show line number" is on (lineNumbers() extension)
     '.cm-gutters': {
-      display: 'none !important',
+      backgroundColor: 'transparent',
+      border: 'none',
+      color: 'var(--text-faint, #555555)',
+      fontSize: '0.85em',
+      paddingRight: '12px',
+    },
+    '.cm-lineNumbers .cm-gutterElement': {
+      minWidth: '3ch',
     },
     '.cm-activeLine': {
       backgroundColor: 'transparent !important',
     },
     '.cm-activeLineGutter': {
-      display: 'none !important',
+      backgroundColor: 'transparent !important',
+      color: 'var(--text-muted, #888888)',
     },
   },
   { dark: true }

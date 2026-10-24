@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { EditorState, Compartment } from '@codemirror/state';
-import { EditorView, keymap } from '@codemirror/view';
+import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
+import { indentUnit } from '@codemirror/language';
+import { useSettingsStore, UranoSettings } from '../../stores/settingsStore';
 import { languages } from '@codemirror/language-data';
 import { obsidianTheme, obsidianSyntax } from '../../editor/theme';
 import { liveMarkdownExtension } from '../../editor/liveMarkdown';
@@ -101,6 +103,27 @@ export const Editor: React.FC<EditorProps> = ({
 
   // Holds the Live Preview rendering extensions; emptied in Source Mode
   const livePreviewCompartment = useRef(new Compartment());
+
+  // Settings → Editor (line numbers, tab size, indent unit, spellcheck) live in
+  // their own compartment so changes apply without recreating the editor.
+  const editorSettingsCompartment = useRef(new Compartment());
+  const showLineNumbers = useSettingsStore((st) => st.settings.showLineNumbers);
+  const tabSize = useSettingsStore((st) => st.settings.tabSize);
+  const useTabs = useSettingsStore((st) => st.settings.useTabs);
+  const spellcheck = useSettingsStore((st) => st.settings.spellcheck);
+  const strictLineBreaks = useSettingsStore((st) => st.settings.strictLineBreaks);
+  const showInlineTitle = useSettingsStore((st) => st.settings.showInlineTitle);
+  const editorSettingsRef = useRef({ showLineNumbers, tabSize, useTabs, spellcheck });
+  editorSettingsRef.current = { showLineNumbers, tabSize, useTabs, spellcheck };
+
+  const buildEditorSettingsExtensions = (
+    s: Pick<UranoSettings, 'showLineNumbers' | 'tabSize' | 'useTabs' | 'spellcheck'>
+  ) => [
+    ...(s.showLineNumbers ? [lineNumbers()] : []),
+    EditorState.tabSize.of(s.tabSize),
+    indentUnit.of(s.useTabs ? '\t' : ' '.repeat(s.tabSize)),
+    EditorView.contentAttributes.of({ spellcheck: s.spellcheck ? 'true' : 'false' }),
+  ];
 
   const editorMode = viewMode ?? 'live-preview';
   const [contextMenu, setContextMenu] = useState<{
@@ -302,6 +325,9 @@ export const Editor: React.FC<EditorProps> = ({
         // Live Preview rendering lives in a compartment so Source Mode can
         // disable every decoration and show the raw Markdown (Obsidian "Source mode").
         livePreviewCompartment.current.of(buildLivePreviewExtensions(editorMode)),
+        editorSettingsCompartment.current.of(
+          buildEditorSettingsExtensions(editorSettingsRef.current)
+        ),
         createImageDropPasteHandler(),
         EditorView.lineWrapping,
         EditorView.updateListener.of((update) => {
@@ -374,6 +400,18 @@ export const Editor: React.FC<EditorProps> = ({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editorMode]);
+
+  // Apply Settings → Editor changes live (CodeMirror 6 compartment reconfigure)
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: editorSettingsCompartment.current.reconfigure(
+        buildEditorSettingsExtensions({ showLineNumbers, tabSize, useTabs, spellcheck })
+      ),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showLineNumbers, tabSize, useTabs, spellcheck]);
 
   // Synchronize doc if file content was changed externally
   useEffect(() => {
@@ -2111,11 +2149,18 @@ export const Editor: React.FC<EditorProps> = ({
 
         {editorMode === 'reading' ? (
           /* Reading View Mode */
-          <div className="h-full overflow-y-auto px-12 py-10 max-w-[820px] mx-auto text-stone-200 leading-relaxed font-sans">
-            <h1 className="text-3xl font-bold text-white mb-6 border-b border-stone-800 pb-3">
-              {cleanTitle}
-            </h1>
-            <div className="whitespace-pre-wrap select-text">{fileContent}</div>
+          <div className="h-full overflow-y-auto px-12 py-10 max-w-[var(--file-line-width,820px)] mx-auto text-stone-200 leading-relaxed font-sans">
+            {showInlineTitle && (
+              <h1 className="text-3xl font-bold text-white mb-6 border-b border-stone-800 pb-3">
+                {cleanTitle}
+              </h1>
+            )}
+            <div className="whitespace-pre-wrap select-text">
+              {strictLineBreaks
+                ? // Markdown spec: a single newline is a soft break (rendered as a space)
+                  fileContent.replace(/([^\n])\n(?!\n)/g, '$1 ')
+                : fileContent}
+            </div>
           </div>
         ) : (
           /* Live Preview / Source Mode (CodeMirror 6) */
@@ -2125,7 +2170,11 @@ export const Editor: React.FC<EditorProps> = ({
             }`}
           >
             {/* Inline Title (.inline-title) directly above the CodeMirror 6 canvas */}
-            <div className="w-full max-w-[820px] mx-auto px-12 pt-6 shrink-0">
+            <div
+              className={`w-full max-w-[var(--file-line-width,820px)] mx-auto px-12 pt-6 shrink-0${
+                showInlineTitle ? '' : ' hidden'
+              }`}
+            >
               <div
                 ref={inlineTitleRef}
                 className="inline-title"

@@ -30,6 +30,11 @@
   --interactive-accent: #e06c1b;
   --interactive-accent-hover: #f97316;
 
+  /* Settings-driven (Settings → Appearance / Editor); overridden at runtime on <html> */
+  --editor-font-size: 15px;
+  --file-line-width: 820px;
+  --editor-tab-size: 4;
+
   --color-red: #ef4444;
   --color-green: #22c55e;
   --color-yellow: #eab308;
@@ -707,9 +712,9 @@
   border: none !important;
   border-left: none !important;
   border-right: none !important;
-  max-width: 820px !important;
+  max-width: var(--file-line-width, 820px) !important;
   position: relative !important;
-  tab-size: 4 !important;
+  tab-size: var(--editor-tab-size, 4) !important;
 }
 
 /* Eliminate any individual pill background on child spans/tokens inside code blocks */
@@ -2024,4 +2029,25 @@ mark.hl-purple {
 .source-mode .cm-line {
   /* Keep raw syntax visible: no hidden fences, no widget replacements */
   font-variant-ligatures: none;
+}
+
+
+/* ========================================================
+   Light base color scheme (Settings → Appearance → Base color scheme)
+   Values from Obsidian 1.14.4 app.css `.theme-light` (--color-base-*).
+   Only variable-driven surfaces switch; hard-coded dark hex colors in
+   individual components keep their dark look.
+   ======================================================== */
+body.theme-light {
+  --background-primary: #ffffff;
+  --background-primary-alt: #fafafa;
+  --background-secondary: #f6f6f6;
+  --background-secondary-alt: #fcfcfc;
+  --code-background: #f6f6f6;
+  --background-modifier-border: #e4e4e4;
+  --background-modifier-hover: rgba(0, 0, 0, 0.067);
+  --text-normal: #222222;
+  --text-muted: #5c5c5c;
+  --text-faint: #ababab;
+  --tab-divider-color: #e4e4e4;
 }
