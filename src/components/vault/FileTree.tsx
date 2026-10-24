@@ -84,6 +84,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
     createUntitledFolder,
     activeVault,
     fileTree,
+    selectFile,
   } = useVaultStore();
 
   const { showNotice } = useNoticeStore();
