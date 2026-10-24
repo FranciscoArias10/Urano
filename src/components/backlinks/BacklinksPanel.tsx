@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ArrowLeftRight, ArrowDownLeft, ArrowUpRight, FileText, ChevronRight, PlusCircle, X } from 'lucide-react';
+import { useT } from '../../stores/localeStore';
 
 interface BacklinksPanelProps {
   activeFile: string | null;
@@ -18,6 +19,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
   onOpenNote,
   onClose,
 }) => {
+  const t = useT();
   const [activeTab, setActiveTab] = useState<'incoming' | 'outgoing'>('incoming');
 
   const activeBaseName = useMemo(() => {
@@ -53,14 +55,14 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
           results.push({
             path,
             name,
-            snippet: line.trim() || `Enlace a [[${activeBaseName}]]`,
+            snippet: line.trim() || t('backlinks.linkTo', { name: activeBaseName }),
           });
           break; // One entry per file
         }
       }
     }
     return results;
-  }, [activeFile, activeBaseName, notesContentMap]);
+  }, [activeFile, activeBaseName, notesContentMap, t]);
 
   // Compute outgoing links from the active file's content
   const outgoingLinks = useMemo(() => {
@@ -90,10 +92,14 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
     return Array.from(linksMap.values());
   }, [fileContent, notesContentMap]);
 
+  // Empty states embed a styled <code> element: split the sentence around the placeholder
+  const [noIncomingBefore, noIncomingAfter] = t('backlinks.noIncoming').split('{link}');
+  const [noOutgoingBefore, noOutgoingAfter] = t('backlinks.noOutgoing').split('{link}');
+
   if (!activeFile) {
     return (
       <aside className="w-72 bg-obsidian-sidebar border-l border-obsidian-border flex flex-col p-4 text-center text-obsidian-muted text-xs">
-        <span>Selecciona una nota para ver sus enlaces y backlinks</span>
+        <span>{t('backlinks.selectNote')}</span>
       </aside>
     );
   }
@@ -104,12 +110,12 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-obsidian-border">
         <div className="flex items-center gap-2 text-obsidian-text">
           <ArrowLeftRight size={14} className="text-orange-500" />
-          <span className="text-xs font-semibold">Enlaces y Menciones</span>
+          <span className="text-xs font-semibold">{t('backlinks.title')}</span>
         </div>
         <button
           onClick={onClose}
           className="p-1 text-obsidian-muted hover:text-white hover:bg-obsidian-hover rounded transition-colors"
-          title="Cerrar panel de backlinks"
+          title={t('backlinks.closePanel')}
         >
           <X size={13} />
         </button>
@@ -132,7 +138,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
           }`}
         >
           <ArrowDownLeft size={12} className="text-orange-400" />
-          <span>Entrantes ({incomingLinks.length})</span>
+          <span>{t('backlinks.incoming', { count: incomingLinks.length })}</span>
         </button>
         <button
           onClick={() => setActiveTab('outgoing')}
@@ -143,7 +149,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
           }`}
         >
           <ArrowUpRight size={12} className="text-sky-400" />
-          <span>Salientes ({outgoingLinks.length})</span>
+          <span>{t('backlinks.outgoing', { count: outgoingLinks.length })}</span>
         </button>
       </div>
 
@@ -152,7 +158,9 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
         {activeTab === 'incoming' ? (
           incomingLinks.length === 0 ? (
             <div className="p-4 text-center text-obsidian-muted text-[11px] italic">
-              No hay notas que enlacen a esta nota. Escribe <code className="text-orange-400">[[{activeBaseName}]]</code> en otra nota para vincularlas.
+              {noIncomingBefore}
+              <code className="text-orange-400">[[{activeBaseName}]]</code>
+              {noIncomingAfter}
             </div>
           ) : (
             incomingLinks.map((item) => (
@@ -174,7 +182,9 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
           )
         ) : outgoingLinks.length === 0 ? (
           <div className="p-4 text-center text-obsidian-muted text-[11px] italic">
-            Esta nota no tiene enlaces salientes. Escribe <code className="text-orange-400">[[NombreNota]]</code> para vincular a otra página.
+            {noOutgoingBefore}
+            <code className="text-orange-400">{t('backlinks.noOutgoingExample')}</code>
+            {noOutgoingAfter}
           </div>
         ) : (
           outgoingLinks.map((item) => (
@@ -188,7 +198,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
                   className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                     item.resolvedPath ? 'bg-emerald-400' : 'bg-stone-500'
                   }`}
-                  title={item.resolvedPath ? 'Nota existente' : 'Nota no creada aún'}
+                  title={item.resolvedPath ? t('backlinks.existingNote') : t('backlinks.notCreatedYet')}
                 />
                 <span className={`truncate font-medium ${item.resolvedPath ? 'text-stone-200' : 'text-stone-400'}`}>
                   {item.targetName}
@@ -196,7 +206,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
               </div>
               {!item.resolvedPath && (
                 <span className="text-[10px] text-orange-400 flex items-center gap-1 shrink-0 ml-2">
-                  <PlusCircle size={10} /> Crear
+                  <PlusCircle size={10} /> {t('backlinks.create')}
                 </span>
               )}
             </div>

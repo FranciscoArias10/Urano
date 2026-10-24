@@ -18,6 +18,7 @@ import {
 import { FileItem, SortOrder } from '../../types';
 import { useVaultStore, validateFileName } from '../../stores/vaultStore';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useT } from '../../stores/localeStore';
 import {
   getStorageAdapter,
   getImageFormatTag,
@@ -86,6 +87,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
   } = useVaultStore();
 
   const { showNotice } = useNoticeStore();
+  const t = useT();
 
   const [collapsedMap, setCollapsedMap] = useState<Record<string, boolean>>({});
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
@@ -117,7 +119,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
         return f.children ? collides(f.children) : false;
       });
     if (collides(fileTree)) {
-      showNotice('Ya existe un archivo o carpeta con ese nombre.', 3000, 'error');
+      showNotice(t('fileTree.notices.nameExists'), 3000, 'error');
       return;
     }
 
@@ -125,7 +127,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
       try {
         await useVaultStore.getState().renameItem(oldPath, newPath);
       } catch (err: any) {
-        showNotice(err?.toString() || 'Error al renombrar carpeta', 3000, 'error');
+        showNotice(err?.toString() || t('fileTree.notices.renameFolderError'), 3000, 'error');
       }
       return;
     }
@@ -150,16 +152,20 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
       }
     } catch (err: any) {
       console.error('Error during rename:', err);
-      showNotice(err?.toString() || 'Error al renombrar archivo', 3000, 'error');
+      showNotice(err?.toString() || t('fileTree.notices.renameFileError'), 3000, 'error');
     }
   };
 
   const notifyLinksUpdated = (plan: LinkScanResult) => {
-    showNotice(
-      `Updated ${plan.totalLinks} ${plan.totalLinks === 1 ? 'link' : 'links'} in ${plan.totalFiles} ${plan.totalFiles === 1 ? 'file' : 'files'}.`,
-      3000,
-      'success'
-    );
+    const key =
+      plan.totalLinks === 1
+        ? plan.totalFiles === 1
+          ? 'fileTree.notices.linkUpdatedInFile'
+          : 'fileTree.notices.linkUpdatedInFiles'
+        : plan.totalFiles === 1
+        ? 'fileTree.notices.linksUpdatedInFile'
+        : 'fileTree.notices.linksUpdatedInFiles';
+    showNotice(t(key, { links: plan.totalLinks, files: plan.totalFiles }), 3000, 'success');
   };
 
   /** Resolves the pending "Update links" modal. */
@@ -181,7 +187,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
       notifyLinksUpdated(pr.plan);
     } catch (err: any) {
       console.error('Error during rename:', err);
-      showNotice(err?.toString() || 'Error al renombrar archivo', 3000, 'error');
+      showNotice(err?.toString() || t('fileTree.notices.renameFileError'), 3000, 'error');
     }
   };
 
@@ -244,14 +250,14 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
     }
   };
 
-  // Sort Options Menu
+  // Sort Options Menu (labels resolved at render so they follow the active language)
   const sortOptions: { label: string; order: SortOrder }[] = [
-    { label: 'Nombre del archivo (A a la Z)', order: 'name-asc' },
-    { label: 'Nombre del archivo (Z a la A)', order: 'name-desc' },
-    { label: 'Tiempo de modificación (de más nuevo a más antiguo)', order: 'mtime-desc' },
-    { label: 'Tiempo de modificación (de más antiguo a más nuevo)', order: 'mtime-asc' },
-    { label: 'Fecha de creación (de más nuevo a más antiguo)', order: 'ctime-desc' },
-    { label: 'Fecha de creación (de más antiguo a más nuevo)', order: 'ctime-asc' },
+    { label: t('fileTree.sort.nameAsc'), order: 'name-asc' },
+    { label: t('fileTree.sort.nameDesc'), order: 'name-desc' },
+    { label: t('fileTree.sort.mtimeDesc'), order: 'mtime-desc' },
+    { label: t('fileTree.sort.mtimeAsc'), order: 'mtime-asc' },
+    { label: t('fileTree.sort.ctimeDesc'), order: 'ctime-desc' },
+    { label: t('fileTree.sort.ctimeAsc'), order: 'ctime-asc' },
   ];
 
   const sortMenuItems: MenuItemData[] = sortOptions.map((opt) => ({
@@ -262,17 +268,17 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
 
   const rootMenuItems: MenuItemData[] = [
     {
-      title: 'Nueva nota',
+      title: t('fileTree.newNote'),
       icon: <SquarePen size={14} />,
       action: handleCreateNewNote,
     },
     {
-      title: 'Nuevo lienzo',
+      title: t('fileTree.newCanvas'),
       icon: <LayoutGrid size={14} />,
       action: handleCreateNewCanvas,
     },
     {
-      title: 'Nueva carpeta',
+      title: t('fileTree.newFolder'),
       icon: <FolderPlus size={14} />,
       action: handleCreateNewFolder,
     },
@@ -294,7 +300,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
         {depth === 0 && (
           <div className="flex items-center justify-end px-3 py-1.5 border-b border-obsidian-border text-stone-400 gap-1 bg-[#181818]/60">
             {/* 1. New note */}
-            <Tooltip content="Nueva nota" position="bottom">
+            <Tooltip content={t('fileTree.newNote')} position="bottom">
               <button
                 onClick={handleCreateNewNote}
                 className="p-1 hover:text-orange-400 hover:bg-white/5 rounded transition-colors"
@@ -304,7 +310,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
             </Tooltip>
 
             {/* 2. New folder */}
-            <Tooltip content="Nueva carpeta" position="bottom">
+            <Tooltip content={t('fileTree.newFolder')} position="bottom">
               <button
                 onClick={handleCreateNewFolder}
                 className="p-1 hover:text-white hover:bg-white/5 rounded transition-colors"
@@ -314,7 +320,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
             </Tooltip>
 
             {/* 3. Change sort order */}
-            <Tooltip content="Cambiar orden" position="bottom">
+            <Tooltip content={t('fileTree.changeSortOrder')} position="bottom">
               <button
                 onClick={(e) => {
                   const rect = e.currentTarget.getBoundingClientRect();
@@ -330,7 +336,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
 
             {/* 4. Auto-reveal current file toggle */}
             <Tooltip
-              content={autoReveal ? 'Desactivar auto-revelar archivo actual' : 'Activar auto-revelar archivo actual'}
+              content={autoReveal ? t('fileTree.disableAutoReveal') : t('fileTree.enableAutoReveal')}
               position="bottom"
             >
               <button
@@ -346,7 +352,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
             </Tooltip>
 
             {/* 5. Collapse / Expand all */}
-            <Tooltip content="Expandir / Colapsar todo" position="bottom">
+            <Tooltip content={t('fileTree.expandCollapseAll')} position="bottom">
               <button
                 onClick={handleToggleExpandAll}
                 className="p-1 hover:text-white hover:bg-white/5 rounded transition-colors"
@@ -433,6 +439,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
   } = useVaultStore();
 
   const { showNotice } = useNoticeStore();
+  const t = useT();
 
   const isClosed = ctx ? Boolean(ctx.collapsedMap[item.path]) : false;
   const isOpen = !isClosed;
@@ -492,7 +499,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
     const trimmed = renameValue.trim();
     const validation = validateFileName(trimmed);
     if (!validation.valid) {
-      showNotice(validation.error || 'Nombre inválido', 3000, 'error');
+      showNotice(validation.error || t('fileTree.notices.invalidName'), 3000, 'error');
       ctx?.setRenamingPath(null);
       return;
     }
@@ -516,7 +523,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
     if (item.isDir) {
       items.push(
         {
-          title: 'Nueva nota',
+          title: t('fileTree.newNote'),
           icon: <SquarePen size={14} />,
           action: async () => {
             const { path } = await createUntitledNote(item.path);
@@ -525,7 +532,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           },
         },
         {
-          title: 'Nuevo lienzo',
+          title: t('fileTree.newCanvas'),
           icon: <LayoutGrid size={14} />,
           action: async () => {
             const { path } = await createUntitledCanvas(item.path);
@@ -534,7 +541,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           },
         },
         {
-          title: 'Nueva carpeta',
+          title: t('fileTree.newFolder'),
           icon: <FolderPlus size={14} />,
           action: async () => {
             const path = await createUntitledFolder(item.path);
@@ -543,29 +550,33 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           },
         },
         {
-          title: bookmarked ? 'Quitar de marcadores' : 'Añadir a marcadores',
+          title: bookmarked ? t('fileTree.contextMenu.removeBookmark') : t('fileTree.contextMenu.addBookmark'),
           icon: <Bookmark size={14} className={bookmarked ? 'fill-orange-500 text-orange-500' : ''} />,
           action: () => {
             toggleBookmark({ type: 'folder', path: item.path, title: item.name });
-            showNotice(bookmarked ? 'Marcador eliminado' : 'Añadido a marcadores', 2000, 'info');
+            showNotice(
+              bookmarked ? t('fileTree.notices.bookmarkRemoved') : t('fileTree.notices.bookmarkAdded'),
+              2000,
+              'info'
+            );
           },
         },
         { type: 'separator' },
         {
-          title: 'Cambiar nombre',
+          title: t('fileTree.contextMenu.rename'),
           shortcut: 'F2',
           icon: <Edit2 size={14} />,
           action: () => ctx?.setRenamingPath(item.path),
         },
         {
-          title: 'Eliminar carpeta',
+          title: t('fileTree.contextMenu.deleteFolder'),
           icon: <Trash2 size={14} />,
           isWarning: true,
           action: async () => {
             // Settings → Files and links → "Confirm file deletion"
             if (
               useSettingsStore.getState().settings.confirmFileDeletion &&
-              !window.confirm(`¿Eliminar "${item.name}"? Esta acción no se puede deshacer.`)
+              !window.confirm(t('fileTree.confirmDelete', { name: item.name }))
             ) {
               return;
             }
@@ -577,23 +588,23 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
       const imageTag = getImageFormatTag(item.name);
       if (imageTag) {
         items.push({
-          title: 'Copiar imagen',
+          title: t('fileTree.contextMenu.copyImage'),
           icon: <Copy size={14} />,
           action: async () => {
             try {
               const blob = await getStorageAdapter().readBinary(item.path);
               await copyImageBlobToClipboard(blob);
-              showNotice('Imagen copiada al portapapeles', 2000, 'success');
+              showNotice(t('fileTree.notices.imageCopied'), 2000, 'success');
             } catch (err) {
               console.error('Error copying image:', err);
-              showNotice('Error al copiar imagen', 2500, 'error');
+              showNotice(t('fileTree.notices.imageCopyError'), 2500, 'error');
             }
           },
         });
       }
       items.push(
         {
-          title: 'Abrir en una pestaña nueva',
+          title: t('fileTree.contextMenu.openInNewTab'),
           icon: <PlusCircle size={14} />,
           action: () => {
             if (ctx?.onOpenInNewTab) {
@@ -604,7 +615,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           },
         },
         {
-          title: bookmarked ? 'Quitar de marcadores' : 'Añadir a marcadores',
+          title: bookmarked ? t('fileTree.contextMenu.removeBookmark') : t('fileTree.contextMenu.addBookmark'),
           icon: <Bookmark size={14} className={bookmarked ? 'fill-orange-500 text-orange-500' : ''} />,
           action: () => {
             toggleBookmark({
@@ -612,34 +623,38 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
               path: item.path,
               title: item.name.replace(/\.(md|canvas|base)$/i, ''),
             });
-            showNotice(bookmarked ? 'Marcador eliminado' : 'Añadido a marcadores', 2000, 'info');
+            showNotice(
+              bookmarked ? t('fileTree.notices.bookmarkRemoved') : t('fileTree.notices.bookmarkAdded'),
+              2000,
+              'info'
+            );
           },
         },
         {
-          title: 'Hacer una copia',
+          title: t('fileTree.contextMenu.makeCopy'),
           icon: <Copy size={14} />,
           action: async () => {
             const newPath = await duplicateNote(item.path);
-            showNotice('Nota duplicada', 2000, 'success');
+            showNotice(t('fileTree.notices.noteDuplicated'), 2000, 'success');
             ctx?.setRenamingPath(newPath);
           },
         },
         { type: 'separator' },
         {
-          title: 'Cambiar nombre',
+          title: t('fileTree.contextMenu.rename'),
           shortcut: 'F2',
           icon: <Edit2 size={14} />,
           action: () => ctx?.setRenamingPath(item.path),
         },
         {
-          title: 'Eliminar archivo',
+          title: t('fileTree.contextMenu.deleteFile'),
           icon: <Trash2 size={14} />,
           isWarning: true,
           action: async () => {
             // Settings → Files and links → "Confirm file deletion"
             if (
               useSettingsStore.getState().settings.confirmFileDeletion &&
-              !window.confirm(`¿Eliminar "${item.name}"? Esta acción no se puede deshacer.`)
+              !window.confirm(t('fileTree.confirmDelete', { name: item.name }))
             ) {
               return;
             }
@@ -694,7 +709,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
             }
             ctx?.setFolderOpen(item.path, true);
             await useVaultStore.getState().refreshTree();
-            showNotice(`${files.length} archivo(s) guardado(s)`, 2000, 'success');
+            showNotice(t('fileTree.notices.filesSaved', { count: files.length }), 2000, 'success');
             return;
           }
 
@@ -702,7 +717,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           if (sourcePath && sourcePath !== item.path) {
             await moveItem(sourcePath, item.path);
             ctx?.setFolderOpen(item.path, true);
-            showNotice('Elemento movido a la carpeta', 2000, 'success');
+            showNotice(t('fileTree.notices.itemMoved'), 2000, 'success');
           }
         }}
         onClick={handleSelect}

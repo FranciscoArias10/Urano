@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Search, X, FileText, ChevronRight, ChevronDown } from 'lucide-react';
 import { useVaultStore } from '../../stores/vaultStore';
+import { useT } from '../../stores/localeStore';
 
 interface MatchSnippet {
   lineNum: number;
@@ -17,6 +18,7 @@ interface FileSearchResult {
 }
 
 export const GlobalSearchPanel: React.FC = () => {
+  const t = useT();
   const { notesContentMap, selectFile } = useVaultStore();
   const [query, setQuery] = useState(() => (window as any).__uranoInitialSearchQuery || '');
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
@@ -91,7 +93,7 @@ export const GlobalSearchPanel: React.FC = () => {
           <Search size={13} className="text-stone-400 shrink-0" />
           <input
             type="text"
-            placeholder="Buscar en todas las notas..."
+            placeholder={t('search.placeholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full bg-transparent text-white outline-none placeholder-stone-500"
@@ -109,8 +111,14 @@ export const GlobalSearchPanel: React.FC = () => {
         {query && (
           <div className="mt-2 text-[11px] text-stone-400 flex items-center justify-between">
             <span>
-              {totalMatches} {totalMatches === 1 ? 'coincidencia' : 'coincidencias'} en{' '}
-              {searchResults.length} {searchResults.length === 1 ? 'archivo' : 'archivos'}
+              {t('search.summary', {
+                matches: t(totalMatches === 1 ? 'search.matchOne' : 'search.matchOther', {
+                  count: totalMatches,
+                }),
+                files: t(searchResults.length === 1 ? 'search.fileOne' : 'search.fileOther', {
+                  count: searchResults.length,
+                }),
+              })}
             </span>
           </div>
         )}
@@ -120,11 +128,11 @@ export const GlobalSearchPanel: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {!query ? (
           <div className="p-4 text-center text-xs text-stone-500">
-            Escribe para buscar en el contenido de todas las notas de la bóveda.
+            {t('search.emptyHint')}
           </div>
         ) : searchResults.length === 0 ? (
           <div className="p-4 text-center text-xs text-stone-500">
-            No se encontraron coincidencias para &quot;{query}&quot;.
+            {t('search.noMatches', { query })}
           </div>
         ) : (
           searchResults.map((res) => {
@@ -156,7 +164,9 @@ export const GlobalSearchPanel: React.FC = () => {
                         onClick={() => selectFile(res.filePath)}
                         className="px-3 py-1.5 hover:bg-orange-500/10 cursor-pointer text-[11px] text-stone-400 transition-colors"
                       >
-                        <span className="text-stone-600 font-mono mr-1.5">L{m.lineNum}:</span>
+                        <span className="text-stone-600 font-mono mr-1.5">
+                          {t('search.lineNumber', { line: m.lineNum })}
+                        </span>
                         <span>...{m.before}</span>
                         <span className="text-orange-400 font-semibold bg-orange-500/20 px-0.5 rounded">
                           {m.match}

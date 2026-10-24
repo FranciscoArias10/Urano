@@ -1,8 +1,10 @@
 import React from 'react';
 import { Bookmark, FileText, Folder, Search, X } from 'lucide-react';
 import { useVaultStore } from '../../stores/vaultStore';
+import { useT } from '../../stores/localeStore';
 
 export const BookmarksPanel: React.FC = () => {
+  const t = useT();
   const { bookmarks, removeBookmark, selectFile } = useVaultStore();
 
   return (
@@ -11,10 +13,12 @@ export const BookmarksPanel: React.FC = () => {
       <div className="px-4 py-3 border-b border-obsidian-border bg-[#181818] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Bookmark size={15} className="text-orange-500 fill-orange-500/20" />
-          <span className="text-xs font-semibold text-white">Marcadores</span>
+          <span className="text-xs font-semibold text-white">{t('bookmarks.title')}</span>
         </div>
         <span className="text-[11px] text-stone-400">
-          {bookmarks.length} {bookmarks.length === 1 ? 'marcador' : 'marcadores'}
+          {t(bookmarks.length === 1 ? 'bookmarks.countOne' : 'bookmarks.countOther', {
+            count: bookmarks.length,
+          })}
         </span>
       </div>
 
@@ -23,9 +27,9 @@ export const BookmarksPanel: React.FC = () => {
         {bookmarks.length === 0 ? (
           <div className="p-6 text-center text-xs text-stone-500 flex flex-col items-center gap-2">
             <Bookmark size={24} className="text-stone-600 stroke-[1.5]" />
-            <p>No hay marcadores aún.</p>
+            <p>{t('bookmarks.empty')}</p>
             <p className="text-[11px] text-stone-600">
-              Haz clic derecho en cualquier nota o carpeta en el explorador de archivos y selecciona &quot;Añadir a marcadores&quot;.
+              {t('bookmarks.emptyHint')}
             </p>
           </div>
         ) : (
@@ -56,7 +60,7 @@ export const BookmarksPanel: React.FC = () => {
                   removeBookmark(b.path);
                 }}
                 className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 rounded text-stone-500 transition-opacity"
-                title="Quitar marcador"
+                title={t('bookmarks.remove')}
               >
                 <X size={12} />
               </button>
