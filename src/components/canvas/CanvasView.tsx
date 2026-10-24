@@ -740,12 +740,61 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       e.preventDefault();
     };
 
+    // Caso C — Pantalla táctil / touchpad con eventos Touch: dos dedos.
+    // Distancia euclidiana inicial → ratio de zoom; punto medio → ancla del zoom
+    // y, si el par de dedos se desplaza, la cámara se desplaza con él.
+    let pinch: { startDist: number; startZoom: number; lastMidX: number; lastMidY: number } | null =
+      null;
+
+    const touchMetrics = (t1: Touch, t2: Touch) => ({
+      dist: Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY),
+      midX: (t1.clientX + t2.clientX) / 2,
+      midY: (t1.clientY + t2.clientY) / 2,
+    });
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 2) {
+        pinch = null;
+        return;
+      }
+      e.preventDefault();
+      const { dist, midX, midY } = touchMetrics(e.touches[0], e.touches[1]);
+      pinch = {
+        startDist: Math.max(dist, 1),
+        startZoom: viewportRef.current.zoom,
+        lastMidX: midX,
+        lastMidY: midY,
+      };
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!pinch || e.touches.length !== 2) return;
+      e.preventDefault();
+      const { dist, midX, midY } = touchMetrics(e.touches[0], e.touches[1]);
+      // Desplazamiento del punto medio = pan de dos dedos
+      panBy(pinch.lastMidX - midX, pinch.lastMidY - midY);
+      pinch.lastMidX = midX;
+      pinch.lastMidY = midY;
+      // Separación de los dedos = zoom anclado al punto medio
+      zoomAtPoint(pinch.startZoom * (dist / pinch.startDist), midX, midY);
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) pinch = null;
+    };
+
     el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('touchstart', onTouchStart, { passive: false });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('touchend', onTouchEnd);
+    el.addEventListener('touchcancel', onTouchEnd);
     el.addEventListener('gesturestart', onGestureStart, { passive: false });
     el.addEventListener('gesturechange', onGestureChange, { passive: false });
     el.addEventListener('gestureend', onGestureEnd, { passive: false });
     return () => {
       el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchend', onTouchEnd);
+      el.removeEventListener('touchcancel', onTouchEnd);
       el.removeEventListener('gesturestart', onGestureStart);
       el.removeEventListener('gesturechange', onGestureChange);
       el.removeEventListener('gestureend', onGestureEnd);
