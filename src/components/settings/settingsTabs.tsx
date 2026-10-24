@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   CircleUserRound,
   Palette,
@@ -31,13 +31,14 @@ import {
   CORE_PLUGIN_IDS,
   DEFAULT_SETTINGS,
   URANO_ACCENT,
-  Language,
   ThemeMode,
   UpdateLinksPref,
   AttachmentLocation,
   StorageBackend,
 } from '../../stores/settingsStore';
 import { useSyncStore } from '../../stores/syncStore';
+import { useLocaleStore } from '../../stores/localeStore';
+import { LanguageDropdown } from './LanguageDropdown';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useNoticeStore } from '../common/Notice';
 import {
@@ -100,10 +101,14 @@ export interface SettingTabsContext {
   commands?: CommandItem[];
   onOpenHelp?: () => void;
   onOpenSyncLogs?: () => void;
+  /** "Learn how to add a new language to Urano." → abre `.urano/locales` (o la documentación). */
+  onOpenLocalesFolder?: () => void;
 }
 
 export const URANO_VERSION = '1.14.5';
 export const URANO_INSTALLER_VERSION = '1.14.4';
+/** Documentación para añadir un idioma (cuando no hay bóveda abierta). */
+export const LOCALES_DOCS_URL = 'https://github.com/FranciscoArias10/Urano#idiomas';
 
 const ICON = 16;
 
@@ -148,6 +153,13 @@ const CheckForUpdatesButton: React.FC<{ t: Translate }> = ({ t }) => {
 
 export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
   const t = useT();
+  const language = useLocaleStore((s) => s.language);
+  const languages = useLocaleStore((s) => s.languages);
+  const setLanguage = useLocaleStore((s) => s.setLanguage);
+  const languageAliases = useMemo(
+    () => languages.flatMap((l) => [l.name.toLowerCase(), l.nativeName.toLowerCase()]),
+    [languages]
+  );
   const settings = useSettingsStore((s) => s.settings);
   const setSetting = useSettingsStore((s) => s.setSetting);
   const setCorePluginEnabled = useSettingsStore((s) => s.setCorePluginEnabled);
@@ -201,20 +213,21 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
               <>
                 {t('general.languageDesc')}
                 <br />
-                <SettingLink href="https://help.obsidian.md/translations">{t('general.addLanguage')}</SettingLink>
+                {ctx.onOpenLocalesFolder ? (
+                  <SettingLink onClick={ctx.onOpenLocalesFolder}>{t('general.addLanguage')}</SettingLink>
+                ) : (
+                  <SettingLink href={LOCALES_DOCS_URL}>{t('general.addLanguage')}</SettingLink>
+                )}
               </>
             ),
             descText: `${t('general.languageDesc')} ${t('general.addLanguage')}`,
-            aliases: ['idioma', 'english', 'español', 'spanish'],
+            aliases: ['idioma', 'language', 'english', 'español', 'spanish', ...languageAliases],
             control: (
-              <Dropdown<Language>
-                value={settings.language}
+              <LanguageDropdown
+                value={language}
+                languages={languages}
                 ariaLabel={t('general.language')}
-                options={[
-                  { value: 'en', label: 'English' },
-                  { value: 'es', label: 'Español' },
-                ]}
-                onChange={set('language')}
+                onChange={(code) => void setLanguage(code)}
               />
             ),
           },
@@ -564,13 +577,13 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
           },
           {
             id: 'update-links',
-            name: t('files.updateLinks'),
+            name: t('files.updateLinksName'),
             desc: t('files.updateLinksDesc'),
             aliases: ['rename', 'renombrar', 'wikilink'],
             control: (
               <Dropdown<UpdateLinksPref>
                 value={settings.alwaysUpdateLinks}
-                ariaLabel={t('files.updateLinks')}
+                ariaLabel={t('files.updateLinksName')}
                 options={[
                   { value: 'always', label: t('files.updateLinks.always') },
                   { value: 'prompt', label: t('files.updateLinks.prompt') },
@@ -989,13 +1002,13 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
       items: [
         {
           id: 'sync-adapter',
-          name: t('sync.adapter'),
+          name: t('sync.adapterName'),
           desc: t('sync.adapterDesc'),
           aliases: ['local', 'google drive', 'storage adapter'],
           control: (
             <Dropdown<StorageBackend>
               value={settings.storageBackend}
-              ariaLabel={t('sync.adapter')}
+              ariaLabel={t('sync.adapterName')}
               options={[
                 { value: 'local', label: t('sync.adapter.local') },
                 { value: 'gdrive', label: t('sync.adapter.gdrive') },
@@ -1038,7 +1051,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
     },
     {
       id: 'sync-status-group',
-      heading: t('sync.status'),
+      heading: t('sync.statusName'),
       items: [
         {
           id: 'sync-status',

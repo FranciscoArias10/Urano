@@ -21,6 +21,7 @@ import './settingsStyles.css';
 export interface SettingsModalProps {
   commands?: CommandItem[];
   onOpenHelp?: () => void;
+  onOpenLocalesFolder?: () => void;
   onOpenSyncLogs?: () => void;
 }
 
@@ -61,14 +62,19 @@ interface SearchMatch {
   count: number;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ commands, onOpenHelp, onOpenSyncLogs }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({
+  commands,
+  onOpenHelp,
+  onOpenSyncLogs,
+  onOpenLocalesFolder,
+}) => {
   const t = useT();
   const isOpen = useSettingsStore((s) => s.isOpen);
   const activeTabId = useSettingsStore((s) => s.activeTabId);
   const setActiveTab = useSettingsStore((s) => s.setActiveTab);
   const closeSettings = useSettingsStore((s) => s.closeSettings);
 
-  const tabs = useSettingTabs({ commands, onOpenHelp, onOpenSyncLogs });
+  const tabs = useSettingTabs({ commands, onOpenHelp, onOpenSyncLogs, onOpenLocalesFolder });
 
   const [query, setQuery] = useState('');
   const [groupScrolled, setGroupScrolled] = useState(false);
