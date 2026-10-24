@@ -247,6 +247,20 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     [commitViewport]
   );
 
+  /** Botones + / − de los controles: zoom anclado al centro del viewport. */
+  const zoomAtViewportCenter = useCallback(
+    (factor: number) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      zoomAtPoint(
+        viewportRef.current.zoom * factor,
+        rect.left + rect.width / 2,
+        rect.top + rect.height / 2
+      );
+    },
+    [zoomAtPoint]
+  );
+
   /** Desplaza la cámara en píxeles de pantalla (scroll de dos dedos / rueda). */
   const panBy = useCallback(
     (dx: number, dy: number) => {
@@ -1827,11 +1841,14 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       className={`canvas-wrapper ${isPanning || isHoldingSpace ? 'is-dragging-canvas' : ''} ${
         readonly ? 'mod-readonly' : ''
       } ${snapToGrid ? 'mod-snap-to-grid' : ''}`}
-      style={{
-        backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px)',
-        backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
-        backgroundPosition: `${pan.x}px ${pan.y}px`,
-      }}
+      style={
+        {
+          '--canvas-zoom': zoom,
+          '--canvas-pan-x': `${pan.x}px`,
+          '--canvas-pan-y': `${pan.y}px`,
+          '--canvas-grid-size': `${GRID_SIZE}px`,
+        } as React.CSSProperties
+      }
     >
       {/* 1. Multi-Selection Box */}
       {selectionBox && (
@@ -1853,8 +1870,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         snapToGrid={snapToGrid}
         canUndo={canUndo}
         canRedo={canRedo}
-        onZoomIn={() => setZoom((z) => Math.min(MAX_ZOOM, z * 1.15))}
-        onZoomOut={() => setZoom((z) => Math.max(MIN_ZOOM, z * 0.85))}
+        onZoomIn={() => zoomAtViewportCenter(1.15)}
+        onZoomOut={() => zoomAtViewportCenter(1 / 1.15)}
         onZoomToFit={handleZoomToFit}
         onResetZoom={handleResetZoom}
         onToggleReadonly={() => setReadonly(!readonly)}

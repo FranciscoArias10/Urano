@@ -180,6 +180,18 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
             <Minus size={16} />
           </button>
         </Tooltip>
+
+        {/* Indicador de zoom en vivo (clic = volver al 100 %) */}
+        <Tooltip content="Nivel de zoom actual" position="left">
+          <button
+            onClick={onResetZoom}
+            className="canvas-control-item canvas-control-zoom-level"
+            title="Nivel de zoom (clic para restablecer)"
+            aria-live="polite"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+        </Tooltip>
       </div>
 
       {/* 3. Historial */}

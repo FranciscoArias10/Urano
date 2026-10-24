@@ -23,6 +23,18 @@
   touch-action: none;
   user-select: none;
   outline: none;
+
+  /* Cuadrícula de puntos: escala y se desplaza junto con las tarjetas.
+     --canvas-zoom / --canvas-pan-x / --canvas-pan-y los fija CanvasView en el
+     mismo commit de estado que el transform de los nodos → sin parpadeos. */
+  --canvas-zoom: 1;
+  --canvas-pan-x: 0px;
+  --canvas-pan-y: 0px;
+  --canvas-grid-size: 20px;
+  background-image: radial-gradient(circle, var(--canvas-dot-pattern) 1px, transparent 1px);
+  background-size: calc(var(--canvas-grid-size) * var(--canvas-zoom))
+    calc(var(--canvas-grid-size) * var(--canvas-zoom));
+  background-position: var(--canvas-pan-x) var(--canvas-pan-y);
 }
 
 .canvas-wrapper:focus-visible {
@@ -177,6 +189,15 @@
 
 .canvas-control-item svg {
   pointer-events: none;
+}
+
+.canvas-control-zoom-level {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  padding: 5px 4px;
+  min-width: 34px;
+  color: #8a8a8a;
 }
 
 /* Popover de ajustes / ayuda */
