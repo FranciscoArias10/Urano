@@ -224,25 +224,73 @@ export function getControlPoint(side: CanvasNodeSide, point: CanvasPoint, dist: 
   }
 }
 
-// Exact Obsidian cubic Bézier curve calculation (Reverse-engineered _ee function)
-export function calculateBezier(
+/**
+ * Curva cúbica Bézier de una arista. Los puntos de control (cp1x, cp1y) y
+ * (cp2x, cp2y) salen y entran de forma estrictamente perpendicular al lado
+ * correspondiente con una distancia proporcional:
+ *   offset = Math.max(60, Math.hypot(toX - fromX, toY - fromY) * 0.35)
+ * De este modo la flecha entra siempre horizontal o vertical desde afuera
+ * hacia el lado y jamás penetra el borde por arriba o por abajo.
+ */
+export function getBezierPath(
   fromPoint: CanvasPoint,
   fromSide: CanvasNodeSide,
   toPoint: CanvasPoint,
   toSide: CanvasNodeSide
 ): BezierCurve {
-  const dist = Math.hypot(toPoint.x - fromPoint.x, toPoint.y - fromPoint.y);
-  const offset = Math.min(Math.max(dist / 2, 70), 150);
-  const cp1 = getControlPoint(fromSide, fromPoint, offset);
-  const cp2 = getControlPoint(toSide, toPoint, offset);
+  const fromX = fromPoint.x;
+  const fromY = fromPoint.y;
+  const toX = toPoint.x;
+  const toY = toPoint.y;
+  const offset = Math.max(60, Math.hypot(toX - fromX, toY - fromY) * 0.35);
+
+  let cp1x = fromX;
+  let cp1y = fromY;
+  switch (fromSide) {
+    case 'left':
+      cp1x = fromX - offset;
+      break;
+    case 'right':
+      cp1x = fromX + offset;
+      break;
+    case 'top':
+      cp1y = fromY - offset;
+      break;
+    case 'bottom':
+      cp1y = fromY + offset;
+      break;
+  }
+
+  let cp2x = toX;
+  let cp2y = toY;
+  switch (toSide) {
+    case 'left':
+      cp2x = toX - offset;
+      break;
+    case 'right':
+      cp2x = toX + offset;
+      break;
+    case 'top':
+      cp2y = toY - offset;
+      break;
+    case 'bottom':
+      cp2y = toY + offset;
+      break;
+  }
+
+  const cp1 = { x: cp1x, y: cp1y };
+  const cp2 = { x: cp2x, y: cp2y };
+
   return {
     from: fromPoint,
     to: toPoint,
     cp1,
     cp2,
-    path: `M${fromPoint.x},${fromPoint.y} C${cp1.x},${cp1.y} ${cp2.x},${cp2.y} ${toPoint.x},${toPoint.y}`,
+    path: `M ${fromX} ${fromY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${toX} ${toY}`,
   };
 }
+
+export const calculateBezier = getBezierPath;
 
 // Bézier midpoint for edge labels at parameter t (default 0.5)
 export function getBezierMidpoint(t: number, b: BezierCurve): CanvasPoint {

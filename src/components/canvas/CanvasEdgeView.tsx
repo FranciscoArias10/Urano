@@ -3,7 +3,7 @@ import { CanvasEdge, CanvasNode } from '../../types/canvas';
 import {
   getNodeBBox,
   getSideCoordinates,
-  calculateBezier,
+  getBezierPath,
   getBezierMidpoint,
   resolveCanvasColor,
 } from './canvasMath';
@@ -43,7 +43,7 @@ export const CanvasEdgeView: React.FC<CanvasEdgeViewProps> = ({
   const fromPoint = getSideCoordinates(fromBbox, edge.fromSide);
   const toPoint = getSideCoordinates(toBbox, edge.toSide);
 
-  const bezier = calculateBezier(fromPoint, edge.fromSide, toPoint, edge.toSide);
+  const bezier = getBezierPath(fromPoint, edge.fromSide, toPoint, edge.toSide);
   const midpoint = getBezierMidpoint(0.5, bezier);
 
   const colorScheme = resolveCanvasColor(edge.color);

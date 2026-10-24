@@ -32,7 +32,7 @@ import {
   getBoundingBox,
   doBBoxesIntersect,
   isNodeInGroup,
-  calculateBezier,
+  getBezierPath,
   getSideCoordinates,
   getSideCenter,
   autoSide,
@@ -1600,7 +1600,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         maxX: connectingMouseWorld.x,
         maxY: connectingMouseWorld.y,
       });
-      const bez = calculateBezier(fromPoint, connectingFrom.side, connectingMouseWorld, toSide);
+      const bez = getBezierPath(fromPoint, connectingFrom.side, connectingMouseWorld, toSide);
       connectingBezierPath = bez.path;
     }
   }
@@ -1808,7 +1808,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
               maxX: pendingEdgeDrop.world.x,
               maxY: pendingEdgeDrop.world.y,
             });
-            const bez = calculateBezier(fromPoint, pendingEdgeDrop.sourceSide, pendingEdgeDrop.world, toSide);
+            const bez = getBezierPath(fromPoint, pendingEdgeDrop.sourceSide, pendingEdgeDrop.world, toSide);
             return (
               <path
                 d={bez.path}
