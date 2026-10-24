@@ -14,6 +14,7 @@ import {
   toUint8Array,
 } from '../services/storageAdapter';
 import { useVaultStore } from '../stores/vaultStore';
+import { resolveAttachmentDir } from '../stores/settingsStore';
 import { useNoticeStore } from '../components/common/Notice';
 import { FileItem } from '../types';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
@@ -939,10 +940,10 @@ export async function saveClipboardImageToVault(file: File): Promise<string | nu
       return null;
     }
 
-    // Save directly in the root of the active vault as requested
+    // Destination follows Settings → Files and links → "Default location for new attachments"
     const separator = activeVault.includes('\\') ? '\\' : '/';
-    const cleanVault = activeVault.endsWith(separator) ? activeVault.slice(0, -1) : activeVault;
-    const rutaDestino = `${cleanVault}${separator}${nombreImagen}`;
+    const targetDir = resolveAttachmentDir(activeVault, useVaultStore.getState().activeFile);
+    const rutaDestino = `${targetDir}${separator}${nombreImagen}`;
 
     // Convert file to Uint8Array for writing
     const arrayBuffer = await file.arrayBuffer();
@@ -1124,11 +1125,11 @@ export function createImageDropPasteHandler() {
         if (!activeVault) return true;
 
         const separator = activeVault.includes('\\') ? '\\' : '/';
-        const cleanVault = activeVault.endsWith(separator) ? activeVault.slice(0, -1) : activeVault;
+        const targetDir = resolveAttachmentDir(activeVault, useVaultStore.getState().activeFile);
 
         Promise.all(
           imageFiles.map(async (file) => {
-            const fullPath = `${cleanVault}${separator}${file.name}`;
+            const fullPath = `${targetDir}${separator}${file.name}`;
             const arrayBuffer = await file.arrayBuffer();
             const uint8Array = new Uint8Array(arrayBuffer);
 

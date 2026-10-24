@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { FileItem, SortOrder } from '../../types';
 import { useVaultStore, validateFileName } from '../../stores/vaultStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import {
   getStorageAdapter,
   getImageFormatTag,
@@ -173,6 +174,8 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
       }
       if (mode === 'always') {
         setAlwaysUpdateLinksPref('always');
+        // Keep Settings → Files and links → "Automatically update internal links" in sync
+        useSettingsStore.getState().setSetting('alwaysUpdateLinks', 'always');
       }
       await executeLinkRefactor(pr.plan, pr.oldPath, pr.newPath);
       notifyLinksUpdated(pr.plan);
@@ -559,6 +562,13 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           icon: <Trash2 size={14} />,
           isWarning: true,
           action: async () => {
+            // Settings → Files and links → "Confirm file deletion"
+            if (
+              useSettingsStore.getState().settings.confirmFileDeletion &&
+              !window.confirm(`¿Eliminar "${item.name}"? Esta acción no se puede deshacer.`)
+            ) {
+              return;
+            }
             await deleteItem(item.path);
           },
         }
@@ -626,6 +636,13 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           icon: <Trash2 size={14} />,
           isWarning: true,
           action: async () => {
+            // Settings → Files and links → "Confirm file deletion"
+            if (
+              useSettingsStore.getState().settings.confirmFileDeletion &&
+              !window.confirm(`¿Eliminar "${item.name}"? Esta acción no se puede deshacer.`)
+            ) {
+              return;
+            }
             await deleteItem(item.path);
           },
         }
