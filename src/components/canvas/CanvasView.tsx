@@ -60,7 +60,15 @@ const GRID_SIZE = 20;
 
 /** Límites de zoom del Canvas (1 = 100 %). */
 const MIN_ZOOM = 0.15;
-const MAX_ZOOM = 3.0;
+const MAX_ZOOM = 4.0;
+
+/**
+ * Sensibilidad del zoom por rueda (factor exponencial `exp(-deltaY * k)`).
+ * Obsidian (obsidian.asar/app.js, Canvas.onWheel) usa `-deltaY / 300` en
+ * espacio log2 con `deltaMode` normalizado (LINE ×40, PAGE ×800); aquí el
+ * pellizco de trackpad (ctrlKey) es más fino y la rueda discreta del ratón más gruesa.
+ */
+const WHEEL_ZOOM_SENSITIVITY_PINCH = 0.012;
 
 /** Dimensiones por defecto de los nodos (1:1 con Obsidian). */
 const DEFAULT_TEXT_NODE_SIZE = { width: 250, height: 100 };
@@ -178,6 +186,75 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* ------------------------------------------------------------------ */
+  /* Viewport (zoom + pan) con escritura coalescida por frame            */
+  /* ------------------------------------------------------------------ */
+
+  // Último viewport conocido. Los listeners nativos (wheel / gesture / touch)
+  // leen de aquí para no quedarse con un closure obsoleto entre renders.
+  const viewportRef = useRef({ zoom: 1, panX: 0, panY: 0 });
+  const viewportFrameRef = useRef<number>(0);
+
+  // Mantener el ref en sincronía con el estado React (drag-pan, zoom-to-fit, etc.)
+  // salvo que haya un frame pendiente con un valor más reciente.
+  useEffect(() => {
+    if (viewportFrameRef.current) return;
+    viewportRef.current = { zoom, panX: pan.x, panY: pan.y };
+  }, [zoom, pan]);
+
+  /** Aplica el viewport acumulado una sola vez por frame (varios `wheel` por frame → 1 render). */
+  const commitViewport = useCallback(() => {
+    if (viewportFrameRef.current) return;
+    viewportFrameRef.current = requestAnimationFrame(() => {
+      viewportFrameRef.current = 0;
+      const v = viewportRef.current;
+      setZoom(v.zoom);
+      setPan({ x: v.panX, y: v.panY });
+    });
+  }, []);
+
+  useEffect(() => () => {
+    if (viewportFrameRef.current) cancelAnimationFrame(viewportFrameRef.current);
+  }, []);
+
+  /**
+   * Zoom anclado al punto (clientX, clientY): la coordenada del mundo que hay
+   * bajo el cursor / entre los dos dedos permanece fija en pantalla.
+   */
+  const zoomAtPoint = useCallback(
+    (newZoom: number, clientX: number, clientY: number) => {
+      if (!containerRef.current) return;
+      const clampedZoom = Math.min(Math.max(newZoom, MIN_ZOOM), MAX_ZOOM);
+      const rect = containerRef.current.getBoundingClientRect();
+      const mouseX = clientX - rect.left;
+      const mouseY = clientY - rect.top;
+      const { zoom: curZoom, panX, panY } = viewportRef.current;
+
+      // Coordenada del mundo bajo el cursor antes de cambiar el zoom
+      const worldX = (mouseX - panX) / curZoom;
+      const worldY = (mouseY - panY) / curZoom;
+
+      // Nuevo pan para que (worldX, worldY) siga exactamente bajo (mouseX, mouseY)
+      viewportRef.current = {
+        zoom: clampedZoom,
+        panX: mouseX - worldX * clampedZoom,
+        panY: mouseY - worldY * clampedZoom,
+      };
+      commitViewport();
+    },
+    [commitViewport]
+  );
+
+  /** Desplaza la cámara en píxeles de pantalla (scroll de dos dedos / rueda). */
+  const panBy = useCallback(
+    (dx: number, dy: number) => {
+      const v = viewportRef.current;
+      viewportRef.current = { ...v, panX: v.panX - dx, panY: v.panY - dy };
+      commitViewport();
+    },
+    [commitViewport]
+  );
 
   /* ------------------------------------------------------------------ */
   /* Persistencia                                                         */
@@ -583,27 +660,11 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
     if (e.ctrlKey || e.metaKey) {
-      const zoomFactor = e.deltaY < 0 ? 1.09 : 0.91;
-      const newZoom = Math.max(0.15, Math.min(3.0, zoom * zoomFactor));
-
-      // Zoom towards mouse pointer
-      const newPanX = mouseX - (mouseX - pan.x) * (newZoom / zoom);
-      const newPanY = mouseY - (mouseY - pan.y) * (newZoom / zoom);
-
-      setZoom(newZoom);
-      setPan({ x: newPanX, y: newPanY });
+      const zoomFactor = Math.exp(-e.deltaY * WHEEL_ZOOM_SENSITIVITY_PINCH);
+      zoomAtPoint(viewportRef.current.zoom * zoomFactor, e.clientX, e.clientY);
     } else {
-      // Pan with trackpad or mouse wheel
-      setPan((prev) => ({
-        x: prev.x - e.deltaX,
-        y: prev.y - e.deltaY,
-      }));
+      panBy(e.deltaX, e.deltaY);
     }
   };
 
