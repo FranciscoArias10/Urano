@@ -1177,6 +1177,25 @@ mark.hl-purple {
 }
 
 /* ========================================================
+   RTL (árabe, persa, hebreo) — réplica de Obsidian app.css:
+   `.mod-rtl .modal, .mod-rtl .notice-container, .mod-rtl .notice, .mod-rtl .prompt,
+    .mod-rtl .tooltip, .mod-rtl .menu, .mod-rtl .popover … { direction: rtl; }`
+   Solo se voltean las superficies de interfaz; el documento no lleva dir="rtl".
+   ======================================================== */
+.mod-rtl .menu,
+.mod-rtl .modal,
+.mod-rtl .urano-settings-root,
+.mod-rtl .language-dropdown-menu,
+.mod-rtl .notice-container,
+.mod-rtl .notice,
+.mod-rtl .tooltip,
+.mod-rtl .prompt,
+.mod-rtl .popover,
+.mod-rtl .status-bar {
+  direction: rtl;
+}
+
+/* ========================================================
    Obsidian Context Menus (.menu, .menu-item, etc.)
    ======================================================== */
 .menu {

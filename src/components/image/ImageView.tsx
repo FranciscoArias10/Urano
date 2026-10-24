@@ -13,6 +13,7 @@ import {
 } from '../../services/storageAdapter';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useNoticeStore } from '../common/Notice';
+import { useT } from '../../stores/localeStore';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 import { Tooltip } from '../common/Tooltip';
 import { FileItem } from '../../types';
@@ -24,6 +25,7 @@ interface ImageViewProps {
 export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
   const { fileTree, deleteItem } = useVaultStore();
   const { showNotice } = useNoticeStore();
+  const t = useT();
 
   const [imageUrl, setImageUrl] = useState<string>('');
   const [scale, setScale] = useState<number>(1);
@@ -37,7 +39,7 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
-  const fileName = filePath.split(/[/\\]/).pop() || 'Imagen';
+  const fileName = filePath.split(/[/\\]/).pop() || t('image.defaultName');
   const formatTag = getImageFormatTag(fileName) || 'IMG';
 
   // 1. Resolve image url through StorageAdapter
@@ -188,38 +190,38 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
       await navigator.clipboard.write([
         new ClipboardItem({ 'image/png': pngBlob }),
       ]);
-      showNotice('Imagen copiada al portapapeles', 2000, 'success');
+      showNotice(t('image.notices.copied'), 2000, 'success');
     } catch (err) {
       console.error('Error copying image:', err);
-      showNotice('Error al copiar imagen', 2500, 'error');
+      showNotice(t('image.notices.copyError'), 2500, 'error');
     }
   };
 
   const menuItems: MenuItemData[] = [
     {
-      title: 'Copiar imagen',
+      title: t('image.copyImage'),
       icon: <Copy size={14} />,
       action: handleCopyImage,
     },
     { type: 'separator' },
     {
-      title: 'Restablecer zoom (100%)',
+      title: t('image.resetZoom'),
       icon: <RotateCcw size={14} />,
       action: handleResetZoom,
     },
     {
-      title: 'Ajustar a la ventana',
+      title: t('image.zoomToFit'),
       icon: <Maximize2 size={14} />,
       action: handleFitZoom,
     },
     { type: 'separator' },
     {
-      title: 'Eliminar archivo',
+      title: t('image.deleteFile'),
       icon: <Trash2 size={14} />,
       isWarning: true,
       action: async () => {
         await deleteItem(filePath);
-        showNotice('Imagen eliminada', 2000, 'info');
+        showNotice(t('image.notices.deleted'), 2000, 'info');
       },
     },
   ];
@@ -271,7 +273,7 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
         className="absolute top-4 right-4 flex items-center gap-1 bg-[#202020]/90 backdrop-blur-md border border-stone-800/80 rounded-lg p-1 shadow-xl z-20"
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <Tooltip content="Acercar (Zoom In)" position="bottom">
+        <Tooltip content={t('image.zoomIn')} position="bottom">
           <button
             onClick={handleZoomIn}
             className="p-1.5 text-stone-300 hover:text-white hover:bg-white/10 rounded transition-colors"
@@ -279,7 +281,7 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
             <ZoomIn size={16} />
           </button>
         </Tooltip>
-        <Tooltip content="Alejar (Zoom Out)" position="bottom">
+        <Tooltip content={t('image.zoomOut')} position="bottom">
           <button
             onClick={handleZoomOut}
             className="p-1.5 text-stone-300 hover:text-white hover:bg-white/10 rounded transition-colors"
@@ -288,7 +290,7 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
           </button>
         </Tooltip>
         <div className="w-[1px] h-4 bg-stone-700/60 mx-0.5" />
-        <Tooltip content="Restablecer (100%)" position="bottom">
+        <Tooltip content={t('image.resetZoom')} position="bottom">
           <button
             onClick={handleResetZoom}
             className="px-2 py-1 text-xs font-mono text-stone-300 hover:text-white hover:bg-white/10 rounded transition-colors"
@@ -296,7 +298,7 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
             {Math.round(scale * 100)}%
           </button>
         </Tooltip>
-        <Tooltip content="Ajustar a ventana" position="bottom">
+        <Tooltip content={t('image.zoomToFit')} position="bottom">
           <button
             onClick={handleFitZoom}
             className="p-1.5 text-stone-300 hover:text-white hover:bg-white/10 rounded transition-colors"

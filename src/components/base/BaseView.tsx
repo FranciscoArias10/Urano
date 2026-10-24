@@ -14,6 +14,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { useVaultStore } from '../../stores/vaultStore';
+import { useT } from '../../stores/localeStore';
 import { FileItem } from '../../types';
 
 interface BaseViewProps {
@@ -31,6 +32,7 @@ interface NoteRow {
 
 export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
   const { fileTree, notesContentMap, selectFile, createUntitledNote } = useVaultStore();
+  const t = useT();
   const [filterQuery, setFilterQuery] = useState('');
   const [sortField, setSortField] = useState<'name' | 'folder' | 'mtime' | 'size'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -119,7 +121,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
     });
   };
 
-  const baseName = filePath.split('/').pop()?.replace(/\.base$/i, '') || 'Base de Datos';
+  const baseName = filePath.split('/').pop()?.replace(/\.base$/i, '') || t('base.defaultName');
 
   return (
     <div className="flex flex-col w-full h-full bg-[#181818] text-stone-200 select-none overflow-hidden">
@@ -132,7 +134,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
           <div>
             <h1 className="text-sm font-semibold text-white">{baseName}</h1>
             <p className="text-[11px] text-stone-400">
-              {displayedNotes.length} de {allNotes.length} notas indexadas
+              {t('base.indexedNotes', { shown: displayedNotes.length, total: allNotes.length })}
             </p>
           </div>
         </div>
@@ -143,7 +145,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
             <Search size={13} className="text-stone-400" />
             <input
               type="text"
-              placeholder="Filtrar por nombre, carpeta o etiqueta..."
+              placeholder={t('base.filterPlaceholder')}
               value={filterQuery}
               onChange={(e) => setFilterQuery(e.target.value)}
               className="bg-transparent text-white outline-none w-64 placeholder-stone-500"
@@ -156,7 +158,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-orange-600 hover:bg-orange-500 text-white rounded-md transition-colors shadow-sm"
           >
             <Plus size={13} />
-            <span>Nueva Nota</span>
+            <span>{t('base.newNote')}</span>
           </button>
         </div>
       </div>
@@ -173,7 +175,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
               >
                 <div className="flex items-center gap-1.5">
                   <FileText size={13} />
-                  <span>Nombre</span>
+                  <span>{t('base.columns.name')}</span>
                   {sortField === 'name' ? (
                     sortDirection === 'asc' ? (
                       <ArrowUp size={12} className="text-orange-500" />
@@ -192,7 +194,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
               >
                 <div className="flex items-center gap-1.5">
                   <Folder size={13} />
-                  <span>Carpeta</span>
+                  <span>{t('base.columns.folder')}</span>
                   {sortField === 'folder' ? (
                     sortDirection === 'asc' ? (
                       <ArrowUp size={12} className="text-orange-500" />
@@ -208,7 +210,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
               <th className="px-4 py-3 font-semibold min-w-[180px]">
                 <div className="flex items-center gap-1.5">
                   <Tag size={13} />
-                  <span>Etiquetas</span>
+                  <span>{t('base.columns.tags')}</span>
                 </div>
               </th>
 
@@ -218,7 +220,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
               >
                 <div className="flex items-center gap-1.5">
                   <Clock size={13} />
-                  <span>Modificado</span>
+                  <span>{t('base.columns.modified')}</span>
                   {sortField === 'mtime' ? (
                     sortDirection === 'asc' ? (
                       <ArrowUp size={12} className="text-orange-500" />
@@ -237,7 +239,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
               >
                 <div className="flex items-center gap-1.5">
                   <HardDrive size={13} />
-                  <span>Tamaño</span>
+                  <span>{t('base.columns.size')}</span>
                   {sortField === 'size' ? (
                     sortDirection === 'asc' ? (
                       <ArrowUp size={12} className="text-orange-500" />
@@ -257,7 +259,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
             {displayedNotes.length === 0 ? (
               <tr>
                 <td colSpan={5} className="py-12 text-center text-stone-500">
-                  No se encontraron notas que coincidan con la búsqueda.
+                  {t('base.noResults')}
                 </td>
               </tr>
             ) : (

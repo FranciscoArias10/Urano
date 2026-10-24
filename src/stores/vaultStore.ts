@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { FileItem, SortOrder, BookmarkItem } from '../types';
 import { isImagePath } from '../services/storageAdapter';
 import { useSettingsStore } from './settingsStore';
+import { t } from '../locales/i18n';
 
 // Prohibited characters matching Obsidian specification: \ / : * ? " < > | # ^ [ ]
 export const ILLEGAL_FILENAME_CHARS = /[\\/:*?"<>|#^[\]]/;
@@ -10,12 +11,12 @@ export const ILLEGAL_FILENAME_CHARS = /[\\/:*?"<>|#^[\]]/;
 export const validateFileName = (name: string): { valid: boolean; error?: string } => {
   const trimmed = name.trim();
   if (!trimmed) {
-    return { valid: false, error: 'El nombre de archivo no puede estar vacío.' };
+    return { valid: false, error: t('vault.errors.nameEmpty') };
   }
   if (ILLEGAL_FILENAME_CHARS.test(trimmed)) {
     return {
       valid: false,
-      error: 'El nombre de archivo no puede contener ninguno de los siguientes caracteres: * " \\ / < > : | ? # ^ [ ]',
+      error: t('vault.errors.nameInvalidChars'),
     };
   }
   return { valid: true };
@@ -174,7 +175,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       set({ isLoading: true });
       const tree = await invoke<FileItem[]>('open_vault', { vaultPath });
       const parts = vaultPath.replace(/\\/g, '/').split('/');
-      const vaultName = parts[parts.length - 1] || 'Bóveda';
+      const vaultName = parts[parts.length - 1] || t('vault.defaultVaultName');
 
       localStorage.setItem('urano_last_vault', vaultPath);
 
@@ -222,7 +223,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       const isImg = isImagePath(filePath);
       const content = isImg ? '' : await invoke<string>('read_file', { filePath });
       const parts = filePath.replace(/\\/g, '/').split('/');
-      const activeFileName = parts[parts.length - 1] || 'Nota';
+      const activeFileName = parts[parts.length - 1] || t('vault.defaultNoteName');
 
       set({
         activeFile: filePath,
@@ -306,10 +307,11 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     };
     collectInDir(fileTree);
 
-    let candidateName = 'Sin título.md';
+    const untitled = t('common.untitled');
+    let candidateName = `${untitled}.md`;
     let counter = 1;
     while (existingNames.has(candidateName.toLowerCase())) {
-      candidateName = `Sin título ${counter}.md`;
+      candidateName = `${untitled} ${counter}.md`;
       counter++;
     }
 
@@ -345,10 +347,11 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     };
     collectInDir(fileTree);
 
-    let candidateName = 'Sin título.canvas';
+    const untitled = t('common.untitled');
+    let candidateName = `${untitled}.canvas`;
     let counter = 1;
     while (existingNames.has(candidateName.toLowerCase())) {
-      candidateName = `Sin título ${counter}.canvas`;
+      candidateName = `${untitled} ${counter}.canvas`;
       counter++;
     }
 
@@ -389,10 +392,11 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     };
     collectInDir(fileTree);
 
-    let candidateName = 'Sin título.base';
+    const untitled = t('common.untitled');
+    let candidateName = `${untitled}.base`;
     let counter = 1;
     while (existingNames.has(candidateName.toLowerCase())) {
-      candidateName = `Sin título ${counter}.base`;
+      candidateName = `${untitled} ${counter}.base`;
       counter++;
     }
 
@@ -435,10 +439,11 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     };
     collectInDir(fileTree);
 
-    let candidateName = 'Sin título.base';
+    const untitled = t('common.untitled');
+    let candidateName = `${untitled}.base`;
     let counter = 1;
     while (existingNames.has(candidateName.toLowerCase())) {
-      candidateName = `Sin título ${counter}.base`;
+      candidateName = `${untitled} ${counter}.base`;
       counter++;
     }
 
@@ -503,7 +508,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       .settings.dailyNotesFolder.trim()
       .replace(/^[\\/]+|[\\/]+$/g, '');
     const fullPath = `${activeVault}/${dailyFolder ? `${dailyFolder}/` : ''}${targetFileName}`.replace(/\/+/g, '/');
-    const initialContent = `# ${dateStr}\n\n## Objetivos del día\n- [ ] \n\n## Notas\n\n`;
+    const initialContent = t('vault.dailyNoteBody', { date: dateStr });
     await invoke('create_file', { filePath: fullPath });
     await invoke('write_file', { filePath: fullPath, content: initialContent });
 
@@ -543,10 +548,11 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     };
     collectInDir(fileTree);
 
-    let candidateName = 'Carpeta sin título';
+    const untitledFolder = t('vault.untitledFolder');
+    let candidateName = untitledFolder;
     let counter = 1;
     while (existingNames.has(candidateName.toLowerCase())) {
-      candidateName = `Carpeta sin título ${counter}`;
+      candidateName = `${untitledFolder} ${counter}`;
       counter++;
     }
 
@@ -625,7 +631,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     });
 
     if (fileExists) {
-      return { success: false, error: 'Ya existe un archivo o carpeta con ese nombre.' };
+      return { success: false, error: t('vault.errors.nameExists') };
     }
 
     try {
@@ -679,7 +685,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       return { success: true, newPath };
     } catch (err: any) {
       console.error('Error durante el renombrado:', err);
-      return { success: false, error: err?.toString() || 'Error al renombrar archivo.' };
+      return { success: false, error: err?.toString() || t('vault.errors.renameFailed') };
     }
   },
 

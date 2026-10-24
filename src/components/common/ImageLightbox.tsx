@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { X, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { useT } from '../../stores/localeStore';
 
 export interface LightboxImage {
   src: string;
@@ -35,6 +36,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
   onClose,
   onOpenInNewTab,
 }) => {
+  const t = useT();
   const [index, setIndex] = useState(activeIndex);
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -144,7 +146,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
       {/* Titlebar (filename) */}
       <div className="image-lightbox-titlebar">
         <span className="image-lightbox-title">
-          {activeImage.alt || activeImage.filePath?.split(/[/\\]/).pop() || 'Imagen'}
+          {activeImage.alt || activeImage.filePath?.split(/[/\\]/).pop() || t('lightbox.defaultName')}
         </span>
       </div>
 
@@ -152,7 +154,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
       <div className="image-lightbox-controls" onClick={(e) => e.stopPropagation()}>
         <button
           className="image-lightbox-action"
-          title="Alejar"
+          title={t('lightbox.zoomOut')}
           onClick={() => setScale((s) => Math.max(MIN_SCALE, s / 1.25))}
         >
           <ZoomOut size={16} />
@@ -160,15 +162,15 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
         <span className="image-lightbox-zoom">{Math.round(scale * 100)}%</span>
         <button
           className="image-lightbox-action"
-          title="Acercar"
+          title={t('lightbox.zoomIn')}
           onClick={() => setScale((s) => Math.min(MAX_SCALE, s * 1.25))}
         >
           <ZoomIn size={16} />
         </button>
-        <button className="image-lightbox-action" title="Restablecer" onClick={reset}>
+        <button className="image-lightbox-action" title={t('lightbox.reset')} onClick={reset}>
           <Maximize2 size={16} />
         </button>
-        <button className="image-lightbox-action" title="Cerrar (Escape)" onClick={onClose}>
+        <button className="image-lightbox-action" title={t('lightbox.close')} onClick={onClose}>
           <X size={18} />
         </button>
       </div>

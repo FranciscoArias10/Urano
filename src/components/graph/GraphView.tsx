@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useMemo } from 'react';
 import ForceGraph from 'force-graph';
 import { extractWikilinks } from '../../editor/wikilinks';
 import { useVaultStore } from '../../stores/vaultStore';
+import { useT } from '../../stores/localeStore';
 import { GraphData, GraphNode, GraphLink } from '../../types';
 import { Network, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 
@@ -15,6 +16,7 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
   const graphInstance = useRef<any>(null);
 
   const { notesContentMap, activeFile } = useVaultStore();
+  const t = useT();
 
   // Compute graph nodes and links from notesContentMap
   const graphData: GraphData = useMemo(() => {
@@ -168,29 +170,31 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
       {/* Graph Toolbar */}
       <div className="absolute top-4 left-6 z-10 flex items-center gap-2 bg-obsidian-sidebar/80 backdrop-blur px-3 py-1.5 rounded-lg border border-obsidian-border text-xs text-obsidian-text shadow-lg">
         <Network className="w-4 h-4 text-orange-400" />
-        <span className="font-medium">Grafo de Conexiones</span>
-        <span className="text-obsidian-muted">({graphData.nodes.length} notas, {graphData.links.length} enlaces)</span>
+        <span className="font-medium">{t('graph.title')}</span>
+        <span className="text-obsidian-muted">
+          {t('graph.stats', { notes: graphData.nodes.length, links: graphData.links.length })}
+        </span>
       </div>
 
       {/* Zoom controls */}
       <div className="absolute bottom-6 right-6 z-10 flex flex-col gap-1.5 bg-obsidian-sidebar/90 backdrop-blur p-1 rounded-lg border border-obsidian-border shadow-lg">
         <button
           onClick={handleZoomIn}
-          title="Acercar"
+          title={t('graph.zoomIn')}
           className="p-2 hover:bg-obsidian-hover text-obsidian-muted hover:text-white rounded transition-colors"
         >
           <ZoomIn className="w-4 h-4" />
         </button>
         <button
           onClick={handleZoomOut}
-          title="Alejar"
+          title={t('graph.zoomOut')}
           className="p-2 hover:bg-obsidian-hover text-obsidian-muted hover:text-white rounded transition-colors"
         >
           <ZoomOut className="w-4 h-4" />
         </button>
         <button
           onClick={handleResetZoom}
-          title="Restablecer vista"
+          title={t('graph.resetView')}
           className="p-2 hover:bg-obsidian-hover text-obsidian-muted hover:text-white rounded transition-colors"
         >
           <RotateCcw className="w-4 h-4" />
