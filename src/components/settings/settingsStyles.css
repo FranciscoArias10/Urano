@@ -886,10 +886,18 @@
 }
 .urano-settings-root .language-dropdown-button-label {
   flex: 1 1 auto;
-  text-align: start;
+  text-align: left;
+  direction: ltr;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.urano-settings-root .language-dropdown-button-label > span[dir="auto"],
+.urano-settings-root .language-dropdown-button-label [dir="auto"] {
+  display: inline-block;
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: plaintext;
 }
 
 .language-dropdown-menu {
@@ -897,10 +905,10 @@
   z-index: 200;
   box-sizing: border-box;
   min-width: 180px;
-  max-height: 290px;
+  max-height: 410px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 4px 0;
+  padding: 3px;
   background: #181818;
   border: 1px solid #2e2e2e;
   border-radius: 6px;
@@ -910,9 +918,15 @@
   color: #d0d0d0;
   outline: none;
   user-select: none;
+  direction: ltr !important;
+  text-align: left !important;
   animation: language-dropdown-in 90ms ease-out;
   scrollbar-width: thin;
   scrollbar-color: #3a3a3a transparent;
+}
+.mod-rtl .language-dropdown-menu {
+  direction: ltr !important;
+  text-align: left !important;
 }
 .language-dropdown-menu.is-top {
   animation-name: language-dropdown-in-top;
@@ -940,35 +954,54 @@
 }
 
 .language-dropdown-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  /* Obsidian: todas las opciones en una sola columna compacta alineada a la izquierda,
+     también las RTL (el texto interno lleva dir="auto" para dibujarse en su orden bidi pero
+     permaneciendo pegado al margen izquierdo). */
+  direction: ltr !important;
+  text-align: left !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
   gap: 8px;
-  margin: 2px 4px;
-  padding: 6px 12px;
-  border-radius: 4px;
+  padding: 4px 10px;
+  margin: 0;
+  line-height: 1.35;
   font-size: 13px;
+  border-radius: 3px;
   color: #d0d0d0;
   cursor: pointer;
   white-space: nowrap;
+  box-sizing: border-box;
+  transition: none;
+  transform: none;
 }
-.language-dropdown-item.is-rtl {
-  direction: rtl;
-  text-align: right;
-}
+.language-dropdown-item:hover,
 .language-dropdown-item.is-active {
-  background: #262626;
+  background: #2a2a2a;
 }
 .language-dropdown-item.is-selected,
+.language-dropdown-item.is-selected:hover,
 .language-dropdown-item.is-selected.is-active {
-  background: var(--interactive-accent, #72aeff);
+  background: #72aeff;
   color: #111111;
   font-weight: 500;
 }
 .language-dropdown-item-label {
-  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  direction: ltr !important;
+  text-align: left !important;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.language-dropdown-item-label > span[dir="auto"],
+.language-dropdown-item-label [dir="auto"] {
+  display: inline-block;
+  direction: ltr;
+  text-align: left !important;
+  unicode-bidi: plaintext;
 }
 .language-dropdown-item-badge {
   flex-shrink: 0;

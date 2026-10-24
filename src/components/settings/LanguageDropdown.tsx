@@ -28,7 +28,7 @@ export interface LanguageDropdownProps {
 }
 
 const MENU_MIN_WIDTH = 180;
-const MENU_MAX_HEIGHT = 290;
+const MENU_MAX_HEIGHT = 410;
 const GAP = 4;
 
 interface MenuPosition {
@@ -217,17 +217,21 @@ export const LanguageDropdown: React.FC<LanguageDropdownProps> = ({
               aria-selected={isSelected}
               data-index={index}
               data-selected={isSelected ? 'true' : undefined}
-              dir={lang.dir}
               lang={lang.code}
               title={lang.name !== lang.nativeName ? `${lang.name} (${lang.code})` : lang.code}
               className={`language-dropdown-item${isSelected ? ' is-selected' : ''}${
                 index === activeIndex ? ' is-active' : ''
-              }${lang.dir === 'rtl' ? ' is-rtl' : ''}`}
+              }`}
               onMouseEnter={() => setActiveIndex(index)}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => commit(index)}
             >
-              <span className="language-dropdown-item-label">{lang.nativeName}</span>
+              {/* Como en Obsidian: una sola columna alineada a la izquierda; `dir="auto"`
+                  solo en el texto interno para que árabe/persa/hebreo se dibujen en su orden pero
+                  permanezcan pegados al margen izquierdo. */}
+              <span className="language-dropdown-item-label">
+                <span dir="auto">{lang.nativeName}</span>
+              </span>
               {lang.custom && <span className="language-dropdown-item-badge">{lang.code}</span>}
             </div>
           );
@@ -253,8 +257,8 @@ export const LanguageDropdown: React.FC<LanguageDropdownProps> = ({
         onClick={() => (open ? closeMenu() : openMenu())}
         onKeyDown={onButtonKeyDown}
       >
-        <span className="language-dropdown-button-label" dir={selected?.dir}>
-          {selected?.nativeName ?? value}
+        <span className="language-dropdown-button-label">
+          <span dir="auto">{selected?.nativeName ?? value}</span>
         </span>
         <ChevronsUpDown size={14} strokeWidth={2} aria-hidden="true" />
       </button>
