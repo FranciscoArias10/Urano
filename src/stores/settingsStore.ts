@@ -1,14 +1,12 @@
 import { create } from 'zustand';
-import { useCallback } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import {
-  SETTINGS_STRINGS,
-  SettingsStringKey,
-  Language,
-  formatString,
-} from '../i18n/settingsStrings';
+import { t as translateKey, subscribe as subscribeI18n, getVersion as getI18nVersion } from '../locales/i18n';
+import type { TranslateParams } from '../locales/i18n';
+import { DEFAULT_LANGUAGE, detectSystemLanguage, normalizeLanguageCode } from '../locales/languages';
 
-export type { Language } from '../i18n/settingsStrings';
+/** Código de idioma BCP-47 en minúsculas (`en`, `es`, `pt-br`…). Ver `locales/languages.ts`. */
+export type Language = string;
 export type ThemeMode = 'dark' | 'light' | 'system';
 export type UpdateLinksPref = 'always' | 'prompt' | 'never';
 export type AttachmentLocation = 'root' | 'folder' | 'current';
@@ -92,7 +90,8 @@ export const URANO_ACCENT = '#e06c1b';
 
 export const DEFAULT_SETTINGS: UranoSettings = {
   autoUpdate: true,
-  language: 'en',
+  // Igual que Obsidian: idioma del sistema si está en el catálogo, si no inglés.
+  language: detectSystemLanguage(),
   slowStartupCheck: false,
   cli: false,
   hardwareAcceleration: true,
@@ -178,7 +177,10 @@ function mergeSettings(raw: unknown): UranoSettings {
       (out as unknown as Record<string, unknown>)[key] = value;
     }
   }
-  if (out.language !== 'en' && out.language !== 'es') out.language = 'en';
+  out.language =
+    typeof out.language === 'string' && out.language.trim()
+      ? normalizeLanguageCode(out.language)
+      : DEFAULT_LANGUAGE;
   if (!['dark', 'light', 'system'].includes(out.theme)) out.theme = 'dark';
   if (!['always', 'prompt', 'never'].includes(out.alwaysUpdateLinks)) out.alwaysUpdateLinks = 'prompt';
   if (!['root', 'folder', 'current'].includes(out.attachmentLocation)) out.attachmentLocation = 'root';
@@ -334,18 +336,27 @@ export function resolveAttachmentDir(vaultPath: string, activeFile: string | nul
 }
 
 /* ------------------------------------------------------------------ *
- * i18n
+ * i18n (Ajustes)
  * ------------------------------------------------------------------ */
 
-export type Translate = (key: SettingsStringKey, vars?: Record<string, string | number>) => string;
+/**
+ * Clave de la pestaña de Ajustes sin el prefijo `settings.` (`'general.language'`).
+ * Los textos viven en `src/locales/<lang>.json` bajo `settings`.
+ */
+export type SettingsStringKey = string;
+export type Translate = (key: SettingsStringKey, vars?: TranslateParams) => string;
 
-export function translate(language: Language, key: SettingsStringKey, vars?: Record<string, string | number>): string {
-  const table = SETTINGS_STRINGS[language] ?? SETTINGS_STRINGS.en;
-  return formatString(table[key] ?? SETTINGS_STRINGS.en[key] ?? key, vars);
+/** Traduce una clave de Ajustes en el idioma activo del motor i18n. */
+export function translate(key: SettingsStringKey, vars?: TranslateParams): string {
+  return translateKey(`settings.${key}`, vars);
 }
 
-/** Hook returning a translate function bound to the current UI language. */
+/**
+ * Hook para la pestaña de Ajustes: `t('general.language')` ≡ `t('settings.general.language')`.
+ * Se re-renderiza al cambiar el idioma o al cargar un diccionario nuevo.
+ */
 export function useT(): Translate {
-  const language = useSettingsStore((s) => s.settings.language);
-  return useCallback<Translate>((key, vars) => translate(language, key, vars), [language]);
+  const version = useSyncExternalStore(subscribeI18n, getI18nVersion, getI18nVersion);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useCallback<Translate>((key, vars) => translate(key, vars), [version]);
 }

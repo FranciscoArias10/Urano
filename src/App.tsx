@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
+import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore } from './stores/vaultStore';
 import { useSyncStore } from './stores/syncStore';
 import { TabBar, TabItem } from './components/tabs/TabBar';
@@ -24,6 +25,7 @@ import { SyncConfigModal } from './components/sync/SyncConfigModal';
 import { SyncLogsModal } from './components/sync/SyncLogsModal';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { useSettingsStore, URANO_ACCENT } from './stores/settingsStore';
+import { useLocaleStore, LOCALES_DIR_RELATIVE, useT } from './stores/localeStore';
 import { LocalAdapter, GoogleDriveAdapter, setStorageAdapter } from './services/storageAdapter';
 import { UranoLogo } from './components/common/UranoLogo';
 import { NoticeContainer, useNoticeStore } from './components/common/Notice';
@@ -145,6 +147,7 @@ export const App: React.FC = () => {
 
   const { checkAuthStatus, triggerSync, isSyncing, setShowConfigModal } = useSyncStore();
   const { showNotice } = useNoticeStore();
+  const t = useT();
 
   // Settings (Obsidian-style modal, Ctrl+, / ⚙) — persisted in localStorage + .urano/settings.json
   const settings = useSettingsStore((s) => s.settings);
@@ -171,6 +174,27 @@ export const App: React.FC = () => {
     if (activeVault) loadSettingsFromVault(activeVault);
   }, [activeVault, loadSettingsFromVault]);
 
+  // Community language packs (.urano/locales/*.json) of the active vault
+  const loadVaultLocales = useLocaleStore((s) => s.loadVaultLocales);
+  useEffect(() => {
+    void loadVaultLocales(activeVault ?? null);
+  }, [activeVault, loadVaultLocales]);
+
+  // Settings → General → "Learn how to add a new language to Urano." → open the locales folder
+  const handleOpenLocalesFolder = useCallback(async () => {
+    if (!activeVault) {
+      window.open('https://github.com/FranciscoArias10/Urano#idiomas', '_blank', 'noopener');
+      return;
+    }
+    try {
+      const dir = await invoke<string>('get_custom_locales_dir', { vaultPath: activeVault });
+      await invoke('open_path', { path: dir });
+    } catch (err) {
+      console.warn('[Urano] No se pudo abrir la carpeta de idiomas:', err);
+      showNotice(`${activeVault.replace(/[\\/]+$/, '')}/${LOCALES_DIR_RELATIVE}`, 4000, 'info');
+    }
+  }, [activeVault, showNotice]);
+
   // Storage adapter selected in Settings → Sync (Local / Google Drive)
   useEffect(() => {
     setStorageAdapter(settings.storageBackend === 'gdrive' ? new GoogleDriveAdapter() : new LocalAdapter());
@@ -190,7 +214,7 @@ export const App: React.FC = () => {
     root.style.setProperty('--editor-tab-size', String(settings.tabSize));
     (root.style as CSSStyleDeclaration & { zoom?: string }).zoom =
       settings.zoomLevel === 1 ? '' : String(settings.zoomLevel);
-    root.lang = settings.language;
+    // `lang` / `dir` del documento los gestiona el motor i18n (locales/i18n.ts)
 
     const applyTheme = () => {
       const prefersLight =
@@ -275,7 +299,7 @@ export const App: React.FC = () => {
 
     const fileName = activeFileName
       ? (ext ? activeFileName.replace(new RegExp(`\\${ext}$`, 'i'), '') : activeFileName)
-      : 'Archivo';
+      : t('common.untitled');
 
     // Which leaf hosts this file?
     const existing = tabs.find((t) => t.filePath === activeFile);
@@ -451,7 +475,7 @@ export const App: React.FC = () => {
       const selected = await open({
         directory: true,
         multiple: false,
-        title: 'Seleccionar carpeta de bóveda para Urano',
+        title: t('app.dialogs.selectVaultFolder'),
       });
       if (selected && typeof selected === 'string') {
         await setVault(selected);
@@ -476,7 +500,7 @@ export const App: React.FC = () => {
     const { path } = await createUntitledCanvas(activeVault);
     if (path) {
       setActiveTabId(path);
-      showNotice('Lienzo canvas creado', 2500, 'info');
+      showNotice(t('app.notices.canvasCreated'), 2500, 'info');
     }
   };
 
@@ -486,7 +510,7 @@ export const App: React.FC = () => {
     const { path } = await createUntitledBase(activeVault);
     if (path) {
       setActiveTabId(path);
-      showNotice('Base de datos creada', 2500, 'info');
+      showNotice(t('app.notices.baseCreated'), 2500, 'info');
     }
   };
 
@@ -514,13 +538,13 @@ export const App: React.FC = () => {
       });
       view.dispatch(tr);
       view.focus();
-      showNotice('Plantilla insertada correctamente', 2500, 'info');
+      showNotice(t('app.notices.templateInserted'), 2500, 'info');
     } else {
       const newNote = await createUntitledNote(activeVault || undefined);
       if (newNote?.path) {
         updateContent(templateContent);
         await saveCurrentFile();
-        showNotice('Nueva nota creada con la plantilla', 2500, 'info');
+        showNotice(t('app.notices.noteCreatedWithTemplate'), 2500, 'info');
       }
     }
     setShowTemplateModal(false);
@@ -537,12 +561,14 @@ export const App: React.FC = () => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const items: MenuItemData[] = [
       {
-        title: `Bóveda actual: ${vaultName || 'prueba'}`,
+        title: t('app.vaultMenu.currentVault', {
+          name: vaultName || t('app.vaultMenu.defaultVaultName'),
+        }),
         disabled: true,
       },
       { type: 'separator' },
       {
-        title: 'Bóveda Local',
+        title: t('app.vaultMenu.localVault'),
         icon: <HardDrive size={14} className="text-orange-500" />,
         action: handleOpenFolderDialog,
       },
@@ -553,12 +579,12 @@ export const App: React.FC = () => {
       },
       { type: 'separator' },
       {
-        title: 'Abrir otra carpeta de bóveda...',
+        title: t('app.vaultMenu.openAnotherVault'),
         icon: <FolderOpen size={14} />,
         action: handleOpenFolderDialog,
       },
       {
-        title: 'Registros de sincronización...',
+        title: t('app.vaultMenu.syncLogs'),
         icon: <RefreshCw size={14} />,
         action: () => setShowLogs(true),
       },
@@ -572,11 +598,7 @@ export const App: React.FC = () => {
   };
 
   const handleHelpClick = () => {
-    showNotice(
-      'Atajos: Ctrl+N (Nota nueva) • Ctrl+O (Buscar) • Ctrl+P (Comandos) • Ctrl+B (Barra lateral) • Ctrl+G (Grafo)',
-      5000,
-      'info'
-    );
+    showNotice(t('app.notices.shortcutsHelp'), 5000, 'info');
   };
 
   // Close other tabs
@@ -611,11 +633,7 @@ export const App: React.FC = () => {
 
   // Split views are not available in Urano yet
   const handleSplitUnavailable = () => {
-    showNotice(
-      'Las vistas divididas todavía no están disponibles en Urano.',
-      2500,
-      'info'
-    );
+    showNotice(t('app.notices.splitUnavailable'), 2500, 'info');
   };
 
   /* --------------------------------------------------------------- *
@@ -625,7 +643,7 @@ export const App: React.FC = () => {
     if (!activeFile) return;
     const result = await renameNoteWithLinkRefactor(activeFile, newTitle);
     if (!result.success) {
-      showNotice(result.error || 'No se pudo renombrar el archivo', 3000, 'error');
+      showNotice(result.error || t('app.notices.renameFailed'), 3000, 'error');
     }
   };
 
@@ -635,12 +653,12 @@ export const App: React.FC = () => {
       const selected = await open({
         directory: true,
         multiple: false,
-        title: 'Mover archivo a...',
+        title: t('app.dialogs.moveFileTo'),
         defaultPath: activeVault || undefined,
       });
       if (selected && typeof selected === 'string') {
         await moveItem(activeFile, selected);
-        showNotice('Archivo movido', 2000, 'success');
+        showNotice(t('app.notices.fileMoved'), 2000, 'success');
       }
     } catch (err) {
       console.error('Error al mover el archivo:', err);
@@ -651,7 +669,7 @@ export const App: React.FC = () => {
     if (!activeFile) return;
     try {
       const newPath = await duplicateNote(activeFile);
-      if (newPath) showNotice('Copia creada', 2000, 'success');
+      if (newPath) showNotice(t('app.notices.copyCreated'), 2000, 'success');
     } catch (err) {
       console.error('Error al duplicar el archivo:', err);
     }
@@ -661,9 +679,9 @@ export const App: React.FC = () => {
     if (!activeFileTitle) return;
     try {
       await navigator.clipboard.writeText(`[[${activeFileTitle}]]`);
-      showNotice('Enlace copiado al portapapeles', 2000, 'success');
+      showNotice(t('app.notices.linkCopied'), 2000, 'success');
     } catch {
-      showNotice('No se pudo copiar el enlace', 3000, 'error');
+      showNotice(t('app.notices.linkCopyFailed'), 3000, 'error');
     }
   };
 
@@ -671,9 +689,9 @@ export const App: React.FC = () => {
     if (!activeFile) return;
     try {
       await navigator.clipboard.writeText(activeFile);
-      showNotice('Ruta copiada al portapapeles', 2000, 'success');
+      showNotice(t('app.notices.pathCopied'), 2000, 'success');
     } catch {
-      showNotice('No se pudo copiar la ruta', 3000, 'error');
+      showNotice(t('app.notices.pathCopyFailed'), 3000, 'error');
     }
   };
 
@@ -682,13 +700,13 @@ export const App: React.FC = () => {
     const name = activeFileName || activeFile;
     if (
       useSettingsStore.getState().settings.confirmFileDeletion &&
-      !window.confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer.`)
+      !window.confirm(t('app.dialogs.confirmDelete', { name }))
     ) {
       return;
     }
     try {
       await deleteItem(activeFile);
-      showNotice('Archivo eliminado', 2000, 'success');
+      showNotice(t('app.notices.fileDeleted'), 2000, 'success');
     } catch (err) {
       console.error('Error al eliminar el archivo:', err);
     }
@@ -745,7 +763,8 @@ export const App: React.FC = () => {
     }
 
     const title =
-      targetPath.replace(/\\/g, '/').split('/').pop()?.replace(new RegExp(`\\${ext}$`, 'i'), '') || 'Nota';
+      targetPath.replace(/\\/g, '/').split('/').pop()?.replace(new RegExp(`\\${ext}$`, 'i'), '') ||
+      t('common.untitled');
     const tabId = `${targetPath}_tab_${Date.now()}`;
     const newTab: TabItem = {
       id: tabId,
@@ -763,7 +782,8 @@ export const App: React.FC = () => {
     const graphTabId = 'workspace-graph-view';
     setTabs((prev) => {
       if (prev.some((t) => t.id === graphTabId)) return prev;
-      return [...prev, { id: graphTabId, type: 'graph', title: 'Vista Gráfica' }];
+      // The label is resolved at render time from `type === 'graph'` (TabBar) so it follows the language
+      return [...prev, { id: graphTabId, type: 'graph', title: t('tabs.graphView') }];
     });
     setActiveTabId(graphTabId);
   };
@@ -840,14 +860,14 @@ export const App: React.FC = () => {
   const paletteCommands: CommandItem[] = [
     {
       id: 'file-explorer:new-note',
-      name: 'Explorador de archivos: Crear nueva nota (sin título)',
+      name: t('commands.fileExplorer.newNote'),
       shortcut: 'Ctrl+N',
       icon: <FilePlus size={15} />,
       action: handleCreateUntitledNote,
     },
     {
       id: 'quick-switcher:open',
-      name: 'Selector rápido: Buscar nota en la bóveda (Quick Switcher)',
+      name: t('commands.quickSwitcher.open'),
       shortcut: 'Ctrl+O',
       icon: <FileSearch size={15} />,
       action: () => {
@@ -857,64 +877,64 @@ export const App: React.FC = () => {
     },
     {
       id: 'graph:open',
-      name: 'Vista gráfica: Abrir vista gráfica interactiva (Graph View)',
+      name: t('commands.graph.open'),
       shortcut: 'Ctrl+G',
       icon: <GitFork size={15} />,
       action: handleOpenGraphTab,
     },
     {
       id: 'canvas:new',
-      name: 'Canvas: Crear nuevo lienzo (.canvas)',
+      name: t('commands.canvas.new'),
       icon: <Grid2X2 size={15} />,
       action: handleCreateCanvas,
     },
     {
       id: 'daily-notes:today',
-      name: 'Notas diarias: Abrir nota de hoy',
+      name: t('commands.dailyNotes.today'),
       icon: <Calendar size={15} />,
       action: handleOpenDailyNote,
     },
     {
       id: 'templates:insert',
-      name: 'Plantillas: Insertar plantilla',
+      name: t('commands.templates.insert'),
       icon: <Copy size={15} />,
       action: () => setShowTemplateModal(true),
     },
     {
       id: 'bases:new',
-      name: 'Bases: Crear nueva base de datos (.base)',
+      name: t('commands.bases.new'),
       icon: <LayoutList size={15} />,
       action: handleCreateBase,
     },
     {
       id: 'workspace:toggle-left-sidebar',
-      name: 'Espacio de trabajo: Alternar barra lateral izquierda',
+      name: t('commands.workspace.toggleLeftSidebar'),
       shortcut: 'Ctrl+B',
       icon: <PanelLeft size={15} />,
       action: () => setShowLeftSidebar((prev) => !prev),
     },
     {
       id: 'workspace:toggle-backlinks',
-      name: 'Espacio de trabajo: Alternar panel de Backlinks y menciones',
+      name: t('commands.workspace.toggleBacklinks'),
       shortcut: 'Ctrl+Shift+B',
       icon: <ArrowLeftRight size={15} />,
       action: () => setShowBacklinks((prev) => !prev),
     },
     {
       id: 'file-explorer:new-folder',
-      name: 'Explorador de archivos: Nueva carpeta en la raíz',
+      name: t('commands.fileExplorer.newFolder'),
       icon: <FolderPlus size={15} />,
       action: handleCreateRootFolder,
     },
     {
       id: 'file-explorer:refresh',
-      name: 'Explorador de archivos: Recargar archivos de la bóveda',
+      name: t('commands.fileExplorer.refresh'),
       icon: <RotateCw size={15} />,
       action: () => refreshTree(),
     },
     {
       id: 'sync:now',
-      name: 'Sincronización: Sincronizar ahora con Google Drive',
+      name: t('commands.sync.now'),
       icon: <RefreshCw size={15} />,
       action: () => {
         if (activeVault) triggerSync(activeVault);
@@ -922,20 +942,20 @@ export const App: React.FC = () => {
     },
     {
       id: 'app:open-vault',
-      name: 'Bóveda: Abrir otra carpeta de bóveda...',
+      name: t('commands.app.openVault'),
       icon: <FolderOpen size={15} />,
       action: handleOpenFolderDialog,
     },
     {
       id: 'app:open-settings',
-      name: 'Ajustes: Abrir ajustes',
+      name: t('commands.app.openSettings'),
       shortcut: 'Ctrl+,',
       icon: <Settings size={15} />,
       action: () => openSettings(),
     },
     {
       id: 'app:sync-config',
-      name: 'Ajustes: Configurar cuenta de Google Drive y sincronización',
+      name: t('commands.app.syncConfig'),
       icon: <Settings size={15} />,
       action: () => openSettings('sync'),
     },
@@ -966,7 +986,7 @@ export const App: React.FC = () => {
 
           {/* Toggle sidebar button if sidebar is currently collapsed */}
           {!showLeftSidebar && (
-            <Tooltip content="Mostrar barra lateral" shortcut="Ctrl+B" position="right">
+            <Tooltip content={t('app.ribbon.showSidebar')} shortcut="Ctrl+B" position="right">
               <button
                 onClick={() => setShowLeftSidebar(true)}
                 className="side-dock-ribbon-action text-stone-400 hover:text-stone-200"
@@ -978,7 +998,7 @@ export const App: React.FC = () => {
 
           {/* 1. Open quick switcher (Ctrl+O) */}
           {corePlugins.switcher && (
-          <Tooltip content="Open quick switcher" shortcut="Ctrl+O" position="right">
+          <Tooltip content={t('app.ribbon.openQuickSwitcher')} shortcut="Ctrl+O" position="right">
             <button
               onClick={() => {
                 setPaletteMode('files');
@@ -992,7 +1012,7 @@ export const App: React.FC = () => {
           )}
 
           {/* 2. Open graph view (Ctrl+G) */}
-          <Tooltip content="Open graph view" shortcut="Ctrl+G" position="right">
+          <Tooltip content={t('app.ribbon.openGraphView')} shortcut="Ctrl+G" position="right">
             <button
               onClick={handleOpenGraphTab}
               className={`side-dock-ribbon-action ${activeTabId === 'workspace-graph-view' ? 'is-active' : ''}`}
@@ -1003,7 +1023,7 @@ export const App: React.FC = () => {
 
           {/* 3. Create new canvas */}
           {corePlugins.canvas && (
-          <Tooltip content="Create new canvas" position="right">
+          <Tooltip content={t('app.ribbon.createNewCanvas')} position="right">
             <button
               onClick={handleCreateCanvas}
               className="side-dock-ribbon-action"
@@ -1015,7 +1035,7 @@ export const App: React.FC = () => {
 
           {/* 4. Open today's daily note */}
           {corePlugins['daily-notes'] && (
-          <Tooltip content="Open today's daily note" position="right">
+          <Tooltip content={t('app.ribbon.openDailyNote')} position="right">
             <button
               onClick={handleOpenDailyNote}
               className="side-dock-ribbon-action"
@@ -1027,7 +1047,7 @@ export const App: React.FC = () => {
 
           {/* 5. Insert template */}
           {corePlugins.templates && (
-          <Tooltip content="Insert template" position="right">
+          <Tooltip content={t('app.ribbon.insertTemplate')} position="right">
             <button
               onClick={() => setShowTemplateModal(true)}
               className="side-dock-ribbon-action"
@@ -1039,7 +1059,7 @@ export const App: React.FC = () => {
 
           {/* 6. Open command palette (Ctrl+P) */}
           {corePlugins['command-palette'] && (
-          <Tooltip content="Open command palette" shortcut="Ctrl+P" position="right">
+          <Tooltip content={t('app.ribbon.openCommandPalette')} shortcut="Ctrl+P" position="right">
             <button
               onClick={() => {
                 setPaletteMode('commands');
@@ -1053,7 +1073,7 @@ export const App: React.FC = () => {
           )}
 
           {/* 7. Create new base */}
-          <Tooltip content="Create new base" position="right">
+          <Tooltip content={t('app.ribbon.createNewBase')} position="right">
             <button
               onClick={handleCreateBase}
               className="side-dock-ribbon-action"
@@ -1066,7 +1086,7 @@ export const App: React.FC = () => {
 
           {/* Google Drive Sync Trigger */}
           {corePlugins.sync && (
-          <Tooltip content="Sincronizar ahora con Google Drive" position="right">
+          <Tooltip content={t('app.ribbon.syncNow')} position="right">
             <button
               onClick={() => {
                 if (activeVault) triggerSync(activeVault);
@@ -1079,7 +1099,7 @@ export const App: React.FC = () => {
           )}
 
           {/* Settings (Ctrl+,) at Bottom of Ribbon */}
-          <Tooltip content="Settings" shortcut="Ctrl+," position="right">
+          <Tooltip content={t('app.ribbon.settings')} shortcut="Ctrl+," position="right">
             <button
               onClick={() => openSettings()}
               className="side-dock-ribbon-action mb-1 text-stone-400 hover:text-stone-200"
@@ -1099,7 +1119,7 @@ export const App: React.FC = () => {
             {/* A. Fila Superior del Panel Izquierdo (4 botones) */}
             <div className="h-10 px-2.5 border-b border-obsidian-border flex items-center justify-between bg-obsidian-sidebar shrink-0">
               {/* 1. Botón "Toggle Left Sidebar" */}
-              <Tooltip content="Ocultar barra lateral" shortcut="Ctrl+B" position="bottom">
+              <Tooltip content={t('app.ribbon.hideSidebar')} shortcut="Ctrl+B" position="bottom">
                 <button
                   onClick={() => setShowLeftSidebar(false)}
                   className="p-1.5 text-stone-400 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
@@ -1111,7 +1131,7 @@ export const App: React.FC = () => {
               {/* 2. Las 3 pestañas superiores del panel lateral */}
               <div className="flex items-center gap-1">
                 {/* Archivos */}
-                <Tooltip content="Archivos" position="bottom">
+                <Tooltip content={t('app.sidebar.files')} position="bottom">
                   <button
                     onClick={() => setSidebarTab('files')}
                     className={`p-1.5 rounded transition-colors ${
@@ -1125,7 +1145,7 @@ export const App: React.FC = () => {
                 </Tooltip>
 
                 {/* Buscar */}
-                <Tooltip content="Buscar" position="bottom">
+                <Tooltip content={t('app.sidebar.search')} position="bottom">
                   <button
                     onClick={() => setSidebarTab('search')}
                     className={`p-1.5 rounded transition-colors ${
@@ -1139,7 +1159,7 @@ export const App: React.FC = () => {
                 </Tooltip>
 
                 {/* Marcadores / Bookmarks */}
-                <Tooltip content="Marcadores" position="bottom">
+                <Tooltip content={t('app.sidebar.bookmarks')} position="bottom">
                   <button
                     onClick={() => setSidebarTab('bookmarks')}
                     className={`p-1.5 rounded transition-colors ${
@@ -1178,24 +1198,24 @@ export const App: React.FC = () => {
               <button
                 onClick={handleVaultSwitcherClick}
                 className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 hover:text-stone-200 text-stone-300 font-medium max-w-[145px] truncate transition-colors text-left"
-                title="Bóveda actual / Cambiar entre Local y Google Drive"
+                title={t('app.sidebar.vaultSwitcher')}
               >
                 <ChevronDown size={14} className="text-orange-500 shrink-0" />
-                <span className="truncate">{vaultName || 'prueba'}</span>
+                <span className="truncate">{vaultName || t('app.vaultMenu.defaultVaultName')}</span>
               </button>
 
               <div className="flex items-center gap-0.5 text-stone-400">
                 <button
                   onClick={handleHelpClick}
-                  title="Ayuda y atajos de teclado"
+                  title={t('app.sidebar.help')}
                   className="p-1.5 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
                 >
                   <HelpCircle size={15} />
                 </button>
                 <button
                   onClick={() => openSettings()}
-                  title="Settings (Ctrl+,)"
-                  aria-label="Settings"
+                  title={t('app.sidebar.settingsTitle')}
+                  aria-label={t('app.ribbon.settings')}
                   className="p-1.5 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
                 >
                   <Settings size={15} />
@@ -1256,7 +1276,7 @@ export const App: React.FC = () => {
             ) : activeFile && isImagePath(activeFile) ? (
               <ImageView filePath={activeFile} />
             ) : activeFile ? (
-              <EditorErrorBoundary noteName={activeFileName || 'Nota'}>
+              <EditorErrorBoundary noteName={activeFileName || t('common.untitled')}>
                 <Editor
                   onWikilinkClick={handleWikilinkClick}
                   onOpenInNewTab={handleOpenInNewTab}
@@ -1267,9 +1287,9 @@ export const App: React.FC = () => {
             ) : (
               <div className="flex-1 h-full flex flex-col items-center justify-center text-obsidian-muted p-8 text-center bg-obsidian-bg">
                 <UranoLogo size={56} className="mb-4 opacity-80" />
-                <h2 className="text-xl font-medium text-obsidian-text mb-2">Bóveda de Urano</h2>
+                <h2 className="text-xl font-medium text-obsidian-text mb-2">{t('app.emptyState.title')}</h2>
                 <p className="text-sm max-w-sm text-obsidian-muted mb-6">
-                  Crea una nueva nota (Ctrl+N) o presiona Ctrl+O para abrir una nota existente.
+                  {t('app.emptyState.description')}
                 </p>
                 <div className="flex items-center gap-3">
                   <button
@@ -1277,14 +1297,14 @@ export const App: React.FC = () => {
                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white text-xs font-medium shadow transition-colors"
                   >
                     <FilePlus size={14} />
-                    <span>Crear nueva nota</span>
+                    <span>{t('app.emptyState.createNote')}</span>
                   </button>
                   <button
                     onClick={handleOpenFolderDialog}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-medium transition-colors"
                   >
                     <FolderOpen size={14} />
-                    <span>Abrir otra carpeta</span>
+                    <span>{t('app.emptyState.openFolder')}</span>
                   </button>
                 </div>
               </div>
@@ -1349,6 +1369,7 @@ export const App: React.FC = () => {
         commands={paletteCommands}
         onOpenHelp={handleHelpClick}
         onOpenSyncLogs={() => setShowLogs(true)}
+        onOpenLocalesFolder={handleOpenLocalesFolder}
       />
 
       {/* Google Drive Sync Configuration Modal */}

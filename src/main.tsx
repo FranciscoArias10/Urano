@@ -18,6 +18,9 @@ if (!(window as any).__TAURI_INTERNALS__) {
     invoke: async (cmd: string, args: any) => {
       console.log('[Mock Tauri]', cmd, args);
       if (cmd === 'is_authenticated') return false;
+      if (cmd === 'list_custom_locales') return [];
+      if (cmd === 'get_custom_locales_dir') return `${args?.vaultPath}/.urano/locales`;
+      if (cmd === 'open_path' || cmd === 'set_canvas_pinch_capture') return null;
       if (cmd === 'open_vault' || cmd === 'list_vault_files') return sampleFiles;
       if (cmd === 'get_vault_notes_content') return mockFileContent;
       if (cmd === 'read_file') return mockFileContent[args?.filePath] || 'Contenido de nota';
