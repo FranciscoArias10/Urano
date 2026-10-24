@@ -69,6 +69,7 @@ const MAX_ZOOM = 4.0;
  * pellizco de trackpad (ctrlKey) es más fino y la rueda discreta del ratón más gruesa.
  */
 const WHEEL_ZOOM_SENSITIVITY_PINCH = 0.012;
+const WHEEL_ZOOM_SENSITIVITY_MOUSE = 0.0025;
 
 /** Dimensiones por defecto de los nodos (1:1 con Obsidian). */
 const DEFAULT_TEXT_NODE_SIZE = { width: 250, height: 100 };
@@ -658,15 +659,67 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   /* Zoom / rueda                                                        */
   /* ------------------------------------------------------------------ */
 
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    if (e.ctrlKey || e.metaKey) {
-      const zoomFactor = Math.exp(-e.deltaY * WHEEL_ZOOM_SENSITIVITY_PINCH);
-      zoomAtPoint(viewportRef.current.zoom * zoomFactor, e.clientX, e.clientY);
-    } else {
-      panBy(e.deltaX, e.deltaY);
-    }
-  };
+  // Listener NATIVO y no pasivo. El `onWheel` de React se registra pasivo en
+  // el root, así que `preventDefault()` no evita que WebKitGTK/Tauri escale la
+  // ventana entera con Ctrl + rueda / pellizco. Obsidian hace lo mismo:
+  // `wrapperEl.addEventListener("wheel", this.onWheel.bind(this))`.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.defaultPrevented) return;
+      e.preventDefault();
+
+      // Normalización de deltaMode (Obsidian: DOM_DELTA_LINE ×40, DOM_DELTA_PAGE ×800)
+      let dx = e.deltaX;
+      let dy = e.deltaY;
+      if (e.deltaMode === WheelEvent.DOM_DELTA_LINE) {
+        dx *= 40;
+        dy *= 40;
+      } else if (e.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+        dx *= 800;
+        dy *= 800;
+      }
+
+      // Pellizco de trackpad en Linux/Wayland/X11: `wheel` con ctrlKey=true y
+      // deltaY fraccionario (deltaY<0 al separar dedos, >0 al juntarlos).
+      const isPinch = e.ctrlKey || e.metaKey;
+
+      // Rueda discreta de ratón: deltas enteros múltiplos de 120 sin componente X
+      // (Obsidian: `Math.abs(wheelDeltaY) === 240 && wheelDeltaX === 0`).
+      const legacy = e as WheelEvent & { wheelDeltaY?: number; wheelDeltaX?: number };
+      const isDiscreteMouseWheel =
+        !isPinch &&
+        dx === 0 &&
+        ((typeof legacy.wheelDeltaY === 'number' &&
+          legacy.wheelDeltaY !== 0 &&
+          Math.abs(legacy.wheelDeltaY) % 120 === 0 &&
+          (legacy.wheelDeltaX ?? 0) === 0) ||
+          e.deltaMode !== WheelEvent.DOM_DELTA_PIXEL ||
+          (Number.isInteger(dy) && Math.abs(dy) >= 100));
+
+      if (isPinch || isDiscreteMouseWheel) {
+        const sensitivity = isPinch ? WHEEL_ZOOM_SENSITIVITY_PINCH : WHEEL_ZOOM_SENSITIVITY_MOUSE;
+        const zoomFactor = Math.exp(-dy * sensitivity);
+        zoomAtPoint(viewportRef.current.zoom * zoomFactor, e.clientX, e.clientY);
+        return;
+      }
+
+      // Dos dedos en paralelo sobre el trackpad: desplazar la cámara.
+      // Shift + rueda vertical → desplazamiento horizontal (Obsidian).
+      if (e.shiftKey && dx === 0) {
+        panBy(dy, 0);
+      } else {
+        panBy(dx, dy);
+      }
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+    };
+  }, [zoomAtPoint, panBy]);
 
   /* ------------------------------------------------------------------ */
   /* Creación de nodos                                                   */
@@ -1684,7 +1737,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     <div
       ref={containerRef}
       tabIndex={0}
-      onWheel={handleWheel}
       onMouseDown={handlePointerDown}
       onMouseMove={handlePointerMove}
       onMouseUp={handlePointerUp}
