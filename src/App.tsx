@@ -26,6 +26,7 @@ import { SyncLogsModal } from './components/sync/SyncLogsModal';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { useSettingsStore, URANO_ACCENT } from './stores/settingsStore';
 import { useLocaleStore, LOCALES_DIR_RELATIVE, useT } from './stores/localeStore';
+import { spellcheckService } from './editor/spellcheckService';
 import { LocalAdapter, GoogleDriveAdapter, setStorageAdapter } from './services/storageAdapter';
 import { UranoLogo } from './components/common/UranoLogo';
 import { NoticeContainer, useNoticeStore } from './components/common/Notice';
@@ -163,9 +164,11 @@ export const App: React.FC = () => {
     items: MenuItemData[];
   } | null>(null);
 
-  // Startup time (Settings → General → "Notify if startup takes longer than expected")
+  // Startup time & precarga obligatoria del corrector ortográfico
   useEffect(() => {
     markStartupComplete();
+    const currentLang = useLocaleStore.getState().locale || useSettingsStore.getState().language || 'en';
+    void spellcheckService.setLanguage(currentLang);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -28,13 +28,13 @@ import {
   checkWordIsolated,
   spellcheckRefreshEffect,
 } from '../../editor/spellcheckExtension';
-import { loadSpellchecker } from '../../editor/spellcheckService';
+import { loadSpellchecker, spellcheckService } from '../../editor/spellcheckService';
 import { getStorageAdapter, toUint8Array } from '../../services/storageAdapter';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 import { useNoticeStore } from '../common/Notice';
-import { useT } from '../../stores/localeStore';
+import { useLocaleStore, useT } from '../../stores/localeStore';
 import { ImageLightbox } from '../common/ImageLightbox';
 import { FileItem } from '../../types';
 import {
@@ -216,6 +216,12 @@ export const Editor: React.FC<EditorProps> = ({
   // Estado local para edición de título sin renombrar en cada pulsación
   const [draftTitle, setDraftTitle] = useState(cleanTitle);
   const [spellRefreshKey, setSpellRefreshKey] = useState(0);
+
+  // Carga obligatoria del diccionario activo al montar el Editor
+  useEffect(() => {
+    const currentLang = useLocaleStore.getState().locale || useSettingsStore.getState().language || 'en';
+    void spellcheckService.setLanguage(currentLang);
+  }, []);
 
   useEffect(() => {
     const onSpellUpdate = () => setSpellRefreshKey((k) => k + 1);
