@@ -6,28 +6,67 @@ export type SpellChecker = ReturnType<typeof nspell>;
 const spellcheckerCache = new Map<string, SpellChecker>();
 const loadingPromises = new Map<string, Promise<SpellChecker | null>>();
 
-const SUPPORTED_DICTS = new Set(['en', 'es', 'fr', 'de', 'it', 'pt']);
+export const SUPPORTED_DICTS = new Set(['en', 'es', 'fr', 'de', 'it', 'pt']);
 
-/**
- * Normaliza el código de idioma ('es-ES' -> 'es', 'en-GB' -> 'en').
- */
-export function getBaseLanguageCode(langCode: string): string {
-  if (!langCode) return 'en';
-  const clean = langCode.trim().toLowerCase();
-  if (clean.startsWith('es')) return 'es';
-  if (clean.startsWith('en')) return 'en';
-  if (clean.startsWith('fr')) return 'fr';
-  if (clean.startsWith('de')) return 'de';
-  if (clean.startsWith('it')) return 'it';
-  if (clean.startsWith('pt')) return 'pt';
-  return clean.split(/[-_]/)[0] || 'en';
+type DictionaryListener = (lang: string) => void;
+const listeners = new Set<DictionaryListener>();
+
+export function subscribeToDictionary(listener: DictionaryListener): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function notifyDictionaryLoaded(lang: string) {
+  for (const listener of listeners) {
+    try {
+      listener(lang);
+    } catch (e) {
+      console.error('[Spellcheck] Error in dictionary listener:', e);
+    }
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('urano-spellcheck-update', { detail: { lang } }));
+  }
 }
 
 /**
- * Carga el diccionario Hunspell (.aff y .dic) de forma asíncrona mediante fetch nativo.
+ * Normaliza cualquier variante de idioma a su código base Hunspell soportado:
+ * - "en-gb", "en-US", "English" -> "en"
+ * - "es-ES", "es-AR", "Español", "Spanish" -> "es"
+ * - "fr-FR", "Français", "French" -> "fr"
+ * - "de-DE", "Deutsch", "German" -> "de"
+ * - "it-IT", "Italiano", "Italian" -> "it"
+ * - "pt-BR", "pt-PT", "Português", "Portuguese" -> "pt"
+ */
+export function normalizeSpellcheckLanguage(raw: string | null | undefined): string {
+  if (!raw) return 'en';
+  const clean = raw.trim().toLowerCase();
+
+  if (clean === 'english' || clean.startsWith('en')) return 'en';
+  if (clean === 'español' || clean === 'spanish' || clean.startsWith('es')) return 'es';
+  if (clean === 'français' || clean === 'francais' || clean === 'french' || clean.startsWith('fr')) return 'fr';
+  if (clean === 'deutsch' || clean === 'german' || clean.startsWith('de')) return 'de';
+  if (clean === 'italiano' || clean === 'italian' || clean.startsWith('it')) return 'it';
+  if (clean === 'português' || clean === 'portugues' || clean === 'portuguese' || clean.startsWith('pt')) return 'pt';
+
+  const base = clean.split(/[-_]/)[0];
+  if (SUPPORTED_DICTS.has(base)) return base;
+  return 'en';
+}
+
+/**
+ * Alias para compatibilidad
+ */
+export const getBaseLanguageCode = normalizeSpellcheckLanguage;
+
+/**
+ * Carga el diccionario Hunspell (.aff y .dic) de forma asíncrona mediante fetch
+ * y ejecuta una prueba de humo automática.
  */
 export async function loadSpellchecker(langCode: string): Promise<SpellChecker | null> {
-  const base = getBaseLanguageCode(langCode);
+  const base = normalizeSpellcheckLanguage(langCode);
   if (spellcheckerCache.has(base)) {
     return spellcheckerCache.get(base)!;
   }
@@ -54,10 +93,36 @@ export async function loadSpellchecker(langCode: string): Promise<SpellChecker |
       if (aff && dic) {
         const instance = nspell({ aff, dic });
         spellcheckerCache.set(base, instance);
+
+        // Prueba de humo automática al cargar el diccionario
+        if (base === 'en') {
+          const isHello = instance.correct('hello');
+          const isHola = instance.correct('hola');
+          if (isHello && !isHola) {
+            console.info(`[Spellcheck] Dictionary 'en' loaded and verified successfully (hello=true, hola=false)`);
+          } else {
+            console.warn(`[Spellcheck] Dictionary 'en' smoke test warning: hello=${isHello}, hola=${isHola}`);
+          }
+        } else if (base === 'es') {
+          const isHola = instance.correct('hola');
+          const isRapido = instance.correct('rapido');
+          const isRapidoAccent = instance.correct('rápido');
+          if (isHola && !isRapido && isRapidoAccent) {
+            console.info(`[Spellcheck] Dictionary 'es' loaded and verified successfully (hola=true, rapido=false, rápido=true)`);
+          } else {
+            console.warn(`[Spellcheck] Dictionary 'es' smoke test warning: hola=${isHola}, rapido=${isRapido}, rápido=${isRapidoAccent}`);
+          }
+        } else {
+          console.info(`[Spellcheck] Dictionary '${base}' loaded successfully`);
+        }
+
+        notifyDictionaryLoaded(base);
         return instance;
       }
     } catch (err) {
       console.warn(`[Spellcheck] No se pudo cargar el diccionario para '${base}':`, err);
+    } finally {
+      loadingPromises.delete(base);
     }
     return null;
   })();
@@ -67,10 +132,21 @@ export async function loadSpellchecker(langCode: string): Promise<SpellChecker |
 }
 
 /**
+ * Cambia el idioma activo del corrector, carga su diccionario si no está en memoria
+ * y notifica a los suscriptores.
+ */
+export async function setLanguage(newLang: string): Promise<SpellChecker | null> {
+  const normalized = normalizeSpellcheckLanguage(newLang);
+  const checker = await loadSpellchecker(normalized);
+  notifyDictionaryLoaded(normalized);
+  return checker;
+}
+
+/**
  * Obtiene el corrector de forma síncrona si ya está en caché.
  */
 export function getCachedSpellchecker(langCode: string): SpellChecker | null {
-  const base = getBaseLanguageCode(langCode);
+  const base = normalizeSpellcheckLanguage(langCode);
   return spellcheckerCache.get(base) || null;
 }
 
@@ -91,7 +167,8 @@ export function isWordCorrect(
 
   const sp = getCachedSpellchecker(langCode);
   if (!sp) {
-    // Si aún se está cargando el diccionario, no marcar error prematuramente
+    // Si aún se está cargando el diccionario, disparar carga en segundo plano
+    void loadSpellchecker(langCode);
     return true;
   }
 
@@ -121,4 +198,10 @@ export function getWordSuggestions(word: string, langCode: string, limit = 6): s
   } catch {
     return [];
   }
+}
+
+// Pre-cargar de inmediato inglés y español en segundo plano para que estén listos
+if (typeof window !== 'undefined') {
+  void loadSpellchecker('en');
+  void loadSpellchecker('es');
 }

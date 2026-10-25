@@ -2080,11 +2080,16 @@ body.theme-light {
 /* ========================================================
    Obsidian Spellcheck Error Underline (.cm-spell-error)
    ======================================================== */
+.cm-content .cm-spell-error,
+.cm-line .cm-spell-error,
+.inline-title.cm-spell-error,
 .cm-spell-error {
-  text-decoration-line: underline;
-  text-decoration-style: wavy;
-  text-decoration-color: #fb464c;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 3px;
+  text-decoration-line: underline !important;
+  text-decoration-style: wavy !important;
+  text-decoration-color: #fb464c !important;
+  text-decoration-thickness: 1.5px !important;
+  text-underline-offset: 3px !important;
+  text-decoration-skip-ink: none !important;
 }
+
 

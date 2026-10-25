@@ -26,6 +26,7 @@ import {
   spellcheckPlugin,
   getMisspelledWordAtPos,
   checkWordIsolated,
+  spellcheckRefreshEffect,
 } from '../../editor/spellcheckExtension';
 import { loadSpellchecker } from '../../editor/spellcheckService';
 import { getStorageAdapter, toUint8Array } from '../../services/storageAdapter';
@@ -214,13 +215,20 @@ export const Editor: React.FC<EditorProps> = ({
 
   // Estado local para edición de título sin renombrar en cada pulsación
   const [draftTitle, setDraftTitle] = useState(cleanTitle);
+  const [spellRefreshKey, setSpellRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const onSpellUpdate = () => setSpellRefreshKey((k) => k + 1);
+    window.addEventListener('urano-spellcheck-update', onSpellUpdate);
+    return () => window.removeEventListener('urano-spellcheck-update', onSpellUpdate);
+  }, []);
 
   // Valida el texto del inline-title contra el corrector activo
   const isTitleMisspelled = useMemo(() => {
     if (!spellcheck || !draftTitle) return false;
     const words = draftTitle.match(/[\p{L}\p{M}]+(?:['\u2019][\p{L}\p{M}]+)?/gu) || [];
     return words.some((w) => checkWordIsolated(w, language).isMisspelled);
-  }, [spellcheck, draftTitle, language]);
+  }, [spellcheck, draftTitle, language, spellRefreshKey]);
 
   // Sincronización bidireccional: si el archivo se renombra externamente, actualizar draftTitle
   useEffect(() => {
@@ -430,9 +438,12 @@ export const Editor: React.FC<EditorProps> = ({
     const view = viewRef.current;
     if (!view) return;
     view.dispatch({
-      effects: editorSettingsCompartment.current.reconfigure(
-        buildEditorSettingsExtensions({ showLineNumbers, tabSize, useTabs, spellcheck, language })
-      ),
+      effects: [
+        editorSettingsCompartment.current.reconfigure(
+          buildEditorSettingsExtensions({ showLineNumbers, tabSize, useTabs, spellcheck, language })
+        ),
+        spellcheckRefreshEffect.of(true),
+      ],
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showLineNumbers, tabSize, useTabs, spellcheck, language]);

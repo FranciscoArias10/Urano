@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { t as translateKey, subscribe as subscribeI18n, getVersion as getI18nVersion } from '../locales/i18n';
 import type { TranslateParams } from '../locales/i18n';
 import { DEFAULT_LANGUAGE, detectSystemLanguage, normalizeLanguageCode } from '../locales/languages';
+import { setLanguage as setSpellcheckLanguage } from '../editor/spellcheckService';
 
 /** Código de idioma BCP-47 en minúsculas (`en`, `es`, `pt-br`…). Ver `locales/languages.ts`. */
 export type Language = string;
@@ -289,6 +290,9 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     set({ settings: next });
 
     if (key === 'language' || key === 'spellcheck') {
+      if (key === 'language') {
+        void setSpellcheckLanguage(value as string);
+      }
       invoke('set_spellcheck_language', {
         lang: next.language,
         enabled: next.spellcheck,

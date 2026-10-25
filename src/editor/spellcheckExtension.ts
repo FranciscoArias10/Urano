@@ -5,14 +5,21 @@ import {
   ViewPlugin,
   ViewUpdate,
 } from '@codemirror/view';
-import { RangeSetBuilder } from '@codemirror/state';
+import { RangeSetBuilder, StateEffect } from '@codemirror/state';
 import { useSettingsStore } from '../stores/settingsStore';
 import {
   isWordCorrect,
   loadSpellchecker,
   getCachedSpellchecker,
   getWordSuggestions,
+  subscribeToDictionary,
 } from './spellcheckService';
+
+/**
+ * StateEffect para forzar a CodeMirror 6 a recomputar y pintar las decoraciones
+ * de corrección ortográfica de forma reactiva y sin bloquear la UI.
+ */
+export const spellcheckRefreshEffect = StateEffect.define<boolean>();
 
 export const spellErrorMark = Decoration.mark({
   class: 'cm-spell-error',
@@ -110,7 +117,7 @@ function isInsideExclusions(from: number, to: number, exclusions: ExclusionRange
  * Analiza únicamente las palabras dentro de `view.visibleRanges`
  * ignorando sintaxis técnica y aplicando Decoration.mark a los errores.
  */
-function buildSpellDecorations(view: EditorView): DecorationSet {
+export function buildSpellDecorations(view: EditorView): DecorationSet {
   const settings = useSettingsStore.getState().settings;
   if (!settings.spellcheck) {
     return Decoration.none;
@@ -123,7 +130,7 @@ function buildSpellDecorations(view: EditorView): DecorationSet {
   if (!getCachedSpellchecker(lang)) {
     loadSpellchecker(lang).then((checker) => {
       if (checker) {
-        view.dispatch({});
+        view.dispatch({ effects: spellcheckRefreshEffect.of(true) });
       }
     });
     return Decoration.none;
@@ -166,26 +173,43 @@ function buildSpellDecorations(view: EditorView): DecorationSet {
 
 /**
  * Plugin de CodeMirror 6 para corrección ortográfica en tiempo real
- * basado en `visibleRanges` y debounce de 150ms.
+ * basado en `visibleRanges`, `spellcheckRefreshEffect` y debounce de 150ms.
  */
 export const spellcheckPlugin = ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
     private debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    private unsubscribeDict: () => void;
     private onSettingsUpdate: () => void;
 
     constructor(readonly view: EditorView) {
+      // Cálculo síncrono inmediato al abrir la vista
       this.decorations = buildSpellDecorations(view);
 
-      // Suscribirse a cambios en el idioma o diccionario de ajustes
+      // Notificación cuando el diccionario termina de cargar
+      this.unsubscribeDict = subscribeToDictionary(() => {
+        this.view.dispatch({ effects: spellcheckRefreshEffect.of(true) });
+      });
+
+      // Notificación de cambios en ajustes (idioma, toggle, diccionario personalizado)
       this.onSettingsUpdate = () => {
-        this.scheduleCheck(true);
+        this.view.dispatch({ effects: spellcheckRefreshEffect.of(true) });
       };
       window.addEventListener('urano-spellcheck-update', this.onSettingsUpdate);
     }
 
     update(update: ViewUpdate) {
+      const forceRefresh = update.transactions.some((tr) =>
+        tr.effects.some((e) => e.is(spellcheckRefreshEffect))
+      );
+
+      if (forceRefresh) {
+        this.decorations = buildSpellDecorations(update.view);
+        return;
+      }
+
       if (update.docChanged) {
+        // Mapear inmediatamente para evitar desfases en el DOM mientras corre el debounce
         this.decorations = this.decorations.map(update.changes);
         this.scheduleCheck();
       } else if (update.viewportChanged) {
@@ -193,22 +217,14 @@ export const spellcheckPlugin = ViewPlugin.fromClass(
       }
     }
 
-    scheduleCheck(immediate = false) {
+    scheduleCheck() {
       if (this.debounceTimer) {
         clearTimeout(this.debounceTimer);
       }
 
-      if (immediate) {
-        this.debounceTimer = null;
-        this.decorations = buildSpellDecorations(this.view);
-        this.view.dispatch({});
-        return;
-      }
-
       this.debounceTimer = setTimeout(() => {
         this.debounceTimer = null;
-        this.decorations = buildSpellDecorations(this.view);
-        this.view.dispatch({});
+        this.view.dispatch({ effects: spellcheckRefreshEffect.of(true) });
       }, 150);
     }
 
@@ -216,6 +232,7 @@ export const spellcheckPlugin = ViewPlugin.fromClass(
       if (this.debounceTimer) {
         clearTimeout(this.debounceTimer);
       }
+      this.unsubscribeDict();
       window.removeEventListener('urano-spellcheck-update', this.onSettingsUpdate);
     }
   },

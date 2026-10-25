@@ -21,6 +21,7 @@ import {
   type TextDirection,
 } from '../locales/languages';
 import { useSettingsStore } from './settingsStore';
+import { setLanguage as setSpellcheckLanguage } from '../editor/spellcheckService';
 
 export type { TranslationKey, TranslateParams } from '../locales/i18n';
 export { t } from '../locales/i18n';
@@ -78,6 +79,7 @@ export const useLocaleStore = create<LocaleStoreState>((set, get) => ({
     set({ loading: true });
     try {
       await i18n.setLanguage(next);
+      await setSpellcheckLanguage(next);
     } finally {
       set({ loading: false });
     }
