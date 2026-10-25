@@ -1,12 +1,22 @@
 import nspell from 'nspell';
+import enDicRaw from '../assets/dictionaries/en/index.dic?raw';
+import enAffRaw from '../assets/dictionaries/en/index.aff?raw';
+import esDicRaw from '../assets/dictionaries/es/index.dic?raw';
+import esAffRaw from '../assets/dictionaries/es/index.aff?raw';
 
 export type SpellChecker = ReturnType<typeof nspell>;
 
-// Cache de instancias de diccionarios por código base ('en', 'es', etc.)
+// Mapas de palabras validadas síncronas en memoria (Set<string> ultra-rápido)
+const wordSetMap = new Map<string, Set<string>>();
+const properNounMap = new Map<string, Set<string>>();
+
+// Cache de instancias de nspell
 const spellcheckerCache = new Map<string, SpellChecker>();
 const loadingPromises = new Map<string, Promise<SpellChecker | null>>();
 
 export const SUPPORTED_DICTS = new Set(['en', 'es', 'fr', 'de', 'it', 'pt']);
+
+let activeLanguage = 'en';
 
 type DictionaryListener = (lang: string) => void;
 const listeners = new Set<DictionaryListener>();
@@ -29,6 +39,92 @@ function notifyDictionaryLoaded(lang: string) {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('urano-spellcheck-update', { detail: { lang } }));
   }
+}
+
+/**
+ * Parsea un archivo .dic de Hunspell y expande reglas básicas de afijos
+ * para inglés o almacena raíces depuradas en minúsculas y nombres propios.
+ */
+function parseDicToWordSets(dicContent: string, isEnglish = false): {
+  wordSet: Set<string>;
+  properSet: Set<string>;
+} {
+  const lines = dicContent.split('\n');
+  const wordSet = new Set<string>();
+  const properSet = new Set<string>();
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const parts = line.split('/');
+    const root = parts[0].trim();
+    const flags = parts[1] || '';
+    if (!root) continue;
+
+    const isCapital = root[0] >= 'A' && root[0] <= 'Z';
+    const lowerRoot = root.toLowerCase();
+
+    if (isCapital) {
+      properSet.add(root);
+      if (flags.includes('M')) properSet.add(`${root}'s`);
+    } else {
+      wordSet.add(lowerRoot);
+      if (isEnglish) {
+        if (flags.includes('S')) {
+          if (/[^aeiou]y$/.test(lowerRoot)) wordSet.add(`${lowerRoot.slice(0, -1)}ies`);
+          else if (/[sxzh]$/.test(lowerRoot)) wordSet.add(`${lowerRoot}es`);
+          else wordSet.add(`${lowerRoot}s`);
+        }
+        if (flags.includes('D')) {
+          if (/e$/.test(lowerRoot)) wordSet.add(`${lowerRoot}d`);
+          else if (/[^aeiou]y$/.test(lowerRoot)) wordSet.add(`${lowerRoot.slice(0, -1)}ied`);
+          else wordSet.add(`${lowerRoot}ed`);
+        }
+        if (flags.includes('G')) {
+          if (/e$/.test(lowerRoot) && !/ee$/.test(lowerRoot)) wordSet.add(`${lowerRoot.slice(0, -1)}ing`);
+          else wordSet.add(`${lowerRoot}ing`);
+        }
+        if (flags.includes('R')) {
+          if (/e$/.test(lowerRoot)) wordSet.add(`${lowerRoot}r`);
+          else if (/[^aeiou]y$/.test(lowerRoot)) wordSet.add(`${lowerRoot.slice(0, -1)}ier`);
+          else wordSet.add(`${lowerRoot}er`);
+        }
+        if (flags.includes('Y')) {
+          wordSet.add(`${lowerRoot}ly`);
+        }
+        if (flags.includes('M')) {
+          wordSet.add(`${lowerRoot}'s`);
+        }
+      }
+    }
+  }
+
+  return { wordSet, properSet };
+}
+
+// Inicialización síncrona instantánea en memoria para inglés y español
+try {
+  const enParsed = parseDicToWordSets(enDicRaw, true);
+  wordSetMap.set('en', enParsed.wordSet);
+  properNounMap.set('en', enParsed.properSet);
+  try {
+    const enChecker = nspell({ aff: enAffRaw, dic: enDicRaw });
+    spellcheckerCache.set('en', enChecker);
+  } catch (e) {
+    console.warn('[Spellcheck] nspell initialization warning for English:', e);
+  }
+
+  const esParsed = parseDicToWordSets(esDicRaw, false);
+  wordSetMap.set('es', esParsed.wordSet);
+  properNounMap.set('es', esParsed.properSet);
+  try {
+    const esChecker = nspell({ aff: esAffRaw, dic: esDicRaw });
+    spellcheckerCache.set('es', esChecker);
+  } catch (e) {
+    console.warn('[Spellcheck] nspell initialization warning for Spanish:', e);
+  }
+} catch (err) {
+  console.error('[Spellcheck] Error in synchronous dictionary bootstrap:', err);
 }
 
 /**
@@ -56,14 +152,20 @@ export function normalizeSpellcheckLanguage(raw: string | null | undefined): str
   return 'en';
 }
 
-/**
- * Alias para compatibilidad
- */
 export const getBaseLanguageCode = normalizeSpellcheckLanguage;
+
+export function isReady(langCode?: string): boolean {
+  const base = normalizeSpellcheckLanguage(langCode || activeLanguage);
+  return wordSetMap.has(base) || spellcheckerCache.has(base);
+}
+
+export function getActiveLanguage(): string {
+  return activeLanguage;
+}
 
 /**
  * Carga el diccionario Hunspell (.aff y .dic) de forma asíncrona mediante fetch
- * y ejecuta una prueba de humo automática.
+ * para idiomas que no estén pre-cargados (de, fr, it, pt).
  */
 export async function loadSpellchecker(langCode: string): Promise<SpellChecker | null> {
   const base = normalizeSpellcheckLanguage(langCode);
@@ -91,29 +193,16 @@ export async function loadSpellchecker(langCode: string): Promise<SpellChecker |
       const [aff, dic] = await Promise.all([affRes.text(), dicRes.text()]);
 
       if (aff && dic) {
-        const instance = nspell({ aff, dic });
-        spellcheckerCache.set(base, instance);
+        const parsed = parseDicToWordSets(dic, targetLang === 'en');
+        wordSetMap.set(base, parsed.wordSet);
+        properNounMap.set(base, parsed.properSet);
 
-        // Prueba de humo automática al cargar el diccionario
-        if (base === 'en') {
-          const isHello = instance.correct('hello');
-          const isHola = instance.correct('hola');
-          if (isHello && !isHola) {
-            console.info(`[Spellcheck] Dictionary 'en' loaded and verified successfully (hello=true, hola=false)`);
-          } else {
-            console.warn(`[Spellcheck] Dictionary 'en' smoke test warning: hello=${isHello}, hola=${isHola}`);
-          }
-        } else if (base === 'es') {
-          const isHola = instance.correct('hola');
-          const isRapido = instance.correct('rapido');
-          const isRapidoAccent = instance.correct('rápido');
-          if (isHola && !isRapido && isRapidoAccent) {
-            console.info(`[Spellcheck] Dictionary 'es' loaded and verified successfully (hola=true, rapido=false, rápido=true)`);
-          } else {
-            console.warn(`[Spellcheck] Dictionary 'es' smoke test warning: hola=${isHola}, rapido=${isRapido}, rápido=${isRapidoAccent}`);
-          }
-        } else {
-          console.info(`[Spellcheck] Dictionary '${base}' loaded successfully`);
+        let instance: SpellChecker | null = null;
+        try {
+          instance = nspell({ aff, dic });
+          spellcheckerCache.set(base, instance);
+        } catch (e) {
+          console.warn(`[Spellcheck] nspell instance creation failed for ${base}, using WordSet:`, e);
         }
 
         notifyDictionaryLoaded(base);
@@ -137,6 +226,7 @@ export async function loadSpellchecker(langCode: string): Promise<SpellChecker |
  */
 export async function setLanguage(newLang: string): Promise<SpellChecker | null> {
   const normalized = normalizeSpellcheckLanguage(newLang);
+  activeLanguage = normalized;
   const checker = await loadSpellchecker(normalized);
   notifyDictionaryLoaded(normalized);
   return checker;
@@ -159,38 +249,75 @@ export function isWordCorrect(
   customWords?: Set<string>
 ): boolean {
   if (!word || word.length === 0) return true;
+  // Ignorar palabras sin letras (números, símbolos, puntuación)
+  if (!/[\p{L}]/u.test(word)) return true;
+  // Caracteres aislados que no sean letras válidas de una sola letra
+  if (word.length === 1 && !/^[aAiIáéíóúÁÉÍÓÚñÑ]$/.test(word)) return true;
 
   // 1. Diccionario personalizado del usuario
   if (customWords && customWords.has(word.toLowerCase())) {
     return true;
   }
 
-  const sp = getCachedSpellchecker(langCode);
-  if (!sp) {
-    // Si aún se está cargando el diccionario, disparar carga en segundo plano
-    void loadSpellchecker(langCode);
-    return true;
+  const base = normalizeSpellcheckLanguage(langCode);
+  const wordSet = wordSetMap.get(base);
+  const properSet = properNounMap.get(base);
+  const sp = spellcheckerCache.get(base);
+
+  // Si el diccionario está listo en memoria (wordSet o nspell):
+  if (wordSet || sp) {
+    // 1. Coincidencia exacta en nombres propios (ej. London, Como)
+    if (properSet && properSet.has(word)) {
+      return true;
+    }
+
+    const lower = word.toLowerCase();
+    const isCapitalized = word[0] !== lower[0];
+
+    // 2. Coincidencia en wordSet de raíces y afijos
+    if (wordSet && wordSet.has(lower)) {
+      // Si la palabra en el diccionario SOLO existe en mayúscula (nombre propio como Como, Que)
+      // y se escribió en minúscula ("como", "que"), no es válida en inglés:
+      if (!isCapitalized && properSet && properSet.has(word[0].toUpperCase() + word.slice(1)) && !wordSet.has(word)) {
+        return false;
+      }
+      return true;
+    }
+
+    // 3. Diccionario Hunspell / nspell
+    if (sp) {
+      try {
+        if (sp.correct(word)) return true;
+        if (isCapitalized && sp.correct(lower)) return true;
+      } catch {}
+    }
+
+    // Si no está en ninguna parte, es error ortográfico
+    return false;
   }
 
-  // 2. Diccionario Hunspell nativo
-  if (sp.correct(word)) {
-    return true;
-  }
-
-  // Comprobar también en minúsculas (por si está capitalizada pero es válida)
-  const lower = word.toLowerCase();
-  if (lower !== word && sp.correct(lower)) {
-    return true;
-  }
-
+  // Si no está cargado el diccionario, disparar carga y reportar false
+  void loadSpellchecker(base);
   return false;
+}
+
+/**
+ * Alias de comprobación rápida síncrona
+ */
+export function check(word: string, langCode?: string): boolean {
+  return isWordCorrect(word, langCode || activeLanguage);
+}
+
+export function checkWord(word: string, langCode?: string): boolean {
+  return check(word, langCode);
 }
 
 /**
  * Obtiene sugerencias de corrección para una palabra mal escrita.
  */
-export function getWordSuggestions(word: string, langCode: string, limit = 6): string[] {
-  const sp = getCachedSpellchecker(langCode);
+export function getWordSuggestions(word: string, langCode?: string, limit = 6): string[] {
+  const base = normalizeSpellcheckLanguage(langCode || activeLanguage);
+  const sp = getCachedSpellchecker(base);
   if (!sp) return [];
   try {
     const list = sp.suggest(word) || [];
@@ -200,8 +327,17 @@ export function getWordSuggestions(word: string, langCode: string, limit = 6): s
   }
 }
 
-// Pre-cargar de inmediato inglés y español en segundo plano para que estén listos
-if (typeof window !== 'undefined') {
-  void loadSpellchecker('en');
-  void loadSpellchecker('es');
-}
+export const spellcheckService = {
+  check,
+  checkWord,
+  isWordCorrect,
+  setLanguage,
+  loadSpellchecker,
+  getCachedSpellchecker,
+  getWordSuggestions,
+  isReady,
+  subscribeToDictionary,
+  getActiveLanguage,
+};
+
+export default spellcheckService;
