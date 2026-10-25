@@ -30,6 +30,7 @@ pub fn run() {
                 use tauri::Manager;
                 if let Some(window) = app.get_webview_window("main") {
                     commands::canvas::install_touchpad_pinch_interceptor(&window);
+                    let _ = commands::spellcheck::set_spellcheck_language(window.clone(), "en".to_string(), true);
                 }
             }
             Ok(())
@@ -57,6 +58,7 @@ pub fn run() {
             commands::locales::list_custom_locales,
             commands::locales::get_custom_locales_dir,
             commands::locales::open_path,
+            commands::spellcheck::set_spellcheck_language,
         ])
         .run(tauri::generate_context!())
         .expect("error while building tauri application");
