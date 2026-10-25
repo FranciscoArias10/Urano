@@ -6,6 +6,8 @@ export type SpellChecker = ReturnType<typeof nspell>;
 const spellcheckerCache = new Map<string, SpellChecker>();
 const loadingPromises = new Map<string, Promise<SpellChecker | null>>();
 
+const SUPPORTED_DICTS = new Set(['en', 'es', 'fr', 'de', 'it', 'pt']);
+
 /**
  * Normaliza el código de idioma ('es-ES' -> 'es', 'en-GB' -> 'en').
  */
@@ -22,7 +24,7 @@ export function getBaseLanguageCode(langCode: string): string {
 }
 
 /**
- * Carga el diccionario Hunspell correspondiente de forma asíncrona y lo cachea.
+ * Carga el diccionario Hunspell (.aff y .dic) de forma asíncrona mediante fetch nativo.
  */
 export async function loadSpellchecker(langCode: string): Promise<SpellChecker | null> {
   const base = getBaseLanguageCode(langCode);
@@ -36,33 +38,21 @@ export async function loadSpellchecker(langCode: string): Promise<SpellChecker |
 
   const promise = (async () => {
     try {
-      let dictData: any = null;
-      if (base === 'es') {
-        const mod = await import('dictionary-es');
-        dictData = mod.default || mod;
-      } else if (base === 'en') {
-        const mod = await import('dictionary-en');
-        dictData = mod.default || mod;
-      } else if (base === 'fr') {
-        const mod = await import('dictionary-fr');
-        dictData = mod.default || mod;
-      } else if (base === 'de') {
-        const mod = await import('dictionary-de');
-        dictData = mod.default || mod;
-      } else if (base === 'it') {
-        const mod = await import('dictionary-it');
-        dictData = mod.default || mod;
-      } else if (base === 'pt') {
-        const mod = await import('dictionary-pt');
-        dictData = mod.default || mod;
-      } else {
-        // Fallback a inglés para otros idiomas sin diccionario empaquetado
-        const mod = await import('dictionary-en');
-        dictData = mod.default || mod;
+      const targetLang = SUPPORTED_DICTS.has(base) ? base : 'en';
+
+      const [affRes, dicRes] = await Promise.all([
+        fetch(`/dictionaries/${targetLang}/index.aff`),
+        fetch(`/dictionaries/${targetLang}/index.dic`),
+      ]);
+
+      if (!affRes.ok || !dicRes.ok) {
+        throw new Error(`HTTP error ${affRes.status} / ${dicRes.status}`);
       }
 
-      if (dictData) {
-        const instance = nspell(dictData);
+      const [aff, dic] = await Promise.all([affRes.text(), dicRes.text()]);
+
+      if (aff && dic) {
+        const instance = nspell({ aff, dic });
         spellcheckerCache.set(base, instance);
         return instance;
       }
