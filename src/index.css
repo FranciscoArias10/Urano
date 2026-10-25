@@ -2090,6 +2090,7 @@ body.theme-light {
   background-position: 0 100% !important;
   background-size: 6px 3px !important;
   padding-bottom: 2px !important;
+  border-bottom: none !important;
 }
 
 
