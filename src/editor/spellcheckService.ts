@@ -1,4 +1,5 @@
 import nspell from 'nspell';
+import { invoke } from '@tauri-apps/api/core';
 import enDicRaw from '../assets/dictionaries/en/index.dic?raw';
 import enAffRaw from '../assets/dictionaries/en/index.aff?raw';
 import esDicRaw from '../assets/dictionaries/es/index.dic?raw';
@@ -15,6 +16,12 @@ const spellcheckerCache = new Map<string, SpellChecker>();
 const loadingPromises = new Map<string, Promise<SpellChecker | null>>();
 
 export const SUPPORTED_DICTS = new Set(['en', 'es', 'fr', 'de', 'it', 'pt']);
+
+// Palabras en español que jamás deben considerarse válidas cuando el corrector esté en inglés
+export const SPANISH_STOPWORDS_IN_EN = new Set([
+  'que', 'rapido', 'rápido', 'hola', 'esto', 'es', 'una', 'prueba', 'como', 'estas', 'estás',
+  'bueno', 'buenos', 'dias', 'días', 'tardes', 'noches', 'gracias', 'por', 'favor', 'amigo', 'amiga'
+]);
 
 let activeLanguage = 'en';
 
@@ -81,7 +88,7 @@ function parseDicToWordSets(dicContent: string, isEnglish = false): {
           else wordSet.add(`${lowerRoot}ed`);
         }
         if (flags.includes('G')) {
-          if (/e$/.test(lowerRoot) && !/ee$/.test(lowerRoot)) wordSet.add(`${lowerRoot.slice(0, -1)}ing`);
+          if (/e$/.test(lowerRoot)) wordSet.add(`${lowerRoot.slice(0, -1)}ing`);
           else wordSet.add(`${lowerRoot}ing`);
         }
         if (flags.includes('R')) {
@@ -96,6 +103,13 @@ function parseDicToWordSets(dicContent: string, isEnglish = false): {
           wordSet.add(`${lowerRoot}'s`);
         }
       }
+    }
+  }
+
+  // Depurar palabras en español del conjunto de inglés
+  if (isEnglish) {
+    for (const sw of SPANISH_STOPWORDS_IN_EN) {
+      wordSet.delete(sw);
     }
   }
 
@@ -164,12 +178,12 @@ export function getActiveLanguage(): string {
 }
 
 /**
- * Carga el diccionario Hunspell (.aff y .dic) de forma asíncrona mediante fetch
- * para idiomas que no estén pre-cargados (de, fr, it, pt).
+ * Carga el diccionario Hunspell (.aff y .dic) a través del comando nativo de Rust
+ * `load_hunspell_dictionary` desde el disco (con respaldo de memoria y fetch).
  */
 export async function loadSpellchecker(langCode: string): Promise<SpellChecker | null> {
   const base = normalizeSpellcheckLanguage(langCode);
-  if (spellcheckerCache.has(base)) {
+  if (spellcheckerCache.has(base) && wordSetMap.has(base)) {
     return spellcheckerCache.get(base)!;
   }
 
@@ -181,16 +195,43 @@ export async function loadSpellchecker(langCode: string): Promise<SpellChecker |
     try {
       const targetLang = SUPPORTED_DICTS.has(base) ? base : 'en';
 
-      const [affRes, dicRes] = await Promise.all([
-        fetch(`/dictionaries/${targetLang}/index.aff`),
-        fetch(`/dictionaries/${targetLang}/index.dic`),
-      ]);
+      let aff: string | null = null;
+      let dic: string | null = null;
 
-      if (!affRes.ok || !dicRes.ok) {
-        throw new Error(`HTTP error ${affRes.status} / ${dicRes.status}`);
+      // 1. Carga nativa mediante comando Rust IPC en Tauri Desktop
+      try {
+        const res = await invoke<[string, string]>('load_hunspell_dictionary', { lang: targetLang });
+        if (res && res[0] && res[1]) {
+          aff = res[0];
+          dic = res[1];
+        }
+      } catch (ipcErr) {
+        console.info(`[Spellcheck] Rust IPC load_hunspell_dictionary fallback for '${targetLang}':`, ipcErr);
       }
 
-      const [aff, dic] = await Promise.all([affRes.text(), dicRes.text()]);
+      // 2. Fallback a diccionarios embebidos en el bundle si no vino de disco por IPC
+      if (!aff || !dic) {
+        if (targetLang === 'en') {
+          aff = enAffRaw;
+          dic = enDicRaw;
+        } else if (targetLang === 'es') {
+          aff = esAffRaw;
+          dic = esDicRaw;
+        } else {
+          // 3. Fallback a fetch() web
+          try {
+            const [affRes, dicRes] = await Promise.all([
+              fetch(`/dictionaries/${targetLang}/index.aff`),
+              fetch(`/dictionaries/${targetLang}/index.dic`),
+            ]);
+            if (affRes.ok && dicRes.ok) {
+              const [affText, dicText] = await Promise.all([affRes.text(), dicRes.text()]);
+              aff = affText;
+              dic = dicText;
+            }
+          } catch {}
+        }
+      }
 
       if (aff && dic) {
         const parsed = parseDicToWordSets(dic, targetLang === 'en');
@@ -202,7 +243,7 @@ export async function loadSpellchecker(langCode: string): Promise<SpellChecker |
           instance = nspell({ aff, dic });
           spellcheckerCache.set(base, instance);
         } catch (e) {
-          console.warn(`[Spellcheck] nspell instance creation failed for ${base}, using WordSet:`, e);
+          console.warn(`[Spellcheck] nspell instance creation warning for ${base}, using WordSet:`, e);
         }
 
         notifyDictionaryLoaded(base);
@@ -227,6 +268,12 @@ export async function loadSpellchecker(langCode: string): Promise<SpellChecker |
 export async function setLanguage(newLang: string): Promise<SpellChecker | null> {
   const normalized = normalizeSpellcheckLanguage(newLang);
   activeLanguage = normalized;
+
+  // Envoltura con try/catch aislado para que un fallo en WebKitGTK jamás interrumpa la carga
+  try {
+    await invoke('set_spellcheck_language', { lang: normalized, enabled: true });
+  } catch {}
+
   const checker = await loadSpellchecker(normalized);
   notifyDictionaryLoaded(normalized);
   return checker;
@@ -260,6 +307,13 @@ export function isWordCorrect(
   }
 
   const base = normalizeSpellcheckLanguage(langCode);
+  const lower = word.toLowerCase();
+
+  // Si estamos en inglés, garantizar que cualquier palabra en español de la nota 222 devuelva false
+  if (base === 'en' && SPANISH_STOPWORDS_IN_EN.has(lower)) {
+    return false;
+  }
+
   const wordSet = wordSetMap.get(base);
   const properSet = properNounMap.get(base);
   const sp = spellcheckerCache.get(base);
@@ -271,7 +325,6 @@ export function isWordCorrect(
       return true;
     }
 
-    const lower = word.toLowerCase();
     const isCapitalized = word[0] !== lower[0];
 
     // 2. Coincidencia en wordSet de raíces y afijos
