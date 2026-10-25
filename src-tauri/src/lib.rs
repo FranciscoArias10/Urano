@@ -1,5 +1,6 @@
 pub mod commands;
 pub mod services;
+pub mod spellcheck;
 pub mod storage;
 
 use services::oauth::OAuthService;
@@ -59,6 +60,7 @@ pub fn run() {
             commands::locales::get_custom_locales_dir,
             commands::locales::open_path,
             commands::spellcheck::set_spellcheck_language,
+            spellcheck::load_hunspell_dictionary,
         ])
         .run(tauri::generate_context!())
         .expect("error while building tauri application");
