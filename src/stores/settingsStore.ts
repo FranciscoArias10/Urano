@@ -192,6 +192,7 @@ function mergeSettings(raw: unknown): UranoSettings {
       (out as unknown as Record<string, unknown>)[key] = value;
     }
   }
+  out.spellcheck = src.spellcheck !== undefined ? Boolean(src.spellcheck) : true;
   out.language =
     typeof out.language === 'string' && out.language.trim()
       ? normalizeLanguageCode(out.language)
@@ -210,7 +211,9 @@ function mergeSettings(raw: unknown): UranoSettings {
 function readLocalSettings(): UranoSettings {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const merged = mergeSettings(raw ? JSON.parse(raw) : null);
+    const parsed = raw ? JSON.parse(raw) : null;
+    const merged = mergeSettings(parsed);
+    merged.spellcheck = parsed?.spellcheck ?? true;
     // Legacy key written by the "Update links" modal before the settings store existed
     const legacyLinks = localStorage.getItem(LINKS_PREF_KEY);
     if (!raw && (legacyLinks === 'always' || legacyLinks === 'never' || legacyLinks === 'prompt')) {
@@ -218,7 +221,9 @@ function readLocalSettings(): UranoSettings {
     }
     return merged;
   } catch {
-    return mergeSettings(null);
+    const fallback = mergeSettings(null);
+    fallback.spellcheck = true;
+    return fallback;
   }
 }
 
@@ -253,6 +258,10 @@ export interface SettingsStoreState {
   activeTabId: string;
   /** Milliseconds from navigation start until the workspace mounted. */
   startupMs: number | null;
+  /** Atajo al idioma activo */
+  language: string;
+  /** Atajo a si el corrector ortográfico está activo */
+  spellcheck: boolean;
 
   openSettings: (tabId?: string) => void;
   closeSettings: () => void;
@@ -272,6 +281,12 @@ export interface SettingsStoreState {
 
 export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   settings: readLocalSettings(),
+  get language() {
+    return get().settings.language;
+  },
+  get spellcheck() {
+    return get().settings.spellcheck;
+  },
   vaultPath: null,
   isOpen: false,
   activeTabId: 'general',
@@ -379,6 +394,7 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
       const raw = await invoke<string>('read_file', { filePath });
       const parsed = JSON.parse(raw);
       const merged = mergeSettings(parsed);
+      merged.spellcheck = parsed?.spellcheck ?? true;
       if (dictWords.length > 0) {
         merged.customDictionary = Array.from(new Set([...merged.customDictionary, ...dictWords]));
       }

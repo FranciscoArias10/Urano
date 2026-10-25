@@ -40,6 +40,7 @@ interface CustomLocaleFile {
 
 interface LocaleStoreState {
   language: string;
+  locale: string;
   dir: TextDirection;
   /** Catálogo de Obsidian + idiomas añadidos por la comunidad en la bóveda. */
   languages: LanguageOption[];
@@ -69,6 +70,9 @@ function buildLanguageList(): LanguageOption[] {
 
 export const useLocaleStore = create<LocaleStoreState>((set, get) => ({
   language: i18n.getLanguageCode(),
+  get locale() {
+    return get().language;
+  },
   dir: i18n.getDirection(),
   languages: buildLanguageList(),
   loading: false,
