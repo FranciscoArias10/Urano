@@ -22,6 +22,12 @@ import {
   getImageWidgetState,
   type ImageEmbedInfo,
 } from '../../editor/imageExtension';
+import {
+  spellcheckPlugin,
+  getMisspelledWordAtPos,
+  checkWordIsolated,
+} from '../../editor/spellcheckExtension';
+import { loadSpellchecker } from '../../editor/spellcheckService';
 import { getStorageAdapter, toUint8Array } from '../../services/storageAdapter';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
@@ -72,6 +78,8 @@ import {
   FileImage,
   ImageMinus,
   Trash2,
+  Repeat,
+  BookPlus,
 } from 'lucide-react';
 
 interface EditorProps {
@@ -112,18 +120,23 @@ export const Editor: React.FC<EditorProps> = ({
   const tabSize = useSettingsStore((st) => st.settings.tabSize);
   const useTabs = useSettingsStore((st) => st.settings.useTabs);
   const spellcheck = useSettingsStore((st) => st.settings.spellcheck);
+  const language = useSettingsStore((st) => st.settings.language);
   const strictLineBreaks = useSettingsStore((st) => st.settings.strictLineBreaks);
   const showInlineTitle = useSettingsStore((st) => st.settings.showInlineTitle);
-  const editorSettingsRef = useRef({ showLineNumbers, tabSize, useTabs, spellcheck });
-  editorSettingsRef.current = { showLineNumbers, tabSize, useTabs, spellcheck };
+  const editorSettingsRef = useRef({ showLineNumbers, tabSize, useTabs, spellcheck, language });
+  editorSettingsRef.current = { showLineNumbers, tabSize, useTabs, spellcheck, language };
 
   const buildEditorSettingsExtensions = (
-    s: Pick<UranoSettings, 'showLineNumbers' | 'tabSize' | 'useTabs' | 'spellcheck'>
+    s: Pick<UranoSettings, 'showLineNumbers' | 'tabSize' | 'useTabs' | 'spellcheck' | 'language'>
   ) => [
     ...(s.showLineNumbers ? [lineNumbers()] : []),
     EditorState.tabSize.of(s.tabSize),
     indentUnit.of(s.useTabs ? '\t' : ' '.repeat(s.tabSize)),
-    EditorView.contentAttributes.of({ spellcheck: s.spellcheck ? 'true' : 'false' }),
+    EditorView.contentAttributes.of({
+      spellcheck: s.spellcheck ? 'true' : 'false',
+      lang: s.language || 'en',
+    }),
+    ...(s.spellcheck ? [spellcheckPlugin] : []),
   ];
 
   const editorMode = viewMode ?? 'live-preview';
@@ -201,6 +214,13 @@ export const Editor: React.FC<EditorProps> = ({
 
   // Estado local para edición de título sin renombrar en cada pulsación
   const [draftTitle, setDraftTitle] = useState(cleanTitle);
+
+  // Valida el texto del inline-title contra el corrector activo
+  const isTitleMisspelled = useMemo(() => {
+    if (!spellcheck || !draftTitle) return false;
+    const words = draftTitle.match(/[\p{L}\p{M}]+(?:['\u2019][\p{L}\p{M}]+)?/gu) || [];
+    return words.some((w) => checkWordIsolated(w, language).isMisspelled);
+  }, [spellcheck, draftTitle, language]);
 
   // Sincronización bidireccional: si el archivo se renombra externamente, actualizar draftTitle
   useEffect(() => {
@@ -411,11 +431,18 @@ export const Editor: React.FC<EditorProps> = ({
     if (!view) return;
     view.dispatch({
       effects: editorSettingsCompartment.current.reconfigure(
-        buildEditorSettingsExtensions({ showLineNumbers, tabSize, useTabs, spellcheck })
+        buildEditorSettingsExtensions({ showLineNumbers, tabSize, useTabs, spellcheck, language })
       ),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showLineNumbers, tabSize, useTabs, spellcheck]);
+  }, [showLineNumbers, tabSize, useTabs, spellcheck, language]);
+
+  // Pre-cargar diccionario Hunspell cuando el corrector está activo o cambia el idioma
+  useEffect(() => {
+    if (spellcheck) {
+      void loadSpellchecker(language);
+    }
+  }, [spellcheck, language]);
 
   // Synchronize doc if file content was changed externally
   useEffect(() => {
@@ -1771,6 +1798,113 @@ export const Editor: React.FC<EditorProps> = ({
 
     const items: MenuItemData[] = [];
 
+    // 0. Corrección ortográfica (1:1 con Obsidian: Sugerencias + Añadir al diccionario)
+    let misspelledInfo: { word: string; from: number; to: number; suggestions: string[] } | null = null;
+    if (currentView) {
+      const pos = currentView.posAtCoords({ x: e.clientX, y: e.clientY });
+      if (pos !== null) {
+        misspelledInfo = getMisspelledWordAtPos(currentView, pos);
+      }
+    }
+
+    const titleInput = (target as HTMLElement).closest<HTMLInputElement>('.inline-title');
+    let titleMisspelledWord: string | null = null;
+    let titleWordRange: { from: number; to: number } | null = null;
+    let titleSuggestions: string[] = [];
+
+    if (titleInput) {
+      const val = titleInput.value;
+      const cursorPos = titleInput.selectionStart ?? 0;
+      const wordRegex = /[\p{L}\p{M}]+(?:['\u2019][\p{L}\p{M}]+)?/gu;
+      let m: RegExpExecArray | null;
+      while ((m = wordRegex.exec(val)) !== null) {
+        const start = m.index;
+        const end = start + m[0].length;
+        if (cursorPos >= start && cursorPos <= end) {
+          const res = checkWordIsolated(m[0], language);
+          if (res.isMisspelled) {
+            titleMisspelledWord = m[0];
+            titleWordRange = { from: start, to: end };
+            titleSuggestions = res.suggestions;
+          }
+          break;
+        }
+      }
+    }
+
+    if (misspelledInfo) {
+      if (misspelledInfo.suggestions.length === 0) {
+        items.push({
+          title: t('editor.contextMenu.noSuggestions'),
+          disabled: true,
+        });
+      } else {
+        for (const sug of misspelledInfo.suggestions) {
+          const currentWordInfo = misspelledInfo;
+          items.push({
+            title: sug,
+            icon: <Repeat size={14} />,
+            action: () => {
+              if (currentView) {
+                currentView.dispatch({
+                  changes: {
+                    from: currentWordInfo.from,
+                    to: currentWordInfo.to,
+                    insert: sug,
+                  },
+                  selection: { anchor: currentWordInfo.from + sug.length },
+                });
+              }
+            },
+          });
+        }
+      }
+
+      items.push({
+        title: t('editor.contextMenu.addToDictionary'),
+        icon: <BookPlus size={14} />,
+        action: () => {
+          void useSettingsStore.getState().addWordToDictionary(misspelledInfo!.word);
+        },
+      });
+
+      items.push({ type: 'separator' });
+    } else if (titleMisspelledWord && titleWordRange) {
+      if (titleSuggestions.length === 0) {
+        items.push({
+          title: t('editor.contextMenu.noSuggestions'),
+          disabled: true,
+        });
+      } else {
+        for (const sug of titleSuggestions) {
+          const range = titleWordRange;
+          items.push({
+            title: sug,
+            icon: <Repeat size={14} />,
+            action: () => {
+              if (titleInput) {
+                const newVal =
+                  titleInput.value.slice(0, range.from) +
+                  sug +
+                  titleInput.value.slice(range.to);
+                setDraftTitle(newVal);
+              }
+            },
+          });
+        }
+      }
+
+      items.push({
+        title: t('editor.contextMenu.addToDictionary'),
+        icon: <BookPlus size={14} />,
+        action: () => {
+          void useSettingsStore.getState().addWordToDictionary(titleMisspelledWord!);
+        },
+      });
+
+      items.push({ type: 'separator' });
+    }
+
     // Optional Wikilink Options if clicked specifically on a [[Wikilink]]
     if (clickedWikilink) {
       items.push(
@@ -2176,9 +2310,10 @@ export const Editor: React.FC<EditorProps> = ({
               <input
                 ref={inlineTitleRef}
                 type="text"
-                className="inline-title"
+                className={`inline-title ${isTitleMisspelled ? 'cm-spell-error' : ''}`}
                 value={draftTitle}
-                spellCheck={false}
+                spellCheck={spellcheck}
+                lang={language}
                 onChange={(e) => setDraftTitle(e.target.value)}
                 onKeyDown={handleTitleKeyDown}
                 onBlur={handleTitleBlur}
