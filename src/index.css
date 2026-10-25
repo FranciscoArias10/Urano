@@ -2076,3 +2076,15 @@ body.theme-light {
   --text-faint: #ababab;
   --tab-divider-color: #e4e4e4;
 }
+
+/* ========================================================
+   Obsidian Spellcheck Error Underline (.cm-spell-error)
+   ======================================================== */
+.cm-spell-error {
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: #fb464c;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
