@@ -48,6 +48,7 @@ export interface UranoSettings {
 
   // Editor (CodeMirror 6)
   spellcheck: boolean;
+  customDictionary: string[];
   readableLineLength: boolean;
   strictLineBreaks: boolean;
   showLineNumbers: boolean;
@@ -105,7 +106,8 @@ export const DEFAULT_SETTINGS: UranoSettings = {
   showInlineTitle: true,
   showStatusBar: true,
 
-  spellcheck: false,
+  spellcheck: true,
+  customDictionary: [],
   readableLineLength: true,
   strictLineBreaks: false,
   showLineNumbers: false,
@@ -170,6 +172,18 @@ function mergeSettings(raw: unknown): UranoSettings {
           const v = (value as Record<string, unknown>)[id];
           if (typeof v === 'boolean') out.corePlugins[id] = v;
         }
+      }
+      continue;
+    }
+    if (key === 'customDictionary') {
+      if (Array.isArray(value)) {
+        out.customDictionary = Array.from(
+          new Set(
+            value
+              .filter((w): w is string => typeof w === 'string' && w.trim().length > 0)
+              .map((w) => w.trim())
+          )
+        );
       }
       continue;
     }
@@ -248,6 +262,9 @@ export interface SettingsStoreState {
   setCorePluginEnabled: (id: CorePluginId, enabled: boolean) => void;
   resetSetting: <K extends keyof UranoSettings>(key: K) => void;
 
+  addWordToDictionary: (word: string) => Promise<void>;
+  removeWordFromDictionary: (word: string) => Promise<void>;
+
   loadFromVault: (vaultPath: string) => Promise<void>;
   markStartupComplete: () => void;
 }
@@ -270,6 +287,16 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     writeLocalSettings(next);
     scheduleVaultWrite(get().vaultPath, next);
     set({ settings: next });
+
+    if (key === 'language' || key === 'spellcheck') {
+      invoke('set_spellcheck_language', {
+        lang: next.language,
+        enabled: next.spellcheck,
+      }).catch(() => {});
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('urano-spellcheck-update'));
+      }
+    }
   },
 
   setCorePluginEnabled: (id, enabled) => {
@@ -284,19 +311,95 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     get().setSetting(key, DEFAULT_SETTINGS[key]);
   },
 
+  addWordToDictionary: async (word: string) => {
+    const cleanWord = word.trim();
+    if (!cleanWord) return;
+    const current = get().settings;
+    const words = current.customDictionary || [];
+    if (words.some((w) => w.toLowerCase() === cleanWord.toLowerCase())) return;
+
+    const nextWords = [...words, cleanWord];
+    const nextSettings = { ...current, customDictionary: nextWords };
+    writeLocalSettings(nextSettings);
+    scheduleVaultWrite(get().vaultPath, nextSettings);
+    set({ settings: nextSettings });
+
+    const vaultPath = get().vaultPath;
+    if (vaultPath) {
+      const dictFilePath = `${vaultPath.replace(/[\\/]+$/, '')}/.urano/dictionary.txt`;
+      invoke('write_file', { filePath: dictFilePath, content: nextWords.join('\n') + '\n' }).catch((err) => {
+        console.warn('[Urano] No se pudo guardar .urano/dictionary.txt:', err);
+      });
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('urano-spellcheck-update'));
+    }
+  },
+
+  removeWordFromDictionary: async (word: string) => {
+    const cleanWord = word.trim().toLowerCase();
+    const current = get().settings;
+    const words = (current.customDictionary || []).filter((w) => w.toLowerCase() !== cleanWord);
+    const nextSettings = { ...current, customDictionary: words };
+    writeLocalSettings(nextSettings);
+    scheduleVaultWrite(get().vaultPath, nextSettings);
+    set({ settings: nextSettings });
+
+    const vaultPath = get().vaultPath;
+    if (vaultPath) {
+      const dictFilePath = `${vaultPath.replace(/[\\/]+$/, '')}/.urano/dictionary.txt`;
+      invoke('write_file', { filePath: dictFilePath, content: words.join('\n') + (words.length ? '\n' : '') }).catch(() => {});
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('urano-spellcheck-update'));
+    }
+  },
+
   loadFromVault: async (vaultPath) => {
     const filePath = `${vaultPath.replace(/[\\/]+$/, '')}/${SETTINGS_FILE_RELATIVE}`;
+    const dictFilePath = `${vaultPath.replace(/[\\/]+$/, '')}/.urano/dictionary.txt`;
+    let dictWords: string[] = [];
+    try {
+      const dictRaw = await invoke<string>('read_file', { filePath: dictFilePath });
+      dictWords = dictRaw
+        .split('\n')
+        .map((w) => w.trim())
+        .filter((w) => w.length > 0 && !w.startsWith('#'));
+    } catch {
+      // dictionary.txt not yet created
+    }
+
     try {
       const raw = await invoke<string>('read_file', { filePath });
       const parsed = JSON.parse(raw);
       const merged = mergeSettings(parsed);
+      if (dictWords.length > 0) {
+        merged.customDictionary = Array.from(new Set([...merged.customDictionary, ...dictWords]));
+      }
       writeLocalSettings(merged);
       set({ settings: merged, vaultPath });
+      invoke('set_spellcheck_language', {
+        lang: merged.language,
+        enabled: merged.spellcheck,
+      }).catch(() => {});
     } catch {
       // No settings file yet: seed the vault with the current (localStorage) settings
       const current = get().settings;
+      if (dictWords.length > 0) {
+        current.customDictionary = Array.from(new Set([...current.customDictionary, ...dictWords]));
+      }
       set({ vaultPath });
       scheduleVaultWrite(vaultPath, current);
+      invoke('set_spellcheck_language', {
+        lang: current.language,
+        enabled: current.spellcheck,
+      }).catch(() => {});
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('urano-spellcheck-update'));
     }
   },
 

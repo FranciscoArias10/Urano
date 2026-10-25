@@ -572,7 +572,9 @@
       "paragraph": "Paragraph",
       "insert": "Insert",
       "pastePlainText": "Paste as plain text",
-      "selectAll": "Select all"
+      "selectAll": "Select all",
+      "noSuggestions": "No suggestions...",
+      "addToDictionary": "Add to dictionary"
     },
     "formatting": {
       "bold": "Bold",

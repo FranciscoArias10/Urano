@@ -572,7 +572,9 @@
       "paragraph": "Párrafo",
       "insert": "Insertar",
       "pastePlainText": "Pegar sin formato",
-      "selectAll": "Seleccionar todo"
+      "selectAll": "Seleccionar todo",
+      "noSuggestions": "No hay sugerencias...",
+      "addToDictionary": "Añadir al diccionario"
     },
     "formatting": {
       "bold": "Negrita",
