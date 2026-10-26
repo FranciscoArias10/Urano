@@ -22,19 +22,13 @@ import {
   getImageWidgetState,
   type ImageEmbedInfo,
 } from '../../editor/imageExtension';
-import {
-  spellcheckPlugin,
-  getMisspelledWordAtPos,
-  checkWordIsolated,
-  spellcheckRefreshEffect,
-} from '../../editor/spellcheckExtension';
-import { loadSpellchecker, spellcheckService } from '../../editor/spellcheckService';
+import { spellcheckExtension, triggerSpellCheckEffect } from '../../editor/spellcheckExtension';
 import { getStorageAdapter, toUint8Array } from '../../services/storageAdapter';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 import { useNoticeStore } from '../common/Notice';
-import { useLocaleStore, useT } from '../../stores/localeStore';
+import { useT } from '../../stores/localeStore';
 import { ImageLightbox } from '../common/ImageLightbox';
 import { FileItem } from '../../types';
 import {
@@ -135,9 +129,11 @@ export const Editor: React.FC<EditorProps> = ({
     indentUnit.of(s.useTabs ? '\t' : ' '.repeat(s.tabSize)),
     EditorView.contentAttributes.of({
       spellcheck: s.spellcheck ? 'true' : 'false',
-      lang: s.language || 'en',
+      autocorrect: 'on',
+      autocapitalize: 'on',
+      contenteditable: 'true',
     }),
-    ...(s.spellcheck ? [spellcheckPlugin] : []),
+    ...(s.spellcheck ? spellcheckExtension : []),
   ];
 
   const editorMode = viewMode ?? 'live-preview';
@@ -215,26 +211,6 @@ export const Editor: React.FC<EditorProps> = ({
 
   // Estado local para edición de título sin renombrar en cada pulsación
   const [draftTitle, setDraftTitle] = useState(cleanTitle);
-  const [spellRefreshKey, setSpellRefreshKey] = useState(0);
-
-  // Carga obligatoria del diccionario activo al montar el Editor
-  useEffect(() => {
-    const currentLang = useLocaleStore.getState().locale || useSettingsStore.getState().language || 'en';
-    void spellcheckService.setLanguage(currentLang);
-  }, []);
-
-  useEffect(() => {
-    const onSpellUpdate = () => setSpellRefreshKey((k) => k + 1);
-    window.addEventListener('urano-spellcheck-update', onSpellUpdate);
-    return () => window.removeEventListener('urano-spellcheck-update', onSpellUpdate);
-  }, []);
-
-  // Valida el texto del inline-title contra el corrector activo
-  const isTitleMisspelled = useMemo(() => {
-    if (!spellcheck || !draftTitle) return false;
-    const words = draftTitle.match(/[\p{L}\p{M}]+(?:['\u2019][\p{L}\p{M}]+)?/gu) || [];
-    return words.some((w) => checkWordIsolated(w, language).isMisspelled);
-  }, [spellcheck, draftTitle, language, spellRefreshKey]);
 
   // Sincronización bidireccional: si el archivo se renombra externamente, actualizar draftTitle
   useEffect(() => {
@@ -448,18 +424,11 @@ export const Editor: React.FC<EditorProps> = ({
         editorSettingsCompartment.current.reconfigure(
           buildEditorSettingsExtensions({ showLineNumbers, tabSize, useTabs, spellcheck, language })
         ),
-        spellcheckRefreshEffect.of(true),
+        triggerSpellCheckEffect.of(true),
       ],
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showLineNumbers, tabSize, useTabs, spellcheck, language]);
-
-  // Pre-cargar diccionario Hunspell cuando el corrector está activo o cambia el idioma
-  useEffect(() => {
-    if (spellcheck) {
-      void loadSpellchecker(language);
-    }
-  }, [spellcheck, language]);
 
   // Synchronize doc if file content was changed externally
   useEffect(() => {
@@ -1764,7 +1733,7 @@ export const Editor: React.FC<EditorProps> = ({
   };
 
   // Right-click context menu handler matching Obsidian specification
-  const handleContextMenu = (e: React.MouseEvent) => {
+  const handleContextMenu = async (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest('.urano-table-editor') || target.closest('.cm-table-widget')) {
       return;
@@ -1815,111 +1784,75 @@ export const Editor: React.FC<EditorProps> = ({
 
     const items: MenuItemData[] = [];
 
-    // 0. Corrección ortográfica (1:1 con Obsidian: Sugerencias + Añadir al diccionario)
-    let misspelledInfo: { word: string; from: number; to: number; suggestions: string[] } | null = null;
-    if (currentView) {
-      const pos = currentView.posAtCoords({ x: e.clientX, y: e.clientY });
-      if (pos !== null) {
-        misspelledInfo = getMisspelledWordAtPos(currentView, pos);
-      }
-    }
+    // 0. Corrección ortográfica (Sugerencias nativas de enchant/spellbook + Añadir al diccionario)
+    const spellErrorEl = target.closest('.cm-spell-error');
+    if (spellErrorEl) {
+      const misspelledWord =
+        spellErrorEl.getAttribute('data-word') || spellErrorEl.textContent?.trim() || '';
+      if (misspelledWord) {
+        const currentLang = useSettingsStore.getState().settings.language || 'en';
+        const suggestions: string[] = await invoke<string[]>('suggest_word', {
+          word: misspelledWord,
+          lang: currentLang,
+        }).catch(() => []);
 
-    const titleInput = (target as HTMLElement).closest<HTMLInputElement>('.inline-title');
-    let titleMisspelledWord: string | null = null;
-    let titleWordRange: { from: number; to: number } | null = null;
-    let titleSuggestions: string[] = [];
-
-    if (titleInput) {
-      const val = titleInput.value;
-      const cursorPos = titleInput.selectionStart ?? 0;
-      const wordRegex = /[\p{L}\p{M}]+(?:['\u2019][\p{L}\p{M}]+)?/gu;
-      let m: RegExpExecArray | null;
-      while ((m = wordRegex.exec(val)) !== null) {
-        const start = m.index;
-        const end = start + m[0].length;
-        if (cursorPos >= start && cursorPos <= end) {
-          const res = checkWordIsolated(m[0], language);
-          if (res.isMisspelled) {
-            titleMisspelledWord = m[0];
-            titleWordRange = { from: start, to: end };
-            titleSuggestions = res.suggestions;
+        // Calcular rango exacto en el documento de la palabra subrayada
+        let wordRange: { from: number; to: number } | null = null;
+        if (currentView) {
+          try {
+            const pos = currentView.posAtDOM(spellErrorEl);
+            const line = currentView.state.doc.lineAt(pos);
+            const text = line.text;
+            let idx = 0;
+            while ((idx = text.indexOf(misspelledWord, idx)) !== -1) {
+              const candidateFrom = line.from + idx;
+              const candidateTo = candidateFrom + misspelledWord.length;
+              if (pos >= candidateFrom && pos <= candidateTo) {
+                wordRange = { from: candidateFrom, to: candidateTo };
+                break;
+              }
+              idx += Math.max(1, misspelledWord.length);
+            }
+          } catch {
+            // Ignorar si posAtDOM no resuelve
           }
-          break;
         }
-      }
-    }
 
-    if (misspelledInfo) {
-      if (misspelledInfo.suggestions.length === 0) {
-        items.push({
-          title: t('editor.contextMenu.noSuggestions'),
-          disabled: true,
-        });
-      } else {
-        for (const sug of misspelledInfo.suggestions) {
-          const currentWordInfo = misspelledInfo;
+        if (suggestions.length === 0) {
           items.push({
-            title: sug,
-            icon: <Repeat size={14} />,
-            action: () => {
-              if (currentView) {
-                currentView.dispatch({
-                  changes: {
-                    from: currentWordInfo.from,
-                    to: currentWordInfo.to,
-                    insert: sug,
-                  },
-                  selection: { anchor: currentWordInfo.from + sug.length },
-                });
-              }
-            },
+            title: t('editor.contextMenu.noSuggestions'),
+            disabled: true,
           });
+        } else {
+          for (const sug of suggestions) {
+            items.push({
+              title: sug,
+              icon: <Repeat size={14} />,
+              action: () => {
+                if (currentView && wordRange) {
+                  currentView.dispatch({
+                    changes: { from: wordRange.from, to: wordRange.to, insert: sug },
+                    selection: { anchor: wordRange.from + sug.length },
+                  });
+                }
+              },
+            });
+          }
         }
-      }
 
-      items.push({
-        title: t('editor.contextMenu.addToDictionary'),
-        icon: <BookPlus size={14} />,
-        action: () => {
-          void useSettingsStore.getState().addWordToDictionary(misspelledInfo!.word);
-        },
-      });
-
-      items.push({ type: 'separator' });
-    } else if (titleMisspelledWord && titleWordRange) {
-      if (titleSuggestions.length === 0) {
         items.push({
-          title: t('editor.contextMenu.noSuggestions'),
-          disabled: true,
+          title: t('editor.contextMenu.addToDictionary'),
+          icon: <BookPlus size={14} />,
+          action: () => {
+            void useSettingsStore.getState().addWordToDictionary(misspelledWord);
+            if (currentView) {
+              currentView.dispatch({ effects: triggerSpellCheckEffect.of(true) });
+            }
+          },
         });
-      } else {
-        for (const sug of titleSuggestions) {
-          const range = titleWordRange;
-          items.push({
-            title: sug,
-            icon: <Repeat size={14} />,
-            action: () => {
-              if (titleInput) {
-                const newVal =
-                  titleInput.value.slice(0, range.from) +
-                  sug +
-                  titleInput.value.slice(range.to);
-                setDraftTitle(newVal);
-              }
-            },
-          });
-        }
+
+        items.push({ type: 'separator' });
       }
-
-      items.push({
-        title: t('editor.contextMenu.addToDictionary'),
-        icon: <BookPlus size={14} />,
-        action: () => {
-          void useSettingsStore.getState().addWordToDictionary(titleMisspelledWord!);
-        },
-      });
-
-      items.push({ type: 'separator' });
     }
 
     // Optional Wikilink Options if clicked specifically on a [[Wikilink]]
@@ -2327,9 +2260,11 @@ export const Editor: React.FC<EditorProps> = ({
               <input
                 ref={inlineTitleRef}
                 type="text"
-                className={`inline-title ${isTitleMisspelled ? 'cm-spell-error' : ''}`}
+                className="inline-title"
                 value={draftTitle}
                 spellCheck={spellcheck}
+                autoCorrect="on"
+                autoCapitalize="on"
                 lang={language}
                 onChange={(e) => setDraftTitle(e.target.value)}
                 onKeyDown={handleTitleKeyDown}
