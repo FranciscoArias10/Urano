@@ -37,6 +37,7 @@ open = "5"
 urlencoding = "2.1"
 arboard = "3.7.0"
 image = "0.25.10"
+spellbook = "0.4.2"
 
 # GTK is already linked by Tauri on Linux; used to read clipboard images as raw PNG.
 [target.'cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "freebsd", target_os = "netbsd", target_os = "openbsd"))'.dependencies]
