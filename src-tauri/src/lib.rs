@@ -8,6 +8,8 @@ use std::sync::Arc;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    commands::spellcheck::setup_hunspell_dictionaries();
+
     let oauth_service = Arc::new(OAuthService::new());
 
     tauri::Builder::default()
@@ -60,6 +62,8 @@ pub fn run() {
             commands::locales::get_custom_locales_dir,
             commands::locales::open_path,
             commands::spellcheck::set_spellcheck_language,
+            commands::spellcheck::check_words_batch,
+            commands::spellcheck::suggest_word,
             spellcheck::load_hunspell_dictionary,
         ])
         .run(tauri::generate_context!())
