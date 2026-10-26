@@ -1,315 +1,191 @@
-import {
-  Decoration,
-  DecorationSet,
-  EditorView,
-  ViewPlugin,
-  ViewUpdate,
-} from '@codemirror/view';
-import { RangeSetBuilder, StateEffect } from '@codemirror/state';
+import { StateField, StateEffect } from '@codemirror/state';
+import { EditorView, Decoration, DecorationSet, ViewPlugin, ViewUpdate } from '@codemirror/view';
+import { RangeSetBuilder } from '@codemirror/state';
+import { invoke } from '@tauri-apps/api/core';
 import { useSettingsStore } from '../stores/settingsStore';
-import {
-  isWordCorrect,
-  loadSpellchecker,
-  getWordSuggestions,
-  subscribeToDictionary,
-  isReady,
-} from './spellcheckService';
 
-/**
- * StateEffect para forzar a CodeMirror 6 a recomputar y pintar las decoraciones
- * de corrección ortográfica de forma reactiva y sin bloquear la UI.
- */
-export const spellcheckRefreshEffect = StateEffect.define<boolean>();
+export const setSpellErrorsEffect = StateEffect.define<DecorationSet>();
+export const triggerSpellCheckEffect = StateEffect.define<boolean>();
 
-export const spellErrorMark = Decoration.mark({
-  class: 'cm-spell-error',
-  attributes: { 'data-spell-error': 'true' },
+export const spellErrorField = StateField.define<DecorationSet>({
+  create() {
+    return Decoration.none;
+  },
+  update(decorations, tr) {
+    decorations = decorations.map(tr.changes);
+    for (const effect of tr.effects) {
+      if (effect.is(setSpellErrorsEffect)) {
+        return effect.value;
+      }
+    }
+    return decorations;
+  },
+  provide: (field) => EditorView.decorations.from(field),
 });
 
-// Regex para palabras con soporte unicode (tildes, eñes, diacríticos, apóstrofes)
-const WORD_REGEX = /[\p{L}\p{M}]+(?:['\u2019][\p{L}\p{M}]+)?/gu;
-
-interface ExclusionRange {
-  from: number;
-  to: number;
-}
-
 /**
- * Encuentra todos los rangos que deben ser ignorados por el corrector:
- * - Frontmatter YAML
- * - Bloques de código (``` ... ```)
- * - Código en línea (` ... `)
- * - Fórmulas LaTeX ($$ ... $$ y $ ... $)
- * - Enlaces tipo Wikilink ([[ ... ]])
- * - URLs (http, https, www)
- * - Destino de enlaces Markdown ( [text](url) )
+ * Encuentra rangos de caracteres que deben ignorarse en la corrección ortográfica:
+ * - Bloques de código multilínea (```)
+ * - Código inline (`)
+ * - Ecuaciones matemáticas LaTeX ($$ y $)
+ * - URLs (http:// o https://)
+ * - Enlaces internos Wikilinks ([[...]])
  */
-function computeExclusionRanges(docText: string): ExclusionRange[] {
-  const ranges: ExclusionRange[] = [];
+function getIgnoredRanges(text: string): { from: number; to: number }[] {
+  const ignored: { from: number; to: number }[] = [];
+  const regexes = [
+    /```[\s\S]*?```/g,
+    /`[^`\n]+`/g,
+    /\$\$[\s\S]*?\$\$/g,
+    /\$[^$\n]+\$/g,
+    /https?:\/\/[^\s)\]]+/g,
+    /\[\[[\s\S]*?\]\]/g,
+  ];
 
-  // 1. Frontmatter YAML al inicio del documento
-  const frontmatterMatch = docText.match(/^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/);
-  if (frontmatterMatch && frontmatterMatch.index !== undefined) {
-    ranges.push({
-      from: frontmatterMatch.index,
-      to: frontmatterMatch.index + frontmatterMatch[0].length,
-    });
+  for (const regex of regexes) {
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(text)) !== null) {
+      ignored.push({ from: match.index, to: match.index + match[0].length });
+    }
   }
 
-  // 2. Bloques de código ``` ... ```
-  const codeBlockRegex = /```[\s\S]*?(?:```|$)/g;
-  let match: RegExpExecArray | null;
-  while ((match = codeBlockRegex.exec(docText)) !== null) {
-    ranges.push({ from: match.index, to: match.index + match[0].length });
-  }
-
-  // 3. LaTeX blocks $$ ... $$
-  const mathBlockRegex = /\$\$[\s\S]*?(?:\$\$|$)/g;
-  while ((match = mathBlockRegex.exec(docText)) !== null) {
-    ranges.push({ from: match.index, to: match.index + match[0].length });
-  }
-
-  // 4. Código en línea ` ... `
-  const inlineCodeRegex = /`[^`\r\n]+`/g;
-  while ((match = inlineCodeRegex.exec(docText)) !== null) {
-    ranges.push({ from: match.index, to: match.index + match[0].length });
-  }
-
-  // 5. LaTeX inline $ ... $
-  const inlineMathRegex = /\$[^$\r\n]+\$/g;
-  while ((match = inlineMathRegex.exec(docText)) !== null) {
-    ranges.push({ from: match.index, to: match.index + match[0].length });
-  }
-
-  // 6. Wikilinks [[ ... ]]
-  const wikilinkRegex = /\[\[[^\]\r\n]+\]\]/g;
-  while ((match = wikilinkRegex.exec(docText)) !== null) {
-    ranges.push({ from: match.index, to: match.index + match[0].length });
-  }
-
-  // 7. Destinos de enlaces markdown (... )
-  const mdLinkUrlRegex = /\]\([^\)\r\n]+\)/g;
-  while ((match = mdLinkUrlRegex.exec(docText)) !== null) {
-    ranges.push({ from: match.index, to: match.index + match[0].length });
-  }
-
-  // 8. URLs sueltas
-  const urlRegex = /https?:\/\/[^\s)\]>]+/gi;
-  while ((match = urlRegex.exec(docText)) !== null) {
-    ranges.push({ from: match.index, to: match.index + match[0].length });
-  }
-
-  // Ordenar los rangos por 'from'
-  ranges.sort((a, b) => a.from - b.from);
-  return ranges;
+  return ignored;
 }
 
-function isInsideExclusions(from: number, to: number, exclusions: ExclusionRange[]): boolean {
-  for (const ex of exclusions) {
-    if (to > ex.from && from < ex.to) {
+function isInsideIgnored(pos: number, len: number, ignored: { from: number; to: number }[]): boolean {
+  const end = pos + len;
+  for (const range of ignored) {
+    if (pos >= range.from && end <= range.to) {
+      return true;
+    }
+    if (pos < range.to && end > range.from) {
       return true;
     }
   }
   return false;
 }
 
-const activeViews = new Set<EditorView>();
+class SpellcheckPluginValue {
+  private view: EditorView;
+  private debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private generation: number = 0;
 
-/**
- * Dispara el refresco inmediato de corrección ortográfica en todas las vistas de CodeMirror activas.
- */
-export function refreshAllSpellcheckDecorations(): void {
-  for (const view of activeViews) {
-    try {
-      view.dispatch({ effects: spellcheckRefreshEffect.of(true) });
-    } catch {}
-  }
-}
-
-/**
- * Analiza únicamente las palabras dentro de `view.visibleRanges`
- * ignorando sintaxis técnica y aplicando Decoration.mark a los errores.
- */
-export function buildSpellDecorations(view: EditorView): DecorationSet {
-  const settings = useSettingsStore.getState().settings;
-  if (!settings.spellcheck) {
-    return Decoration.none;
+  constructor(view: EditorView) {
+    this.view = view;
+    this.scheduleCheck(20);
   }
 
-  const lang = settings.language || 'en';
-  const customWords = new Set((settings.customDictionary || []).map((w) => w.toLowerCase()));
-
-  // Si el diccionario aún no está en memoria, solicitar carga asíncrona y refrescar
-  if (!isReady(lang)) {
-    loadSpellchecker(lang).then(() => {
-      refreshAllSpellcheckDecorations();
-    });
-    return Decoration.none;
-  }
-
-  const doc = view.state.doc;
-  const docText = doc.toString();
-  const exclusions = computeExclusionRanges(docText);
-  const builder = new RangeSetBuilder<Decoration>();
-
-  for (const { from, to } of view.visibleRanges) {
-    const textSnippet = doc.sliceString(from, to);
-    WORD_REGEX.lastIndex = 0;
-    let match: RegExpExecArray | null;
-
-    while ((match = WORD_REGEX.exec(textSnippet)) !== null) {
-      const word = match[0];
-      const wordFrom = from + match.index;
-      const wordTo = wordFrom + word.length;
-
-      // Ignorar números o palabras de 1 letra no alfabética
-      if (word.length <= 1 && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜàèìòù]$/.test(word)) {
-        continue;
-      }
-
-      // Ignorar si cae en bloques excluidos
-      if (isInsideExclusions(wordFrom, wordTo, exclusions)) {
-        continue;
-      }
-
-      // Validar ortografía
-      if (!isWordCorrect(word, lang, customWords)) {
-        builder.add(wordFrom, wordTo, spellErrorMark);
-      }
+  update(update: ViewUpdate) {
+    const hasTrigger = update.transactions.some((tr) =>
+      tr.effects.some((e) => e.is(triggerSpellCheckEffect))
+    );
+    if (update.docChanged || update.viewportChanged || hasTrigger) {
+      this.scheduleCheck(120);
     }
   }
 
-  return builder.finish();
-}
+  destroy() {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
+    }
+  }
 
-/**
- * Plugin de CodeMirror 6 para corrección ortográfica en tiempo real
- * basado en `visibleRanges`, `spellcheckRefreshEffect` y cálculo síncrono.
- */
-export const spellcheckPlugin = ViewPlugin.fromClass(
-  class {
-    decorations: DecorationSet;
-    private unsubscribeDict: () => void;
-    private onSettingsUpdate: () => void;
+  scheduleCheck(delayMs: number = 120) {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+    this.debounceTimer = setTimeout(() => {
+      this.debounceTimer = null;
+      void this.runSpellCheck();
+    }, delayMs);
+  }
 
-    constructor(readonly view: EditorView) {
-      activeViews.add(view);
-
-      // Cálculo síncrono inmediato al abrir la vista
-      this.decorations = buildSpellDecorations(view);
-
-      // Notificación cuando el diccionario termina de cargar
-      this.unsubscribeDict = subscribeToDictionary(() => {
-        try {
-          this.view.dispatch({ effects: spellcheckRefreshEffect.of(true) });
-        } catch {}
-      });
-
-      // Notificación de cambios en ajustes (idioma, toggle, diccionario personalizado)
-      this.onSettingsUpdate = () => {
-        try {
-          this.view.dispatch({ effects: spellcheckRefreshEffect.of(true) });
-        } catch {}
-      };
-      window.addEventListener('urano-spellcheck-update', this.onSettingsUpdate);
+  private async runSpellCheck() {
+    const settings = useSettingsStore.getState().settings;
+    if (!settings.spellcheck) {
+      this.view.dispatch({ effects: setSpellErrorsEffect.of(Decoration.none) });
+      return;
     }
 
-    update(update: ViewUpdate) {
-      const forceRefresh = update.transactions.some((tr) =>
-        tr.effects.some((e) => e.is(spellcheckRefreshEffect))
-      );
+    const currentGen = ++this.generation;
+    const doc = this.view.state.doc;
+    const lang = settings.language || 'en';
+    const customWords = settings.customDictionary || [];
 
-      if (forceRefresh) {
-        this.decorations = buildSpellDecorations(update.view);
-        return;
-      }
+    // Recolectar palabras únicas dentro del área visible
+    const ranges = this.view.visibleRanges;
+    const wordsToQuery = new Set<string>();
+    const wordRegex = /\p{L}{2,}/gu;
 
-      if (update.docChanged || update.viewportChanged) {
-        // Cálculo síncrono inmediato
-        const settings = useSettingsStore.getState().settings;
-        const lang = settings.language || 'en';
-        if (settings.spellcheck && isReady(lang)) {
-          this.decorations = buildSpellDecorations(update.view);
-        } else if (update.docChanged) {
-          this.decorations = this.decorations.map(update.changes);
+    for (const { from, to } of ranges) {
+      const text = doc.sliceString(from, to);
+      const ignored = getIgnoredRanges(text);
+
+      let m: RegExpExecArray | null;
+      wordRegex.lastIndex = 0;
+      while ((m = wordRegex.exec(text)) !== null) {
+        if (!isInsideIgnored(m.index, m[0].length, ignored)) {
+          wordsToQuery.add(m[0]);
         }
       }
     }
 
-    destroy() {
-      activeViews.delete(this.view);
-      this.unsubscribeDict();
-      window.removeEventListener('urano-spellcheck-update', this.onSettingsUpdate);
+    if (wordsToQuery.size === 0) {
+      this.view.dispatch({ effects: setSpellErrorsEffect.of(Decoration.none) });
+      return;
     }
-  },
-  {
-    decorations: (v) => v.decorations,
-  }
-);
 
-/**
- * Busca si en una posición determinada (por ejemplo, clic derecho) hay una palabra
- * subrayada como error ortográfico, y devuelve sus detalles y sugerencias.
- */
-export function getMisspelledWordAtPos(
-  view: EditorView,
-  pos: number
-): { word: string; from: number; to: number; suggestions: string[] } | null {
-  const settings = useSettingsStore.getState().settings;
-  if (!settings.spellcheck) return null;
+    const uniqueWords = Array.from(wordsToQuery);
 
-  const lang = settings.language || 'en';
-  const customWords = new Set((settings.customDictionary || []).map((w) => w.toLowerCase()));
+    try {
+      const misspelledList: string[] = await invoke('check_words_batch', {
+        words: uniqueWords,
+        lang,
+        customWords,
+      });
 
-  const doc = view.state.doc;
-  const line = doc.lineAt(pos);
-  const lineOffset = pos - line.from;
-
-  WORD_REGEX.lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = WORD_REGEX.exec(line.text)) !== null) {
-    const wordStart = match.index;
-    const wordEnd = wordStart + match[0].length;
-
-    if (lineOffset >= wordStart && lineOffset <= wordEnd) {
-      const word = match[0];
-      const from = line.from + wordStart;
-      const to = line.from + wordEnd;
-
-      // Comprobar si es un error
-      if (!isWordCorrect(word, lang, customWords)) {
-        const suggestions = getWordSuggestions(word, lang, 6);
-        return { word, from, to, suggestions };
+      // Descartar si el viewport o documento cambió mientras esperábamos IPC
+      if (currentGen !== this.generation) {
+        return;
       }
-      return null;
+
+      const misspelledSet = new Set(misspelledList);
+      const builder = new RangeSetBuilder<Decoration>();
+
+      // Construir decoraciones en orden estrictamente ascendente
+      for (const { from, to } of ranges) {
+        const text = doc.sliceString(from, to);
+        const ignored = getIgnoredRanges(text);
+
+        wordRegex.lastIndex = 0;
+        let m: RegExpExecArray | null;
+        while ((m = wordRegex.exec(text)) !== null) {
+          const word = m[0];
+          if (!isInsideIgnored(m.index, word.length, ignored) && misspelledSet.has(word)) {
+            const wordFrom = from + m.index;
+            const wordTo = wordFrom + word.length;
+            builder.add(
+              wordFrom,
+              wordTo,
+              Decoration.mark({
+                class: 'cm-spell-error',
+                attributes: { 'data-word': word },
+              })
+            );
+          }
+        }
+      }
+
+      this.view.dispatch({
+        effects: setSpellErrorsEffect.of(builder.finish()),
+      });
+    } catch (err) {
+      console.warn('[Urano Spellcheck] check_words_batch IPC error:', err);
     }
   }
-
-  return null;
 }
 
-/**
- * Valida una palabra aislada (por ejemplo del inline-title)
- */
-export function checkWordIsolated(
-  word: string,
-  langCode?: string
-): { isMisspelled: boolean; suggestions: string[] } {
-  const settings = useSettingsStore.getState().settings;
-  if (!settings.spellcheck) {
-    return { isMisspelled: false, suggestions: [] };
-  }
+export const spellcheckPlugin = ViewPlugin.fromClass(SpellcheckPluginValue);
 
-  const lang = langCode || settings.language || 'en';
-  const customWords = new Set((settings.customDictionary || []).map((w) => w.toLowerCase()));
-
-  if (!isWordCorrect(word, lang, customWords)) {
-    return {
-      isMisspelled: true,
-      suggestions: getWordSuggestions(word, lang, 6),
-    };
-  }
-
-  return { isMisspelled: false, suggestions: [] };
-}
+export const spellcheckExtension = [spellErrorField, spellcheckPlugin];
