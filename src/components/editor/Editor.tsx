@@ -116,6 +116,7 @@ export const Editor: React.FC<EditorProps> = ({
   const useTabs = useSettingsStore((st) => st.settings.useTabs);
   const spellcheck = useSettingsStore((st) => st.settings.spellcheck);
   const language = useSettingsStore((st) => st.settings.language);
+  const customDictionary = useSettingsStore((st) => st.settings.customDictionary);
   const strictLineBreaks = useSettingsStore((st) => st.settings.strictLineBreaks);
   const showInlineTitle = useSettingsStore((st) => st.settings.showInlineTitle);
   const editorSettingsRef = useRef({ showLineNumbers, tabSize, useTabs, spellcheck, language });
@@ -429,6 +430,15 @@ export const Editor: React.FC<EditorProps> = ({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showLineNumbers, tabSize, useTabs, spellcheck, language]);
+
+  // Re-validate visible words when the custom dictionary changes (Settings → Editor,
+  // "Add to dictionary" or edits to .urano/dictionary.txt)
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view || !spellcheck) return;
+    view.dispatch({ effects: triggerSpellCheckEffect.of(true) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customDictionary]);
 
   // Synchronize doc if file content was changed externally
   useEffect(() => {
