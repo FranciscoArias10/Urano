@@ -979,6 +979,17 @@
     "title": "Urano",
     "version": "Version 1.14.5",
     "recentVaults": "Bóvedas recientes",
-    "noRecentVaults": "No se encontraron bóvedas recientes"
+    "noRecentVaults": "No se encontraron bóvedas recientes",
+    "options": {
+      "createVault": "Crear nueva bóveda",
+      "createVaultDesc": "Crear una nueva bóveda de Urano en una carpeta.",
+      "buttonCreate": "Crear",
+      "openFolder": "Abrir carpeta como bóveda",
+      "openFolderDesc": "Elegir una carpeta existente de archivos Markdown.",
+      "buttonOpen": "Abrir",
+      "openSync": "Abrir bóveda desde Urano Sync",
+      "openSyncDesc": "Configurar una bóveda sincronizada con una bóveda remota existente.",
+      "buttonSignIn": "Iniciar sesión"
+    }
   }
 }
