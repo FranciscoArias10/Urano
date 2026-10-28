@@ -1367,15 +1367,74 @@ export const App: React.FC = () => {
         onClose={() => setShowLogs(false)}
       />
 
-      {/* Obsidian Vault Switcher Menu */}
-      {vaultMenu && (
-        <ObsidianMenu
-          x={vaultMenu.x}
-          y={vaultMenu.y}
-          items={vaultMenu.items}
-          onClose={() => setVaultMenu(null)}
-        />
+      {/* Floating Dark Popover for Vault Switcher */}
+      {vaultSwitcherAnchor && (
+        <div
+          ref={vaultSwitcherPopoverRef}
+          style={{
+            background: '#1e1e1e',
+            border: '1px solid #333333',
+            borderRadius: '8px',
+            padding: '4px',
+            minWidth: '190px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.65)',
+            zIndex: 300,
+            position: 'fixed',
+            bottom: `${window.innerHeight - vaultSwitcherAnchor.top + 6}px`,
+            left: `${vaultSwitcherAnchor.left}px`,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {recentVaults.map((vault) => {
+            const isActive = activeVault === vault.path;
+            return (
+              <button
+                key={vault.path}
+                type="button"
+                onClick={async () => {
+                  setVaultSwitcherAnchor(null);
+                  if (vault.path !== activeVault) {
+                    await setVault(vault.path);
+                  }
+                }}
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[5px] text-[13px] transition-colors cursor-pointer text-left ${
+                  isActive
+                    ? 'text-white bg-[#2b2b2b]'
+                    : 'text-[#dcddde] hover:text-white hover:bg-[#282828]'
+                }`}
+              >
+                <span className="truncate max-w-[150px]" title={vault.path}>
+                  {vault.name}
+                </span>
+                {isActive && (
+                  <Check size={15} className="text-[#e06c1b] shrink-0 ml-2" />
+                )}
+              </button>
+            );
+          })}
+
+          <div style={{ borderTop: '1px solid #2e2e2e', margin: '4px 0' }} />
+
+          <button
+            type="button"
+            onClick={() => {
+              setVaultSwitcherAnchor(null);
+              setShowVaultManager(true);
+            }}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[5px] text-[13px] text-[#dcddde] hover:text-white hover:bg-[#2b2b2b] transition-colors cursor-pointer text-left"
+          >
+            <Vault size={16} className="text-[#888888] shrink-0" />
+            <span>{t('vaultMenu.manageVaults')}</span>
+          </button>
+        </div>
       )}
+
+      {/* Vault Manager Modal (Obsidian Starter 1:1) */}
+      <VaultManagerModal
+        isOpen={showVaultManager}
+        onClose={() => setShowVaultManager(false)}
+        onOpenSync={() => setShowConfigModal(true)}
+      />
 
       {/* Obsidian Floating Notices */}
       <NoticeContainer />
