@@ -990,6 +990,31 @@
       "openSync": "Abrir bóveda desde Urano Sync",
       "openSyncDesc": "Configurar una bóveda sincronizada con una bóveda remota existente.",
       "buttonSignIn": "Iniciar sesión"
+    },
+    "createForm": {
+      "back": "Atrás",
+      "vaultName": "Nombre de la bóveda",
+      "vaultNameDesc": "Nombre de la nueva bóveda.",
+      "vaultNamePlaceholder": "Nombre de la bóveda",
+      "location": "Ubicación",
+      "locationDesc": "Elige dónde crear la carpeta de la bóveda.",
+      "locationPreview": "Tu nueva bóveda se guardará en: ",
+      "browse": "Examinar",
+      "errorNameEmpty": "El nombre de la bóveda no puede estar vacío.",
+      "errorLocationEmpty": "Por favor elige una carpeta de destino.",
+      "errorFolderExists": "Ya existe una carpeta con ese nombre en esa ubicación.",
+      "errorCreateFailed": "Error al crear la carpeta de la bóveda: "
+    },
+    "menu": {
+      "removeFromList": "Eliminar de la lista",
+      "moveVault": "Mover bóveda...",
+      "showInExplorer": "Mostrar en el explorador del sistema"
+    },
+    "dialogs": {
+      "selectLocation": "Seleccionar ubicación para nueva bóveda",
+      "moveDest": "Seleccionar nuevo destino para la bóveda",
+      "moveSuccess": "Bóveda movida correctamente",
+      "moveFailed": "Error al mover la bóveda"
     }
   }
 }
