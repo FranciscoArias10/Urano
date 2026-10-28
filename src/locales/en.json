@@ -974,5 +974,11 @@
     "minimize": "Minimize",
     "maximize": "Maximize",
     "restore": "Restore down"
+  },
+  "vaultManager": {
+    "title": "Urano",
+    "version": "Version 1.14.5",
+    "recentVaults": "Recent vaults",
+    "noRecentVaults": "No recent vaults found"
   }
 }
