@@ -60,6 +60,11 @@ export function sortFileTree(items: FileItem[], order: SortOrder): FileItem[] {
   return sorted;
 }
 
+export interface RecentVault {
+  name: string;
+  path: string;
+}
+
 interface VaultState {
   activeVault: string | null;
   vaultName: string | null;
