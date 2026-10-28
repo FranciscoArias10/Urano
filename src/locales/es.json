@@ -337,7 +337,8 @@
       "localVault": "Bóveda local",
       "openAnotherVault": "Abrir otra carpeta de bóveda...",
       "syncLogs": "Registros de sincronización...",
-      "defaultVaultName": "Bóveda"
+      "defaultVaultName": "Bóveda",
+      "manageVaults": "Administrar bóvedas..."
     },
     "ribbon": {
       "showSidebar": "Mostrar barra lateral",
