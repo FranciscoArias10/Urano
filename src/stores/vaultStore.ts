@@ -257,6 +257,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         isLoading: false,
       });
 
+      get().addRecentVault(vaultName, vaultPath);
       get().loadAllNotesContent();
     } catch (err) {
       set({ isLoading: false });
