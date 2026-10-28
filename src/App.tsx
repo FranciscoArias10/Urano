@@ -29,7 +29,7 @@ import { useLocaleStore, LOCALES_DIR_RELATIVE, useT } from './stores/localeStore
 import { LocalAdapter, GoogleDriveAdapter, setStorageAdapter } from './services/storageAdapter';
 import { UranoLogo } from './components/common/UranoLogo';
 import { NoticeContainer, useNoticeStore } from './components/common/Notice';
-import { ObsidianMenu, MenuItemData } from './components/common/ObsidianMenu';
+import { VaultManagerModal } from './components/vault/VaultManagerModal';
 import {
   FolderOpen,
   FilePlus,
@@ -44,8 +44,6 @@ import {
   RefreshCw,
   ChevronDown,
   HelpCircle,
-  HardDrive,
-  Cloud,
   FileSearch,
   Grid2X2,
   Calendar,
@@ -54,6 +52,8 @@ import {
   LayoutList,
   Folder,
   Bookmark,
+  Vault,
+  Check,
 } from 'lucide-react';
 
 /** Stable, unique identifier for a workspace leaf (tab). */
@@ -122,6 +122,7 @@ export const App: React.FC = () => {
   const {
     activeVault,
     vaultName,
+    recentVaults,
     activeFile,
     activeFileName,
     fileContent,
@@ -157,11 +158,24 @@ export const App: React.FC = () => {
   const markStartupComplete = useSettingsStore((s) => s.markStartupComplete);
   const corePlugins = settings.corePlugins;
 
-  const [vaultMenu, setVaultMenu] = useState<{
-    x: number;
-    y: number;
-    items: MenuItemData[];
-  } | null>(null);
+  // Vault Switcher popover & VaultManagerModal
+  const [showVaultManager, setShowVaultManager] = useState(false);
+  const [vaultSwitcherAnchor, setVaultSwitcherAnchor] = useState<{ top: number; left: number } | null>(null);
+  const vaultSwitcherPopoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!vaultSwitcherAnchor) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (
+        vaultSwitcherPopoverRef.current &&
+        !vaultSwitcherPopoverRef.current.contains(e.target as Node)
+      ) {
+        setVaultSwitcherAnchor(null);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [vaultSwitcherAnchor]);
 
   // Startup time & sincronización inicial de idioma para el corrector nativo
   useEffect(() => {
@@ -564,42 +578,9 @@ export const App: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const items: MenuItemData[] = [
-      {
-        title: t('app.vaultMenu.currentVault', {
-          name: vaultName || t('app.vaultMenu.defaultVaultName'),
-        }),
-        disabled: true,
-      },
-      { type: 'separator' },
-      {
-        title: t('app.vaultMenu.localVault'),
-        icon: <HardDrive size={14} className="text-orange-500" />,
-        action: handleOpenFolderDialog,
-      },
-      {
-        title: 'Google Drive',
-        icon: <Cloud size={14} className="text-sky-400" />,
-        action: () => setShowConfigModal(true),
-      },
-      { type: 'separator' },
-      {
-        title: t('app.vaultMenu.openAnotherVault'),
-        icon: <FolderOpen size={14} />,
-        action: handleOpenFolderDialog,
-      },
-      {
-        title: t('app.vaultMenu.syncLogs'),
-        icon: <RefreshCw size={14} />,
-        action: () => setShowLogs(true),
-      },
-    ];
-
-    setVaultMenu({
-      x: rect.left,
-      y: Math.max(10, rect.top - 180),
-      items,
-    });
+    setVaultSwitcherAnchor((prev) =>
+      prev ? null : { top: rect.top, left: rect.left }
+    );
   };
 
   const handleHelpClick = () => {
