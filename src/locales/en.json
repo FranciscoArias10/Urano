@@ -337,7 +337,8 @@
       "localVault": "Local vault",
       "openAnotherVault": "Open another vault...",
       "syncLogs": "Sync logs...",
-      "defaultVaultName": "Vault"
+      "defaultVaultName": "Vault",
+      "manageVaults": "Manage vaults..."
     },
     "ribbon": {
       "showSidebar": "Show sidebar",
