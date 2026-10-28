@@ -990,6 +990,31 @@
       "openSync": "Open vault from Urano Sync",
       "openSyncDesc": "Set up a synced vault with existing remote vault.",
       "buttonSignIn": "Sign in"
+    },
+    "createForm": {
+      "back": "Back",
+      "vaultName": "Vault name",
+      "vaultNameDesc": "New vault name.",
+      "vaultNamePlaceholder": "Vault name",
+      "location": "Location",
+      "locationDesc": "Choose where to create the vault folder.",
+      "locationPreview": "Your new vault will be placed in: ",
+      "browse": "Browse",
+      "errorNameEmpty": "Vault name cannot be empty.",
+      "errorLocationEmpty": "Please select a location folder.",
+      "errorFolderExists": "A folder with this name already exists in the selected location.",
+      "errorCreateFailed": "Failed to create vault folder: "
+    },
+    "menu": {
+      "removeFromList": "Remove from list",
+      "moveVault": "Move vault...",
+      "showInExplorer": "Show in system explorer"
+    },
+    "dialogs": {
+      "selectLocation": "Select location for new vault",
+      "moveDest": "Select new parent destination for vault",
+      "moveSuccess": "Vault moved successfully",
+      "moveFailed": "Failed to move vault"
     }
   }
 }
