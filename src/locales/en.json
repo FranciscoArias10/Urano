@@ -979,6 +979,17 @@
     "title": "Urano",
     "version": "Version 1.14.5",
     "recentVaults": "Recent vaults",
-    "noRecentVaults": "No recent vaults found"
+    "noRecentVaults": "No recent vaults found",
+    "options": {
+      "createVault": "Create new vault",
+      "createVaultDesc": "Create a new Urano vault under a folder.",
+      "buttonCreate": "Create",
+      "openFolder": "Open folder as vault",
+      "openFolderDesc": "Choose an existing folder of Markdown files.",
+      "buttonOpen": "Open",
+      "openSync": "Open vault from Urano Sync",
+      "openSyncDesc": "Set up a synced vault with existing remote vault.",
+      "buttonSignIn": "Sign in"
+    }
   }
 }
