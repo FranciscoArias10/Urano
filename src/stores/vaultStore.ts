@@ -68,6 +68,7 @@ export interface RecentVault {
 interface VaultState {
   activeVault: string | null;
   vaultName: string | null;
+  recentVaults: RecentVault[];
   activeFile: string | null;
   activeFileName: string | null;
   fileContent: string;
@@ -77,6 +78,9 @@ interface VaultState {
   notesContentMap: Record<string, string>; // path -> content for graph & backlinks
   autoFocusTitle: boolean;
   shouldSelectTitleOnOpen: boolean;
+
+  // Recent Vaults Actions
+  addRecentVault: (name: string, path: string) => void;
 
   // Bookmarks
   bookmarks: BookmarkItem[];
@@ -145,6 +149,7 @@ function getInitialRecentVaults(): RecentVault[] {
 export const useVaultStore = create<VaultState>((set, get) => ({
   activeVault: null,
   vaultName: null,
+  recentVaults: getInitialRecentVaults(),
   activeFile: null,
   activeFileName: null,
   fileContent: '',
@@ -154,6 +159,14 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   notesContentMap: {},
   autoFocusTitle: false,
   shouldSelectTitleOnOpen: false,
+
+  addRecentVault: (name: string, path: string) => {
+    const { recentVaults } = get();
+    const filtered = recentVaults.filter((v) => v.path !== path);
+    const updated = [{ name, path }, ...filtered];
+    localStorage.setItem('urano_recent_vaults', JSON.stringify(updated));
+    set({ recentVaults: updated });
+  },
 
   // Bookmarks
   bookmarks: JSON.parse(localStorage.getItem('urano_bookmarks') || '[]'),
