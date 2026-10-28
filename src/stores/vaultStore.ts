@@ -121,6 +121,27 @@ interface VaultState {
   setShouldSelectTitleOnOpen: (focus: boolean) => void;
 }
 
+function getInitialRecentVaults(): RecentVault[] {
+  try {
+    const raw = localStorage.getItem('urano_recent_vaults');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.error('Error reading recent vaults:', e);
+  }
+  const lastVault = localStorage.getItem('urano_last_vault');
+  if (lastVault) {
+    const parts = lastVault.replace(/\\/g, '/').split('/');
+    const name = parts[parts.length - 1] || 'Vault';
+    const initial = [{ name, path: lastVault }];
+    localStorage.setItem('urano_recent_vaults', JSON.stringify(initial));
+    return initial;
+  }
+  return [];
+}
+
 export const useVaultStore = create<VaultState>((set, get) => ({
   activeVault: null,
   vaultName: null,
