@@ -343,10 +343,6 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
         console.warn('[Urano] No se pudo guardar .urano/dictionary.txt:', err);
       });
     }
-
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('urano-spellcheck-update'));
-    }
   },
 
   removeWordFromDictionary: async (word: string) => {
@@ -362,10 +358,6 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     if (vaultPath) {
       const dictFilePath = `${vaultPath.replace(/[\\/]+$/, '')}/.urano/dictionary.txt`;
       invoke('write_file', { filePath: dictFilePath, content: words.join('\n') + (words.length ? '\n' : '') }).catch(() => {});
-    }
-
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('urano-spellcheck-update'));
     }
   },
 
@@ -409,10 +401,6 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
         lang: current.language,
         enabled: current.spellcheck,
       }).catch(() => {});
-    }
-
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('urano-spellcheck-update'));
     }
   },
 
