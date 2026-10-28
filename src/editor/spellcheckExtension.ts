@@ -69,6 +69,7 @@ class SpellcheckPluginValue {
   private view: EditorView;
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private generation: number = 0;
+  private destroyed = false;
 
   constructor(view: EditorView) {
     this.view = view;
@@ -80,11 +81,15 @@ class SpellcheckPluginValue {
       tr.effects.some((e) => e.is(triggerSpellCheckEffect))
     );
     if (update.docChanged || update.viewportChanged || hasTrigger) {
+      // Invalida cualquier respuesta IPC en vuelo: sus posiciones ya no coinciden con el documento
+      this.generation++;
       this.scheduleCheck(120);
     }
   }
 
   destroy() {
+    this.destroyed = true;
+    this.generation++;
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
       this.debounceTimer = null;
@@ -145,8 +150,8 @@ class SpellcheckPluginValue {
         customWords,
       });
 
-      // Descartar si el viewport o documento cambió mientras esperábamos IPC
-      if (currentGen !== this.generation) {
+      // Descartar si el editor se destruyó o el viewport/documento cambió mientras esperábamos IPC
+      if (this.destroyed || currentGen !== this.generation || this.view.state.doc !== doc) {
         return;
       }
 
