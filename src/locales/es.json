@@ -974,5 +974,11 @@
     "minimize": "Minimizar",
     "maximize": "Maximizar",
     "restore": "Restaurar"
+  },
+  "vaultManager": {
+    "title": "Urano",
+    "version": "Version 1.14.5",
+    "recentVaults": "Bóvedas recientes",
+    "noRecentVaults": "No se encontraron bóvedas recientes"
   }
 }
