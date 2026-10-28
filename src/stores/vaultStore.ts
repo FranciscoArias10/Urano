@@ -81,6 +81,8 @@ interface VaultState {
 
   // Recent Vaults Actions
   addRecentVault: (name: string, path: string) => void;
+  removeRecentVault: (path: string) => void;
+  updateRecentVault: (oldPath: string, newPath: string, newName?: string) => void;
 
   // Bookmarks
   bookmarks: BookmarkItem[];
@@ -164,6 +166,28 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     const { recentVaults } = get();
     const filtered = recentVaults.filter((v) => v.path !== path);
     const updated = [{ name, path }, ...filtered];
+    localStorage.setItem('urano_recent_vaults', JSON.stringify(updated));
+    set({ recentVaults: updated });
+  },
+
+  removeRecentVault: (path: string) => {
+    const { recentVaults } = get();
+    const updated = recentVaults.filter((v) => v.path !== path);
+    localStorage.setItem('urano_recent_vaults', JSON.stringify(updated));
+    set({ recentVaults: updated });
+  },
+
+  updateRecentVault: (oldPath: string, newPath: string, newName?: string) => {
+    const { recentVaults } = get();
+    const updated = recentVaults.map((v) => {
+      if (v.path === oldPath) {
+        return {
+          name: newName || v.name,
+          path: newPath,
+        };
+      }
+      return v;
+    });
     localStorage.setItem('urano_recent_vaults', JSON.stringify(updated));
     set({ recentVaults: updated });
   },
