@@ -15,6 +15,8 @@ import {
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 import { WindowControls } from '../layout/WindowControls';
 import { useT } from '../../stores/localeStore';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { invoke } from '@tauri-apps/api/core';
 
 export interface TabItem {
   id: string;
@@ -199,7 +201,22 @@ export const TabBar: React.FC<TabBarProps> = ({
   return (
     <div className="workspace">
       <div className="workspace-tabs mod-top mod-root">
-        <div className="workspace-tab-header-container">
+        <div
+          className="workspace-tab-header-container"
+          data-tauri-drag-region
+          onDoubleClick={async (e) => {
+            if (
+              e.target === e.currentTarget ||
+              (e.target as HTMLElement).classList.contains('workspace-tab-header-spacer')
+            ) {
+              try {
+                await getCurrentWindow().toggleMaximize();
+              } catch {
+                await invoke('toggle_maximize_window').catch(() => {});
+              }
+            }
+          }}
+        >
           {/* Tabs ------------------------------------------------------ */}
           <div className="workspace-tab-header-container-inner">
             {tabs.map((tab, index) => {
@@ -286,6 +303,13 @@ export const TabBar: React.FC<TabBarProps> = ({
             className="workspace-tab-header-spacer"
             data-tauri-drag-region
             title={t('tabs.dragToMoveWindow')}
+            onDoubleClick={async () => {
+              try {
+                await getCurrentWindow().toggleMaximize();
+              } catch {
+                await invoke('toggle_maximize_window').catch(() => {});
+              }
+            }}
           />
 
           {/* Tab list dropdown ------------------------------------------ */}
