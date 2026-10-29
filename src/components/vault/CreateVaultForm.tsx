@@ -117,7 +117,7 @@ export const CreateVaultForm: React.FC<CreateVaultFormProps> = ({ onBack, onSubm
         <button
           type="button"
           onClick={handleBrowse}
-          className="bg-[#2c2c2c] hover:bg-[#353535] border border-[#3a3a3a] text-[#dcddde] hover:text-white font-medium text-[13px] rounded-[5px] px-5 py-1.5 min-w-[86px] transition-colors cursor-pointer text-center"
+          className="bg-[#2c2c2c] hover:bg-[#353535] border border-[#3a3a3a] text-[#dcddde] hover:text-white font-medium text-[13px] rounded-[5px] h-[32px] px-4 whitespace-nowrap inline-flex items-center justify-center min-w-[86px] transition-colors cursor-pointer text-center"
         >
           {t('vaultManager.createForm.browse')}
         </button>
@@ -135,7 +135,7 @@ export const CreateVaultForm: React.FC<CreateVaultFormProps> = ({ onBack, onSubm
           type="button"
           disabled={isSubmitting}
           onClick={handleCreate}
-          className="bg-[#e06c1b] hover:brightness-110 text-white font-medium text-[13px] rounded-[5px] px-8 py-2 min-w-[100px] transition-all cursor-pointer text-center disabled:opacity-50"
+          className="bg-[#e06c1b] hover:brightness-110 text-white font-medium text-[13px] rounded-[5px] h-[32px] px-6 whitespace-nowrap inline-flex items-center justify-center min-w-[100px] transition-all cursor-pointer text-center disabled:opacity-50"
         >
           {t('vaultManager.options.buttonCreate')}
         </button>

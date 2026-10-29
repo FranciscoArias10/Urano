@@ -39,10 +39,6 @@ export const RecentVaultsList: React.FC<RecentVaultsListProps> = ({
 
   return (
     <aside className="w-[260px] bg-[#212121] border-r border-[#2c2c2c] p-3 flex flex-col shrink-0">
-      <div className="text-[12px] font-semibold text-[#888888] uppercase tracking-wider px-2 py-1.5 mb-1">
-        {t('vaultManager.recentVaults')}
-      </div>
-
       <div className="flex-1 overflow-y-auto flex flex-col gap-1 pr-0.5 custom-scrollbar">
         {vaults.length === 0 ? (
           <div className="text-[12px] text-[#666666] italic px-2 py-4">
