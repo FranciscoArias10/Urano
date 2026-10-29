@@ -57,24 +57,6 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleMinimize = async () => {
-    try {
-      await getCurrentWindow().minimize();
-    } catch {
-      /* noop */
-    }
-  };
-
-  const handleToggleMaximize = async () => {
-    try {
-      const win = getCurrentWindow();
-      await win.toggleMaximize();
-      setIsMaximized(await win.isMaximized());
-    } catch {
-      /* noop */
-    }
-  };
-
   const handleOpenFolderAsVault = async () => {
     try {
       const selected = await open({
