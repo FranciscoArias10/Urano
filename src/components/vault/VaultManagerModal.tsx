@@ -136,6 +136,18 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
         className="w-[800px] h-[580px] flex rounded-[10px] overflow-hidden border border-[#2a2a2a] bg-[#161616] shadow-2xl relative"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Top titlebar drag region */}
+        <div
+          className="absolute top-0 left-0 right-0 h-10 z-0"
+          data-tauri-drag-region
+          onDoubleClick={async () => {
+            try {
+              await getCurrentWindow().toggleMaximize();
+            } catch {
+              await invoke('toggle_maximize_window').catch(() => {});
+            }
+          }}
+        />
         {/* Left Column: Recent Vaults List */}
         <RecentVaultsList
           vaults={recentVaults}
