@@ -17,6 +17,8 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
+            use tauri::Manager;
+
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
@@ -25,12 +27,17 @@ pub fn run() {
                 )?;
             }
 
+            if let Some(window) = app.get_webview_window("main") {
+                if let Some(icon) = app.default_window_icon() {
+                    let _ = window.set_icon(icon.clone());
+                }
+            }
+
             // Linux / WebKitGTK: el pellizco del touchpad escala la página entera
             // de forma nativa. Mientras el puntero esté sobre un Canvas lo
             // interceptamos y se lo reenviamos al lienzo (ver commands/canvas.rs).
             #[cfg(target_os = "linux")]
             {
-                use tauri::Manager;
                 if let Some(window) = app.get_webview_window("main") {
                     commands::canvas::install_touchpad_pinch_interceptor(&window);
                     let _ = commands::spellcheck::set_spellcheck_language(window.clone(), "en".to_string(), true);
@@ -64,6 +71,9 @@ pub fn run() {
             commands::spellcheck::set_spellcheck_language,
             commands::spellcheck::check_words_batch,
             commands::spellcheck::suggest_word,
+            commands::window::toggle_maximize_window,
+            commands::window::minimize_window,
+            commands::window::close_window,
             spellcheck::load_hunspell_dictionary,
         ])
         .run(tauri::generate_context!())
