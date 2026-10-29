@@ -152,10 +152,17 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
         {/* Right Column: Brand Header + Actions */}
         <main className="flex-1 bg-[#161616] flex flex-col items-center justify-center p-8 px-11 relative">
           {/* Window controls in top right */}
-          <div className="absolute top-3 right-3.5 flex items-center gap-1.5">
+          <div className="absolute top-3 right-3.5 flex items-center gap-1.5 z-10">
             <button
               type="button"
-              onClick={handleMinimize}
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  await getCurrentWindow().minimize();
+                } catch {
+                  await invoke('minimize_window').catch(() => {});
+                }
+              }}
               className="p-1.5 text-[#888888] hover:text-[#e0e0e0] hover:bg-[#262626] rounded transition-colors cursor-pointer"
               title={t('window.minimize')}
             >
@@ -163,7 +170,16 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
             </button>
             <button
               type="button"
-              onClick={handleToggleMaximize}
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  await getCurrentWindow().toggleMaximize();
+                  setIsMaximized(await getCurrentWindow().isMaximized());
+                } catch {
+                  await invoke('toggle_maximize_window').catch(() => {});
+                  setIsMaximized((prev) => !prev);
+                }
+              }}
               className="p-1.5 text-[#888888] hover:text-[#e0e0e0] hover:bg-[#262626] rounded transition-colors cursor-pointer"
               title={isMaximized ? t('window.restore') : t('window.maximize')}
             >
@@ -175,7 +191,14 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
             </button>
             <button
               type="button"
-              onClick={onClose}
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  await getCurrentWindow().close();
+                } catch {
+                  await invoke('close_window').catch(() => {});
+                }
+              }}
               className="p-1.5 text-[#888888] hover:text-white hover:bg-[#e81123] rounded transition-colors cursor-pointer"
               title={t('common.close')}
             >
