@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { invoke } from '@tauri-apps/api/core';
 import { Minus, Square, Copy, X } from 'lucide-react';
 import { useT } from '../../stores/localeStore';
 
@@ -54,28 +55,32 @@ export const WindowControls: React.FC = () => {
     };
   }, []);
 
-  const handleMinimize = async () => {
+  const handleMinimize = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       await getCurrentWindow().minimize();
     } catch {
-      /* noop */
+      await invoke('minimize_window').catch(() => {});
     }
   };
 
-  const handleToggleMaximize = async () => {
+  const handleToggleMaximize = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       await getCurrentWindow().toggleMaximize();
       setIsMaximized(await getCurrentWindow().isMaximized());
     } catch {
-      /* noop */
+      await invoke('toggle_maximize_window').catch(() => {});
+      setIsMaximized((prev) => !prev);
     }
   };
 
-  const handleClose = async () => {
+  const handleClose = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       await getCurrentWindow().close();
     } catch {
-      /* noop */
+      await invoke('close_window').catch(() => {});
     }
   };
 
