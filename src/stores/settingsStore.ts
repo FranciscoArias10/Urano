@@ -38,6 +38,14 @@ export interface UranoSettings {
   // Appearance
   theme: ThemeMode;
   accentColor: string;
+  cssTheme: string;
+  enabledCssSnippets: string[];
+  interfaceFontFamily: string;
+  textFontFamily: string;
+  monospaceFontFamily: string;
+  baseFontSize: number;
+  baseFontSizeAction: boolean;
+  customIcon: string | null;
   editorFontSize: number;
   zoomLevel: number;
 
@@ -99,7 +107,15 @@ export const DEFAULT_SETTINGS: UranoSettings = {
 
   theme: 'dark',
   accentColor: URANO_ACCENT,
-  editorFontSize: 15,
+  cssTheme: '',
+  enabledCssSnippets: [],
+  interfaceFontFamily: '',
+  textFontFamily: '',
+  monospaceFontFamily: '',
+  baseFontSize: 16,
+  baseFontSizeAction: true,
+  customIcon: null,
+  editorFontSize: 16,
   zoomLevel: 1,
 
   showRibbon: true,
@@ -201,7 +217,15 @@ function mergeSettings(raw: unknown): UranoSettings {
   if (!['root', 'folder', 'current'].includes(out.attachmentLocation)) out.attachmentLocation = 'root';
   if (!['local', 'gdrive'].includes(out.storageBackend)) out.storageBackend = 'local';
   if (!/^#[0-9a-fA-F]{6}$/.test(out.accentColor)) out.accentColor = URANO_ACCENT;
-  out.editorFontSize = Math.min(30, Math.max(10, Math.round(out.editorFontSize)));
+  out.cssTheme = typeof src?.cssTheme === 'string' ? src.cssTheme : '';
+  out.enabledCssSnippets = Array.isArray(src?.enabledCssSnippets) ? src.enabledCssSnippets : [];
+  out.interfaceFontFamily = typeof src?.interfaceFontFamily === 'string' ? src.interfaceFontFamily : '';
+  out.textFontFamily = typeof src?.textFontFamily === 'string' ? src.textFontFamily : '';
+  out.monospaceFontFamily = typeof src?.monospaceFontFamily === 'string' ? src.monospaceFontFamily : '';
+  out.baseFontSize = typeof src?.baseFontSize === 'number' ? Math.min(30, Math.max(10, Math.round(src.baseFontSize))) : 16;
+  out.baseFontSizeAction = src?.baseFontSizeAction !== undefined ? Boolean(src.baseFontSizeAction) : true;
+  out.customIcon = typeof src?.customIcon === 'string' ? src.customIcon : null;
+  out.editorFontSize = typeof src?.editorFontSize === 'number' ? Math.min(30, Math.max(10, Math.round(src.editorFontSize))) : out.baseFontSize;
   out.zoomLevel = Math.min(2, Math.max(0.5, Math.round(out.zoomLevel * 10) / 10));
   out.tabSize = [2, 3, 4, 6, 8].includes(out.tabSize) ? out.tabSize : 4;
   return out;
