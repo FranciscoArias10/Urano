@@ -6,14 +6,24 @@
 
 :root {
   /* Obsidian Core Architecture with Neutral Dark Grays and Urano Orange Accent */
-  --background-primary: #1e1e1e;          /* Obsidian Editor canvas & active tab background */
+  --accent-h: 24;
+  --accent-s: 88%;
+  --accent-l: 49%;
+  --color-accent: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
+  --color-accent-1: hsl(calc(var(--accent-h) - 3), calc(var(--accent-s) * 1.02), calc(var(--accent-l) * 1.15));
+  --color-accent-2: hsl(calc(var(--accent-h) - 5), calc(var(--accent-s) * 1.05), calc(var(--accent-l) * 1.29));
+  --interactive-accent: var(--color-accent);
+  --interactive-accent-hover: var(--color-accent-1);
+
+  --background-primary: #1e1e1e;
   --background-primary-alt: #1a1a1a;
-  --background-secondary: #181818;        /* Obsidian Left sidebar, right sidebar */
-  --background-secondary-alt: #111111;    /* Obsidian Tab header bar background & top ribbon */
-  --code-background: #161616;             /* Obsidian Code block continuous background */
+  --background-secondary: #181818;
+  --background-secondary-alt: #111111;
+  --code-background: #161616;
   
   --background-modifier-border: rgba(255, 255, 255, 0.08);
   --background-modifier-border-hover: rgba(224, 108, 27, 0.35);
+  --background-modifier-border-focus: var(--interactive-accent);
   --background-modifier-hover: rgba(255, 255, 255, 0.05);
   --background-modifier-active-hover: rgba(224, 108, 27, 0.15);
   --divider-color: var(--background-modifier-border);
@@ -23,15 +33,12 @@
   --text-normal: #dcddde;
   --text-muted: #888888;
   --text-faint: #555555;
-  --text-accent: #e06c1b;                 /* Urano official brick-orange */
-  --text-accent-hover: #f97316;           /* Urano glowing amber */
-  
-  /* Obsidian Interactive Accent */
-  --interactive-accent: #e06c1b;
-  --interactive-accent-hover: #f97316;
+  --text-accent: var(--interactive-accent);
+  --text-accent-hover: var(--interactive-accent-hover);
 
   /* Settings-driven (Settings → Appearance / Editor); overridden at runtime on <html> */
-  --editor-font-size: 15px;
+  --editor-font-size: 16px;
+  --font-text-size: 16px;
   --file-line-width: 820px;
   --editor-tab-size: 4;
 
@@ -40,8 +47,19 @@
   --color-yellow: #eab308;
   --color-blue: #38bdf8;
 
-  --font-interface: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-monospace: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --font-interface-override: '';
+  --font-interface-theme: '';
+  --font-interface-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-interface: var(--font-interface-override), var(--font-interface-theme), var(--font-interface-default);
+
+  --font-text-override: '';
+  --font-text-theme: '';
+  --font-text: var(--font-text-override), var(--font-text-theme), var(--font-interface);
+
+  --font-monospace-override: '';
+  --font-monospace-theme: '';
+  --font-monospace-default: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
+  --font-monospace: var(--font-monospace-override), var(--font-monospace-theme), var(--font-monospace-default);
 
   --radius-s: 4px;
   --radius-m: 6px;
@@ -57,8 +75,8 @@
      Evidence: REA extraction of /usr/lib/obsidian/obsidian.asar/app.css
      ======================================================== */
   --header-height: 40px;
-  --tab-container-background: var(--background-secondary-alt); /* #111111 rail */
-  --tab-background-active: var(--background-primary);           /* #1e1e1e fused tab */
+  --tab-container-background: var(--background-secondary-alt);
+  --tab-background-active: var(--background-primary);
   --tab-background-hover: transparent;
   --tab-inner-background: transparent;
   --tab-inner-background-hover: var(--background-modifier-hover);
@@ -67,13 +85,13 @@
   --tab-inner-border-color: transparent;
   --tab-inner-border-color-hover: transparent;
   --tab-inner-border-color-active: transparent;
-  --tab-text-color: var(--text-muted);                        /* #888888 */
+  --tab-text-color: var(--text-muted);
   --tab-text-color-active: var(--text-muted);
   --tab-text-color-focused: var(--text-muted);
   --tab-text-color-focused-active: var(--text-muted);
   --tab-text-color-focused-active-current: var(--text-normal);
   --tab-text-color-focused-highlighted: var(--text-accent);
-  --tab-divider-color: #2a2a2a;                               /* vertical separators */
+  --tab-divider-color: #2a2a2a;
   --tab-outline-color: var(--divider-color);
   --tab-outline-color-hover: var(--divider-color);
   --tab-outline-width: 1px;
@@ -121,6 +139,122 @@
   --window-control-height: 32px;
   --window-control-hover: rgba(255, 255, 255, 0.1);
   --window-control-close-hover: #e81123;
+}
+
+/* ========================================================
+   Obsidian Official Theme Variables (.theme-dark)
+   Evidence: REA inspection of /usr/lib/obsidian/obsidian.asar/app.css
+   ======================================================== */
+.theme-dark,
+body.theme-dark {
+  color-scheme: dark;
+  --highlight-mix-blend-mode: lighten;
+  --mono-0: black;
+  --mono-100: white;
+  --color-red: #fb464c;
+  --color-orange: #e9973f;
+  --color-yellow: #e0de71;
+  --color-green: #44cf6e;
+  --color-cyan: #53dfdd;
+  --color-blue: #027aff;
+  --color-purple: #a882ff;
+  --color-pink: #fa99cd;
+  --color-base-00: #1c1c1c;
+  --color-base-05: #212121;
+  --color-base-10: #232323;
+  --color-base-20: #282828;
+  --color-base-25: #2e2e2e;
+  --color-base-30: #333333;
+  --color-base-35: #3f3f3f;
+  --color-base-40: #555555;
+  --color-base-50: #666666;
+  --color-base-60: #999999;
+  --color-base-70: #b3b3b3;
+  --color-base-100: #dadada;
+  --color-accent: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
+  --color-accent-1: hsl(calc(var(--accent-h) - 3), calc(var(--accent-s) * 1.02), calc(var(--accent-l) * 1.15));
+  --color-accent-2: hsl(calc(var(--accent-h) - 5), calc(var(--accent-s) * 1.05), calc(var(--accent-l) * 1.29));
+  --color-secondary-2: color-mix(in srgb, var(--background-secondary) 96%, white 4%);
+  --color-secondary-3: color-mix(in srgb, var(--background-secondary) 92%, white 8%);
+  --color-secondary-4: color-mix(in srgb, var(--background-secondary) 90%, white 10%);
+  --color-secondary-5: color-mix(in srgb, var(--background-secondary) 84%, white 16%);
+  --color-secondary-6: color-mix(in srgb, var(--background-secondary) 76%, white 24%);
+  --background-modifier-form-field: var(--color-base-25);
+  --background-secondary-alt: var(--color-base-30);
+  --interactive-normal: var(--color-base-30);
+  --interactive-hover: var(--color-base-35);
+  --text-accent: var(--color-accent-1);
+  --interactive-accent: var(--color-accent);
+  --interactive-accent-hover: var(--color-accent-1);
+  --background-modifier-box-shadow: rgba(0, 0, 0, 0.3);
+  --background-modifier-cover: rgba(10, 10, 10, 0.4);
+  --raised-mask-background: transparent;
+  --text-selection: color-mix(in oklch, var(--interactive-accent) 33%, transparent);
+
+  --background-primary: var(--color-base-00);
+  --background-primary-alt: var(--color-base-10);
+  --background-secondary: var(--color-base-20);
+  --background-modifier-border: var(--color-base-30);
+  --background-modifier-border-hover: var(--color-base-35);
+  --background-modifier-border-focus: var(--color-base-40);
+  --text-normal: var(--color-base-100);
+  --text-muted: var(--color-base-70);
+  --text-faint: var(--color-base-50);
+}
+
+/* ========================================================
+   Obsidian Official Theme Variables (.theme-light)
+   Evidence: REA inspection of /usr/lib/obsidian/obsidian.asar/app.css
+   ======================================================== */
+.theme-light,
+body.theme-light {
+  color-scheme: light;
+  --highlight-mix-blend-mode: darken;
+  --mono-0: white;
+  --mono-100: black;
+  --color-red: #e93147;
+  --color-orange: #ec7500;
+  --color-yellow: #e0ac00;
+  --color-green: #08b94e;
+  --color-cyan: #00bfbc;
+  --color-blue: #086ddd;
+  --color-purple: #7852ee;
+  --color-pink: #d53984;
+  --color-base-00: #ffffff;
+  --color-base-05: #fcfcfc;
+  --color-base-10: #fafafa;
+  --color-base-20: #f6f6f6;
+  --color-base-25: #efefef;
+  --color-base-30: #e4e4e4;
+  --color-base-35: #dadada;
+  --color-base-40: #bdbdbd;
+  --color-base-50: #ababab;
+  --color-base-60: #707070;
+  --color-base-70: #5c5c5c;
+  --color-base-100: #222222;
+  --color-accent: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
+  --color-accent-1: hsl(calc(var(--accent-h) - 1), calc(var(--accent-s) * 1.01), calc(var(--accent-l) * 1.075));
+  --color-accent-2: hsl(calc(var(--accent-h) - 3), calc(var(--accent-s) * 1.02), calc(var(--accent-l) * 1.15));
+  --background-secondary-alt: var(--color-base-05);
+  --background-modifier-form-field: var(--color-base-00);
+  --interactive-normal: var(--color-base-00);
+  --interactive-hover: var(--color-base-10);
+  --text-accent: var(--color-accent-1);
+  --interactive-accent: var(--color-accent);
+  --interactive-accent-hover: var(--color-accent-1);
+  --background-modifier-box-shadow: rgba(0, 0, 0, 0.1);
+  --background-modifier-cover: rgba(220, 220, 220, 0.4);
+  --text-selection: color-mix(in oklch, var(--interactive-accent) 25%, transparent);
+
+  --background-primary: var(--color-base-00);
+  --background-primary-alt: var(--color-base-05);
+  --background-secondary: var(--color-base-10);
+  --background-modifier-border: var(--color-base-30);
+  --background-modifier-border-hover: var(--color-base-40);
+  --background-modifier-border-focus: var(--color-base-50);
+  --text-normal: var(--color-base-100);
+  --text-muted: var(--color-base-70);
+  --text-faint: var(--color-base-50);
 }
 
 @layer base {
