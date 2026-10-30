@@ -46,6 +46,7 @@ export interface SettingItemProps {
   className?: string;
   /** Stack controls vertically (Obsidian `.setting-item-control.mod-vertical`). */
   vertical?: boolean;
+  onClick?: () => void;
   children?: React.ReactNode;
 }
 
@@ -58,12 +59,14 @@ export const SettingItem: React.FC<SettingItemProps> = ({
   disabled,
   className,
   vertical,
+  onClick,
   children,
 }) => (
   <div
-    className={`setting-item${disabled ? ' is-disabled' : ''}${className ? ` ${className}` : ''}`}
+    className={`setting-item${disabled ? ' is-disabled' : ''}${onClick ? ' is-clickable cursor-pointer hover:bg-[rgba(255,255,255,0.02)]' : ''}${className ? ` ${className}` : ''}`}
     id={id}
-    tabIndex={-1}
+    tabIndex={onClick ? 0 : -1}
+    onClick={onClick}
     data-setting-item
   >
     {icon && <div className="setting-item-icon">{icon}</div>}

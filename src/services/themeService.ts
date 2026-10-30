@@ -31,6 +31,10 @@ export class ThemeService {
     return el;
   }
 
+  public getBaseTheme(): ThemeMode {
+    return this.currentBaseTheme;
+  }
+
   /**
    * Applies the base theme mode (dark, light, system).
    */

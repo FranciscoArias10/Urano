@@ -10,6 +10,8 @@ import {
   SettingsSection,
 } from './settingsTabs';
 import { SettingGroup, SettingItem, SearchClearButton } from './SettingControls';
+import { useVaultStore } from '../../stores/vaultStore';
+import { CssSnippetsModal } from './appearance/CssSnippetsModal';
 import './settingsStyles.css';
 
 /* ----------------------------------------------------------------------------
@@ -76,11 +78,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const tabs = useSettingTabs({ commands, onOpenHelp, onOpenSyncLogs, onOpenLocalesFolder });
 
+  const { activeVault } = useVaultStore();
+  const vaultPath = useSettingsStore((s) => s.vaultPath) || activeVault || '';
+
   const [query, setQuery] = useState('');
   const [groupScrolled, setGroupScrolled] = useState(false);
+  const [showSnippetsModal, setShowSnippetsModal] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = () => setShowSnippetsModal(true);
+    window.addEventListener('urano:open-css-snippets', handler);
+    return () => window.removeEventListener('urano:open-css-snippets', handler);
+  }, []);
 
   const visibleTabs = useMemo(() => tabs.filter((tab) => !tab.hidden), [tabs]);
   const activeTab = visibleTabs.find((tab) => tab.id === activeTabId) ?? visibleTabs[0];
@@ -207,6 +219,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       desc={typeof item.desc === 'string' ? highlight(item.desc, trimmedQuery) : item.desc}
       icon={item.icon}
       vertical={item.vertical}
+      className={item.className}
+      onClick={item.onClick}
     >
       {item.control}
     </SettingItem>
@@ -344,6 +358,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </div>
       </div>
+
+      {showSnippetsModal && (
+        <CssSnippetsModal
+          vaultPath={vaultPath}
+          isOpen={showSnippetsModal}
+          onClose={() => setShowSnippetsModal(false)}
+        />
+      )}
     </div>
   );
 };

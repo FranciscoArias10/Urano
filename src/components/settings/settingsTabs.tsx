@@ -21,6 +21,7 @@ import {
   Files,
   Timer,
   RotateCcw,
+  ChevronRight,
   Settings as SettingsIcon,
 } from 'lucide-react';
 import {
@@ -58,7 +59,6 @@ import {
   SettingLink,
   TextInput,
   Slider,
-  ColorInput,
   StatusPill,
   HotkeyPill,
 } from './SettingControls';
@@ -76,6 +76,8 @@ export interface SettingItemDef {
   icon?: React.ReactNode;
   control?: React.ReactNode;
   vertical?: boolean;
+  className?: string;
+  onClick?: () => void;
   /** Extra search terms (Obsidian `aliases`). */
   aliases?: string[];
 }
@@ -172,7 +174,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
 
   const sync = useSyncStore();
   const { activeVault } = useVaultStore();
-  const vaultPath = useSettingsStore((s) => s.vaultPath) || activeVault?.path || '';
+  const vaultPath = useSettingsStore((s) => s.vaultPath) || activeVault || '';
 
   const set = <K extends keyof UranoSettings>(key: K) => (value: UranoSettings[K]) =>
     setSetting(key, value);
@@ -441,6 +443,32 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             desc: '',
             vertical: true,
             control: <InstalledThemesRow vaultPath={vaultPath ?? ''} />,
+          },
+          {
+            id: 'css-snippets',
+            name: t('appearance.cssSnippets'),
+            desc: t('appearance.cssSnippetsDesc'),
+            aliases: ['snippets', 'css', 'fragmentos'],
+            onClick: () => {
+              window.dispatchEvent(new CustomEvent('urano:open-css-snippets'));
+            },
+            control: (
+              <div
+                className="flex items-center gap-1.5 text-xs text-[#888888] cursor-pointer"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('urano:open-css-snippets'));
+                }}
+              >
+                <span>
+                  {settings.enabledCssSnippets.length === 0
+                    ? t('appearance.enabledCountZero')
+                    : settings.enabledCssSnippets.length === 1
+                    ? t('appearance.enabledCountOne')
+                    : t('appearance.enabledCount', { count: settings.enabledCssSnippets.length })}
+                </span>
+                <ChevronRight size={16} />
+              </div>
+            ),
           },
         ],
       },
