@@ -43,6 +43,7 @@ import { LanguageDropdown } from './LanguageDropdown';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useNoticeStore } from '../common/Notice';
 import { themeService } from '../../services/themeService';
+import { ThemeSelectorControl } from './appearance/ThemeSelectorControl';
 import {
   LocalAdapter,
   GoogleDriveAdapter,
@@ -171,6 +172,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
 
   const sync = useSyncStore();
   const { activeVault } = useVaultStore();
+  const vaultPath = useSettingsStore((s) => s.vaultPath) || activeVault?.path || '';
 
   const set = <K extends keyof UranoSettings>(key: K) => (value: UranoSettings[K]) =>
     setSetting(key, value);
@@ -417,6 +419,20 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                   />
                 </div>
               </div>
+            ),
+          },
+          {
+            id: 'themes-row',
+            name: t('appearance.themes'),
+            desc: t('appearance.themesDesc'),
+            aliases: ['themes', 'temas', 'theme', 'community'],
+            control: (
+              <ThemeSelectorControl
+                vaultPath={vaultPath ?? ''}
+                onOpenManage={() => {
+                  window.dispatchEvent(new CustomEvent('urano:open-community-themes'));
+                }}
+              />
             ),
           },
         ],
