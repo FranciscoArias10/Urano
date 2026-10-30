@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Files,
   Timer,
+  RotateCcw,
   Settings as SettingsIcon,
 } from 'lucide-react';
 import {
@@ -383,16 +384,39 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             id: 'accent-color',
             name: t('appearance.accent'),
             desc: t('appearance.accentDesc'),
-            aliases: ['color', 'naranja', 'orange'],
+            aliases: ['color', 'naranja', 'orange', 'accent'],
             control: (
-              <>
-                {settings.accentColor.toLowerCase() !== URANO_ACCENT && (
-                  <SettingButton onClick={() => setSetting('accentColor', URANO_ACCENT)}>
-                    {t('appearance.restoreDefault')}
-                  </SettingButton>
+              <div className="flex items-center gap-2">
+                {settings.accentColor.toLowerCase() !== URANO_ACCENT.toLowerCase() && (
+                  <button
+                    type="button"
+                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-[#888888] hover:text-[#dcddde] transition-colors"
+                    aria-label={t('appearance.restoreDefault')}
+                    title={t('appearance.restoreDefault')}
+                    onClick={() => {
+                      setSetting('accentColor', URANO_ACCENT);
+                      themeService.applyAccent(URANO_ACCENT);
+                    }}
+                  >
+                    <RotateCcw size={15} color="#888888" />
+                  </button>
                 )}
-                <ColorInput value={settings.accentColor} onChange={set('accentColor')} ariaLabel={t('appearance.accent')} />
-              </>
+                <div
+                  className="setting-item-color-swatch-container"
+                  style={{ backgroundColor: settings.accentColor }}
+                >
+                  <input
+                    type="color"
+                    value={settings.accentColor}
+                    aria-label={t('appearance.accent')}
+                    onChange={(e) => {
+                      const col = e.target.value;
+                      setSetting('accentColor', col);
+                      themeService.applyAccent(col);
+                    }}
+                  />
+                </div>
+              </div>
             ),
           },
         ],
