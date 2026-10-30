@@ -265,6 +265,15 @@ body.theme-light {
   --text-normal: var(--color-base-100);
   --text-muted: var(--color-base-70);
   --text-faint: var(--color-base-50);
+  --text-on-accent: #ffffff;
+  --text-on-accent-inverted: #000000;
+  --modal-background: var(--background-primary);
+  --modal-border-color: var(--background-modifier-border);
+  --prompt-background: var(--background-primary);
+  --search-result-background: var(--background-primary);
+  --setting-items-background: var(--background-primary-alt);
+  --canvas-background: var(--background-primary);
+  --code-background: var(--color-base-10);
 }
 
 @layer base {
