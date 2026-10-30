@@ -47,19 +47,24 @@
   --color-yellow: #eab308;
   --color-blue: #38bdf8;
 
+  --font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-monospace-default: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, 'Cascadia Mono', 'Roboto Mono', monospace;
   --font-interface-override: '';
   --font-interface-theme: '';
-  --font-interface-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-interface: var(--font-interface-override), var(--font-interface-theme), var(--font-interface-default);
+  --font-interface: var(--font-interface-override, var(--font-interface-theme, var(--font-default)));
 
   --font-text-override: '';
   --font-text-theme: '';
-  --font-text: var(--font-text-override), var(--font-text-theme), var(--font-interface);
+  --font-text: var(--font-text-override, var(--font-text-theme, var(--font-default)));
 
   --font-monospace-override: '';
   --font-monospace-theme: '';
-  --font-monospace-default: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
-  --font-monospace: var(--font-monospace-override), var(--font-monospace-theme), var(--font-monospace-default);
+  --font-monospace: var(--font-monospace-override, var(--font-monospace-theme, var(--font-monospace-default)));
+
+  --font-ui-smaller: 12px;
+  --font-ui-small: 13px;
+  --font-ui-medium: 15px;
+  --font-ui-large: 20px;
 
   --radius-s: 4px;
   --radius-m: 6px;
