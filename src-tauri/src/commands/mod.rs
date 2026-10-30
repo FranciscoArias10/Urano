@@ -4,5 +4,6 @@ pub mod locales;
 pub mod spellcheck;
 pub mod sync;
 pub mod vault;
+pub mod theme;
 pub mod window;
 
