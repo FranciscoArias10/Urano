@@ -2341,3 +2341,81 @@ body.theme-light {
 .language-dropdown-menu::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.3);
 }
+
+/* ========================================================
+   Obsidian Appearance Controls (Sliders, Color Swatches & Rows)
+   Evidence: REA inspection of /usr/lib/obsidian/obsidian.asar/app.css
+   ======================================================== */
+.setting-item-color-swatch-container {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2), 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.setting-item-color-swatch-container:hover {
+  transform: scale(1.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.setting-item-color-swatch-container input[type="color"] {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  width: 48px;
+  height: 48px;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Obsidian Slider with dynamic filled accent track */
+.obsidian-slider-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.obsidian-slider-number {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-normal);
+  min-width: 20px;
+  text-align: right;
+  user-select: none;
+}
+
+.obsidian-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--background-modifier-border-hover);
+  outline: none;
+  cursor: pointer;
+  width: 140px;
+  transition: background 0.1s;
+}
+
+.obsidian-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 0.5px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.obsidian-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
