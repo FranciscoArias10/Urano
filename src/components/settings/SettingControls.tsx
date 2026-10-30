@@ -349,21 +349,27 @@ export const Slider: React.FC<SliderProps> = ({
   format,
   disabled,
   ariaLabel,
-}) => (
-  <>
-    <span className="slider-value">{format ? format(value) : value}</span>
-    <input
-      type="range"
-      value={value}
-      min={min}
-      max={max}
-      step={step}
-      disabled={disabled}
-      aria-label={ariaLabel}
-      onChange={(e) => onChange(Number(e.target.value))}
-    />
-  </>
-);
+}) => {
+  const percent = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+  return (
+    <>
+      <span className="slider-value">{format ? format(value) : value}</span>
+      <input
+        type="range"
+        value={value}
+        min={min}
+        max={max}
+        step={step}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        style={{
+          background: `linear-gradient(to right, var(--interactive-accent) 0%, var(--interactive-accent) ${percent}%, var(--background-modifier-border-hover, #333333) ${percent}%, var(--background-modifier-border-hover, #333333) 100%)`,
+        }}
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
+    </>
+  );
+};
 
 export interface ColorInputProps {
   value: string;

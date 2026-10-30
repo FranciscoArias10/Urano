@@ -31,7 +31,6 @@ import {
   UranoSettings,
   CorePluginId,
   CORE_PLUGIN_IDS,
-  DEFAULT_SETTINGS,
   URANO_ACCENT,
   ThemeMode,
   UpdateLinksPref,
@@ -474,56 +473,163 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
       },
       {
         id: 'appearance-font',
-        heading: t('appearance.interfaceFont'),
+        heading: t('appearance.fontHeading'),
         items: [
+          {
+            id: 'interface-font',
+            name: t('appearance.interfaceFont'),
+            desc: t('appearance.interfaceFontDesc'),
+            aliases: ['font', 'interface', 'fuente', 'interfaz'],
+            onClick: () => {
+              window.dispatchEvent(
+                new CustomEvent('urano:open-font-picker', {
+                  detail: { target: 'interfaceFontFamily' },
+                })
+              );
+            },
+            control: (
+              <div
+                className="flex items-center gap-1.5 text-xs text-[#888888] cursor-pointer"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('urano:open-font-picker', {
+                      detail: { target: 'interfaceFontFamily' },
+                    })
+                  );
+                }}
+              >
+                {settings.interfaceFontFamily && (
+                  <span className="text-[#dcddde] font-medium">
+                    {settings.interfaceFontFamily}
+                  </span>
+                )}
+                <ChevronRight size={16} />
+              </div>
+            ),
+          },
+          {
+            id: 'text-font',
+            name: t('appearance.textFont'),
+            desc: t('appearance.textFontDesc'),
+            aliases: ['text', 'font', 'fuente', 'texto'],
+            onClick: () => {
+              window.dispatchEvent(
+                new CustomEvent('urano:open-font-picker', {
+                  detail: { target: 'textFontFamily' },
+                })
+              );
+            },
+            control: (
+              <div
+                className="flex items-center gap-1.5 text-xs text-[#888888] cursor-pointer"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('urano:open-font-picker', {
+                      detail: { target: 'textFontFamily' },
+                    })
+                  );
+                }}
+              >
+                {settings.textFontFamily && (
+                  <span className="text-[#dcddde] font-medium">
+                    {settings.textFontFamily}
+                  </span>
+                )}
+                <ChevronRight size={16} />
+              </div>
+            ),
+          },
+          {
+            id: 'monospace-font',
+            name: t('appearance.monospaceFont'),
+            desc: t('appearance.monospaceFontDesc'),
+            aliases: ['mono', 'monospace', 'code', 'codigo'],
+            onClick: () => {
+              window.dispatchEvent(
+                new CustomEvent('urano:open-font-picker', {
+                  detail: { target: 'monospaceFontFamily' },
+                })
+              );
+            },
+            control: (
+              <div
+                className="flex items-center gap-1.5 text-xs text-[#888888] cursor-pointer"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('urano:open-font-picker', {
+                      detail: { target: 'monospaceFontFamily' },
+                    })
+                  );
+                }}
+              >
+                {settings.monospaceFontFamily && (
+                  <span className="text-[#dcddde] font-medium">
+                    {settings.monospaceFontFamily}
+                  </span>
+                )}
+                <ChevronRight size={16} />
+              </div>
+            ),
+          },
           {
             id: 'font-size',
             name: t('appearance.fontSize'),
             desc: t('appearance.fontSizeDesc'),
+            aliases: ['size', 'tamano', 'px', 'font'],
             control: (
-              <>
-                {settings.editorFontSize !== DEFAULT_SETTINGS.editorFontSize && (
-                  <ExtraButton
-                    icon={<History size={ICON} />}
-                    tooltip={t('appearance.restoreDefault')}
-                    onClick={() => setSetting('editorFontSize', DEFAULT_SETTINGS.editorFontSize)}
-                  />
+              <div className="flex items-center gap-2">
+                {settings.baseFontSize !== 16 && (
+                  <button
+                    type="button"
+                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-[#888888] hover:text-[#dcddde] transition-colors"
+                    aria-label={t('appearance.restoreDefault')}
+                    title={t('appearance.restoreDefault')}
+                    onClick={() => {
+                      setSetting('baseFontSize', 16);
+                      setSetting('editorFontSize', 16);
+                      themeService.applyFonts({
+                        fontSize: 16,
+                        interfaceFont: settings.interfaceFontFamily,
+                        textFont: settings.textFontFamily,
+                        monoFont: settings.monospaceFontFamily,
+                      });
+                    }}
+                  >
+                    <RotateCcw size={15} color="#888888" />
+                  </button>
                 )}
                 <Slider
-                  value={settings.editorFontSize}
+                  value={settings.baseFontSize}
                   min={10}
                   max={30}
                   step={1}
-                  format={(v) => `${v}px`}
-                  onChange={set('editorFontSize')}
+                  format={(v) => `${v}`}
+                  onChange={(v) => {
+                    setSetting('baseFontSize', v);
+                    setSetting('editorFontSize', v);
+                    themeService.applyFonts({
+                      fontSize: v,
+                      interfaceFont: settings.interfaceFontFamily,
+                      textFont: settings.textFontFamily,
+                      monoFont: settings.monospaceFontFamily,
+                    });
+                  }}
                   ariaLabel={t('appearance.fontSize')}
                 />
-              </>
+              </div>
             ),
           },
           {
-            id: 'zoom-level',
-            name: t('appearance.zoom'),
-            desc: t('appearance.zoomDesc'),
+            id: 'font-size-action',
+            name: t('appearance.fontSizeAction'),
+            desc: t('appearance.fontSizeActionDesc'),
+            aliases: ['wheel', 'ctrl', 'zoom', 'rueda', 'pellizcar'],
             control: (
-              <>
-                {settings.zoomLevel !== 1 && (
-                  <ExtraButton
-                    icon={<History size={ICON} />}
-                    tooltip={t('appearance.restoreDefault')}
-                    onClick={() => setSetting('zoomLevel', 1)}
-                  />
-                )}
-                <Slider
-                  value={settings.zoomLevel}
-                  min={0.5}
-                  max={2}
-                  step={0.1}
-                  format={(v) => `${Math.round(v * 100)}%`}
-                  onChange={(v) => setSetting('zoomLevel', Math.round(v * 10) / 10)}
-                  ariaLabel={t('appearance.zoom')}
-                />
-              </>
+              <Toggle
+                value={settings.baseFontSizeAction}
+                onChange={set('baseFontSizeAction')}
+                ariaLabel={t('appearance.fontSizeAction')}
+              />
             ),
           },
         ],
