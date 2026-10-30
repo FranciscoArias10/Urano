@@ -13,6 +13,7 @@ import { SettingGroup, SettingItem, SearchClearButton } from './SettingControls'
 import { useVaultStore } from '../../stores/vaultStore';
 import { CssSnippetsModal } from './appearance/CssSnippetsModal';
 import { CommunityThemesModal } from './appearance/CommunityThemesModal';
+import { FontPickerModal, FontTarget } from './appearance/FontPickerModal';
 import './settingsStyles.css';
 
 /* ----------------------------------------------------------------------------
@@ -86,6 +87,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [groupScrolled, setGroupScrolled] = useState(false);
   const [showSnippetsModal, setShowSnippetsModal] = useState(false);
   const [showCommunityThemesModal, setShowCommunityThemesModal] = useState(false);
+  const [fontPickerState, setFontPickerState] = useState<{
+    isOpen: boolean;
+    target: FontTarget;
+  }>({
+    isOpen: false,
+    target: 'interfaceFontFamily',
+  });
   const searchRef = useRef<HTMLInputElement>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -100,6 +108,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const handler = () => setShowCommunityThemesModal(true);
     window.addEventListener('urano:open-community-themes', handler);
     return () => window.removeEventListener('urano:open-community-themes', handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const customEvent = e as CustomEvent<{ target: FontTarget }>;
+      setFontPickerState({
+        isOpen: true,
+        target: customEvent.detail?.target || 'interfaceFontFamily',
+      });
+    };
+    window.addEventListener('urano:open-font-picker', handler);
+    return () => window.removeEventListener('urano:open-font-picker', handler);
   }, []);
 
   const visibleTabs = useMemo(() => tabs.filter((tab) => !tab.hidden), [tabs]);
@@ -380,6 +400,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           vaultPath={vaultPath}
           isOpen={showCommunityThemesModal}
           onClose={() => setShowCommunityThemesModal(false)}
+        />
+      )}
+
+      {fontPickerState.isOpen && (
+        <FontPickerModal
+          isOpen={fontPickerState.isOpen}
+          target={fontPickerState.target}
+          onClose={() => setFontPickerState((s) => ({ ...s, isOpen: false }))}
         />
       )}
     </div>

@@ -24,6 +24,7 @@ import {
 } from '../../editor/imageExtension';
 import { spellcheckExtension, triggerSpellCheckEffect } from '../../editor/spellcheckExtension';
 import { getStorageAdapter, toUint8Array } from '../../services/storageAdapter';
+import { themeService } from '../../services/themeService';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
@@ -154,6 +155,36 @@ export const Editor: React.FC<EditorProps> = ({
   // once per note) always dispatches to the current handler without re-creating
   // the editor.
   const zoomHandlerRef = useRef<(info: ImageEmbedInfo, src: string) => void>(() => {});
+
+  // Quick font size adjustment via Ctrl + Wheel when baseFontSizeAction is enabled
+  useEffect(() => {
+    const el = editorRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if ((e.ctrlKey || e.metaKey) && useSettingsStore.getState().settings.baseFontSizeAction) {
+        e.preventDefault();
+        e.stopPropagation();
+        const delta = e.deltaY < 0 ? 1 : -1;
+        const current = useSettingsStore.getState().settings.baseFontSize || 16;
+        const next = Math.max(10, Math.min(30, current + delta));
+        if (next !== current) {
+          useSettingsStore.getState().setSetting('baseFontSize', next);
+          useSettingsStore.getState().setSetting('editorFontSize', next);
+          const s = useSettingsStore.getState().settings;
+          themeService.applyFonts({
+            fontSize: next,
+            interfaceFont: s.interfaceFontFamily,
+            textFont: s.textFontFamily,
+            monoFont: s.monospaceFontFamily,
+          });
+        }
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, []);
 
   // Every Live Preview decoration. Source Mode swaps this for `[]` so the raw
   // Markdown is shown (Obsidian "Source mode"). Paste/drop handling is NOT part
