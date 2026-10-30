@@ -41,6 +41,7 @@ import { useLocaleStore } from '../../stores/localeStore';
 import { LanguageDropdown } from './LanguageDropdown';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useNoticeStore } from '../common/Notice';
+import { themeService } from '../../services/themeService';
 import {
   LocalAdapter,
   GoogleDriveAdapter,
@@ -361,17 +362,20 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             id: 'base-theme',
             name: t('appearance.baseTheme'),
             desc: t('appearance.baseThemeDesc'),
-            aliases: ['dark', 'light', 'theme', 'tema', 'oscuro', 'claro'],
+            aliases: ['dark', 'light', 'theme', 'tema', 'oscuro', 'claro', 'sistema'],
             control: (
               <Dropdown<ThemeMode>
                 value={settings.theme}
                 ariaLabel={t('appearance.baseTheme')}
                 options={[
-                  { value: 'dark', label: t('appearance.themeDark') },
-                  { value: 'light', label: t('appearance.themeLight') },
                   { value: 'system', label: t('appearance.themeSystem') },
+                  { value: 'light', label: t('appearance.themeLight') },
+                  { value: 'dark', label: t('appearance.themeDark') },
                 ]}
-                onChange={set('theme')}
+                onChange={(mode) => {
+                  setSetting('theme', mode);
+                  themeService.applyBaseTheme(mode);
+                }}
               />
             ),
           },
