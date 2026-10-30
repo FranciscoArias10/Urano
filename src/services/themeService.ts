@@ -150,6 +150,77 @@ export class ThemeService {
       this.setActiveThemeCss('');
     }
   }
+  /**
+   * Scans .urano/snippets and .obsidian/snippets for *.css snippets.
+   */
+  public async listSnippets(
+    vaultPath: string,
+    enabledNames: string[]
+  ): Promise<import('../types/theme').CssSnippet[]> {
+    if (!vaultPath) return [];
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const all = await invoke<Array<{ name: string; source: 'urano' | 'obsidian'; path: string }>>(
+        'list_css_snippets',
+        { vaultPath }
+      );
+      const set = new Set(enabledNames);
+      return all.map((s) => ({
+        ...s,
+        enabled: set.has(s.name),
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Injects active snippets into <style class="urano-css-snippet" data-snippet="..."> tags.
+   */
+  public async applySnippets(vaultPath: string, enabledNames: string[]): Promise<void> {
+    const existing = document.querySelectorAll<HTMLStyleElement>('style.urano-css-snippet');
+    const existingMap = new Map<string, HTMLStyleElement>();
+    existing.forEach((el) => {
+      const name = el.getAttribute('data-snippet');
+      if (name) existingMap.set(name, el);
+    });
+
+    const activeSet = new Set(enabledNames);
+
+    // Remove no longer enabled
+    for (const [name, el] of existingMap.entries()) {
+      if (!activeSet.has(name)) {
+        el.remove();
+        existingMap.delete(name);
+      }
+    }
+
+    if (!vaultPath || enabledNames.length === 0) return;
+
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      for (const name of enabledNames) {
+        try {
+          const css = await invoke<string>('read_snippet_css', { vaultPath, snippetName: name });
+          let el = existingMap.get(name);
+          if (!el) {
+            el = document.createElement('style');
+            el.className = 'urano-css-snippet';
+            el.setAttribute('data-snippet', name);
+            el.type = 'text/css';
+            document.head.appendChild(el);
+          }
+          if (el.textContent !== css) {
+            el.textContent = css;
+          }
+        } catch (e) {
+          console.warn(`[Urano Snippets] Failed to load snippet "${name}":`, e);
+        }
+      }
+    } catch (err) {
+      console.warn('[Urano Snippets] Error applying snippets:', err);
+    }
+  }
 }
 
 export const themeService = ThemeService.getInstance();
