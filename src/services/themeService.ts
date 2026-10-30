@@ -115,6 +115,41 @@ export class ThemeService {
       el.textContent = css;
     }
   }
+
+  /**
+   * Scans both .urano/themes and .obsidian/themes for installed themes.
+   */
+  public async listThemes(vaultPath: string): Promise<import('../types/theme').InstalledTheme[]> {
+    if (!vaultPath) return [];
+    try {
+      const themes = await import('@tauri-apps/api/core').then(({ invoke }) =>
+        invoke<import('../types/theme').InstalledTheme[]>('list_installed_themes', { vaultPath })
+      );
+      return themes;
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Loads and applies an installed theme by name, or resets to default if empty.
+   */
+  public async applyThemeByName(vaultPath: string, themeName: string): Promise<void> {
+    if (!themeName) {
+      this.setActiveThemeCss('');
+      return;
+    }
+    if (!vaultPath) return;
+
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const css = await invoke<string>('read_theme_css', { vaultPath, themeName });
+      this.setActiveThemeCss(css);
+    } catch (err) {
+      console.warn(`[Urano Theme] Could not load theme "${themeName}":`, err);
+      this.setActiveThemeCss('');
+    }
+  }
 }
 
 export const themeService = ThemeService.getInstance();
