@@ -245,3 +245,42 @@ pub fn open_snippets_folder(vault_path: String) -> Result<(), String> {
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     open::that_detached(&dir).map_err(|e| format!("No se pudo abrir la carpeta de fragmentos: {e}"))
 }
+
+/// Descarga e instala un tema de la comunidad desde GitHub directamente en `.urano/themes/<name>`.
+#[tauri::command]
+pub async fn install_community_theme(
+    vault_path: String,
+    repo: String,
+    theme_name: String,
+    branch: Option<String>,
+) -> Result<String, String> {
+    let target_dir = Path::new(&vault_path).join(".urano").join("themes").join(&theme_name);
+    fs::create_dir_all(&target_dir).map_err(|e| format!("No se pudo crear la carpeta del tema: {e}"))?;
+
+    let b = branch.unwrap_or_else(|| "HEAD".to_string());
+    let client = reqwest::Client::builder()
+        .user_agent("Urano/1.0 (Tauri Desktop)")
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let css_url = format!("https://raw.githubusercontent.com/{repo}/{b}/theme.css");
+    let resp = client.get(&css_url).send().await.map_err(|e| format!("Error de conexión: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(format!("Error HTTP {} al descargar theme.css desde {}", resp.status(), css_url));
+    }
+    let css_content = resp.text().await.map_err(|e| e.to_string())?;
+    fs::write(target_dir.join("theme.css"), &css_content)
+        .map_err(|e| format!("No se pudo guardar theme.css: {e}"))?;
+
+    // Intentar descargar manifest.json si está disponible
+    let manifest_url = format!("https://raw.githubusercontent.com/{repo}/{b}/manifest.json");
+    if let Ok(manifest_resp) = client.get(&manifest_url).send().await {
+        if manifest_resp.status().is_success() {
+            if let Ok(manifest_content) = manifest_resp.text().await {
+                let _ = fs::write(target_dir.join("manifest.json"), manifest_content);
+            }
+        }
+    }
+
+    Ok(css_content)
+}
