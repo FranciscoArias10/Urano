@@ -74,6 +74,15 @@ pub fn run() {
             commands::window::toggle_maximize_window,
             commands::window::minimize_window,
             commands::window::close_window,
+            commands::window::set_custom_window_icon,
+            commands::theme::list_installed_themes,
+            commands::theme::read_theme_css,
+            commands::theme::uninstall_theme,
+            commands::theme::open_themes_folder,
+            commands::theme::list_css_snippets,
+            commands::theme::read_snippet_css,
+            commands::theme::open_snippets_folder,
+            commands::theme::install_community_theme,
             spellcheck::load_hunspell_dictionary,
         ])
         .run(tauri::generate_context!())
