@@ -1,11 +1,34 @@
 import React from 'react';
+import { useSettingsStore } from '../../stores/settingsStore';
+import { convertFileSrc } from '@tauri-apps/api/core';
 
 interface UranoLogoProps {
   className?: string;
   size?: number;
+  customSrc?: string | null;
 }
 
-export const UranoLogo: React.FC<UranoLogoProps> = ({ className = '', size = 24 }) => {
+export const UranoLogo: React.FC<UranoLogoProps> = ({ className = '', size = 24, customSrc }) => {
+  const storeIcon = useSettingsStore((s) => s.settings.customIcon);
+  const activeIconPath = customSrc !== undefined ? customSrc : storeIcon;
+
+  if (activeIconPath) {
+    const src =
+      activeIconPath.startsWith('http') || activeIconPath.startsWith('data:')
+        ? activeIconPath
+        : convertFileSrc(activeIconPath);
+    return (
+      <img
+        src={src}
+        alt="Urano Logo"
+        width={size}
+        height={size}
+        style={{ width: `${size}px`, height: `${size}px` }}
+        className={`object-contain rounded-sm ${className}`}
+      />
+    );
+  }
+
   return (
     <svg
       width={size}

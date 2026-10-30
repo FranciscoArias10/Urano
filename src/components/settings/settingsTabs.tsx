@@ -43,6 +43,8 @@ import { LanguageDropdown } from './LanguageDropdown';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useNoticeStore } from '../common/Notice';
 import { themeService } from '../../services/themeService';
+import { invoke, convertFileSrc } from '@tauri-apps/api/core';
+import { open as openFileDialog } from '@tauri-apps/plugin-dialog';
 import { ThemeSelectorControl, InstalledThemesRow } from './appearance/ThemeSelectorControl';
 import {
   LocalAdapter,
@@ -630,6 +632,87 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 onChange={set('baseFontSizeAction')}
                 ariaLabel={t('appearance.fontSizeAction')}
               />
+            ),
+          },
+        ],
+      },
+      {
+        id: 'appearance-advanced',
+        heading: t('appearance.advancedHeading'),
+        items: [
+          {
+            id: 'custom-icon',
+            name: t('appearance.customIcon'),
+            desc: (
+              <div className="flex items-center gap-3">
+                {settings.customIcon && (
+                  <div className="w-8 h-8 rounded-md overflow-hidden bg-[#161616] border border-[#333] flex items-center justify-center p-0.5 shrink-0">
+                    <img
+                      src={
+                        settings.customIcon.startsWith('http') ||
+                        settings.customIcon.startsWith('data:')
+                          ? settings.customIcon
+                          : convertFileSrc(settings.customIcon)
+                      }
+                      alt="Icon"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                )}
+                <span>{t('appearance.customIconDesc')}</span>
+              </div>
+            ),
+            aliases: ['icon', 'icono', 'logo', 'app'],
+            control: (
+              <div className="flex items-center gap-2">
+                {settings.customIcon && (
+                  <button
+                    type="button"
+                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-[#888888] hover:text-[#dcddde] transition-colors"
+                    aria-label={t('appearance.resetIcon')}
+                    title={t('appearance.resetIcon')}
+                    onClick={async () => {
+                      setSetting('customIcon', null);
+                      try {
+                        await invoke('set_custom_window_icon', { iconPath: null });
+                      } catch (err) {
+                        console.warn('Error resetting window icon:', err);
+                      }
+                    }}
+                  >
+                    <RotateCcw size={15} color="#888888" />
+                  </button>
+                )}
+                <SettingButton
+                  onClick={async () => {
+                    try {
+                      const selected = await openFileDialog({
+                        multiple: false,
+                        directory: false,
+                        title: t('appearance.customIcon'),
+                        filters: [
+                          {
+                            name: 'Icon Image',
+                            extensions: ['png', 'ico', 'svg', 'icns', 'webp'],
+                          },
+                        ],
+                      });
+                      if (selected && typeof selected === 'string') {
+                        setSetting('customIcon', selected);
+                        try {
+                          await invoke('set_custom_window_icon', { iconPath: selected });
+                        } catch (err) {
+                          console.warn('Could not set custom window icon:', err);
+                        }
+                      }
+                    } catch (err) {
+                      console.error('Error selecting custom icon:', err);
+                    }
+                  }}
+                >
+                  {t('appearance.chooseIcon')}
+                </SettingButton>
+              </div>
             ),
           },
         ],
