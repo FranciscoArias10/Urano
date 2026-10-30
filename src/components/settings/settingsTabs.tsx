@@ -43,7 +43,7 @@ import { LanguageDropdown } from './LanguageDropdown';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useNoticeStore } from '../common/Notice';
 import { themeService } from '../../services/themeService';
-import { ThemeSelectorControl } from './appearance/ThemeSelectorControl';
+import { ThemeSelectorControl, InstalledThemesRow } from './appearance/ThemeSelectorControl';
 import {
   LocalAdapter,
   GoogleDriveAdapter,
@@ -434,6 +434,13 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 }}
               />
             ),
+          },
+          {
+            id: 'installed-themes',
+            name: t('appearance.installedThemes'),
+            desc: '',
+            vertical: true,
+            control: <InstalledThemesRow vaultPath={vaultPath ?? ''} />,
           },
         ],
       },
