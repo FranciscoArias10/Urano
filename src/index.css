@@ -194,12 +194,22 @@ body.theme-dark {
   --background-primary: var(--color-base-00);
   --background-primary-alt: var(--color-base-10);
   --background-secondary: var(--color-base-20);
+  --background-secondary-alt: var(--color-base-25);
   --background-modifier-border: var(--color-base-30);
   --background-modifier-border-hover: var(--color-base-35);
   --background-modifier-border-focus: var(--color-base-40);
   --text-normal: var(--color-base-100);
   --text-muted: var(--color-base-70);
   --text-faint: var(--color-base-50);
+  --text-on-accent: #ffffff;
+  --text-on-accent-inverted: #000000;
+  --modal-background: var(--background-primary);
+  --modal-border-color: var(--background-modifier-border);
+  --prompt-background: var(--background-primary);
+  --search-result-background: var(--background-primary);
+  --setting-items-background: var(--background-primary-alt);
+  --canvas-background: var(--background-primary);
+  --code-background: var(--color-base-10);
 }
 
 /* ========================================================
