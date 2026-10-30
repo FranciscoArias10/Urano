@@ -12,6 +12,7 @@ import {
 import { SettingGroup, SettingItem, SearchClearButton } from './SettingControls';
 import { useVaultStore } from '../../stores/vaultStore';
 import { CssSnippetsModal } from './appearance/CssSnippetsModal';
+import { CommunityThemesModal } from './appearance/CommunityThemesModal';
 import './settingsStyles.css';
 
 /* ----------------------------------------------------------------------------
@@ -84,6 +85,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [query, setQuery] = useState('');
   const [groupScrolled, setGroupScrolled] = useState(false);
   const [showSnippetsModal, setShowSnippetsModal] = useState(false);
+  const [showCommunityThemesModal, setShowCommunityThemesModal] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -92,6 +94,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const handler = () => setShowSnippetsModal(true);
     window.addEventListener('urano:open-css-snippets', handler);
     return () => window.removeEventListener('urano:open-css-snippets', handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setShowCommunityThemesModal(true);
+    window.addEventListener('urano:open-community-themes', handler);
+    return () => window.removeEventListener('urano:open-community-themes', handler);
   }, []);
 
   const visibleTabs = useMemo(() => tabs.filter((tab) => !tab.hidden), [tabs]);
@@ -364,6 +372,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           vaultPath={vaultPath}
           isOpen={showSnippetsModal}
           onClose={() => setShowSnippetsModal(false)}
+        />
+      )}
+
+      {showCommunityThemesModal && (
+        <CommunityThemesModal
+          vaultPath={vaultPath}
+          isOpen={showCommunityThemesModal}
+          onClose={() => setShowCommunityThemesModal(false)}
         />
       )}
     </div>
