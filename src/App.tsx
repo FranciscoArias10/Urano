@@ -803,14 +803,7 @@ export const App: React.FC = () => {
   // Folder breadcrumb of the active note (relative to the vault root)
   const activeParentPath = useMemo(() => {
     if (!activeFile) return [];
-    const normalized = activeFile.replace(/\\/g, '/');
-    const relative =
-      activeVault && normalized.startsWith(activeVault)
-        ? normalized.slice(activeVault.length)
-        : normalized;
-    const parts = relative.split('/').filter(Boolean);
-    parts.pop();
-    return parts;
+    return getRelativeVaultFolderSegments(activeFile, activeVault || '');
   }, [activeFile, activeVault]);
 
   // Compute backlinks count for the active file
