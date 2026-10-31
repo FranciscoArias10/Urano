@@ -849,16 +849,25 @@ body.theme-light {
   color: var(--icon-color-hover);
 }
 
-/* Generic clickable icon used across the header */
-.clickable-icon {
+/* ========================================================
+   Obsidian Navigation Action Buttons & Clickable Icons
+   (.nav-action-button / .clickable-icon)
+   ======================================================== */
+.clickable-icon,
+.nav-action-button {
+  background: transparent;
   background-color: transparent;
-  display: flex;
+  border: none;
+  color: var(--icon-color, var(--text-muted));
+  border-radius: 4px;
+  padding: 4px 6px;
+  cursor: var(--cursor, pointer);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--size-2-2) var(--size-2-3);
-  cursor: var(--cursor);
-  border-radius: var(--radius-s);
-  color: var(--icon-color);
+  transition: background-color 0.12s ease, color 0.12s ease;
+  outline: none;
+  box-shadow: none;
 }
 .clickable-icon:hover {
   background-color: var(--background-modifier-hover);
