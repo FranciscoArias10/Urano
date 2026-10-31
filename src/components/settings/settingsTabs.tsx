@@ -305,7 +305,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             control: (
               <>
                 <ExtraButton
-                  icon={<Timer size={ICON} color="#888" />}
+                  icon={<Timer size={ICON} />}
                   tooltip={t('general.checkStartup')}
                   onClick={() =>
                     showNotice(
@@ -395,7 +395,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 {settings.accentColor.toLowerCase() !== URANO_ACCENT.toLowerCase() && (
                   <button
                     type="button"
-                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-[#888888] hover:text-[#dcddde] transition-colors"
+                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-obsidian-muted hover:text-obsidian-text transition-colors"
                     aria-label={t('appearance.restoreDefault')}
                     title={t('appearance.restoreDefault')}
                     onClick={() => {
@@ -403,7 +403,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                       themeService.applyAccent(URANO_ACCENT);
                     }}
                   >
-                    <RotateCcw size={15} color="#888888" />
+                    <RotateCcw size={15} />
                   </button>
                 )}
                 <div
@@ -455,7 +455,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             },
             control: (
               <div
-                className="flex items-center gap-1.5 text-xs text-[#888888] cursor-pointer"
+                className="flex items-center gap-1.5 text-xs text-obsidian-muted cursor-pointer"
                 onClick={() => {
                   window.dispatchEvent(new CustomEvent('urano:open-css-snippets'));
                 }}
@@ -491,7 +491,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             },
             control: (
               <div
-                className="flex items-center gap-1.5 text-xs text-[#888888] cursor-pointer"
+                className="flex items-center gap-1.5 text-xs text-obsidian-muted cursor-pointer"
                 onClick={() => {
                   window.dispatchEvent(
                     new CustomEvent('urano:open-font-picker', {
@@ -501,7 +501,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 }}
               >
                 {settings.interfaceFontFamily && (
-                  <span className="text-[#dcddde] font-medium">
+                  <span className="text-obsidian-text font-medium">
                     {settings.interfaceFontFamily}
                   </span>
                 )}
@@ -523,7 +523,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             },
             control: (
               <div
-                className="flex items-center gap-1.5 text-xs text-[#888888] cursor-pointer"
+                className="flex items-center gap-1.5 text-xs text-obsidian-muted cursor-pointer"
                 onClick={() => {
                   window.dispatchEvent(
                     new CustomEvent('urano:open-font-picker', {
@@ -533,7 +533,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 }}
               >
                 {settings.textFontFamily && (
-                  <span className="text-[#dcddde] font-medium">
+                  <span className="text-obsidian-text font-medium">
                     {settings.textFontFamily}
                   </span>
                 )}
@@ -555,7 +555,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             },
             control: (
               <div
-                className="flex items-center gap-1.5 text-xs text-[#888888] cursor-pointer"
+                className="flex items-center gap-1.5 text-xs text-obsidian-muted cursor-pointer"
                 onClick={() => {
                   window.dispatchEvent(
                     new CustomEvent('urano:open-font-picker', {
@@ -565,7 +565,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 }}
               >
                 {settings.monospaceFontFamily && (
-                  <span className="text-[#dcddde] font-medium">
+                  <span className="text-obsidian-text font-medium">
                     {settings.monospaceFontFamily}
                   </span>
                 )}
@@ -583,7 +583,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 {settings.baseFontSize !== 16 && (
                   <button
                     type="button"
-                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-[#888888] hover:text-[#dcddde] transition-colors"
+                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-obsidian-muted hover:text-obsidian-text transition-colors"
                     aria-label={t('appearance.restoreDefault')}
                     title={t('appearance.restoreDefault')}
                     onClick={() => {
@@ -597,7 +597,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                       });
                     }}
                   >
-                    <RotateCcw size={15} color="#888888" />
+                    <RotateCcw size={15} />
                   </button>
                 )}
                 <Slider
@@ -646,7 +646,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             desc: (
               <div className="flex items-center gap-3">
                 {settings.customIcon && (
-                  <div className="w-8 h-8 rounded-md overflow-hidden bg-[#161616] border border-[#333] flex items-center justify-center p-0.5 shrink-0">
+                  <div className="w-8 h-8 rounded-md overflow-hidden bg-obsidian-sidebar border border-obsidian-border flex items-center justify-center p-0.5 shrink-0">
                     <img
                       src={
                         settings.customIcon.startsWith('http') ||
@@ -668,7 +668,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 {settings.customIcon && (
                   <button
                     type="button"
-                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-[#888888] hover:text-[#dcddde] transition-colors"
+                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-obsidian-muted hover:text-obsidian-text transition-colors"
                     aria-label={t('appearance.resetIcon')}
                     title={t('appearance.resetIcon')}
                     onClick={async () => {
@@ -680,7 +680,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                       }
                     }}
                   >
-                    <RotateCcw size={15} color="#888888" />
+                    <RotateCcw size={15} />
                   </button>
                 )}
                 <SettingButton
