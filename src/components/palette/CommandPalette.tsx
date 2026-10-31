@@ -3,6 +3,7 @@ import { Search, Command, FileText, LayoutDashboard, LayoutList } from 'lucide-r
 import { FileItem } from '../../types';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useT } from '../../stores/localeStore';
+import { getRelativeVaultPath } from '../../utils/pathUtils';
 
 export interface CommandItem {
   id: string;
@@ -161,7 +162,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       onClick={onClose}
     >
       <div
-        className="w-[580px] max-w-[94vw] bg-obsidian-bg border border-obsidian-border rounded-xl shadow-2xl shadow-black/90 overflow-hidden flex flex-col"
+        className="prompt w-[580px] max-w-[94vw] bg-obsidian-bg border border-obsidian-border rounded-xl shadow-2xl shadow-black/90 overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input Bar */}
@@ -216,15 +217,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   cmd.action();
                   onClose();
                 }}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors ${
+                className={`suggestion-item flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors ${
                   i === selectedIndex
-                    ? 'bg-orange-500/15 text-white border border-orange-500/30'
+                    ? 'is-selected'
                     : 'text-obsidian-text hover:bg-[var(--interactive-hover)]'
                 }`}
                 onMouseEnter={() => setSelectedIndex(i)}
               >
                 <div className="flex items-center gap-2.5">
-                  <span className={i === selectedIndex ? 'text-orange-400' : 'text-obsidian-muted'}>
+                  <span className="text-obsidian-muted">
                     {cmd.icon}
                   </span>
                   <span className="font-medium">{cmd.name}</span>
@@ -239,6 +240,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           ) : (
             (items as typeof allFiles).map((file, i) => {
               const isSelected = i === selectedIndex;
+              const rel = getRelativeVaultPath(file.path, activeVault || '');
+              const isSubfolder = rel.includes('/');
+              const displayName = isSubfolder ? rel.split('/').pop() || file.basename : rel || file.basename;
+
               return (
                 <div
                   key={file.path}
@@ -246,9 +251,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     onSelectFile(file.path);
                     onClose();
                   }}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors ${
+                  className={`suggestion-item flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors ${
                     isSelected
-                      ? 'bg-orange-500/15 text-white border border-orange-500/30'
+                      ? 'is-selected'
                       : 'text-obsidian-text hover:bg-[var(--interactive-hover)]'
                   }`}
                   onMouseEnter={() => setSelectedIndex(i)}
@@ -257,26 +262,28 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     {file.ext === 'canvas' ? (
                       <LayoutDashboard
                         size={14}
-                        className={isSelected ? 'text-orange-400' : 'text-obsidian-muted'}
+                        className="text-obsidian-muted shrink-0"
                       />
                     ) : file.ext === 'base' ? (
                       <LayoutList
                         size={14}
-                        className={isSelected ? 'text-orange-400' : 'text-obsidian-muted'}
+                        className="text-obsidian-muted shrink-0"
                       />
                     ) : (
                       <FileText
                         size={14}
-                        className={isSelected ? 'text-orange-400' : 'text-obsidian-muted'}
+                        className="text-obsidian-muted shrink-0"
                       />
                     )}
-                    <span className="font-medium truncate">{file.basename}</span>
+                    <span className="font-medium truncate">{displayName}</span>
                     {file.ext === 'canvas' && <span className="nav-file-tag">CANVAS</span>}
                     {file.ext === 'base' && <span className="nav-file-tag">BASE</span>}
                   </div>
-                  <span className="text-[10px] text-obsidian-faint truncate max-w-[200px] ml-2">
-                    {file.path.split('/').slice(-2).join('/')}
-                  </span>
+                  {isSubfolder && (
+                    <span className="text-[10px] text-obsidian-faint truncate max-w-[240px] ml-2 font-mono">
+                      {rel}
+                    </span>
+                  )}
                 </div>
               );
             })
@@ -284,37 +291,35 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         </div>
 
         {/* Bottom Keyboard Instruction Bar (1:1 with Obsidian) */}
-        <div className="px-4 py-2 border-t border-obsidian-border bg-obsidian-sidebar flex items-center justify-between text-[11px] text-obsidian-muted select-none">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              <span className="font-mono bg-[var(--interactive-normal)] text-obsidian-text px-1 py-0.2 rounded border border-obsidian-border">
-                ↑↓
-              </span>{' '}
-              {t('commandPalette.toNavigate')}
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="font-mono bg-[var(--interactive-normal)] text-obsidian-text px-1 py-0.2 rounded border border-obsidian-border">
-                ↵
-              </span>{' '}
-              {t('commandPalette.toOpen')}
-            </span>
-            {mode === 'files' && (
-              <>
-                <span className="flex items-center gap-1">
-                  <span className="font-mono bg-[var(--interactive-normal)] text-obsidian-text px-1 py-0.2 rounded border border-obsidian-border">
-                    Ctrl + ↵
-                  </span>{' '}
-                  {t('commandPalette.toOpenInNewTab')}
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="font-mono bg-[var(--interactive-normal)] text-obsidian-text px-1 py-0.2 rounded border border-obsidian-border">
-                    Shift + ↵
-                  </span>{' '}
-                  {t('commandPalette.toCreate')}
-                </span>
-              </>
-            )}
-          </div>
+        <div className="prompt-instructions px-4 py-2 border-t border-obsidian-border bg-obsidian-sidebar text-obsidian-muted select-none">
+          <span className="flex items-center gap-1">
+            <span className="font-mono bg-[var(--interactive-normal)] text-obsidian-text px-1 py-0.2 rounded border border-obsidian-border">
+              ↑↓
+            </span>{' '}
+            {t('commandPalette.toNavigate')}
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="font-mono bg-[var(--interactive-normal)] text-obsidian-text px-1 py-0.2 rounded border border-obsidian-border">
+              ↵
+            </span>{' '}
+            {t('commandPalette.toOpen')}
+          </span>
+          {mode === 'files' && (
+            <>
+              <span className="flex items-center gap-1">
+                <span className="font-mono bg-[var(--interactive-normal)] text-obsidian-text px-1 py-0.2 rounded border border-obsidian-border">
+                  Ctrl + ↵
+                </span>{' '}
+                {t('commandPalette.toOpenInNewTab')}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="font-mono bg-[var(--interactive-normal)] text-obsidian-text px-1 py-0.2 rounded border border-obsidian-border">
+                  Shift + ↵
+                </span>{' '}
+                {t('commandPalette.toCreate')}
+              </span>
+            </>
+          )}
           <span className="flex items-center gap-1">
             <span className="font-mono bg-[var(--interactive-normal)] text-obsidian-text px-1 py-0.2 rounded border border-obsidian-border">
               Esc
