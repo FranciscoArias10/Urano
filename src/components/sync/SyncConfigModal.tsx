@@ -49,17 +49,17 @@ export const SyncConfigModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--background-modifier-cover)] backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="bg-obsidian-sidebar border border-obsidian-border rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-obsidian-border bg-obsidian-bg/50">
           <div className="flex items-center gap-2">
             <FolderSync className="w-5 h-5 text-orange-400" />
-            <h2 className="text-base font-semibold text-white">{t('sync.config.title')}</h2>
+            <h2 className="text-base font-semibold text-obsidian-text">{t('sync.config.title')}</h2>
           </div>
           <button
             onClick={() => setShowConfigModal(false)}
-            className="text-obsidian-muted hover:text-white p-1 rounded-md transition-colors"
+            className="text-obsidian-muted hover:text-obsidian-text p-1 rounded-md transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -78,7 +78,7 @@ export const SyncConfigModal: React.FC = () => {
                   </div>
                 )}
                 <div>
-                  <div className="text-white font-medium">{user.name}</div>
+                  <div className="text-obsidian-text font-medium">{user.name}</div>
                   <div className="text-emerald-400 text-[11px]">{user.email}</div>
                 </div>
               </div>
@@ -94,7 +94,7 @@ export const SyncConfigModal: React.FC = () => {
             <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg text-obsidian-text flex items-start gap-2.5">
               <ShieldCheck className="w-5 h-5 text-orange-400 shrink-0 mt-0.5" />
               <div>
-                <span className="font-medium text-white">{t('sync.config.privacyTitle')}</span>
+                <span className="font-medium text-obsidian-text">{t('sync.config.privacyTitle')}</span>
                 <p className="text-[11px] text-obsidian-muted mt-0.5">
                   {richText(t('sync.config.privacyBody'), {
                     scope: (
@@ -127,7 +127,7 @@ export const SyncConfigModal: React.FC = () => {
               value={localClientId}
               onChange={(e) => setLocalClientId(e.target.value)}
               required
-              className="w-full bg-obsidian-bg border border-obsidian-border focus:border-orange-500 rounded-lg px-3 py-2 text-white outline-none font-mono text-[11px]"
+              className="w-full bg-obsidian-bg border border-obsidian-border focus:border-orange-500 rounded-lg px-3 py-2 text-obsidian-text outline-none font-mono text-[11px]"
             />
           </div>
 
@@ -140,7 +140,7 @@ export const SyncConfigModal: React.FC = () => {
               placeholder="GOCSPX-xxxxxxxxxxxxxxxx"
               value={localClientSecret}
               onChange={(e) => setLocalClientSecret(e.target.value)}
-              className="w-full bg-obsidian-bg border border-obsidian-border focus:border-orange-500 rounded-lg px-3 py-2 text-white outline-none font-mono text-[11px]"
+              className="w-full bg-obsidian-bg border border-obsidian-border focus:border-orange-500 rounded-lg px-3 py-2 text-obsidian-text outline-none font-mono text-[11px]"
             />
           </div>
 
@@ -153,14 +153,14 @@ export const SyncConfigModal: React.FC = () => {
               placeholder="UranoVault"
               value={localFolderName}
               onChange={(e) => setLocalFolderName(e.target.value)}
-              className="w-full bg-obsidian-bg border border-obsidian-border focus:border-orange-500 rounded-lg px-3 py-2 text-white outline-none text-xs"
+              className="w-full bg-obsidian-bg border border-obsidian-border focus:border-orange-500 rounded-lg px-3 py-2 text-obsidian-text outline-none text-xs"
             />
           </div>
 
           {/* Quick instructions dropdown */}
           {showHelp && (
             <div className="p-3 bg-obsidian-active rounded-lg border border-obsidian-border text-[11px] text-obsidian-muted space-y-1.5">
-              <div className="font-semibold text-white flex items-center gap-1">
+              <div className="font-semibold text-obsidian-text flex items-center gap-1">
                 <span>{t('sync.config.stepsTitle')}</span>
                 <a
                   href="https://console.cloud.google.com/apis/credentials"
@@ -191,7 +191,7 @@ export const SyncConfigModal: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowConfigModal(false)}
-              className="px-4 py-2 rounded-lg text-obsidian-muted hover:text-white hover:bg-obsidian-hover transition-colors"
+              className="px-4 py-2 rounded-lg text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover transition-colors"
             >
               {t('common.cancel')}
             </button>

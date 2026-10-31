@@ -15,17 +15,17 @@ export const SyncLogsModal: React.FC<SyncLogsModalProps> = ({ isOpen, onClose })
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--background-modifier-cover)] backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="bg-obsidian-sidebar border border-obsidian-border rounded-xl w-full max-w-lg max-h-[80vh] shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-obsidian-border bg-obsidian-bg/50">
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-orange-400" />
-            <h2 className="text-base font-semibold text-white">{t('sync.logsModal.title')}</h2>
+            <h2 className="text-base font-semibold text-obsidian-text">{t('sync.logsModal.title')}</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-obsidian-muted hover:text-white p-1 rounded-md transition-colors"
+            className="text-obsidian-muted hover:text-obsidian-text p-1 rounded-md transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -81,7 +81,7 @@ export const SyncLogsModal: React.FC<SyncLogsModalProps> = ({ isOpen, onClose })
         <div className="px-6 py-3 border-t border-obsidian-border bg-obsidian-bg/50 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-obsidian-active hover:bg-obsidian-hover text-white text-xs transition-colors"
+            className="px-4 py-1.5 rounded-lg bg-obsidian-active hover:bg-obsidian-hover text-obsidian-text text-xs transition-colors"
           >
             {t('common.close')}
           </button>

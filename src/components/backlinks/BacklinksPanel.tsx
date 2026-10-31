@@ -114,7 +114,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
         </div>
         <button
           onClick={onClose}
-          className="p-1 text-obsidian-muted hover:text-white hover:bg-obsidian-hover rounded transition-colors"
+          className="p-1 text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover rounded transition-colors"
           title={t('backlinks.closePanel')}
         >
           <X size={13} />
@@ -122,19 +122,19 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
       </div>
 
       {/* Active Note Name */}
-      <div className="px-3 py-1.5 bg-[#171412] text-[11px] text-obsidian-muted border-b border-obsidian-border flex items-center gap-1.5 truncate">
+      <div className="px-3 py-1.5 bg-obsidian-sidebar text-[11px] text-obsidian-muted border-b border-obsidian-border flex items-center gap-1.5 truncate">
         <FileText size={12} className="text-orange-400 shrink-0" />
-        <span className="text-stone-300 font-medium truncate">{activeBaseName}</span>
+        <span className="text-obsidian-text font-medium truncate">{activeBaseName}</span>
       </div>
 
       {/* Tabs: Incoming (Backlinks) vs Outgoing */}
-      <div className="grid grid-cols-2 p-1 gap-1 border-b border-obsidian-border bg-[#141210]">
+      <div className="grid grid-cols-2 p-1 gap-1 border-b border-obsidian-border bg-obsidian-sidebar">
         <button
           onClick={() => setActiveTab('incoming')}
           className={`flex items-center justify-center gap-1.5 py-1.5 rounded text-[11px] font-medium transition-colors ${
             activeTab === 'incoming'
               ? 'bg-orange-600/20 text-orange-300 border border-orange-500/30'
-              : 'text-obsidian-muted hover:text-white'
+              : 'text-obsidian-muted hover:text-obsidian-text'
           }`}
         >
           <ArrowDownLeft size={12} className="text-orange-400" />
@@ -145,7 +145,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
           className={`flex items-center justify-center gap-1.5 py-1.5 rounded text-[11px] font-medium transition-colors ${
             activeTab === 'outgoing'
               ? 'bg-orange-600/20 text-orange-300 border border-orange-500/30'
-              : 'text-obsidian-muted hover:text-white'
+              : 'text-obsidian-muted hover:text-obsidian-text'
           }`}
         >
           <ArrowUpRight size={12} className="text-sky-400" />
@@ -169,7 +169,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
                 onClick={() => onOpenNote(item.path)}
                 className="p-2 rounded-lg bg-obsidian-bg border border-obsidian-border hover:border-orange-500/40 cursor-pointer group transition-colors"
               >
-                <div className="flex items-center gap-1.5 text-xs font-medium text-stone-200 group-hover:text-orange-300">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-obsidian-text group-hover:text-orange-300">
                   <FileText size={12} className="text-orange-400 shrink-0" />
                   <span className="truncate">{item.name}</span>
                   <ChevronRight size={12} className="ml-auto text-obsidian-muted group-hover:text-orange-400 shrink-0" />
@@ -200,7 +200,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
                   }`}
                   title={item.resolvedPath ? t('backlinks.existingNote') : t('backlinks.notCreatedYet')}
                 />
-                <span className={`truncate font-medium ${item.resolvedPath ? 'text-stone-200' : 'text-stone-400'}`}>
+                <span className={`truncate font-medium ${item.resolvedPath ? 'text-obsidian-text' : 'text-obsidian-muted'}`}>
                   {item.targetName}
                 </span>
               </div>
