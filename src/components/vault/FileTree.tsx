@@ -308,7 +308,8 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
             <Tooltip content={t('fileTree.newNote')} position="bottom">
               <button
                 onClick={handleCreateNewNote}
-                className="p-1 hover:text-orange-400 hover:bg-obsidian-hover rounded transition-colors"
+                className="clickable-icon nav-action-button"
+                aria-label={t('fileTree.newNote')}
               >
                 <SquarePen size={14} />
               </button>
@@ -318,7 +319,8 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
             <Tooltip content={t('fileTree.newFolder')} position="bottom">
               <button
                 onClick={handleCreateNewFolder}
-                className="p-1 hover:text-obsidian-text hover:bg-obsidian-hover rounded transition-colors"
+                className="clickable-icon nav-action-button"
+                aria-label={t('fileTree.newFolder')}
               >
                 <FolderPlus size={14} />
               </button>
@@ -331,9 +333,8 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
                   const rect = e.currentTarget.getBoundingClientRect();
                   setSortMenu({ x: rect.left, y: rect.bottom + 4 });
                 }}
-                className={`p-1 hover:text-obsidian-text hover:bg-obsidian-hover rounded transition-colors ${
-                  sortMenu ? 'text-orange-400 bg-obsidian-hover' : ''
-                }`}
+                className={`clickable-icon nav-action-button ${sortMenu ? 'is-active' : ''}`}
+                aria-label={t('fileTree.changeSortOrder')}
               >
                 <ArrowUpNarrowWide size={14} />
               </button>
@@ -346,11 +347,8 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
             >
               <button
                 onClick={() => setAutoReveal(!autoReveal)}
-                className={`p-1 rounded transition-colors ${
-                  autoReveal
-                    ? 'text-orange-400 bg-orange-500/15 border border-orange-500/30'
-                    : 'text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover'
-                }`}
+                className={`clickable-icon nav-action-button ${autoReveal ? 'is-active' : ''}`}
+                aria-label={autoReveal ? t('fileTree.disableAutoReveal') : t('fileTree.enableAutoReveal')}
               >
                 <ScanLine size={14} />
               </button>
@@ -360,7 +358,8 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
             <Tooltip content={t('fileTree.expandCollapseAll')} position="bottom">
               <button
                 onClick={handleToggleExpandAll}
-                className="p-1 hover:text-obsidian-text hover:bg-obsidian-hover rounded transition-colors"
+                className="clickable-icon nav-action-button"
+                aria-label={t('fileTree.expandCollapseAll')}
               >
                 <ChevronsUpDown size={14} />
               </button>
