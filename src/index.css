@@ -1913,40 +1913,65 @@ mark.hl-purple {
   }
 }
 
+.tooltip-arrow,
 .urano-tooltip-arrow {
   position: absolute;
   width: 0;
   height: 0;
+  border-style: solid;
+  border-color: transparent;
 }
 
-/* Mod-right: arrow points left towards button */
-.urano-tooltip.mod-right .urano-tooltip-arrow {
-  left: -5px;
-  top: 50%;
-  transform: translateY(-50%);
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-  border-right: 5px solid var(--background-modifier-border);
-}
-
-/* Mod-bottom: arrow points up towards button */
+/* Mod-bottom: arrow on top edge pointing up towards trigger */
+.tooltip.mod-bottom .tooltip-arrow,
+.tooltip.mod-bottom .urano-tooltip-arrow,
+.urano-tooltip.mod-bottom .tooltip-arrow,
 .urano-tooltip.mod-bottom .urano-tooltip-arrow {
   top: -5px;
   left: 50%;
   transform: translateX(-50%);
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-bottom: 5px solid var(--background-modifier-border);
+  border-width: 0 5px 5px 5px;
+  border-color: transparent transparent rgba(17, 17, 17, 0.92) transparent !important;
+  border-style: solid !important;
 }
 
-/* Mod-top: arrow points down towards button */
+/* Mod-top: arrow on bottom edge pointing down towards trigger */
+.tooltip.mod-top .tooltip-arrow,
+.tooltip.mod-top .urano-tooltip-arrow,
+.urano-tooltip.mod-top .tooltip-arrow,
 .urano-tooltip.mod-top .urano-tooltip-arrow {
   bottom: -5px;
   left: 50%;
   transform: translateX(-50%);
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid var(--background-modifier-border);
+  border-width: 5px 5px 0 5px;
+  border-color: rgba(17, 17, 17, 0.92) transparent transparent transparent !important;
+  border-style: solid !important;
+}
+
+/* Mod-right: arrow on left edge pointing left towards trigger */
+.tooltip.mod-right .tooltip-arrow,
+.tooltip.mod-right .urano-tooltip-arrow,
+.urano-tooltip.mod-right .tooltip-arrow,
+.urano-tooltip.mod-right .urano-tooltip-arrow {
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 5px 5px 5px 0;
+  border-color: transparent rgba(17, 17, 17, 0.92) transparent transparent !important;
+  border-style: solid !important;
+}
+
+/* Mod-left: arrow on right edge pointing right towards trigger */
+.tooltip.mod-left .tooltip-arrow,
+.tooltip.mod-left .urano-tooltip-arrow,
+.urano-tooltip.mod-left .tooltip-arrow,
+.urano-tooltip.mod-left .urano-tooltip-arrow {
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 5px 0 5px 5px;
+  border-color: transparent transparent transparent rgba(17, 17, 17, 0.92) !important;
+  border-style: solid !important;
 }
 
 /* ========================================================
