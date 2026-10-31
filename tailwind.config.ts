@@ -7,15 +7,16 @@ export default {
     extend: {
       colors: {
         obsidian: {
-          bg: '#1e1e1e',          // Obsidian neutral dark primary canvas
-          sidebar: '#181818',     // Obsidian neutral dark sidebar
-          active: '#262626',
-          border: 'rgba(255, 255, 255, 0.08)',
-          hover: '#262626',
-          text: '#dcddde',
-          muted: '#888888',
-          accent: '#e06c1b',      // Urano official brick-orange
-          accentHover: '#f97316', // Glowing amber-orange
+          bg: 'var(--background-primary)',
+          sidebar: 'var(--background-secondary)',
+          active: 'var(--interactive-hover, var(--background-modifier-hover))',
+          border: 'var(--background-modifier-border)',
+          hover: 'var(--background-modifier-hover)',
+          text: 'var(--text-normal)',
+          muted: 'var(--text-muted)',
+          faint: 'var(--text-faint)',
+          accent: 'var(--interactive-accent)',
+          accentHover: 'var(--interactive-accent-hover)',
           uraniumGlow: '#fb923c',
           conflict: '#f59e0b',
           synced: '#10b981',
