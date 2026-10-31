@@ -58,7 +58,7 @@ export const ThemeSelectorControl: React.FC<ThemeSelectorControlProps> = ({
     <div className="flex items-center gap-2">
       <button
         type="button"
-        className="extra-setting-button clickable-icon flex items-center justify-center p-1.5 text-[#888888] hover:text-[#dcddde] transition-colors"
+        className="extra-setting-button clickable-icon flex items-center justify-center p-1.5 text-[var(--text-muted)] hover:text-[var(--text-normal)] transition-colors"
         aria-label={t('appearance.openThemesFolder')}
         title={t('appearance.openThemesFolder')}
         onClick={handleOpenFolder}
@@ -133,26 +133,26 @@ export const InstalledThemesList: React.FC<InstalledThemesListProps> = ({
       {themes.map((th) => (
         <div
           key={th.name}
-          className="flex items-center justify-between p-2.5 rounded-[6px] bg-[#1a1a1a] border border-[#2a2a2a]"
+          className="flex items-center justify-between p-2.5 rounded-[6px] bg-obsidian-sidebar border border-obsidian-border"
         >
           <div className="flex flex-col gap-0.5">
-            <div className="text-[13px] font-medium text-[#dcddde] flex items-center gap-2">
+            <div className="text-[13px] font-medium text-obsidian-text flex items-center gap-2">
               <span>{th.name}</span>
               {th.version && (
-                <span className="text-[11px] px-1.5 py-0.2 rounded bg-[#282828] text-[#888888]">
+                <span className="text-[11px] px-1.5 py-0.2 rounded bg-[var(--interactive-normal)] text-obsidian-muted">
                   v{th.version}
                 </span>
               )}
             </div>
             {th.author && (
-              <div className="text-[12px] text-[#888888]">
+              <div className="text-[12px] text-obsidian-muted">
                 {t('appearance.byAuthor', { author: th.author })}
               </div>
             )}
           </div>
           <button
             type="button"
-            className="p-1.5 text-[#888888] hover:text-[#ef4444] transition-colors rounded hover:bg-[#282828]"
+            className="p-1.5 text-obsidian-muted hover:text-[#ef4444] transition-colors rounded hover:bg-[var(--interactive-hover)]"
             title={t('appearance.uninstallTheme')}
             onClick={() => void handleUninstall(th.name)}
           >
@@ -210,32 +210,32 @@ export const InstalledThemesRow: React.FC<{ vaultPath: string; refreshTrigger?: 
 
   return (
     <div className="w-full flex flex-col gap-2">
-      <div className="text-[12px] text-[#888888]">{descText}</div>
+      <div className="text-[12px] text-obsidian-muted">{descText}</div>
       {themes.length > 0 && (
         <div className="flex flex-col gap-2 w-full mt-1">
           {themes.map((th) => (
             <div
               key={th.name}
-              className="flex items-center justify-between p-2.5 rounded-[6px] bg-[#222222] border border-[#2e2e2e]"
+              className="flex items-center justify-between p-2.5 rounded-[6px] bg-[var(--interactive-normal)] border border-obsidian-border"
             >
               <div className="flex flex-col gap-0.5">
-                <div className="text-[13px] font-medium text-[#dcddde] flex items-center gap-2">
+                <div className="text-[13px] font-medium text-obsidian-text flex items-center gap-2">
                   <span>{th.name}</span>
                   {th.version && (
-                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-[#282828] text-[#888888]">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-[var(--interactive-normal)] text-obsidian-muted">
                       v{th.version}
                     </span>
                   )}
                 </div>
                 {th.author && (
-                  <div className="text-[12px] text-[#888888]">
+                  <div className="text-[12px] text-obsidian-muted">
                     {t('appearance.byAuthor', { author: th.author })}
                   </div>
                 )}
               </div>
               <button
                 type="button"
-                className="p-1.5 text-[#888888] hover:text-[#ef4444] transition-colors rounded hover:bg-[#282828] cursor-pointer"
+                className="p-1.5 text-obsidian-muted hover:text-[#ef4444] transition-colors rounded hover:bg-[var(--interactive-hover)] cursor-pointer"
                 title={t('appearance.uninstallTheme')}
                 onClick={() => void handleUninstall(th.name)}
               >
