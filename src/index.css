@@ -887,6 +887,9 @@ body .nav-action-button:hover,
 body .clickable-icon:hover {
   background-color: rgba(255, 255, 255, 0.075);
   color: #dcddde;
+  border: none;
+}
+
 /* Active state (.is-active) - Obsidian neutral look with no borders */
 .theme-light .nav-action-button.is-active,
 body.theme-light .nav-action-button.is-active,
@@ -935,6 +938,8 @@ body .clickable-icon.is-active:hover {
   background-color: rgba(255, 255, 255, 0.1) !important;
   color: #dcddde !important;
   border: none !important;
+}
+
 /* FileTree Toolbar action container - centered like Obsidian */
 .nav-buttons-container {
   display: flex !important;
