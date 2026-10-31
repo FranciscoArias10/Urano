@@ -3,10 +3,40 @@ import type { ThemeMode } from '../stores/settingsStore';
 
 const ACTIVE_THEME_STYLE_ID = 'urano-active-theme';
 
+let systemThemeMediaQuery: MediaQueryList | null = null;
+let systemThemeListener: ((e: MediaQueryListEvent) => void) | null = null;
+
+export function applyBaseTheme(theme: 'system' | 'dark' | 'light') {
+  if (systemThemeMediaQuery && systemThemeListener) {
+    systemThemeMediaQuery.removeEventListener('change', systemThemeListener);
+    systemThemeMediaQuery = null;
+    systemThemeListener = null;
+  }
+
+  const evaluateAndApply = () => {
+    const isDark =
+      theme === 'dark' ||
+      (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    document.body.classList.toggle('theme-dark', isDark);
+    document.body.classList.toggle('theme-light', !isDark);
+    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+  };
+
+  evaluateAndApply();
+
+  if (theme === 'system') {
+    systemThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    systemThemeListener = () => {
+      evaluateAndApply();
+    };
+    systemThemeMediaQuery.addEventListener('change', systemThemeListener);
+  }
+}
+
 export class ThemeService {
   private static instance: ThemeService | null = null;
-  private mediaQueryList: MediaQueryList | null = null;
-  private mediaQueryListener: ((e: MediaQueryListEvent) => void) | null = null;
   private currentBaseTheme: ThemeMode = 'dark';
 
   private constructor() {
@@ -40,30 +70,7 @@ export class ThemeService {
    */
   public applyBaseTheme(mode: ThemeMode): void {
     this.currentBaseTheme = mode;
-
-    if (this.mediaQueryList && this.mediaQueryListener) {
-      this.mediaQueryList.removeEventListener('change', this.mediaQueryListener);
-      this.mediaQueryList = null;
-      this.mediaQueryListener = null;
-    }
-
-    if (mode === 'system') {
-      this.mediaQueryList = window.matchMedia('(prefers-color-scheme: dark)');
-      const updateSystemTheme = (isDark: boolean) => {
-        document.body.classList.remove('theme-dark', 'theme-light');
-        document.body.classList.add(isDark ? 'theme-dark' : 'theme-light');
-      };
-
-      updateSystemTheme(this.mediaQueryList.matches);
-
-      this.mediaQueryListener = (e: MediaQueryListEvent) => {
-        updateSystemTheme(e.matches);
-      };
-      this.mediaQueryList.addEventListener('change', this.mediaQueryListener);
-    } else {
-      document.body.classList.remove('theme-dark', 'theme-light');
-      document.body.classList.add(mode === 'light' ? 'theme-light' : 'theme-dark');
-    }
+    applyBaseTheme(mode);
   }
 
   /**
@@ -127,9 +134,10 @@ export class ThemeService {
     if (!vaultPath) return [];
     try {
       const themes = await import('@tauri-apps/api/core').then(({ invoke }) =>
-        invoke<import('../types/theme').InstalledTheme[]>('list_installed_themes', { vaultPath })
+        invoke<import('../types/theme').InstalledTheme[] | null>('list_installed_themes', { vaultPath })
       );
-      return themes;
+      // The dev-mode Tauri mock (and a backend without the command) may resolve to null.
+      return Array.isArray(themes) ? themes : [];
     } catch {
       return [];
     }
