@@ -25,6 +25,7 @@ import { SyncConfigModal } from './components/sync/SyncConfigModal';
 import { SyncLogsModal } from './components/sync/SyncLogsModal';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { useSettingsStore, URANO_ACCENT } from './stores/settingsStore';
+import { applyBaseTheme } from './services/themeService';
 import { useLocaleStore, LOCALES_DIR_RELATIVE, useT } from './stores/localeStore';
 import { LocalAdapter, GoogleDriveAdapter, setStorageAdapter } from './services/storageAdapter';
 import { UranoLogo } from './components/common/UranoLogo';
@@ -234,19 +235,7 @@ export const App: React.FC = () => {
     (root.style as CSSStyleDeclaration & { zoom?: string }).zoom =
       settings.zoomLevel === 1 ? '' : String(settings.zoomLevel);
     // `lang` / `dir` del documento los gestiona el motor i18n (locales/i18n.ts)
-
-    const applyTheme = () => {
-      const prefersLight =
-        settings.theme === 'light' ||
-        (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches);
-      document.body.classList.toggle('theme-light', prefersLight);
-      document.body.classList.toggle('theme-dark', !prefersLight);
-      root.classList.toggle('dark', !prefersLight);
-    };
-    applyTheme();
-    const mq = window.matchMedia('(prefers-color-scheme: light)');
-    mq.addEventListener('change', applyTheme);
-    return () => mq.removeEventListener('change', applyTheme);
+    applyBaseTheme(settings.theme);
   }, [settings]);
 
   // On mount: restore previous vault and Google auth status
@@ -975,7 +964,7 @@ export const App: React.FC = () => {
             <Tooltip content={t('app.ribbon.showSidebar')} shortcut="Ctrl+B" position="right">
               <button
                 onClick={() => setShowLeftSidebar(true)}
-                className="side-dock-ribbon-action text-stone-400 hover:text-stone-200"
+                className="side-dock-ribbon-action text-obsidian-muted hover:text-obsidian-text"
               >
                 <PanelLeft size={18} />
               </button>
@@ -1088,7 +1077,7 @@ export const App: React.FC = () => {
           <Tooltip content={t('app.ribbon.settings')} shortcut="Ctrl+," position="right">
             <button
               onClick={() => openSettings()}
-              className="side-dock-ribbon-action mb-1 text-stone-400 hover:text-stone-200"
+              className="side-dock-ribbon-action mb-1 text-obsidian-muted hover:text-obsidian-text"
             >
               <Settings size={18} />
             </button>
@@ -1108,7 +1097,7 @@ export const App: React.FC = () => {
               <Tooltip content={t('app.ribbon.hideSidebar')} shortcut="Ctrl+B" position="bottom">
                 <button
                   onClick={() => setShowLeftSidebar(false)}
-                  className="p-1.5 text-stone-400 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
+                  className="p-1.5 text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover rounded transition-colors"
                 >
                   <PanelLeftClose size={17} />
                 </button>
@@ -1122,8 +1111,8 @@ export const App: React.FC = () => {
                     onClick={() => setSidebarTab('files')}
                     className={`p-1.5 rounded transition-colors ${
                       sidebarTab === 'files'
-                        ? 'text-orange-500 bg-white/10'
-                        : 'text-stone-400 hover:text-stone-200 hover:bg-white/5'
+                        ? 'text-orange-500 bg-obsidian-active'
+                        : 'text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover'
                     }`}
                   >
                     <Folder size={17} />
@@ -1136,8 +1125,8 @@ export const App: React.FC = () => {
                     onClick={() => setSidebarTab('search')}
                     className={`p-1.5 rounded transition-colors ${
                       sidebarTab === 'search'
-                        ? 'text-orange-500 bg-white/10'
-                        : 'text-stone-400 hover:text-stone-200 hover:bg-white/5'
+                        ? 'text-orange-500 bg-obsidian-active'
+                        : 'text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover'
                     }`}
                   >
                     <Search size={17} />
@@ -1150,8 +1139,8 @@ export const App: React.FC = () => {
                     onClick={() => setSidebarTab('bookmarks')}
                     className={`p-1.5 rounded transition-colors ${
                       sidebarTab === 'bookmarks'
-                        ? 'text-orange-500 bg-white/10'
-                        : 'text-stone-400 hover:text-stone-200 hover:bg-white/5'
+                        ? 'text-orange-500 bg-obsidian-active'
+                        : 'text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover'
                     }`}
                   >
                     <Bookmark size={17} />
@@ -1180,21 +1169,21 @@ export const App: React.FC = () => {
             </div>
 
             {/* Obsidian Bottom Vault Switcher (⌄ prueba) & Action Icons (? y ⚙) */}
-            <div className="p-2 border-t border-obsidian-border bg-obsidian-sidebar flex items-center justify-between text-xs text-stone-400 shrink-0">
+            <div className="p-2 border-t border-obsidian-border bg-obsidian-sidebar flex items-center justify-between text-xs text-obsidian-muted shrink-0">
               <button
                 onClick={handleVaultSwitcherClick}
-                className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-white/5 hover:text-stone-200 text-stone-300 font-medium max-w-[145px] truncate transition-colors text-left"
+                className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-obsidian-hover hover:text-obsidian-text text-obsidian-text font-medium max-w-[145px] truncate transition-colors text-left"
                 title={t('app.sidebar.vaultSwitcher')}
               >
                 <ChevronDown size={14} className="text-orange-500 shrink-0" />
                 <span className="truncate">{vaultName || t('app.vaultMenu.defaultVaultName')}</span>
               </button>
 
-              <div className="flex items-center gap-0.5 text-stone-400">
+              <div className="flex items-center gap-0.5 text-obsidian-muted">
                 <button
                   onClick={handleHelpClick}
                   title={t('app.sidebar.help')}
-                  className="p-1.5 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
+                  className="p-1.5 hover:text-obsidian-text hover:bg-obsidian-hover rounded transition-colors"
                 >
                   <HelpCircle size={15} />
                 </button>
@@ -1202,7 +1191,7 @@ export const App: React.FC = () => {
                   onClick={() => openSettings()}
                   title={t('app.sidebar.settingsTitle')}
                   aria-label={t('app.ribbon.settings')}
-                  className="p-1.5 hover:text-stone-200 hover:bg-white/5 rounded transition-colors"
+                  className="p-1.5 hover:text-obsidian-text hover:bg-obsidian-hover rounded transition-colors"
                 >
                   <Settings size={15} />
                 </button>
@@ -1287,7 +1276,7 @@ export const App: React.FC = () => {
                   </button>
                   <button
                     onClick={handleOpenFolderDialog}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-medium transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--interactive-normal)] hover:bg-[var(--interactive-hover)] text-obsidian-text text-xs font-medium transition-colors"
                   >
                     <FolderOpen size={14} />
                     <span>{t('app.emptyState.openFolder')}</span>
@@ -1367,17 +1356,17 @@ export const App: React.FC = () => {
         onClose={() => setShowLogs(false)}
       />
 
-      {/* Floating Dark Popover for Vault Switcher */}
+      {/* Floating popover for Vault Switcher (theme-aware) */}
       {vaultSwitcherAnchor && (
         <div
           ref={vaultSwitcherPopoverRef}
           style={{
-            background: '#1e1e1e',
-            border: '1px solid #333333',
+            background: 'var(--background-primary)',
+            border: '1px solid var(--background-modifier-border)',
             borderRadius: '8px',
             padding: '4px',
             minWidth: '190px',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.65)',
+            boxShadow: '0 8px 24px var(--background-modifier-box-shadow)',
             zIndex: 300,
             position: 'fixed',
             bottom: `${window.innerHeight - vaultSwitcherAnchor.top + 6}px`,
@@ -1399,8 +1388,8 @@ export const App: React.FC = () => {
                 }}
                 className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[5px] text-[13px] transition-colors cursor-pointer text-left ${
                   isActive
-                    ? 'text-white bg-[#2b2b2b]'
-                    : 'text-[#dcddde] hover:text-white hover:bg-[#282828]'
+                    ? 'text-obsidian-text bg-[var(--interactive-normal)]'
+                    : 'text-obsidian-text hover:text-obsidian-text hover:bg-[var(--interactive-hover)]'
                 }`}
               >
                 <span className="truncate max-w-[150px]" title={vault.path}>
@@ -1421,9 +1410,9 @@ export const App: React.FC = () => {
               setVaultSwitcherAnchor(null);
               setShowVaultManager(true);
             }}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[5px] text-[13px] text-[#dcddde] hover:text-white hover:bg-[#2b2b2b] transition-colors cursor-pointer text-left"
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[5px] text-[13px] text-obsidian-text hover:text-obsidian-text hover:bg-[var(--interactive-hover)] transition-colors cursor-pointer text-left"
           >
-            <Vault size={16} className="text-[#888888] shrink-0" />
+            <Vault size={16} className="text-obsidian-muted shrink-0" />
             <span>{t('vaultMenu.manageVaults')}</span>
           </button>
         </div>
