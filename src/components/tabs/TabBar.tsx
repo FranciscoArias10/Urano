@@ -93,7 +93,11 @@ export const TabBar: React.FC<TabBarProps> = ({
   );
 
   /** Graph tabs resolve their label at render time so it follows the active language. */
-  const tabLabel = (tab: TabItem) => (tab.type === 'graph' ? t('tabs.graphView') : tab.title);
+  const tabLabel = (tab: TabItem) => {
+    if (tab.type === 'graph') return t('tabs.graphView');
+    const raw = tab.title || '';
+    return raw.replace(/\\/g, '/').split('/').filter(Boolean).pop()?.replace(/\.(md|canvas|base)$/i, '') || raw;
+  };
 
   const closeMenus = useCallback(() => {
     setContextMenu(null);
