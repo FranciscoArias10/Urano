@@ -861,7 +861,7 @@ export class TableWidget extends WidgetType {
 
       const content = document.createElement('div');
       content.className =
-        'urano-table-cell-content outline-none w-full h-full min-h-[32px] px-3 py-1.5 text-stone-200 font-semibold';
+        'urano-table-cell-content outline-none w-full h-full min-h-[32px] px-3 py-1.5 text-obsidian-text font-semibold';
       content.contentEditable = 'true';
       content.spellcheck = false;
       content.setAttribute('data-row', '0');
@@ -895,7 +895,7 @@ export class TableWidget extends WidgetType {
 
         const content = document.createElement('div');
         content.className =
-          'urano-table-cell-content outline-none w-full h-full min-h-[32px] px-3 py-1.5 text-stone-300';
+          'urano-table-cell-content outline-none w-full h-full min-h-[32px] px-3 py-1.5 text-obsidian-text';
         content.contentEditable = 'true';
         content.spellcheck = false;
         content.setAttribute('data-row', String(rowIdx + 1));

@@ -213,7 +213,7 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
         </button>
         <button
           onClick={() => applyInlineWrap('**', '**', t('formattingMenu.placeholder.bold'))}
-          className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors"
+          className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors"
           title={t('formattingMenu.boldTooltip')}
         >
           <Bold className="w-4 h-4" />
@@ -221,7 +221,7 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
         </button>
         <button
           onClick={() => applyInlineWrap('*', '*', t('formattingMenu.placeholder.italic'))}
-          className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors"
+          className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors"
           title={t('formattingMenu.italicTooltip')}
         >
           <Italic className="w-4 h-4" />
@@ -231,7 +231,7 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
           onClick={() =>
             applyInlineWrap('~~', '~~', t('formattingMenu.placeholder.strikethrough'))
           }
-          className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors"
+          className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors"
           title={t('formattingMenu.strikethroughTooltip')}
         >
           <Strikethrough className="w-4 h-4" />
@@ -274,21 +274,21 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
         </div>
         <button
           onClick={() => applyLinePrefix('- ')}
-          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors text-left"
         >
           <List className="w-3.5 h-3.5 text-amber-400 shrink-0" />
           <span>{t('formattingMenu.bulletList')}</span>
         </button>
         <button
           onClick={() => applyLinePrefix('1. ')}
-          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors text-left"
         >
           <ListOrdered className="w-3.5 h-3.5 text-amber-400 shrink-0" />
           <span>{t('formattingMenu.numberedList')}</span>
         </button>
         <button
           onClick={() => applyLinePrefix('- [ ] ')}
-          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors text-left"
         >
           <CheckSquare className="w-3.5 h-3.5 text-orange-400 shrink-0" />
           <span>{t('formattingMenu.taskList')}</span>
@@ -302,14 +302,14 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
         </div>
         <button
           onClick={applyMathBlock}
-          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors text-left"
         >
           <Sigma className="w-3.5 h-3.5 text-amber-300 shrink-0" />
           <span>{t('formattingMenu.mathBlock')}</span>
         </button>
         <button
           onClick={applyCodeBlock}
-          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors text-left"
         >
           <Code className="w-3.5 h-3.5 text-orange-400 shrink-0" />
           <span>{t('formattingMenu.codeBlock')}</span>
@@ -323,9 +323,9 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
         </button>
         <button
           onClick={() => applyLinePrefix('> ')}
-          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-white transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors text-left"
         >
-          <Quote className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+          <Quote className="w-3.5 h-3.5 text-obsidian-muted shrink-0" />
           <span>{t('formattingMenu.quote')}</span>
         </button>
       </div>

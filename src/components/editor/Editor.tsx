@@ -2272,9 +2272,9 @@ export const Editor: React.FC<EditorProps> = ({
 
         {editorMode === 'reading' ? (
           /* Reading View Mode */
-          <div className="h-full overflow-y-auto px-12 py-10 max-w-[var(--file-line-width,820px)] mx-auto text-stone-200 leading-relaxed font-sans">
+          <div className="h-full overflow-y-auto px-12 py-10 max-w-[var(--file-line-width,820px)] mx-auto text-obsidian-text leading-relaxed font-sans">
             {showInlineTitle && (
-              <h1 className="text-3xl font-bold text-white mb-6 border-b border-stone-800 pb-3">
+              <h1 className="text-3xl font-bold text-obsidian-text mb-6 border-b border-obsidian-border pb-3">
                 {cleanTitle}
               </h1>
             )}
@@ -2322,10 +2322,10 @@ export const Editor: React.FC<EditorProps> = ({
       {/* Floating Obsidian [[ Wikilink Suggestion Dropdown */}
       {showSuggest && availableNotes.length > 0 && (
         <div
-          className="fixed z-50 w-64 bg-[#1a1714] border border-orange-500/30 rounded-lg shadow-2xl shadow-black/80 overflow-hidden text-xs select-none animate-fadeIn"
+          className="fixed z-50 w-64 bg-obsidian-sidebar border border-orange-500/30 rounded-lg shadow-2xl shadow-black/80 overflow-hidden text-xs select-none animate-fadeIn"
           style={{ top: `${suggestCoords.top}px`, left: `${suggestCoords.left}px` }}
         >
-          <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-orange-400/80 border-b border-stone-800 font-semibold bg-[#141210]">
+          <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-orange-400/80 border-b border-obsidian-border font-semibold bg-obsidian-sidebar">
             {t('editor.suggest.linkToNote')}
           </div>
           <div className="max-h-48 overflow-y-auto p-1 flex flex-col gap-0.5">
@@ -2337,12 +2337,12 @@ export const Editor: React.FC<EditorProps> = ({
                 className={`flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer transition-colors ${
                   idx === suggestIndex
                     ? 'bg-orange-600/25 text-white font-medium'
-                    : 'text-stone-300 hover:bg-stone-800/50'
+                    : 'text-obsidian-text hover:bg-[var(--interactive-hover)]'
                 }`}
               >
                 <FileText
                   size={12}
-                  className={idx === suggestIndex ? 'text-orange-400' : 'text-stone-500'}
+                  className={idx === suggestIndex ? 'text-orange-400' : 'text-obsidian-faint'}
                 />
                 <span className="truncate">{name}</span>
               </div>

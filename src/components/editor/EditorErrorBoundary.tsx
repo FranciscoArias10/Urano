@@ -25,34 +25,34 @@ interface FallbackProps {
 const EditorErrorFallback = ({ noteName, error, onRetry, onOpenReadingMode }: FallbackProps) => {
   const t = useT();
   return (
-    <div className="flex-1 h-full flex flex-col items-center justify-center p-8 bg-[#181818] text-stone-200 select-none">
-      <div className="max-w-lg w-full bg-[#1e1e1e] border border-orange-500/40 rounded-xl p-6 shadow-2xl flex flex-col gap-4">
+    <div className="flex-1 h-full flex flex-col items-center justify-center p-8 bg-obsidian-sidebar text-obsidian-text select-none">
+      <div className="max-w-lg w-full bg-obsidian-bg border border-orange-500/40 rounded-xl p-6 shadow-2xl flex flex-col gap-4">
         <div className="flex items-center gap-3 text-orange-500">
           <div className="p-2 bg-orange-500/10 rounded-lg border border-orange-500/20">
             <AlertTriangle size={24} />
           </div>
           <div>
-            <h3 className="font-semibold text-white text-base">{t('errorBoundary.title')}</h3>
-            <p className="text-xs text-stone-400">{noteName || t('errorBoundary.document')}</p>
+            <h3 className="font-semibold text-obsidian-text text-base">{t('errorBoundary.title')}</h3>
+            <p className="text-xs text-obsidian-muted">{noteName || t('errorBoundary.document')}</p>
           </div>
         </div>
 
-        <p className="text-xs text-stone-300 leading-relaxed">{t('errorBoundary.description')}</p>
+        <p className="text-xs text-obsidian-text leading-relaxed">{t('errorBoundary.description')}</p>
 
         {error && (
-          <div className="bg-[#141414] border border-stone-800 rounded-lg p-3 text-[11px] font-mono text-red-400 max-h-36 overflow-auto select-text">
+          <div className="bg-obsidian-sidebar border border-obsidian-border rounded-lg p-3 text-[11px] font-mono text-red-400 max-h-36 overflow-auto select-text">
             <p className="font-bold">{error.message}</p>
             {error.stack && (
-              <p className="text-stone-500 mt-1 whitespace-pre-wrap text-[10px]">{error.stack}</p>
+              <p className="text-obsidian-faint mt-1 whitespace-pre-wrap text-[10px]">{error.stack}</p>
             )}
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-stone-800">
+        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-obsidian-border">
           {onOpenReadingMode && (
             <button
               onClick={onOpenReadingMode}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-medium transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--interactive-normal)] hover:bg-[var(--interactive-hover)] text-obsidian-text text-xs font-medium transition-colors"
             >
               <BookOpen size={13} />
               <span>{t('errorBoundary.openReadingMode')}</span>
