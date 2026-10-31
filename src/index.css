@@ -887,8 +887,56 @@ body .nav-action-button:hover,
 body .clickable-icon:hover {
   background-color: rgba(255, 255, 255, 0.075);
   color: #dcddde;
-  border: none;
+/* Active state (.is-active) - Obsidian neutral look with no borders */
+.theme-light .nav-action-button.is-active,
+body.theme-light .nav-action-button.is-active,
+.theme-light .clickable-icon.is-active,
+body.theme-light .clickable-icon.is-active,
+.theme-light button.clickable-icon.is-active,
+body.theme-light button.clickable-icon.is-active {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  color: #222222 !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
+
+.theme-dark .nav-action-button.is-active,
+body.theme-dark .nav-action-button.is-active,
+.theme-dark .clickable-icon.is-active,
+body.theme-dark .clickable-icon.is-active,
+body .nav-action-button.is-active,
+body .clickable-icon.is-active,
+.theme-dark button.clickable-icon.is-active,
+body.theme-dark button.clickable-icon.is-active {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #dcddde !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Active + Hover state */
+.theme-light .nav-action-button.is-active:hover,
+body.theme-light .nav-action-button.is-active:hover,
+.theme-light .clickable-icon.is-active:hover,
+body.theme-light .clickable-icon.is-active:hover {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  color: #222222 !important;
+  border: none !important;
+}
+
+.theme-dark .nav-action-button.is-active:hover,
+body.theme-dark .nav-action-button.is-active:hover,
+.theme-dark .clickable-icon.is-active:hover,
+body.theme-dark .clickable-icon.is-active:hover,
+body .nav-action-button.is-active:hover,
+body .clickable-icon.is-active:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #dcddde !important;
+  border: none !important;
+}
+
 .clickable-icon[aria-disabled='true'] {
   background-color: unset;
   color: var(--text-muted);
