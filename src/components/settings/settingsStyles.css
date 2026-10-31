@@ -20,26 +20,29 @@
      Tokens  --radius-l 12px · --setting-items-padding 20px · --font-ui-small 13px ·
              --font-ui-smaller 12px · --font-ui-medium 15px · divider 1px · --modal-width 90vw ·
              --modal-height 85vh · toggle transition 0.15s ease-in-out
-   Colors follow the Urano capture spec (#161616 / #1e1e1e / #282828 / #2a2a2a / #e06c1b).
+   Colors are Obsidian theme tokens (body.theme-dark / body.theme-light in src/index.css):
+   --background-primary / -secondary / --background-modifier-border / --text-* / --interactive-*.
+   Accent stays Urano orange (#e06c1b) via --interactive-accent.
    ============================================================================ */
 
 .urano-settings-root {
-  --settings-background: #161616;
-  --settings-sidebar-border: #262626;
-  --settings-group-bg: #1e1e1e;
-  --settings-group-border: #282828;
-  --settings-divider: #2a2a2a;
-  --settings-nav-active: #2a2a2a;
-  --settings-text: #dcddde;
-  --settings-text-muted: #888888;
-  --settings-text-faint: #666666;
-  --settings-heading: #e0e0e0;
-  --settings-button-bg: #2a2a2a;
-  --settings-button-border: #383838;
-  --settings-button-hover: #333333;
-  --settings-input-bg: #222222;
-  --settings-input-border: #333333;
-  --settings-toggle-off: #3a3a3a;
+  --settings-background: var(--background-primary);
+  --settings-sidebar-bg: var(--background-secondary);
+  --settings-sidebar-border: var(--background-modifier-border);
+  --settings-group-bg: var(--background-primary-alt, var(--background-primary));
+  --settings-group-border: var(--background-modifier-border);
+  --settings-divider: var(--background-modifier-border);
+  --settings-nav-active: var(--background-modifier-hover);
+  --settings-text: var(--text-normal);
+  --settings-text-muted: var(--text-muted);
+  --settings-text-faint: var(--text-faint);
+  --settings-heading: var(--text-normal);
+  --settings-button-bg: var(--interactive-normal);
+  --settings-button-border: var(--background-modifier-border);
+  --settings-button-hover: var(--interactive-hover);
+  --settings-input-bg: var(--background-modifier-form-field);
+  --settings-input-border: var(--background-modifier-border);
+  --settings-toggle-off: var(--color-base-35, #707070);
   --settings-accent: var(--interactive-accent, #e06c1b);
   --settings-warning: #e08a3c;
 
@@ -57,7 +60,7 @@
 .urano-settings-root .modal-bg {
   position: absolute;
   inset: 0;
-  background-color: rgba(10, 10, 10, 0.4);
+  background-color: var(--background-modifier-cover, rgba(10, 10, 10, 0.4));
   opacity: 0.85;
 }
 
@@ -72,7 +75,7 @@
   display: flex;
   flex-direction: column;
   background: var(--settings-background);
-  border: 1px solid #2e2e2e;
+  border: 1px solid var(--settings-sidebar-border);
   box-shadow:
     0px 1.8px 7.3px rgba(0, 0, 0, 0.071),
     0px 6.3px 24.7px rgba(0, 0, 0, 0.112),
@@ -110,7 +113,7 @@
 }
 .urano-settings-root .modal-header-button:hover {
   color: var(--settings-text);
-  background-color: rgba(255, 255, 255, 0.067);
+  background-color: var(--background-modifier-hover);
 }
 .urano-settings-root .modal-header-button svg {
   opacity: 0.85;
@@ -128,7 +131,7 @@
   flex: 0 0 240px;
   width: 240px;
   min-width: 240px;
-  background: var(--settings-background);
+  background: var(--settings-sidebar-bg);
   border-right: 1px solid var(--settings-sidebar-border);
   padding: 12px 10px;
   display: flex;
@@ -172,8 +175,8 @@
   color: var(--settings-text-faint);
 }
 .urano-settings-root .search-input-container input:focus {
-  border-color: #555555;
-  box-shadow: 0 0 0 2px rgba(85, 85, 85, 0.35);
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
 }
 .urano-settings-root .search-input-container input::-webkit-search-decoration,
 .urano-settings-root .search-input-container input::-webkit-search-cancel-button {
@@ -191,14 +194,14 @@
   height: 16px;
   border-radius: 50%;
   color: var(--settings-text-muted);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--background-modifier-hover);
   cursor: pointer;
   border: 0;
   padding: 0;
 }
 .urano-settings-root .search-input-clear-button:hover {
   color: var(--settings-text);
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--interactive-hover);
 }
 
 .urano-settings-root .vertical-tab-header-group-container {
@@ -214,7 +217,7 @@
 .urano-settings-root .vertical-tab-header-group-title {
   font-size: 11px;
   font-weight: 600;
-  color: #777777;
+  color: var(--settings-text-muted);
   padding: 12px 10px 4px;
   user-select: none;
   white-space: nowrap;
@@ -240,14 +243,15 @@
   transition: background-color 0.1s ease, color 0.1s ease;
 }
 .urano-settings-root .vertical-tab-nav-item:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--background-modifier-hover);
 }
 .urano-settings-root .vertical-tab-nav-item:focus-visible {
-  box-shadow: 0 0 0 2px #555555;
+  box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 .urano-settings-root .vertical-tab-nav-item.is-active {
   background-color: var(--settings-nav-active);
-  color: #ffffff;
+  color: var(--settings-text);
+  font-weight: 500;
 }
 .urano-settings-root .vertical-tab-nav-item.is-dimmed {
   opacity: 0.4;
@@ -261,7 +265,7 @@
   color: var(--settings-text-muted);
 }
 .urano-settings-root .vertical-tab-nav-item.is-active .vertical-tab-nav-item-icon {
-  color: #ffffff;
+  color: var(--interactive-accent);
 }
 .urano-settings-root .vertical-tab-nav-item-title {
   flex-grow: 1;
@@ -275,7 +279,7 @@
 .urano-settings-root .vertical-tab-nav-item-count {
   font-size: 11px;
   color: var(--settings-text-muted);
-  background: rgba(255, 255, 255, 0.067);
+  background: var(--background-modifier-hover);
   border-radius: 2em;
   padding: 0 6px;
   margin-left: 6px;
@@ -366,7 +370,7 @@
   position: absolute;
   inset: 4px -8px;
   border-radius: 6px;
-  box-shadow: inset 0 0 0 2px #555555;
+  box-shadow: inset 0 0 0 2px var(--background-modifier-border-focus);
   pointer-events: none;
 }
 .urano-settings-root .setting-item.is-disabled {
@@ -418,7 +422,7 @@
 .urano-settings-root .setting-item-description code {
   font-family: var(--font-monospace);
   font-size: 0.875em;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--background-modifier-hover);
   border-radius: 4px;
   padding: 0 3px 1px;
 }
@@ -451,7 +455,7 @@
   box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.07);
   cursor: pointer;
   user-select: none;
-  outline: 0 solid #555555;
+  outline: 0 solid var(--background-modifier-border-focus);
   transition:
     background-color 0.15s ease,
     box-shadow 0.15s ease,
@@ -496,7 +500,7 @@
   left: -4px;
 }
 .urano-settings-root .checkbox-container:focus-visible {
-  outline: 2px solid #555555;
+  outline: 2px solid var(--background-modifier-border-focus);
 }
 .urano-settings-root .checkbox-container.is-disabled {
   cursor: not-allowed;
@@ -530,7 +534,7 @@
   background: var(--settings-button-hover);
 }
 .urano-settings-root .setting-button:focus-visible {
-  box-shadow: 0 0 0 3px rgba(85, 85, 85, 0.6);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--background-modifier-border-focus) 60%, transparent);
 }
 .urano-settings-root .setting-button[disabled] {
   cursor: not-allowed;
@@ -539,7 +543,7 @@
 .urano-settings-root .setting-button.mod-cta {
   background: var(--settings-accent);
   border-color: transparent;
-  color: #ffffff;
+  color: var(--text-on-accent);
 }
 .urano-settings-root .setting-button.mod-cta:hover {
   filter: brightness(1.08);
@@ -585,10 +589,10 @@
 }
 .urano-settings-root .extra-setting-button:hover {
   color: var(--settings-text);
-  background-color: rgba(255, 255, 255, 0.067);
+  background-color: var(--background-modifier-hover);
 }
 .urano-settings-root .extra-setting-button:focus-visible {
-  box-shadow: 0 0 0 2px #555555;
+  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
   outline: none;
 }
 
@@ -618,10 +622,10 @@
   background: var(--settings-button-hover);
 }
 .urano-settings-root select.dropdown:focus-visible {
-  box-shadow: 0 0 0 3px rgba(85, 85, 85, 0.6);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--background-modifier-border-focus) 60%, transparent);
 }
 .urano-settings-root select.dropdown option {
-  background: #1e1e1e;
+  background: var(--background-primary);
   color: var(--settings-text);
 }
 .urano-settings-root .dropdown-icon {
@@ -637,7 +641,7 @@
 /* --- Text / number / color / range inputs ------------------------------- */
 .urano-settings-root .setting-item-control input[type='text'],
 .urano-settings-root .setting-item-control input[type='number'] {
-  background: #1c1c1c;
+  background: var(--settings-input-bg);
   border: 1px solid var(--settings-input-border);
   border-radius: 5px;
   height: 30px;
@@ -659,8 +663,8 @@
 }
 .urano-settings-root .setting-item-control input[type='text']:focus,
 .urano-settings-root .setting-item-control input[type='number']:focus {
-  border-color: #555555;
-  box-shadow: 0 0 0 2px rgba(85, 85, 85, 0.35);
+  border-color: var(--background-modifier-border-focus);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--background-modifier-border-focus) 60%, transparent);
 }
 
 .urano-settings-root .setting-item-control input[type='range'] {
@@ -767,7 +771,7 @@
   gap: 4px;
   font-family: var(--font-interface);
   font-size: 12px;
-  background: rgba(255, 255, 255, 0.067);
+  background: var(--background-modifier-hover);
   border-radius: 2em;
   padding: 2px 8px;
   white-space: nowrap;
@@ -801,7 +805,7 @@
 }
 .urano-settings-root .setting-search-highlight {
   background: color-mix(in srgb, var(--settings-accent) 30%, transparent);
-  color: #ffffff;
+  color: var(--text-normal);
   border-radius: 2px;
   padding: 0 1px;
 }
@@ -835,7 +839,7 @@
   width: 8px;
 }
 .urano-settings-root ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--scrollbar-thumb-bg);
   border-radius: 999px;
 }
 
@@ -858,10 +862,10 @@
   max-width: 400px;
   height: 30px;
   padding: 4px 10px;
-  background: #2a2a2a;
-  border: 1px solid #363636;
+  background: var(--settings-button-bg);
+  border: 1px solid var(--settings-button-border);
   border-radius: 5px;
-  color: #dcddde;
+  color: var(--settings-text);
   font-size: 13px;
   font-family: inherit;
   line-height: 1.3;
@@ -871,10 +875,10 @@
 }
 .urano-settings-root .language-dropdown-button:hover,
 .urano-settings-root .language-dropdown-button.is-open {
-  background: var(--settings-button-hover, #333333);
+  background: var(--settings-button-hover);
 }
 .urano-settings-root .language-dropdown-button:focus-visible {
-  box-shadow: 0 0 0 3px rgba(85, 85, 85, 0.6);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--background-modifier-border-focus) 60%, transparent);
 }
 .urano-settings-root .language-dropdown-button:disabled {
   cursor: not-allowed;
@@ -882,7 +886,7 @@
 }
 .urano-settings-root .language-dropdown-button svg {
   flex-shrink: 0;
-  color: var(--settings-text-muted, #9a9a9a);
+  color: var(--settings-text-muted);
 }
 .urano-settings-root .language-dropdown-button-label {
   flex: 1 1 auto;
@@ -909,20 +913,20 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 3px;
-  background: #181818;
-  border: 1px solid #2e2e2e;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 8px 24px var(--background-modifier-box-shadow, rgba(0, 0, 0, 0.3));
   font-family: var(--font-interface, inherit);
   font-size: 13px;
-  color: #d0d0d0;
+  color: var(--settings-text);
   outline: none;
   user-select: none;
   direction: ltr !important;
   text-align: left !important;
   animation: language-dropdown-in 90ms ease-out;
   scrollbar-width: thin;
-  scrollbar-color: #3a3a3a transparent;
+  scrollbar-color: var(--background-modifier-border) transparent;
 }
 .mod-rtl .language-dropdown-menu {
   direction: ltr !important;
@@ -938,11 +942,11 @@
   background: transparent;
 }
 .language-dropdown-menu::-webkit-scrollbar-thumb {
-  background: #3a3a3a;
+  background: var(--background-modifier-border);
   border-radius: 3px;
 }
 .language-dropdown-menu::-webkit-scrollbar-thumb:hover {
-  background: #4a4a4a;
+  background: var(--background-modifier-border-hover);
 }
 @keyframes language-dropdown-in {
   from { opacity: 0; transform: translateY(-3px); }
@@ -968,7 +972,7 @@
   line-height: 1.35;
   font-size: 13px;
   border-radius: 3px;
-  color: #d0d0d0;
+  color: var(--settings-text);
   cursor: pointer;
   white-space: nowrap;
   box-sizing: border-box;
@@ -977,13 +981,13 @@
 }
 .language-dropdown-item:hover,
 .language-dropdown-item.is-active {
-  background: #2a2a2a;
+  background: var(--background-modifier-hover);
 }
 .language-dropdown-item.is-selected,
 .language-dropdown-item.is-selected:hover,
 .language-dropdown-item.is-selected.is-active {
-  background: #72aeff;
-  color: #111111;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent, #ffffff);
   font-weight: 500;
 }
 .language-dropdown-item-label {
@@ -1007,7 +1011,7 @@
   flex-shrink: 0;
   padding: 0 5px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--background-modifier-hover);
   font-size: 10px;
   font-family: var(--font-monospace, monospace);
   letter-spacing: 0.02em;
