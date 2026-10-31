@@ -115,19 +115,19 @@ export const CssSnippetsModal: React.FC<CssSnippetsModalProps> = ({
         <div
           className="modal-header flex items-center justify-between px-5 py-4"
           style={{
-            borderBottom: '1px solid var(--background-modifier-border, #282828)',
+            borderBottom: '1px solid var(--background-modifier-border)',
           }}
         >
           <div className="flex items-center gap-2">
             <FileCode size={20} className="text-[#e06c1b]" />
-            <h2 className="text-base font-semibold text-[#dcddde] m-0">
+            <h2 className="text-base font-semibold text-[var(--text-normal)] m-0">
               {t('appearance.cssSnippets')}
             </h2>
           </div>
           <div className="flex items-center gap-1">
             <button
               type="button"
-              className="clickable-icon p-1.5 text-[#888] hover:text-[#dcddde] transition-colors rounded"
+              className="clickable-icon p-1.5 text-[var(--text-muted)] hover:text-[var(--text-normal)] transition-colors rounded"
               title={t('appearance.openSnippetsFolder')}
               aria-label={t('appearance.openSnippetsFolder')}
               onClick={handleOpenFolder}
@@ -136,7 +136,7 @@ export const CssSnippetsModal: React.FC<CssSnippetsModalProps> = ({
             </button>
             <button
               type="button"
-              className={`clickable-icon p-1.5 text-[#888] hover:text-[#dcddde] transition-colors rounded ${
+              className={`clickable-icon p-1.5 text-[var(--text-muted)] hover:text-[var(--text-normal)] transition-colors rounded ${
                 loading ? 'animate-spin text-[#e06c1b]' : ''
               }`}
               title={t('appearance.reloadSnippets')}
@@ -147,7 +147,7 @@ export const CssSnippetsModal: React.FC<CssSnippetsModalProps> = ({
             </button>
             <button
               type="button"
-              className="clickable-icon p-1.5 text-[#888] hover:text-[#dcddde] transition-colors rounded ml-1"
+              className="clickable-icon p-1.5 text-[var(--text-muted)] hover:text-[var(--text-normal)] transition-colors rounded ml-1"
               title={t('general.close') || 'Cerrar'}
               aria-label={t('general.close') || 'Cerrar'}
               onClick={onClose}
@@ -158,7 +158,7 @@ export const CssSnippetsModal: React.FC<CssSnippetsModalProps> = ({
         </div>
 
         {/* Description */}
-        <div className="px-5 py-3 text-xs text-[#888888] border-b border-[#242424] bg-[var(--background-primary,#161616)]">
+        <div className="px-5 py-3 text-xs text-[var(--text-muted)] border-b border-[var(--background-modifier-border)] bg-[var(--background-primary)]">
           {t('appearance.cssSnippetsDesc')}
         </div>
 
@@ -168,8 +168,8 @@ export const CssSnippetsModal: React.FC<CssSnippetsModalProps> = ({
           style={{ minHeight: '160px' }}
         >
           {snippets.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-center gap-3 text-[#888]">
-              <FileCode size={36} className="text-[#555]" />
+            <div className="flex flex-col items-center justify-center py-10 text-center gap-3 text-[var(--text-muted)]">
+              <FileCode size={36} className="text-[var(--text-faint)]" />
               <p className="text-sm max-w-sm m-0">
                 {t('appearance.noSnippetsFound')}
               </p>
@@ -184,13 +184,13 @@ export const CssSnippetsModal: React.FC<CssSnippetsModalProps> = ({
             snippets.map((snippet) => (
               <div
                 key={snippet.name}
-                className="flex items-center justify-between p-3 rounded-lg bg-[var(--background-primary,#181818)] border border-[var(--background-modifier-border,#252525)] hover:border-[#383838] transition-colors"
+                className="flex items-center justify-between p-3 rounded-lg bg-[var(--background-primary)] border border-[var(--background-modifier-border)] hover:border-[var(--background-modifier-border-hover)] transition-colors"
               >
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-medium text-[#dcddde]">
+                  <span className="text-sm font-medium text-[var(--text-normal)]">
                     {snippet.name}
                   </span>
-                  <span className="text-[11px] text-[#777]">
+                  <span className="text-[11px] text-[var(--text-muted)]">
                     {snippet.source === 'obsidian' ? '.obsidian/snippets' : '.urano/snippets'}
                   </span>
                 </div>
