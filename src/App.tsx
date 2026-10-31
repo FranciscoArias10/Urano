@@ -743,8 +743,9 @@ export const App: React.FC = () => {
       ext = '';
     }
 
+    const rel = getRelativeVaultPath(targetPath, activeVault || '');
     const title =
-      targetPath.replace(/\\/g, '/').split('/').pop()?.replace(new RegExp(`\\${ext}$`, 'i'), '') ||
+      rel.split('/').filter(Boolean).pop()?.replace(new RegExp(`\\${ext}$`, 'i'), '') ||
       t('common.untitled');
     const tabId = `${targetPath}_tab_${Date.now()}`;
     const newTab: TabItem = {
