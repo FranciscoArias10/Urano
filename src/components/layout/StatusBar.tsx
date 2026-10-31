@@ -34,13 +34,13 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   const chars = fileContent.length;
 
   return (
-    <footer className="h-6 bg-obsidian-sidebar border-t border-obsidian-border flex items-center justify-between px-3 text-[11px] text-stone-400 select-none z-20">
+    <footer className="h-6 bg-obsidian-sidebar border-t border-obsidian-border flex items-center justify-between px-3 text-[11px] text-obsidian-muted select-none z-20">
       {/* Left: Spacer */}
       <div className="flex items-center gap-2" />
 
       {/* Right: Compact Status Pill (0 backlinks  [pencil]  55 palabras  497 caracteres + sync icon) */}
       <div className="flex items-center">
-        <div className="flex items-center gap-2.5 bg-[#141414] hover:bg-[#1a1a1a] px-2.5 py-0.5 rounded-full border border-stone-800/80 text-[11px] text-stone-400 transition-colors">
+        <div className="flex items-center gap-2.5 bg-obsidian-bg hover:bg-obsidian-hover px-2.5 py-0.5 rounded-full border border-obsidian-border text-[11px] text-obsidian-muted transition-colors">
           <button
             onClick={onToggleBacklinks}
             className="hover:text-orange-400 transition-colors cursor-pointer"
@@ -49,7 +49,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             {t('statusBar.backlinks', { count: backlinksCount })}
           </button>
 
-          <span className="text-stone-700 select-none">•</span>
+          <span className="text-obsidian-muted select-none opacity-40">•</span>
 
           {onToggleViewMode && (
             <>
@@ -65,21 +65,21 @@ export const StatusBar: React.FC<StatusBarProps> = ({
               >
                 <Pencil size={13} />
               </button>
-              <span className="text-stone-700 select-none">•</span>
+              <span className="text-obsidian-muted select-none opacity-40">•</span>
             </>
           )}
 
-          <span className="font-mono text-[10px] text-stone-300">
+          <span className="font-mono text-[10px] text-obsidian-text">
             {t('statusBar.words', { count: words })}
           </span>
 
-          <span className="text-stone-700 select-none">•</span>
+          <span className="text-obsidian-muted select-none opacity-40">•</span>
 
-          <span className="font-mono text-[10px] text-stone-300">
+          <span className="font-mono text-[10px] text-obsidian-text">
             {t('statusBar.characters', { count: chars })}
           </span>
 
-          <span className="text-stone-700 select-none">•</span>
+          <span className="text-obsidian-muted select-none opacity-40">•</span>
 
           <button
             onClick={onOpenLogs}
@@ -107,7 +107,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
                 <Cloud size={12} className="text-orange-400" />
               )
             ) : (
-              <HardDrive size={12} className="text-stone-500 hover:text-orange-400" />
+              <HardDrive size={12} className="text-obsidian-faint hover:text-orange-400" />
             )}
           </button>
         </div>
