@@ -107,7 +107,7 @@ export const CanvasEdgeView: React.FC<CanvasEdgeViewProps> = ({
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleLabelBlur();
               }}
-              className="canvas-path-label bg-[#1e1e1e] text-white border border-orange-500 text-[11px] px-2 py-0.5 rounded outline-none w-full text-center"
+              className="canvas-path-label bg-obsidian-bg text-obsidian-text border border-orange-500 text-[11px] px-2 py-0.5 rounded outline-none w-full text-center"
             />
           ) : (
             <div

@@ -88,14 +88,14 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
   const isImageMode = mode === 'image';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/60 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-[var(--background-modifier-cover)] backdrop-blur-sm animate-fadeIn">
       <div
-        className="relative w-full max-w-lg bg-[#1e1e1e] border border-[#333333] rounded-xl shadow-2xl overflow-hidden flex flex-col"
+        className="relative w-full max-w-lg bg-obsidian-bg border border-obsidian-border rounded-xl shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with Search */}
-        <div className="flex items-center px-3 py-2.5 border-b border-[#2e2e2e] gap-2">
-          <Search size={16} className="text-stone-400 shrink-0" />
+        <div className="flex items-center px-3 py-2.5 border-b border-obsidian-border gap-2">
+          <Search size={16} className="text-obsidian-muted shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -110,11 +110,11 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
                 ? t('canvas.vaultModal.selectImage')
                 : t('canvas.vaultModal.selectNote')
             }
-            className="w-full bg-transparent text-sm text-stone-100 placeholder-stone-500 outline-none"
+            className="w-full bg-transparent text-sm text-obsidian-text placeholder-stone-500 outline-none"
           />
           <button
             onClick={onClose}
-            className="p-1 text-stone-400 hover:text-white rounded hover:bg-white/10"
+            className="p-1 text-obsidian-muted hover:text-obsidian-text rounded hover:bg-obsidian-active"
           >
             <X size={15} />
           </button>
@@ -123,7 +123,7 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
         {/* Files list */}
         <div className="max-h-72 overflow-y-auto p-1.5 space-y-0.5">
           {filtered.length === 0 ? (
-            <div className="px-3 py-6 text-center text-xs text-stone-500">
+            <div className="px-3 py-6 text-center text-xs text-obsidian-faint">
               {isImageMode
                 ? t('canvas.vaultModal.noImages')
                 : t('canvas.vaultModal.noNotes')}
@@ -139,7 +139,7 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs cursor-pointer transition-colors ${
                   idx === selectedIndex
                     ? 'bg-orange-600/20 text-orange-400 border border-orange-500/40'
-                    : 'text-stone-300 hover:bg-stone-800 hover:text-white'
+                    : 'text-obsidian-text hover:bg-[var(--interactive-hover)] hover:text-obsidian-text'
                 }`}
               >
                 {isImageMode ? (
@@ -148,7 +148,7 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
                   <FileText size={14} className="shrink-0 opacity-70" />
                 )}
                 <span className="truncate flex-1 font-medium">{file.name}</span>
-                <span className="text-[10px] text-stone-500 truncate max-w-[150px]">
+                <span className="text-[10px] text-obsidian-faint truncate max-w-[150px]">
                   {file.path.split('/').slice(-2, -1)[0] || t('canvas.vaultModal.root')}
                 </span>
               </div>

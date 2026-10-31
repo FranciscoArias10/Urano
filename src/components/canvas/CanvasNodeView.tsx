@@ -387,7 +387,7 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleGroupLabelBlur();
               }}
-              className="bg-transparent text-white outline-none font-semibold text-xs min-w-[80px]"
+              className="bg-transparent text-obsidian-text outline-none font-semibold text-xs min-w-[80px]"
             />
           ) : (
             <span>{node.label || t('canvas.node.group')}</span>
