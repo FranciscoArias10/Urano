@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { t as translateKey, subscribe as subscribeI18n, getVersion as getI18nVersion } from '../locales/i18n';
 import type { TranslateParams } from '../locales/i18n';
 import { DEFAULT_LANGUAGE, detectSystemLanguage, normalizeLanguageCode } from '../locales/languages';
+import { applyBaseTheme } from '../services/themeService';
 
 /** Código de idioma BCP-47 en minúsculas (`en`, `es`, `pt-br`…). Ver `locales/languages.ts`. */
 export type Language = string;
@@ -302,8 +303,13 @@ export interface SettingsStoreState {
   markStartupComplete: () => void;
 }
 
+const initialSettings = readLocalSettings();
+if (typeof window !== 'undefined') {
+  applyBaseTheme(initialSettings.theme);
+}
+
 export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
-  settings: readLocalSettings(),
+  settings: initialSettings,
   get language() {
     return get().settings.language;
   },
@@ -326,6 +332,10 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     writeLocalSettings(next);
     scheduleVaultWrite(get().vaultPath, next);
     set({ settings: next });
+
+    if (key === 'theme') {
+      applyBaseTheme(value as ThemeMode);
+    }
 
     if (key === 'language' || key === 'spellcheck') {
       invoke('set_spellcheck_language', {
@@ -408,6 +418,7 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
         merged.customDictionary = Array.from(new Set([...merged.customDictionary, ...dictWords]));
       }
       writeLocalSettings(merged);
+      applyBaseTheme(merged.theme);
       set({ settings: merged, vaultPath });
       invoke('set_spellcheck_language', {
         lang: merged.language,
