@@ -12,6 +12,10 @@ body.theme-light {
   --font-monospace: "Cascadia Code", "JetBrains Mono", "Fira Code", Consolas, monospace;
 }
 
+html, body, #root, button, input, select, textarea, .view-header, .workspace-tab-header, .view-header-title, .view-header-title-parent, .view-header-breadcrumb, .workspace-tab-header-inner-title, .inline-title {
+  font-family: var(--font-interface) !important;
+}
+
 :root {
   /* Obsidian Core Architecture with Neutral Dark Grays and Urano Orange Accent */
   --accent-h: 24;
