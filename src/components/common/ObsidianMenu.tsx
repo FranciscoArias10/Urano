@@ -97,7 +97,7 @@ const MenuItemRow: React.FC<MenuItemRowProps> = ({ item, onTrigger }) => {
       )}
 
       {hasSubmenu && (
-        <ChevronRight size={14} className="text-stone-500 ml-2" />
+        <ChevronRight size={14} className="text-obsidian-faint ml-2" />
       )}
 
       {/* Recursive Submenu */}

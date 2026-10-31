@@ -108,7 +108,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
             <div className="flex items-center gap-1.5">
               <span>{content}</span>
               {shortcut && (
-                <span className="text-[10px] text-stone-400 font-mono bg-stone-800/80 px-1 py-0.2 rounded border border-stone-700/60">
+                <span className="text-[10px] text-obsidian-muted font-mono bg-[var(--interactive-normal)] px-1 py-0.2 rounded border border-obsidian-border">
                   {shortcut}
                 </span>
               )}

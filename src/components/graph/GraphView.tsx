@@ -181,21 +181,21 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
         <button
           onClick={handleZoomIn}
           title={t('graph.zoomIn')}
-          className="p-2 hover:bg-obsidian-hover text-obsidian-muted hover:text-white rounded transition-colors"
+          className="p-2 hover:bg-obsidian-hover text-obsidian-muted hover:text-obsidian-text rounded transition-colors"
         >
           <ZoomIn className="w-4 h-4" />
         </button>
         <button
           onClick={handleZoomOut}
           title={t('graph.zoomOut')}
-          className="p-2 hover:bg-obsidian-hover text-obsidian-muted hover:text-white rounded transition-colors"
+          className="p-2 hover:bg-obsidian-hover text-obsidian-muted hover:text-obsidian-text rounded transition-colors"
         >
           <ZoomOut className="w-4 h-4" />
         </button>
         <button
           onClick={handleResetZoom}
           title={t('graph.resetView')}
-          className="p-2 hover:bg-obsidian-hover text-obsidian-muted hover:text-white rounded transition-colors"
+          className="p-2 hover:bg-obsidian-hover text-obsidian-muted hover:text-obsidian-text rounded transition-colors"
         >
           <RotateCcw className="w-4 h-4" />
         </button>

@@ -238,7 +238,7 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
         e.preventDefault();
         setContextMenu({ x: e.clientX, y: e.clientY });
       }}
-      className="relative w-full h-full bg-[#161616] overflow-hidden select-none flex items-center justify-center cursor-grab active:cursor-grabbing"
+      className="relative w-full h-full bg-obsidian-sidebar overflow-hidden select-none flex items-center justify-center cursor-grab active:cursor-grabbing"
       style={{
         backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px)',
         backgroundSize: '24px 24px',
@@ -270,13 +270,13 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
 
       {/* Floating Controls Top-Right */}
       <div
-        className="absolute top-4 right-4 flex items-center gap-1 bg-[#202020]/90 backdrop-blur-md border border-stone-800/80 rounded-lg p-1 shadow-xl z-20"
+        className="absolute top-4 right-4 flex items-center gap-1 bg-obsidian-sidebar/90 backdrop-blur-md border border-obsidian-border rounded-lg p-1 shadow-xl z-20"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <Tooltip content={t('image.zoomIn')} position="bottom">
           <button
             onClick={handleZoomIn}
-            className="p-1.5 text-stone-300 hover:text-white hover:bg-white/10 rounded transition-colors"
+            className="p-1.5 text-obsidian-text hover:text-obsidian-text hover:bg-obsidian-active rounded transition-colors"
           >
             <ZoomIn size={16} />
           </button>
@@ -284,16 +284,16 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
         <Tooltip content={t('image.zoomOut')} position="bottom">
           <button
             onClick={handleZoomOut}
-            className="p-1.5 text-stone-300 hover:text-white hover:bg-white/10 rounded transition-colors"
+            className="p-1.5 text-obsidian-text hover:text-obsidian-text hover:bg-obsidian-active rounded transition-colors"
           >
             <ZoomOut size={16} />
           </button>
         </Tooltip>
-        <div className="w-[1px] h-4 bg-stone-700/60 mx-0.5" />
+        <div className="w-[1px] h-4 bg-[var(--interactive-normal)] mx-0.5" />
         <Tooltip content={t('image.resetZoom')} position="bottom">
           <button
             onClick={handleResetZoom}
-            className="px-2 py-1 text-xs font-mono text-stone-300 hover:text-white hover:bg-white/10 rounded transition-colors"
+            className="px-2 py-1 text-xs font-mono text-obsidian-text hover:text-obsidian-text hover:bg-obsidian-active rounded transition-colors"
           >
             {Math.round(scale * 100)}%
           </button>
@@ -301,7 +301,7 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
         <Tooltip content={t('image.zoomToFit')} position="bottom">
           <button
             onClick={handleFitZoom}
-            className="p-1.5 text-stone-300 hover:text-white hover:bg-white/10 rounded transition-colors"
+            className="p-1.5 text-obsidian-text hover:text-obsidian-text hover:bg-obsidian-active rounded transition-colors"
           >
             <Maximize2 size={15} />
           </button>
@@ -310,27 +310,27 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
 
       {/* Status Bar Floating Bottom-Center */}
       <div
-        className="absolute bottom-4 flex items-center gap-3 bg-[#1e1e1e]/90 backdrop-blur-md border border-stone-800/80 rounded-full px-4 py-1.5 text-xs text-stone-300 shadow-xl z-20 select-none"
+        className="absolute bottom-4 flex items-center gap-3 bg-obsidian-bg/90 backdrop-blur-md border border-obsidian-border rounded-full px-4 py-1.5 text-xs text-obsidian-text shadow-xl z-20 select-none"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <span className="font-semibold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded text-[10px] tracking-wider uppercase border border-orange-500/20">
           {formatTag}
         </span>
-        <span className="truncate max-w-[200px] text-stone-200" title={fileName}>
+        <span className="truncate max-w-[200px] text-obsidian-text" title={fileName}>
           {fileName}
         </span>
         {dimensions && (
-          <span className="text-stone-400 font-mono">
+          <span className="text-obsidian-muted font-mono">
             {dimensions.width} × {dimensions.height} px
           </span>
         )}
         {fileSizeBytes !== null && (
-          <span className="text-stone-400 font-mono">
+          <span className="text-obsidian-muted font-mono">
             {formatFileSize(fileSizeBytes)}
           </span>
         )}
-        <span className="text-stone-500">|</span>
-        <span className="text-stone-400 font-mono">
+        <span className="text-obsidian-faint">|</span>
+        <span className="text-obsidian-muted font-mono">
           {Math.round(scale * 100)}%
         </span>
       </div>
