@@ -8,14 +8,14 @@ export const BookmarksPanel: React.FC = () => {
   const { bookmarks, removeBookmark, selectFile } = useVaultStore();
 
   return (
-    <div className="flex flex-col h-full bg-obsidian-sidebar text-stone-200 select-none overflow-hidden">
+    <div className="flex flex-col h-full bg-obsidian-sidebar text-obsidian-text select-none overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-obsidian-border bg-[#181818] flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-obsidian-border bg-obsidian-sidebar flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Bookmark size={15} className="text-orange-500 fill-orange-500/20" />
-          <span className="text-xs font-semibold text-white">{t('bookmarks.title')}</span>
+          <span className="text-xs font-semibold text-obsidian-text">{t('bookmarks.title')}</span>
         </div>
-        <span className="text-[11px] text-stone-400">
+        <span className="text-[11px] text-obsidian-muted">
           {t(bookmarks.length === 1 ? 'bookmarks.countOne' : 'bookmarks.countOther', {
             count: bookmarks.length,
           })}
@@ -25,10 +25,10 @@ export const BookmarksPanel: React.FC = () => {
       {/* Bookmarks List */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {bookmarks.length === 0 ? (
-          <div className="p-6 text-center text-xs text-stone-500 flex flex-col items-center gap-2">
-            <Bookmark size={24} className="text-stone-600 stroke-[1.5]" />
+          <div className="p-6 text-center text-xs text-obsidian-faint flex flex-col items-center gap-2">
+            <Bookmark size={24} className="text-obsidian-faint stroke-[1.5]" />
             <p>{t('bookmarks.empty')}</p>
-            <p className="text-[11px] text-stone-600">
+            <p className="text-[11px] text-obsidian-faint">
               {t('bookmarks.emptyHint')}
             </p>
           </div>
@@ -41,7 +41,7 @@ export const BookmarksPanel: React.FC = () => {
                   selectFile(b.path);
                 }
               }}
-              className="group flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-stone-800/60 cursor-pointer text-xs text-stone-300 transition-colors"
+              className="group flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-[var(--interactive-hover)] cursor-pointer text-xs text-obsidian-text transition-colors"
             >
               <div className="flex items-center gap-2 truncate">
                 {b.type === 'file' ? (
@@ -59,7 +59,7 @@ export const BookmarksPanel: React.FC = () => {
                   e.stopPropagation();
                   removeBookmark(b.path);
                 }}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 rounded text-stone-500 transition-opacity"
+                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 rounded text-obsidian-faint transition-opacity"
                 title={t('bookmarks.remove')}
               >
                 <X size={12} />

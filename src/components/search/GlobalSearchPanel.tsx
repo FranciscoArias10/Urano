@@ -86,22 +86,22 @@ export const GlobalSearchPanel: React.FC = () => {
   }, [searchResults]);
 
   return (
-    <div className="flex flex-col h-full bg-obsidian-sidebar text-stone-200 select-none overflow-hidden">
+    <div className="flex flex-col h-full bg-obsidian-sidebar text-obsidian-text select-none overflow-hidden">
       {/* Search Input Box */}
-      <div className="p-3 border-b border-obsidian-border bg-[#181818]">
-        <div className="flex items-center gap-2 bg-[#141414] px-2.5 py-1.5 rounded-md border border-[#333333] text-xs">
-          <Search size={13} className="text-stone-400 shrink-0" />
+      <div className="p-3 border-b border-obsidian-border bg-obsidian-sidebar">
+        <div className="flex items-center gap-2 bg-obsidian-sidebar px-2.5 py-1.5 rounded-md border border-obsidian-border text-xs">
+          <Search size={13} className="text-obsidian-muted shrink-0" />
           <input
             type="text"
             placeholder={t('search.placeholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-transparent text-white outline-none placeholder-stone-500"
+            className="w-full bg-transparent text-obsidian-text outline-none placeholder-stone-500"
           />
           {query && (
             <button
               onClick={() => setQuery('')}
-              className="text-stone-400 hover:text-white"
+              className="text-obsidian-muted hover:text-obsidian-text"
             >
               <X size={12} />
             </button>
@@ -109,7 +109,7 @@ export const GlobalSearchPanel: React.FC = () => {
         </div>
 
         {query && (
-          <div className="mt-2 text-[11px] text-stone-400 flex items-center justify-between">
+          <div className="mt-2 text-[11px] text-obsidian-muted flex items-center justify-between">
             <span>
               {t('search.summary', {
                 matches: t(totalMatches === 1 ? 'search.matchOne' : 'search.matchOther', {
@@ -127,11 +127,11 @@ export const GlobalSearchPanel: React.FC = () => {
       {/* Results List */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {!query ? (
-          <div className="p-4 text-center text-xs text-stone-500">
+          <div className="p-4 text-center text-xs text-obsidian-faint">
             {t('search.emptyHint')}
           </div>
         ) : searchResults.length === 0 ? (
-          <div className="p-4 text-center text-xs text-stone-500">
+          <div className="p-4 text-center text-xs text-obsidian-faint">
             {t('search.noMatches', { query })}
           </div>
         ) : (
@@ -139,32 +139,32 @@ export const GlobalSearchPanel: React.FC = () => {
             const isCollapsed = Boolean(collapsedFiles[res.filePath]);
 
             return (
-              <div key={res.filePath} className="rounded-md overflow-hidden bg-[#161616]/60 border border-white/5">
+              <div key={res.filePath} className="rounded-md overflow-hidden bg-obsidian-sidebar/60 border border-obsidian-border">
                 {/* File Header */}
                 <div
                   onClick={() => toggleCollapse(res.filePath)}
-                  className="flex items-center justify-between px-2.5 py-1.5 cursor-pointer hover:bg-stone-800/40 text-xs text-stone-300 font-medium"
+                  className="flex items-center justify-between px-2.5 py-1.5 cursor-pointer hover:bg-[var(--interactive-hover)] text-xs text-obsidian-text font-medium"
                 >
                   <div className="flex items-center gap-1.5 truncate">
                     {isCollapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
                     <FileText size={13} className="text-orange-400 shrink-0" />
                     <span className="truncate">{res.fileName}</span>
                   </div>
-                  <span className="text-[10px] bg-stone-800 text-stone-400 px-1.5 py-0.2 rounded-full border border-stone-700/60 font-mono">
+                  <span className="text-[10px] bg-[var(--interactive-normal)] text-obsidian-muted px-1.5 py-0.2 rounded-full border border-obsidian-border font-mono">
                     {res.matches.length}
                   </span>
                 </div>
 
                 {/* Snippets */}
                 {!isCollapsed && (
-                  <div className="divide-y divide-white/5 border-t border-white/5">
+                  <div className="divide-y divide-white/5 border-t border-obsidian-border">
                     {res.matches.map((m, idx) => (
                       <div
                         key={idx}
                         onClick={() => selectFile(res.filePath)}
-                        className="px-3 py-1.5 hover:bg-orange-500/10 cursor-pointer text-[11px] text-stone-400 transition-colors"
+                        className="px-3 py-1.5 hover:bg-orange-500/10 cursor-pointer text-[11px] text-obsidian-muted transition-colors"
                       >
-                        <span className="text-stone-600 font-mono mr-1.5">
+                        <span className="text-obsidian-faint font-mono mr-1.5">
                           {t('search.lineNumber', { line: m.lineNum })}
                         </span>
                         <span>...{m.before}</span>
