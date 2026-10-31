@@ -306,9 +306,14 @@ export const App: React.FC = () => {
       ext = '';
     }
 
-    const fileName = activeFileName
-      ? (ext ? activeFileName.replace(new RegExp(`\\${ext}$`, 'i'), '') : activeFileName)
-      : t('common.untitled');
+    const relName = activeFile
+      ? getRelativeVaultPath(activeFile, activeVault || '').split('/').pop()
+      : undefined;
+    const fileName =
+      relName ||
+      (activeFileName
+        ? (ext ? activeFileName.replace(new RegExp(`\\${ext}$`, 'i'), '') : activeFileName)
+        : t('common.untitled'));
 
     // Which leaf hosts this file?
     const existing = tabs.find((t) => t.filePath === activeFile);
