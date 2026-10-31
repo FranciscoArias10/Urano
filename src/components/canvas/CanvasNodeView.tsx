@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Globe } from 'lucide-react';
 import { CanvasNode, CanvasNodeSide } from '../../types/canvas';
 import {
-  DEFAULT_COLOR,
   isCustomCanvasColor,
   resolveCanvasColor,
 } from './canvasMath';
@@ -331,7 +330,9 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
     <div
       className={`canvas-node ${isGroup ? 'canvas-node-group' : ''} ${
         isSelected ? 'is-selected' : ''
-      } ${isDragging ? 'is-dragging' : ''} ${isEditing ? 'is-editing' : ''}`}
+      } ${isDragging ? 'is-dragging' : ''} ${isEditing ? 'is-editing' : ''} ${
+        hasTheme ? 'is-themed' : ''
+      }`}
       style={{
         transform: `translate(${node.x}px, ${node.y}px)`,
         width: `${node.width}px`,
@@ -339,6 +340,7 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
         zIndex: isGroup ? 1 : isSelected || isDragging ? 10 : 3,
         // La barra flotante y el círculo de conexión viven fuera de la tarjeta.
         overflow: 'visible',
+        ...(hasTheme ? ({ '--canvas-node-color': colorScheme.hex } as React.CSSProperties) : {}),
       }}
       onClick={readonly ? onSelect : undefined}
       onMouseDown={(e) => {
@@ -367,11 +369,6 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
       {isGroup && (
         <div
           className="canvas-group-label"
-          style={{
-            borderColor: colorScheme.border,
-            backgroundColor: colorScheme.hex !== DEFAULT_COLOR.hex ? colorScheme.hex : '#262626',
-            color: colorScheme.hex !== DEFAULT_COLOR.hex ? '#ffffff' : '#b0b0b0',
-          }}
           onDoubleClick={(e) => {
             e.stopPropagation();
             if (!readonly) setIsEditingGroupLabel(true);
@@ -401,20 +398,6 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
           node.type === 'text' ? 'is-text' : node.type === 'file' ? 'is-file' : ''
         } ${isImageFile ? 'is-image' : ''}`}
         style={{
-          // Caja 1:1 con Obsidian: fondo liso, borde fino y sin resplandor.
-          // Con color (preset o personalizado) el borde y el fondo se tiñen.
-          background: isGroup
-            ? 'transparent'
-            : hasTheme
-              ? `color-mix(in srgb, ${colorScheme.hex} 12%, #1e1e1e)`
-              : '#1e1e1e',
-          border: hasTheme
-            ? `${isSelected || hasCustomColor ? '2px' : '1px'} solid ${colorScheme.border}`
-            : isSelected
-              ? '2px solid #e06c1b'
-              : '1px solid #363636',
-          borderRadius: '10px',
-          boxShadow: 'none',
           cursor: isSelected && !isEditing ? (isDragging ? 'grabbing' : 'grab') : 'default',
         }}
         onDoubleClick={(e) => {

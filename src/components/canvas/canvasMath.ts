@@ -61,9 +61,9 @@ export const CANVAS_COLORS: Record<
 export const DEFAULT_COLOR = {
   nameKey: 'canvas.colors.default',
   hex: '#7e7e7e',
-  bg: '#1e1e1e',
-  border: '#383838',
-  text: '#d4d4d4',
+  bg: 'var(--background-primary)',
+  border: 'var(--background-modifier-border)',
+  text: 'var(--text-normal)',
 };
 
 /** Círculo gris del selector de color (restablece el color del nodo/arista). */
@@ -86,9 +86,9 @@ export function resolveCanvasColor(color?: string): CanvasColorScheme {
     return {
       nameKey: 'canvas.colors.custom',
       hex: color as string,
-      bg: `color-mix(in srgb, ${color} 12%, #1e1e1e)`,
+      bg: color as string,
       border: color as string,
-      text: '#ffffff',
+      text: 'var(--text-normal)',
     };
   }
   return DEFAULT_COLOR;
