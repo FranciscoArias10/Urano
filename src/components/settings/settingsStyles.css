@@ -904,8 +904,16 @@
   unicode-bidi: plaintext;
 }
 
+.language-dropdown-container {
+  position: relative;
+  display: inline-flex;
+}
+
 .language-dropdown-menu {
-  position: fixed;
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: auto !important;
   z-index: 200;
   box-sizing: border-box;
   min-width: 180px;
@@ -932,7 +940,12 @@
   direction: ltr !important;
   text-align: left !important;
 }
-.language-dropdown-menu.is-top {
+.language-dropdown-menu.is-top,
+.language-dropdown-menu.mod-up {
+  top: auto;
+  bottom: calc(100% + 4px);
+  right: 0;
+  left: auto !important;
   animation-name: language-dropdown-in-top;
 }
 .language-dropdown-menu::-webkit-scrollbar {
