@@ -9,32 +9,10 @@
   --accent-h: 24;
   --accent-s: 88%;
   --accent-l: 49%;
-  --color-accent: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
-  --color-accent-1: hsl(calc(var(--accent-h) - 3), calc(var(--accent-s) * 1.02), calc(var(--accent-l) * 1.15));
-  --color-accent-2: hsl(calc(var(--accent-h) - 5), calc(var(--accent-s) * 1.05), calc(var(--accent-l) * 1.29));
-  --interactive-accent: var(--color-accent);
-  --interactive-accent-hover: var(--color-accent-1);
 
-  --background-primary: #1e1e1e;
-  --background-primary-alt: #1a1a1a;
-  --background-secondary: #181818;
-  --background-secondary-alt: #111111;
-  --code-background: #161616;
   
-  --background-modifier-border: rgba(255, 255, 255, 0.08);
-  --background-modifier-border-hover: rgba(224, 108, 27, 0.35);
-  --background-modifier-border-focus: var(--interactive-accent);
-  --background-modifier-hover: rgba(255, 255, 255, 0.05);
-  --background-modifier-active-hover: rgba(224, 108, 27, 0.15);
-  --divider-color: var(--background-modifier-border);
   --cursor: default;
 
-  /* Typography Colors */
-  --text-normal: #dcddde;
-  --text-muted: #888888;
-  --text-faint: #555555;
-  --text-accent: var(--interactive-accent);
-  --text-accent-hover: var(--interactive-accent-hover);
 
   /* Settings-driven (Settings → Appearance / Editor); overridden at runtime on <html> */
   --editor-font-size: 16px;
@@ -42,10 +20,6 @@
   --file-line-width: 820px;
   --editor-tab-size: 4;
 
-  --color-red: #ef4444;
-  --color-green: #22c55e;
-  --color-yellow: #eab308;
-  --color-blue: #38bdf8;
 
   --font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-monospace-default: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, 'Cascadia Mono', 'Roboto Mono', monospace;
@@ -80,25 +54,13 @@
      Evidence: REA extraction of /usr/lib/obsidian/obsidian.asar/app.css
      ======================================================== */
   --header-height: 40px;
-  --tab-container-background: var(--background-secondary-alt);
-  --tab-background-active: var(--background-primary);
   --tab-background-hover: transparent;
   --tab-inner-background: transparent;
-  --tab-inner-background-hover: var(--background-modifier-hover);
   --tab-inner-background-active: transparent;
   --tab-inner-border-width: 0px;
   --tab-inner-border-color: transparent;
   --tab-inner-border-color-hover: transparent;
   --tab-inner-border-color-active: transparent;
-  --tab-text-color: var(--text-muted);
-  --tab-text-color-active: var(--text-muted);
-  --tab-text-color-focused: var(--text-muted);
-  --tab-text-color-focused-active: var(--text-muted);
-  --tab-text-color-focused-active-current: var(--text-normal);
-  --tab-text-color-focused-highlighted: var(--text-accent);
-  --tab-divider-color: #2a2a2a;
-  --tab-outline-color: var(--divider-color);
-  --tab-outline-color-hover: var(--divider-color);
   --tab-outline-width: 1px;
   --tab-curve: 10px;
   --tab-radius: var(--radius-s);
@@ -111,16 +73,12 @@
   --tab-font-weight: 400;
 
   /* View header (second row) */
-  --file-header-background: var(--background-primary);
-  --file-header-background-focused: var(--background-primary);
   --file-header-border: 0px solid transparent;
   --file-header-font-size: 13px;
   --file-header-font-weight: 500;
   --file-header-justify: start;
 
   /* Icons */
-  --icon-color: var(--text-muted);
-  --icon-color-hover: var(--text-normal);
   --icon-opacity: 0.85;
   --icon-opacity-hover: 1;
   --icon-opacity-active: 1;
@@ -142,14 +100,41 @@
   /* Native window controls */
   --window-control-width: 46px;
   --window-control-height: 32px;
-  --window-control-hover: rgba(255, 255, 255, 0.1);
   --window-control-close-hover: #e81123;
 }
+/* ========================================================
+   Theme-token aliases (declared on <body>, NOT :root)
+   A custom property that contains var(--x) is resolved on the element
+   where it is declared. Declaring these on :root would freeze them to
+   :root's values and ignore body.theme-light / body.theme-dark.
+   (Obsidian app.css declares the same aliases inside `body { }`.)
+   ======================================================== */
+body {
+  --divider-color: var(--background-modifier-border);
+  --tab-container-background: var(--background-secondary-alt);
+  --tab-background-active: var(--background-primary);
+  --tab-inner-background-hover: var(--background-modifier-hover);
+  --tab-text-color: var(--text-muted);
+  --tab-text-color-active: var(--text-muted);
+  --tab-text-color-focused: var(--text-muted);
+  --tab-text-color-focused-active: var(--text-muted);
+  --tab-text-color-focused-active-current: var(--text-normal);
+  --tab-text-color-focused-highlighted: var(--text-accent);
+  --tab-outline-color: var(--divider-color);
+  --tab-outline-color-hover: var(--divider-color);
+  --file-header-background: var(--background-primary);
+  --file-header-background-focused: var(--background-primary);
+  --icon-color: var(--text-muted);
+  --icon-color-hover: var(--text-normal);
+  --window-control-hover: var(--background-modifier-hover);
+}
+
 
 /* ========================================================
    Obsidian Official Theme Variables (.theme-dark)
    Evidence: REA inspection of /usr/lib/obsidian/obsidian.asar/app.css
    ======================================================== */
+body,
 .theme-dark,
 body.theme-dark {
   color-scheme: dark;
@@ -184,37 +169,46 @@ body.theme-dark {
   --color-secondary-4: color-mix(in srgb, var(--background-secondary) 90%, white 10%);
   --color-secondary-5: color-mix(in srgb, var(--background-secondary) 84%, white 16%);
   --color-secondary-6: color-mix(in srgb, var(--background-secondary) 76%, white 24%);
-  --background-modifier-form-field: var(--color-base-25);
-  --background-secondary-alt: var(--color-base-30);
-  --interactive-normal: var(--color-base-30);
-  --interactive-hover: var(--color-base-35);
+
+  --background-primary: #1e1e1e;
+  --background-primary-alt: #161616;
+  --background-secondary: #262626;
+  --background-secondary-alt: #202020;
+  --background-modifier-border: #333333;
+  --background-modifier-border-hover: #404040;
+  --background-modifier-border-focus: #555555;
+  --background-modifier-form-field: #2a2a2a;
+  --text-normal: #dcddde;
+  --text-muted: #888888;
+  --text-faint: #555555;
+  --text-on-accent: #ffffff;
+  --text-on-accent-inverted: #000000;
+  --interactive-normal: #2a2a2a;
+  --interactive-hover: #333333;
   --text-accent: var(--color-accent-1);
   --interactive-accent: var(--color-accent);
   --interactive-accent-hover: var(--color-accent-1);
   --background-modifier-box-shadow: rgba(0, 0, 0, 0.3);
   --background-modifier-cover: rgba(10, 10, 10, 0.4);
+  --background-modifier-hover: rgba(255, 255, 255, 0.05);
+  --background-modifier-active-hover: color-mix(in oklch, var(--interactive-accent) 10%, transparent);
   --raised-mask-background: transparent;
+  --hr-color: var(--background-modifier-border);
+  --divider-color: var(--background-modifier-border);
+  --scrollbar-thumb-bg: color-mix(in oklch, var(--mono-100) 10%, transparent);
+  --scrollbar-active-thumb-bg: color-mix(in oklch, var(--mono-100) 20%, transparent);
+  --nav-item-background-hover: var(--background-modifier-hover);
+  --nav-item-background-active: var(--background-modifier-hover);
   --text-selection: color-mix(in oklch, var(--interactive-accent) 33%, transparent);
 
-  --background-primary: var(--color-base-00);
-  --background-primary-alt: var(--color-base-10);
-  --background-secondary: var(--color-base-20);
-  --background-secondary-alt: var(--color-base-25);
-  --background-modifier-border: var(--color-base-30);
-  --background-modifier-border-hover: var(--color-base-35);
-  --background-modifier-border-focus: var(--color-base-40);
-  --text-normal: var(--color-base-100);
-  --text-muted: var(--color-base-70);
-  --text-faint: var(--color-base-50);
-  --text-on-accent: #ffffff;
-  --text-on-accent-inverted: #000000;
   --modal-background: var(--background-primary);
   --modal-border-color: var(--background-modifier-border);
   --prompt-background: var(--background-primary);
   --search-result-background: var(--background-primary);
   --setting-items-background: var(--background-primary-alt);
   --canvas-background: var(--background-primary);
-  --code-background: var(--color-base-10);
+  --code-background: #161616;
+  --tab-divider-color: #2a2a2a;
 }
 
 /* ========================================================
@@ -250,40 +244,51 @@ body.theme-light {
   --color-accent: hsl(var(--accent-h), var(--accent-s), var(--accent-l));
   --color-accent-1: hsl(calc(var(--accent-h) - 1), calc(var(--accent-s) * 1.01), calc(var(--accent-l) * 1.075));
   --color-accent-2: hsl(calc(var(--accent-h) - 3), calc(var(--accent-s) * 1.02), calc(var(--accent-l) * 1.15));
-  --background-secondary-alt: var(--color-base-05);
-  --background-modifier-form-field: var(--color-base-00);
-  --interactive-normal: var(--color-base-00);
-  --interactive-hover: var(--color-base-10);
+
+  --background-primary: #ffffff;
+  --background-primary-alt: #fafafa;
+  --background-secondary: #f6f6f6;
+  --background-secondary-alt: #ececec;
+  --background-modifier-border: #d4d4d4;
+  --background-modifier-border-hover: #b8b8b8;
+  --background-modifier-border-focus: #999999;
+  --background-modifier-form-field: #ffffff;
+  --text-normal: #222222;
+  --text-muted: #666666;
+  --text-faint: #999999;
+  --text-on-accent: #ffffff;
+  --text-on-accent-inverted: #000000;
+  --interactive-normal: #f0f0f0;
+  --interactive-hover: #e4e4e4;
   --text-accent: var(--color-accent-1);
   --interactive-accent: var(--color-accent);
   --interactive-accent-hover: var(--color-accent-1);
   --background-modifier-box-shadow: rgba(0, 0, 0, 0.1);
   --background-modifier-cover: rgba(220, 220, 220, 0.4);
+  --background-modifier-hover: rgba(0, 0, 0, 0.05);
+  --background-modifier-active-hover: color-mix(in oklch, var(--interactive-accent) 10%, transparent);
+  --raised-mask-background: transparent;
+  --hr-color: var(--background-modifier-border);
+  --divider-color: var(--background-modifier-border);
+  --scrollbar-thumb-bg: color-mix(in oklch, var(--mono-100) 10%, transparent);
+  --scrollbar-active-thumb-bg: color-mix(in oklch, var(--mono-100) 20%, transparent);
+  --nav-item-background-hover: var(--background-modifier-hover);
+  --nav-item-background-active: var(--background-modifier-hover);
   --text-selection: color-mix(in oklch, var(--interactive-accent) 25%, transparent);
 
-  --background-primary: var(--color-base-00);
-  --background-primary-alt: var(--color-base-05);
-  --background-secondary: var(--color-base-10);
-  --background-modifier-border: var(--color-base-30);
-  --background-modifier-border-hover: var(--color-base-40);
-  --background-modifier-border-focus: var(--color-base-50);
-  --text-normal: var(--color-base-100);
-  --text-muted: var(--color-base-70);
-  --text-faint: var(--color-base-50);
-  --text-on-accent: #ffffff;
-  --text-on-accent-inverted: #000000;
   --modal-background: var(--background-primary);
   --modal-border-color: var(--background-modifier-border);
   --prompt-background: var(--background-primary);
   --search-result-background: var(--background-primary);
   --setting-items-background: var(--background-primary-alt);
   --canvas-background: var(--background-primary);
-  --code-background: var(--color-base-10);
+  --code-background: #f6f6f6;
+  --tab-divider-color: #d4d4d4;
 }
 
 @layer base {
   * {
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: var(--background-modifier-border);
   }
 
   body {
@@ -307,7 +312,7 @@ body.theme-light {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--scrollbar-thumb-bg);
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -343,7 +348,7 @@ body.theme-light {
   transition: all 0.15s ease;
 }
 .side-dock-ribbon-action:hover {
-  color: #fff;
+  color: var(--text-normal);
   background: var(--background-modifier-hover);
 }
 .side-dock-ribbon-action.is-active {
@@ -864,7 +869,7 @@ body.theme-light {
 .cm-hypermd-codeblock {
   font-family: var(--font-monospace) !important;
   font-size: 13.5px !important;
-  background-color: #161616 !important;
+  background-color: var(--code-background) !important;
   padding-left: 18px !important;
   padding-right: 18px !important;
   border: none !important;
@@ -898,7 +903,7 @@ body.theme-light {
 /* Indentation guides within code block */
 .cm-hypermd-codeblock .cm-indent-guide,
 .cm-hypermd-codeblock .cm-indent {
-  border-left: 1px solid #2e2e2e !important;
+  border-left: 1px solid var(--background-modifier-border) !important;
   display: inline-block;
   height: 100%;
 }
@@ -920,7 +925,7 @@ body.theme-light {
   justify-content: center;
   width: 28px;
   height: 28px;
-  color: #888888;
+  color: var(--text-muted);
   background-color: transparent;
   border: none;
   border-radius: 4px;
@@ -937,7 +942,7 @@ body.theme-light {
 .copy-code-button:hover,
 .copy-code-button.copied {
   color: #e06c1b;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--background-modifier-hover);
 }
 
 /* Visually hide opening & closing ``` fence text when cursor is outside */
@@ -980,15 +985,15 @@ body.theme-light {
 }
 
 .cm-katex-block-widget.is-collapsed:hover {
-  background-color: rgba(255, 255, 255, 0.02) !important;
-  border: 1px solid #363636 !important;
+  background-color: var(--background-modifier-hover) !important;
+  border: 1px solid var(--background-modifier-border) !important;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25) !important;
 }
 
 /* Estado 1: Cursor dentro (editando la fórmula) -> caja con borde #363636 */
 .cm-katex-block-widget.is-expanded {
-  background-color: #181818 !important;
-  border: 1px solid #363636 !important;
+  background-color: var(--background-secondary) !important;
+  border: 1px solid var(--background-modifier-border) !important;
   border-radius: 6px !important;
   padding: 16px !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
@@ -1024,7 +1029,7 @@ body.theme-light {
 .cm-h1-line {
   font-size: 2rem !important;
   font-weight: 700 !important;
-  color: #ffffff !important;
+  color: var(--text-normal) !important;
   line-height: 1.3 !important;
   letter-spacing: -0.02em !important;
   padding-top: 1.5rem !important;
@@ -1056,7 +1061,7 @@ body.theme-light {
 }
 
 .cm-heading-marker {
-  color: #78716c !important;
+  color: var(--text-faint) !important;
   font-weight: 400 !important;
   opacity: 0.5;
   transition: opacity 0.15s ease;
@@ -1080,7 +1085,7 @@ body.theme-light {
 }
 
 .cm-hr-line {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 1px solid var(--hr-color) !important;
   color: transparent !important;
   height: 1px !important;
   margin: 1.5rem 0 !important;
@@ -1091,7 +1096,7 @@ body.theme-light {
   width: 100%;
   height: 0;
   border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid var(--hr-color);
   margin: 1.5rem 0;
   cursor: text;
   box-sizing: border-box;
@@ -1150,13 +1155,13 @@ body.theme-light {
 
 .cm-strikethrough {
   text-decoration: line-through !important;
-  color: #78716c !important;
+  color: var(--text-faint) !important;
 }
 
 .cm-inline-code {
   font-family: var(--font-monospace) !important;
   font-size: 13px !important;
-  background-color: #201c18 !important;
+  background-color: var(--code-background) !important;
   border-radius: 4px !important;
   padding: 1px 5px !important;
   color: #fb923c !important;
@@ -1269,8 +1274,8 @@ mark.hl-purple {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #1e1e1e;
-  border: 1px solid #363636;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   padding: 8px 12px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
@@ -1288,7 +1293,7 @@ mark.hl-purple {
   height: 0;
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
-  border-top: 6px solid #363636;
+  border-top: 6px solid var(--background-modifier-border);
 }
 
 .canvas-color-picker-item {
@@ -1303,24 +1308,24 @@ mark.hl-purple {
 }
 
 .canvas-color-picker-reset {
-  box-shadow: 0 0 0 2px #1e1e1e, 0 0 0 3.5px #777777;
+  box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 3.5px var(--text-muted);
 }
 
 .canvas-color-picker-item:not(.canvas-color-picker-reset):not(.canvas-color-picker-custom) {
-  box-shadow: 0 0 0 2px #1e1e1e, 0 0 0 3.5px transparent;
+  box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 3.5px transparent;
 }
 
 .canvas-color-picker-item.is-active:not(.canvas-color-picker-reset):not(.canvas-color-picker-custom) {
-  box-shadow: 0 0 0 2px #1e1e1e, 0 0 0 3.5px #a8a8a8;
+  box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 3.5px var(--text-normal);
 }
 
 .canvas-color-picker-custom {
   background: conic-gradient(from 90deg, #ff4d4d, #ffa64d, #ffff4d, #4dff4d, #4dffff, #4d4dff, #ff4dff, #ff4d4d);
-  box-shadow: 0 0 0 2px #1e1e1e, 0 0 0 3.5px #4a4a4a;
+  box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 3.5px var(--background-modifier-border-hover);
 }
 
 .canvas-color-picker-custom.is-active {
-  box-shadow: 0 0 0 2px #1e1e1e, 0 0 0 3.5px #a8a8a8;
+  box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 3.5px var(--text-normal);
 }
 
 .canvas-color-picker-custom input[type='color'] {
@@ -1357,8 +1362,8 @@ mark.hl-purple {
    ======================================================== */
 .menu {
   position: fixed;
-  background-color: var(--background-secondary, #202020);
-  border: 1px solid #2e2e2e;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 2px 6px rgba(0, 0, 0, 0.4);
   padding: 6px;
@@ -1366,7 +1371,7 @@ mark.hl-purple {
   max-width: 290px;
   z-index: 9999;
   font-size: 13px;
-  color: var(--text-normal, #dcddde);
+  color: var(--text-normal);
   backdrop-filter: blur(12px);
 }
 
@@ -1386,27 +1391,27 @@ mark.hl-purple {
   user-select: none;
   font-size: 13px;
   line-height: 1.4;
-  color: var(--text-normal, #dcddde);
+  color: var(--text-normal);
   gap: 10px;
 }
 
 .menu-item:hover, .menu-item.selected {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
 }
 
 .menu-item-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted, #888888);
+  color: var(--text-muted);
   width: 15px;
   height: 15px;
   flex-shrink: 0;
 }
 
 .menu-item:hover .menu-item-icon, .menu-item.selected .menu-item-icon {
-  color: #ffffff;
+  color: var(--text-normal);
 }
 
 .menu-item-title {
@@ -1439,16 +1444,16 @@ mark.hl-purple {
   opacity: 0.38 !important;
   cursor: default !important;
   pointer-events: none !important;
-  color: #737373 !important;
+  color: var(--text-faint) !important;
 }
 
 .menu-item.is-disabled .menu-item-icon {
-  color: #737373 !important;
+  color: var(--text-faint) !important;
 }
 
 .menu-separator {
   height: 1px;
-  background-color: #2e2e2e;
+  background-color: var(--background-modifier-border);
   border: none;
   margin: 4px 0;
 }
@@ -1463,7 +1468,7 @@ mark.hl-purple {
   background: transparent;
   font-size: 1.802em;
   font-weight: 700;
-  color: #dcddde;
+  color: var(--text-normal);
   line-height: 1.2;
   margin-bottom: 16px;
   width: 100%;
@@ -1543,15 +1548,15 @@ mark.hl-purple {
   border-radius: 8px;
   margin: 1.25rem 0;
   padding: 0.75rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--background-modifier-border);
   border-left-width: 4px;
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: var(--background-modifier-hover);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   transition: all 0.15s ease;
 }
 
 .callout:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--background-modifier-hover);
 }
 
 .callout-title {
@@ -1682,7 +1687,7 @@ mark.hl-purple {
 
 .urano-table-editor th,
 .urano-table-editor td {
-  border: 1px solid #363636;
+  border: 1px solid var(--background-modifier-border);
   min-width: 120px;
   height: 34px;
   padding: 0;
@@ -1693,7 +1698,7 @@ mark.hl-purple {
 }
 
 .urano-table-editor th {
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: var(--background-modifier-hover);
   font-weight: 600;
   color: #e2e8f0;
 }
@@ -1703,7 +1708,7 @@ mark.hl-purple {
 }
 
 .urano-table-editor tr:hover td {
-  background-color: rgba(255, 255, 255, 0.015);
+  background-color: var(--background-modifier-hover);
 }
 
 .urano-table-cell-content {
@@ -1735,8 +1740,8 @@ mark.hl-purple {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #1a1a1a;
-  border: 1px solid #363636;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 4px;
   color: #888;
   cursor: pointer;
@@ -1756,8 +1761,8 @@ mark.hl-purple {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #1a1a1a;
-  border: 1px solid #363636;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 4px;
   color: #888;
   cursor: pointer;
@@ -1778,7 +1783,7 @@ mark.hl-purple {
   opacity: 1 !important;
   color: #e06c1b;
   border-color: #e06c1b;
-  background-color: #252525;
+  background-color: var(--interactive-hover);
 }
 
 /* ========================================================
@@ -1788,9 +1793,9 @@ mark.hl-purple {
   position: fixed;
   z-index: 10000;
   pointer-events: none;
-  background-color: #141414;
+  background-color: var(--background-secondary);
   color: #dedede;
-  border: 1px solid #333333;
+  border: 1px solid var(--background-modifier-border);
   border-radius: 5px;
   padding: 4px 8px;
   font-size: 11px;
@@ -1825,7 +1830,7 @@ mark.hl-purple {
   transform: translateY(-50%);
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
-  border-right: 5px solid #333333;
+  border-right: 5px solid var(--background-modifier-border);
 }
 
 /* Mod-bottom: arrow points up towards button */
@@ -1835,7 +1840,7 @@ mark.hl-purple {
   transform: translateX(-50%);
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
-  border-bottom: 5px solid #333333;
+  border-bottom: 5px solid var(--background-modifier-border);
 }
 
 /* Mod-top: arrow points down towards button */
@@ -1845,16 +1850,16 @@ mark.hl-purple {
   transform: translateX(-50%);
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
-  border-top: 5px solid #333333;
+  border-top: 5px solid var(--background-modifier-border);
 }
 
 /* ========================================================
    Obsidian File Explorer Tags & Indentation Guide
    ======================================================== */
 .nav-file-tag {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--background-modifier-hover);
   border-radius: 3px;
-  color: #888888;
+  color: var(--text-muted);
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -1866,7 +1871,7 @@ mark.hl-purple {
 
 .nav-folder-children {
   position: relative;
-  border-left: 1px solid rgba(255, 255, 255, 0.07);
+  border-left: 1px solid var(--background-modifier-border);
   margin-left: 17px;
 }
 
@@ -1988,7 +1993,7 @@ mark.hl-purple {
   height: 28px;
   padding: 0;
   background: rgba(24, 24, 24, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--background-modifier-border-hover);
   border-radius: 5px;
   color: #d4d4d4;
   cursor: pointer;
@@ -1999,8 +2004,8 @@ mark.hl-purple {
 @media (hover: hover) {
   .image-embed .embed-action:hover {
     background: rgba(40, 40, 40, 0.92);
-    color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.22);
+    color: var(--text-normal);
+    border-color: var(--background-modifier-border-focus);
   }
 }
 
@@ -2033,9 +2038,9 @@ mark.hl-purple {
   border-radius: 4px;
   background: linear-gradient(
     110deg,
-    var(--bg-secondary, #1e1e1e) 30%,
-    var(--bg-tertiary, #2a2a2a) 50%,
-    var(--bg-secondary, #1e1e1e) 70%
+    var(--background-secondary) 30%,
+    var(--interactive-hover) 50%,
+    var(--background-secondary) 70%
   );
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.2s ease-in-out infinite;
@@ -2216,26 +2221,6 @@ mark.hl-purple {
 
 
 /* ========================================================
-   Light base color scheme (Settings → Appearance → Base color scheme)
-   Values from Obsidian 1.14.4 app.css `.theme-light` (--color-base-*).
-   Only variable-driven surfaces switch; hard-coded dark hex colors in
-   individual components keep their dark look.
-   ======================================================== */
-body.theme-light {
-  --background-primary: #ffffff;
-  --background-primary-alt: #fafafa;
-  --background-secondary: #f6f6f6;
-  --background-secondary-alt: #fcfcfc;
-  --code-background: #f6f6f6;
-  --background-modifier-border: #e4e4e4;
-  --background-modifier-hover: rgba(0, 0, 0, 0.067);
-  --text-normal: #222222;
-  --text-muted: #5c5c5c;
-  --text-faint: #ababab;
-  --tab-divider-color: #e4e4e4;
-}
-
-/* ========================================================
    Obsidian Spellcheck Error Underline (.cm-spell-error)
    ======================================================== */
 .cm-content .cm-spell-error,
@@ -2263,15 +2248,15 @@ body.theme-light {
 .language-dropdown-button {
   width: 100%;
   height: 32px;
-  background-color: #2a2a2a;
-  border: 1px solid #3c3c3c;
+  background-color: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 5px;
   padding: 0 12px;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  color: #dcddde;
+  color: var(--text-normal);
   font-size: 13px;
   cursor: pointer;
   box-sizing: border-box;
@@ -2280,8 +2265,8 @@ body.theme-light {
 }
 
 .language-dropdown-button:hover {
-  background-color: #333333;
-  border-color: #4c4c4c;
+  background-color: var(--interactive-hover);
+  border-color: var(--background-modifier-border-hover);
 }
 
 .language-dropdown-button:focus,
@@ -2302,8 +2287,8 @@ body.theme-light {
   width: 100%;
   max-height: 440px;
   overflow-y: auto;
-  background-color: #1e1e1e;
-  border: 1px solid #3c3c3c;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 4px;
   box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.7);
   z-index: 9999;
@@ -2323,7 +2308,7 @@ body.theme-light {
 .language-dropdown-item {
   padding: 5px 12px;
   font-size: 13.5px;
-  color: #dcddde;
+  color: var(--text-normal);
   text-align: left;
   direction: ltr;
   cursor: pointer;
@@ -2338,8 +2323,8 @@ body.theme-light {
 
 .language-dropdown-item:hover,
 .language-dropdown-item.is-active {
-  background-color: #2b2b2b;
-  color: #ffffff;
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
 }
 
 .language-dropdown-item.is-selected,
@@ -2358,12 +2343,12 @@ body.theme-light {
 }
 
 .language-dropdown-menu::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.18);
+  background-color: var(--scrollbar-thumb-bg);
   border-radius: 3px;
 }
 
 .language-dropdown-menu::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: var(--scrollbar-active-thumb-bg);
 }
 
 /* ========================================================
@@ -2377,7 +2362,7 @@ body.theme-light {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2), 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 0 1px var(--background-modifier-border-hover), 0 1px 3px rgba(0, 0, 0, 0.3);
   cursor: pointer;
   overflow: hidden;
   transition: transform 0.1s ease, box-shadow 0.1s ease;
@@ -2385,7 +2370,7 @@ body.theme-light {
 
 .setting-item-color-swatch-container:hover {
   transform: scale(1.08);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4), 0 2px 6px rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 0 0 1px var(--background-modifier-border-focus), 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .setting-item-color-swatch-container input[type="color"] {
