@@ -303,12 +303,12 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
       <div className="flex flex-col select-none h-full">
         {/* Only top level renders the 5-button File Explorer Toolbar */}
         {depth === 0 && (
-          <div className="flex items-center justify-end px-3 py-1.5 border-b border-obsidian-border text-stone-400 gap-1 bg-[#181818]/60">
+          <div className="flex items-center justify-end px-3 py-1.5 border-b border-obsidian-border text-obsidian-muted gap-1 bg-obsidian-sidebar">
             {/* 1. New note */}
             <Tooltip content={t('fileTree.newNote')} position="bottom">
               <button
                 onClick={handleCreateNewNote}
-                className="p-1 hover:text-orange-400 hover:bg-white/5 rounded transition-colors"
+                className="p-1 hover:text-orange-400 hover:bg-obsidian-hover rounded transition-colors"
               >
                 <SquarePen size={14} />
               </button>
@@ -318,7 +318,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
             <Tooltip content={t('fileTree.newFolder')} position="bottom">
               <button
                 onClick={handleCreateNewFolder}
-                className="p-1 hover:text-white hover:bg-white/5 rounded transition-colors"
+                className="p-1 hover:text-obsidian-text hover:bg-obsidian-hover rounded transition-colors"
               >
                 <FolderPlus size={14} />
               </button>
@@ -331,8 +331,8 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
                   const rect = e.currentTarget.getBoundingClientRect();
                   setSortMenu({ x: rect.left, y: rect.bottom + 4 });
                 }}
-                className={`p-1 hover:text-white hover:bg-white/5 rounded transition-colors ${
-                  sortMenu ? 'text-orange-400 bg-white/5' : ''
+                className={`p-1 hover:text-obsidian-text hover:bg-obsidian-hover rounded transition-colors ${
+                  sortMenu ? 'text-orange-400 bg-obsidian-hover' : ''
                 }`}
               >
                 <ArrowUpNarrowWide size={14} />
@@ -349,7 +349,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
                 className={`p-1 rounded transition-colors ${
                   autoReveal
                     ? 'text-orange-400 bg-orange-500/15 border border-orange-500/30'
-                    : 'text-stone-400 hover:text-white hover:bg-white/5'
+                    : 'text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover'
                 }`}
               >
                 <ScanLine size={14} />
@@ -360,7 +360,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
             <Tooltip content={t('fileTree.expandCollapseAll')} position="bottom">
               <button
                 onClick={handleToggleExpandAll}
-                className="p-1 hover:text-white hover:bg-white/5 rounded transition-colors"
+                className="p-1 hover:text-obsidian-text hover:bg-obsidian-hover rounded transition-colors"
               >
                 <ChevronsUpDown size={14} />
               </button>
@@ -738,7 +738,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           isDragTarget ? 'bg-orange-500/20 ring-1 ring-orange-500' : ''
         } ${
           isSelected
-            ? 'bg-[#363636] text-white font-medium rounded-md'
+            ? 'bg-obsidian-active text-obsidian-text font-medium rounded-md'
             : 'text-obsidian-text hover:bg-obsidian-hover rounded-md'
         }`}
       >
@@ -749,7 +749,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
                 e.stopPropagation();
                 ctx?.setFolderOpen(item.path, !isOpen);
               }}
-              className="text-stone-500 group-hover:text-stone-300 w-3.5 flex justify-center shrink-0"
+              className="text-obsidian-muted group-hover:text-obsidian-text w-3.5 flex justify-center shrink-0"
             >
               {isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
             </span>
@@ -779,11 +779,11 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
                     ctx?.setRenamingPath(null);
                   }
                 }}
-                className="w-full bg-[#161616] text-white px-1.5 py-0.5 rounded outline-none border border-orange-500"
+                className="w-full bg-obsidian-bg text-obsidian-text px-1.5 py-0.5 rounded outline-none border border-orange-500"
               />
             </form>
           ) : (
-            <span className="truncate text-stone-300 group-hover:text-white">
+            <span className="truncate text-obsidian-text">
               {displayName}
             </span>
           )}
