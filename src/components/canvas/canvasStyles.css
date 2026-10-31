@@ -10,14 +10,14 @@
   --color-accent-translucent: rgba(224, 108, 27, 0.12);
   --color-accent-border: #e06c1b;
   --resizer-size: 16px;
-  --shadow-stationary: 0px 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-drag: 0 14px 28px rgba(0, 0, 0, 0.5), 0 10px 10px rgba(0, 0, 0, 0.4);
+  --shadow-stationary: 0px 1px 3px rgba(0, 0, 0, 0.15);
+  --shadow-drag: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.2);
   --shadow-border-accent: 0 0 0 2px var(--color-accent);
-  --canvas-background: #141414;
-  --canvas-dot-pattern: rgba(255, 255, 255, 0.08);
-  --canvas-node-border: #3a3a3a;
-  --canvas-node-bg: #1e1e1e;
-  --canvas-node-label-color: #888888;
+  --canvas-background: #1e1e1e;
+  --canvas-dot-pattern: rgba(255, 255, 255, 0.12);
+  --canvas-node-border: var(--background-modifier-border, #3a3a3a);
+  --canvas-node-bg: var(--background-primary, #1e1e1e);
+  --canvas-node-label-color: var(--text-muted, #888888);
   background-color: var(--canvas-background);
   overflow: hidden;
   touch-action: none;
@@ -35,6 +35,24 @@
   background-size: calc(var(--canvas-grid-size) * var(--canvas-zoom))
     calc(var(--canvas-grid-size) * var(--canvas-zoom));
   background-position: var(--canvas-pan-x) var(--canvas-pan-y);
+}
+
+.theme-light .canvas-wrapper,
+body.theme-light .canvas-wrapper {
+  --canvas-background: var(--background-primary, #ffffff);
+  --canvas-dot-pattern: rgba(0, 0, 0, 0.14);
+  --canvas-node-border: var(--background-modifier-border, #e0e0e0);
+  --canvas-node-bg: var(--background-primary, #ffffff);
+  --canvas-node-label-color: var(--text-muted, #666666);
+}
+
+.theme-dark .canvas-wrapper,
+body.theme-dark .canvas-wrapper {
+  --canvas-background: #1e1e1e;
+  --canvas-dot-pattern: rgba(255, 255, 255, 0.12);
+  --canvas-node-border: var(--background-modifier-border, #3a3a3a);
+  --canvas-node-bg: var(--background-primary, #1e1e1e);
+  --canvas-node-label-color: var(--text-muted, #888888);
 }
 
 .canvas-wrapper:focus-visible {
@@ -92,29 +110,31 @@
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #1e1e1e;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
   padding: 6px 10px;
   gap: 4px;
   align-items: stretch;
-  border: 1px solid #2e2e2e;
 }
 
 .canvas-card-menu-button {
-  color: #a8a8a8;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 4px 6px;
   border-radius: 4px;
   cursor: pointer;
-  transition: color 120ms ease;
+  transition: color 120ms ease, background-color 120ms ease;
   user-select: none;
 }
 
 .canvas-card-menu-button:hover {
-  color: var(--color-accent);
+  color: var(--text-normal);
+  background-color: var(--background-modifier-hover);
 }
 
 .canvas-card-menu-button.mod-draggable {
@@ -149,11 +169,18 @@
 .canvas-control-group {
   display: flex;
   flex-direction: column;
-  background-color: #1e1e1e;
-  border: 1px solid #333333;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
   border-radius: 6px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
+  position: relative;
+  overflow: visible;
+}
+
+.canvas-control-item:first-child {
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
 }
 
 .canvas-control-item {
@@ -161,25 +188,28 @@
   align-items: center;
   justify-content: center;
   padding: 6px 8px;
-  color: #a8a8a8;
+  color: var(--text-muted);
   cursor: pointer;
   background-color: transparent;
-  border-bottom: 1px solid #2e2e2e;
+  border-bottom: 1px solid var(--background-modifier-border);
   transition: color 100ms ease, background-color 100ms ease;
   line-height: 1;
 }
 
 .canvas-control-item:last-child {
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
   border-bottom: none;
 }
 
 .canvas-control-item:hover:not(.is-disabled) {
-  color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-normal);
+  background-color: var(--background-modifier-hover);
 }
 
 .canvas-control-item.is-active {
-  color: var(--color-accent);
+  color: var(--text-normal);
+  background-color: var(--background-modifier-hover);
 }
 
 .canvas-control-item.is-disabled {
@@ -197,22 +227,34 @@
   letter-spacing: 0.02em;
   padding: 5px 4px;
   min-width: 34px;
-  color: #8a8a8a;
+  color: var(--text-muted);
 }
 
-/* Popover de ajustes / ayuda */
+/* Popover de ajustes / ayuda anclado hacia la izquierda (1:1 con Obsidian) */
 .canvas-control-popover {
-  position: fixed;
-  z-index: 120;
-  min-width: 200px;
-  padding: 6px;
-  background-color: #1e1e1e;
-  border: 1px solid #333333;
+  position: absolute;
+  top: 0;
+  right: calc(100% + 8px);
+  left: auto !important;
+  min-width: 220px;
+  max-width: calc(100vw - 24px);
+  z-index: 500;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  padding: 8px 12px;
+  white-space: nowrap;
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.canvas-control-popover.mod-bottom {
+  top: auto;
+  bottom: 0;
+  right: calc(100% + 8px);
+  left: auto !important;
 }
 
 .canvas-control-popover-title {
@@ -220,9 +262,9 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #888888;
+  color: var(--text-muted);
   padding: 4px 8px 6px;
-  border-bottom: 1px solid #2e2e2e;
+  border-bottom: 1px solid var(--background-modifier-border);
   margin-bottom: 4px;
 }
 
@@ -234,12 +276,12 @@
   padding: 6px 8px;
   border-radius: 4px;
   font-size: 13px;
-  color: #dcdcdc;
+  color: var(--text-normal);
   cursor: pointer;
 }
 
 .canvas-control-popover-item:hover {
-  background-color: rgba(255, 255, 255, 0.07);
+  background-color: var(--background-modifier-hover);
 }
 
 .canvas-control-popover-item.is-static {
@@ -261,9 +303,9 @@
 .canvas-control-popover-item kbd {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
-  color: #a8a8a8;
-  background-color: #262626;
-  border: 1px solid #333333;
+  color: var(--text-muted);
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 4px;
   padding: 1px 6px;
 }
@@ -301,27 +343,52 @@
   height: 100%;
   left: 0;
   top: 0;
-  background: #1e1e1e;
-  border: 1px solid #363636;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: none;
-  transition: border-color 120ms ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: border-color 120ms ease, background-color 120ms ease;
   box-sizing: border-box;
 }
 
-/* Estado seleccionado: borde naranja de 2px, sin resplandor exterior. */
+/* Tarjetas con color temático (--canvas-node-color) */
+/* Modo Claro (body.theme-light) */
+.theme-light .canvas-node.is-themed .canvas-node-container,
+body.theme-light .canvas-node.is-themed .canvas-node-container {
+  background-color: color-mix(in srgb, var(--canvas-node-color) 12%, #ffffff) !important;
+  border: 1px solid color-mix(in srgb, var(--canvas-node-color) 65%, #ffffff) !important;
+}
+
+/* Modo Oscuro (body.theme-dark) */
+.theme-dark .canvas-node.is-themed .canvas-node-container,
+body.theme-dark .canvas-node.is-themed .canvas-node-container,
+.canvas-node.is-themed .canvas-node-container {
+  background-color: color-mix(in srgb, var(--canvas-node-color) 18%, #1e1e1e) !important;
+  border: 1px solid color-mix(in srgb, var(--canvas-node-color) 70%, #1e1e1e) !important;
+}
+
+/* Estado seleccionado / enfocado sin color temático: acento naranja */
 .canvas-node.is-selected .canvas-node-container,
 .canvas-node.is-focused .canvas-node-container,
 .canvas-node.is-editing .canvas-node-container {
-  border: 2px solid #e06c1b;
-  box-shadow: none;
+  border: 2px solid var(--interactive-accent, #e06c1b) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent, #e06c1b) 25%, transparent) !important;
+}
+
+/* Estado seleccionado / enfocado con color temático: resalta su propio color */
+.canvas-node.is-selected.is-themed .canvas-node-container,
+.canvas-node.is-focused.is-themed .canvas-node-container,
+.canvas-node.is-editing.is-themed .canvas-node-container {
+  border: 2px solid var(--canvas-node-color) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--canvas-node-color) 25%, transparent) !important;
 }
 
 .canvas-node.is-dragging .canvas-node-container {
-  box-shadow: none;
+  box-shadow: var(--shadow-drag);
 }
 
 /* El cuerpo es la superficie de arrastre cuando la tarjeta está seleccionada
@@ -365,25 +432,42 @@
   color: var(--canvas-node-label-color);
 }
 
-/* Grupo */
+/* Grupo del Canvas */
 .canvas-node-group .canvas-node-container {
   background-color: transparent !important;
-  border: 1px solid #444444;
+  border: 1px solid var(--background-modifier-border) !important;
+  box-shadow: none !important;
 }
 
+.theme-light .canvas-node-group .canvas-node-content,
+body.theme-light .canvas-node-group .canvas-node-content {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+.theme-dark .canvas-node-group .canvas-node-content,
+body.theme-dark .canvas-node-group .canvas-node-content,
 .canvas-node-group .canvas-node-content {
-  background-color: rgba(255, 255, 255, 0.02) !important;
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+.canvas-node-group.is-themed .canvas-node-content {
+  background-color: color-mix(in srgb, var(--canvas-node-color) 8%, transparent) !important;
+}
+
+.canvas-node-group.is-themed .canvas-node-container {
+  border: 1px solid color-mix(in srgb, var(--canvas-node-color) 60%, transparent) !important;
 }
 
 .canvas-group-label {
   position: absolute;
   left: 0;
   top: -30px;
-  font-size: 14px;
+  font-family: var(--font-interface, sans-serif) !important;
+  font-size: 13px;
   font-weight: 600;
-  color: #b0b0b0;
-  background-color: #262626;
-  border: 1px solid #444444;
+  color: var(--text-normal);
+  background-color: var(--background-secondary, var(--background-primary));
+  border: 1px solid var(--background-modifier-border);
   border-radius: 4px;
   padding: 3px 8px;
   cursor: grab;
@@ -392,6 +476,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   user-select: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.canvas-node-group.is-themed .canvas-group-label:not([contenteditable='true']) {
+  background-color: var(--canvas-node-color) !important;
+  border-color: var(--canvas-node-color) !important;
+  color: #ffffff !important;
 }
 
 .canvas-group-label:active {
@@ -400,10 +491,21 @@
 
 .canvas-group-label[contenteditable='true'] {
   cursor: text;
-  background-color: #1e1e1e;
-  border-color: var(--color-accent);
-  color: #ffffff;
+  background-color: var(--background-primary) !important;
+  border-color: var(--interactive-accent, #e06c1b) !important;
+  color: var(--text-normal) !important;
   outline: none;
+}
+
+/* Contenido del nodo y contraste garantizado de texto/cursor */
+.canvas-node-content,
+.canvas-node-content textarea,
+.canvas-node-content .cm-editor,
+.canvas-node-content .cm-content {
+  background-color: transparent !important;
+  color: var(--text-normal) !important;
+  caret-color: var(--interactive-accent, #e06c1b) !important;
+  font-family: var(--font-text) !important;
 }
 
 /* Contenido del nodo */
@@ -430,7 +532,7 @@
   box-sizing: border-box;
   font-size: 13px;
   line-height: 1.5;
-  color: #dcdcdc;
+  color: var(--text-normal);
   user-select: text;
 }
 
@@ -442,7 +544,7 @@
   width: 100%;
   height: 100%;
   background: transparent;
-  color: #dcdcdc;
+  color: var(--text-normal);
   border: none;
   outline: none;
   resize: none;
@@ -465,7 +567,8 @@
 
 .canvas-node-note-body {
   padding: 20px 24px;
-  background-color: var(--canvas-node-bg);
+  background-color: transparent !important;
+  color: var(--text-normal);
   overflow-y: auto;
 }
 
@@ -473,12 +576,13 @@
   font-size: 24px;
   font-weight: 700;
   line-height: 1.25;
-  color: #ffffff;
+  color: var(--text-normal);
   margin: 0 0 12px 0;
 }
 
 .canvas-node-note-textarea {
   padding: 20px 24px;
+  color: var(--text-normal);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
   line-height: 1.6;
@@ -496,7 +600,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background-color: #141414;
+  background-color: var(--background-secondary, var(--background-primary));
 }
 
 .canvas-node-image {
@@ -510,14 +614,12 @@
 
 .canvas-node-image-loading {
   font-size: 12px;
-  color: #888888;
+  color: var(--text-muted);
 }
 
 /* ------------------------------------------------------------------ */
 /* Redimensionado (4 lados + 4 esquinas)                                */
 /* ------------------------------------------------------------------ */
-/* Zonas invisibles de 6px de grosor, pegadas al borde exterior. Nunca
-   invaden el centro de la tarjeta. */
 .canvas-node-resizer {
   position: absolute;
   z-index: 22;
@@ -590,8 +692,6 @@
 /* ------------------------------------------------------------------ */
 /* Punto de conexión único (18px, centro naranja y anillo gris)          */
 /* ------------------------------------------------------------------ */
-/* La posición concreta (top/right/bottom/left) se aplica inline desde
-   `CanvasNodeView`, siempre centrada sobre la línea del borde. */
 .canvas-node-connection {
   transition: transform 80ms ease;
 }
@@ -610,24 +710,21 @@
   left: 0;
   top: 0;
   overflow: visible;
-  /* Capa intermedia: los grupos quedan debajo (z-index: 1) y las tarjetas por
-     encima (z-index: 3 / 10), de modo que una flecha nunca raya el texto de
-     otra nota. */
   z-index: 2;
-  color: #888888;
+  color: var(--text-muted, #888888);
   pointer-events: none;
 }
 
 .canvas-display-path {
   fill: none;
-  stroke: #888888;
+  stroke: var(--text-muted, #888888);
   stroke-width: 2px;
   pointer-events: none;
   transition: stroke-width 100ms ease, stroke 100ms ease;
 }
 
 .canvas-display-path.is-connecting {
-  stroke: #888888;
+  stroke: var(--text-muted, #888888);
   stroke-width: 2px;
   stroke-dasharray: none;
 }
@@ -655,18 +752,18 @@
 .canvas-path-label {
   position: absolute;
   transform: translate(-50%, -50%);
-  background-color: #1e1e1e;
-  border: 1px solid #383838;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 4px;
   padding: 2px 8px;
   font-size: 11px;
-  color: #cfcfcf;
+  color: var(--text-normal);
   white-space: pre-wrap;
   max-width: 200px;
   text-align: center;
   cursor: pointer;
   user-select: none;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .canvas-path-label:hover {
@@ -676,9 +773,6 @@
 /* ------------------------------------------------------------------ */
 /* Menú flotante de acciones (.canvas-menu)                             */
 /* ------------------------------------------------------------------ */
-/* Barra flotante de acciones del nodo (.canvas-menu).
-   Flota FUERA y ARRIBA del nodo seleccionado, centrada horizontalmente
-   (equivalente al posicionamiento en JS de Obsidian: `bottom: 100%` + `left: 50%`). */
 .canvas-menu {
   position: absolute;
   bottom: calc(100% + 12px);
@@ -688,20 +782,19 @@
   align-items: center;
   gap: 4px;
   padding: 4px 6px;
-  background-color: #242424;
-  border: 1px solid #383838;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
   border-radius: 7px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
   z-index: 100;
 }
 
-/* La barra de arista se ancla a coordenadas absolutas del canvas. */
 .canvas-menu.is-anchored {
   bottom: auto;
   transform: translate(-50%, -100%) translateY(-10px);
 }
 
-/* Envoltura del botón de color: ancla del submenú de colores. */
 .canvas-menu-color {
   position: relative;
   display: flex;
@@ -710,7 +803,7 @@
 .canvas-menu-button {
   padding: 4px;
   border-radius: 4px;
-  color: #9e9e9e;
+  color: var(--text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -721,8 +814,8 @@
 }
 
 .canvas-menu-button:hover {
-  color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-normal);
+  background-color: var(--background-modifier-hover);
 }
 
 .canvas-menu-button.is-active {
@@ -739,10 +832,10 @@
   display: flex;
   padding: 8px;
   gap: 1px;
-  background-color: #1e1e1e;
-  border: 1px solid #363636;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
   overflow: hidden;
   z-index: 60;
 }
@@ -752,7 +845,7 @@
   height: 24px;
   margin: 2px;
   border-radius: 12px;
-  border: 2px solid #1e1e1e;
+  border: 2px solid var(--background-primary);
   cursor: pointer;
   transition: transform 100ms ease;
 }
@@ -767,7 +860,7 @@
 .canvas-markdown {
   font-size: 13px;
   line-height: 1.55;
-  color: #dcdcdc;
+  color: var(--text-normal);
   word-break: break-word;
 }
 
@@ -782,7 +875,7 @@
 .canvas-md-h1 {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-normal);
   margin: 12px 0 6px 0;
   line-height: 1.25;
 }
@@ -790,7 +883,7 @@
 .canvas-md-h2 {
   font-size: 17px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-normal);
   margin: 10px 0 5px 0;
   line-height: 1.3;
 }
@@ -798,7 +891,7 @@
 .canvas-md-h3 {
   font-size: 15px;
   font-weight: 600;
-  color: #f0f0f0;
+  color: var(--text-normal);
   margin: 9px 0 4px 0;
 }
 
@@ -807,7 +900,7 @@
 .canvas-md-h6 {
   font-size: 13px;
   font-weight: 600;
-  color: #e6e6e6;
+  color: var(--text-normal);
   margin: 8px 0 4px 0;
 }
 
@@ -817,7 +910,7 @@
 }
 
 .canvas-markdown strong {
-  color: #ffffff;
+  color: var(--text-normal);
   font-weight: 700;
 }
 
@@ -831,25 +924,25 @@
 
 .canvas-markdown mark {
   background-color: rgba(224, 108, 27, 0.25);
-  color: #ffffff;
+  color: var(--text-normal);
   border-radius: 2px;
   padding: 0 2px;
 }
 
 .canvas-md-code {
-  background-color: #262626;
-  border: 1px solid #303030;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 3px;
   padding: 1px 5px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
-  color: #e8a87c;
+  color: var(--text-accent);
 }
 
 .canvas-md-codeblock {
   position: relative;
-  background-color: #161616;
-  border: 1px solid #2e2e2e;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
   padding: 10px 12px;
   margin: 8px 0;
@@ -857,7 +950,7 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
   line-height: 1.5;
-  color: #cfcfcf;
+  color: var(--text-normal);
 }
 
 .canvas-md-codeblock code {
@@ -875,7 +968,7 @@
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #6f6f6f;
+  color: var(--text-muted);
 }
 
 .canvas-md-ul,
@@ -894,7 +987,7 @@
 
 .canvas-md-ul > .canvas-md-li::before {
   content: '•';
-  color: #888888;
+  color: var(--text-muted);
   margin-left: -12px;
 }
 
@@ -911,7 +1004,7 @@
 }
 
 .canvas-md-checkbox {
-  color: #888888;
+  color: var(--text-muted);
   line-height: 1.4;
   flex-shrink: 0;
 }
@@ -923,8 +1016,8 @@
 .canvas-md-quote {
   margin: 8px 0;
   padding: 4px 12px;
-  border-left: 3px solid #3f3f3f;
-  color: #b8b8b8;
+  border-left: 3px solid var(--background-modifier-border);
+  color: var(--text-muted);
 }
 
 .canvas-md-callout {
@@ -932,18 +1025,18 @@
   padding: 8px 12px;
   border-left: 3px solid var(--color-accent);
   border-radius: 0 6px 6px 0;
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: var(--background-modifier-hover, rgba(0, 0, 0, 0.03));
 }
 
 .canvas-md-callout-title {
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-normal);
   margin-bottom: 4px;
 }
 
 .canvas-md-hr {
   border: none;
-  border-top: 1px solid #303030;
+  border-top: 1px solid var(--background-modifier-border);
   margin: 10px 0;
 }
 
@@ -958,7 +1051,7 @@
   display: inline-block;
   min-width: 32px;
   min-height: 20px;
-  background-color: #262626;
+  background-color: var(--background-secondary);
   border-radius: 4px;
   opacity: 0.6;
 }
@@ -999,17 +1092,17 @@
 
 .canvas-md-table th,
 .canvas-md-table td {
-  border: 1px solid #303030;
+  border: 1px solid var(--background-modifier-border);
   padding: 4px 8px;
   text-align: left;
 }
 
 .canvas-md-table th {
-  background-color: #242424;
-  color: #ffffff;
+  background-color: var(--background-secondary);
+  color: var(--text-normal);
   font-weight: 600;
 }
 
 .canvas-md-table tr:nth-child(even) td {
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: var(--background-modifier-hover);
 }

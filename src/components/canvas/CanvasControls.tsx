@@ -30,22 +30,14 @@ interface CanvasControlsProps {
 }
 
 interface PopoverProps {
-  anchorRef: React.RefObject<HTMLElement | null>;
   children: React.ReactNode;
   onClose: () => void;
+  align?: 'top' | 'bottom';
 }
 
-/** Popover anclado al botón que lo abre (estilo Obsidian). */
-const Popover: React.FC<PopoverProps> = ({ anchorRef, children, onClose }) => {
+/** Popover anclado a la izquierda del grupo de controles (estilo Obsidian). */
+const Popover: React.FC<PopoverProps> = ({ children, onClose, align = 'top' }) => {
   const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
-
-  useEffect(() => {
-    const anchor = anchorRef.current;
-    if (!anchor) return;
-    const rect = anchor.getBoundingClientRect();
-    setPos({ top: rect.bottom + 8, left: rect.left });
-  }, [anchorRef]);
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -67,8 +59,7 @@ const Popover: React.FC<PopoverProps> = ({ anchorRef, children, onClose }) => {
   return (
     <div
       ref={ref}
-      className="canvas-control-popover"
-      style={{ top: `${pos.top}px`, left: `${pos.left}px` }}
+      className={`canvas-control-popover ${align === 'bottom' ? 'mod-bottom' : ''}`}
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
@@ -134,7 +125,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
           </button>
         </Tooltip>
         {showSettings && (
-          <Popover anchorRef={settingsRef} onClose={() => setShowSettings(false)}>
+          <Popover onClose={() => setShowSettings(false)} align="top">
             <div
               className="canvas-control-popover-item"
               onClick={() => {
@@ -237,7 +228,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
           </button>
         </Tooltip>
         {showHelp && (
-          <Popover anchorRef={helpRef} onClose={() => setShowHelp(false)}>
+          <Popover onClose={() => setShowHelp(false)} align="bottom">
             <div className="canvas-control-popover-title">{t('canvas.help.title')}</div>
             <div className="canvas-control-popover-item is-static">
               <span className="canvas-control-popover-label">{t('canvas.help.createCard')}</span>
