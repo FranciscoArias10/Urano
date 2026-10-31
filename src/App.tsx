@@ -794,10 +794,11 @@ export const App: React.FC = () => {
   // Clean title of the active note (file name without extension)
   const activeFileTitle = useMemo(() => {
     if (!activeFile) return '';
-    const parts = activeFile.replace(/\\/g, '/').split('/');
-    const fileName = parts[parts.length - 1] || '';
+    const rel = getRelativeVaultPath(activeFile, activeVault || '');
+    const parts = rel.split('/').filter(Boolean);
+    const fileName = parts.pop() || '';
     return fileName.replace(/\.(md|canvas|base)$/i, '') || fileName;
-  }, [activeFile]);
+  }, [activeFile, activeVault]);
 
   // Folder breadcrumb of the active note (relative to the vault root)
   const activeParentPath = useMemo(() => {
