@@ -10,3 +10,22 @@ export function normalizePath(p: string): string {
   if (!p) return '';
   return p.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/\/$/, '');
 }
+
+/**
+ * Obtiene la ruta relativa de un archivo con respecto a la raíz de la bóveda,
+ * eliminando la extensión .md y manejando comparación case-insensitive para letras de unidad en Windows.
+ */
+export function getRelativeVaultPath(fullPath: string, vaultPath: string): string {
+  if (!fullPath) return '';
+  const normFull = normalizePath(fullPath);
+  const normVault = normalizePath(vaultPath);
+
+  // Comparación case-insensitive para letras de unidad en Windows (C: vs c:)
+  if (normVault && normFull.toLowerCase().startsWith(normVault.toLowerCase())) {
+    const rel = normFull.slice(normVault.length).replace(/^\/+/, '');
+    return rel.replace(/\.md$/i, '');
+  }
+  // Fallback: si sigue teniendo letra de unidad o ruta absoluta, tomar solo el nombre del archivo sin extensión
+  const parts = normFull.split('/');
+  return (parts[parts.length - 1] || normFull).replace(/\.md$/i, '');
+}
