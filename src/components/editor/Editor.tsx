@@ -27,6 +27,7 @@ import { getStorageAdapter, toUint8Array } from '../../services/storageAdapter';
 import { themeService } from '../../services/themeService';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
+import { getRelativeVaultPath } from '../../utils/pathUtils';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 import { useNoticeStore } from '../common/Notice';
 import { useT } from '../../stores/localeStore';
@@ -237,9 +238,15 @@ export const Editor: React.FC<EditorProps> = ({
   const { showNotice } = useNoticeStore();
   const t = useT();
 
-  const cleanTitle = activeFileName
-    ? activeFileName.replace(/\.md$/i, '')
-    : t('common.untitled');
+  const cleanTitle = useMemo(() => {
+    if (activeFile) {
+      const rel = getRelativeVaultPath(activeFile, activeVault || '');
+      const parts = rel.split('/').filter(Boolean);
+      const name = parts.pop() || '';
+      return name.replace(/\.(md|canvas|base)$/i, '') || name;
+    }
+    return activeFileName ? activeFileName.replace(/\.(md|canvas|base)$/i, '') : t('common.untitled');
+  }, [activeFile, activeVault, activeFileName, t]);
 
   // Estado local para edición de título sin renombrar en cada pulsación
   const [draftTitle, setDraftTitle] = useState(cleanTitle);
