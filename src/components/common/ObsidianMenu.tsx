@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { ChevronRight, Check } from 'lucide-react';
+import { clampToViewport } from '../../utils/menuPosition';
 
 export interface MenuItemData {
   type?: 'item' | 'separator';
@@ -19,6 +20,7 @@ interface ObsidianMenuProps {
   y: number;
   items: MenuItemData[];
   onClose: () => void;
+  align?: 'left' | 'right';
 }
 
 interface MenuItemRowProps {
@@ -131,26 +133,25 @@ const MenuItemRow: React.FC<MenuItemRowProps> = ({ item, onTrigger }) => {
   );
 };
 
-export const ObsidianMenu: React.FC<ObsidianMenuProps> = ({ x, y, items, onClose }) => {
+export const ObsidianMenu: React.FC<ObsidianMenuProps> = ({ x, y, items, onClose, align = 'left' }) => {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [coords, setCoords] = useState<{ x: number; y: number }>({ x, y });
+  const [coords, setCoords] = useState<{ x: number; y: number }>(() => {
+    const estimatedWidth = 200;
+    const estimatedHeight = 180;
+    const initialTargetX = align === 'right' ? x - estimatedWidth : x;
+    const clamped = clampToViewport(initialTargetX, y, estimatedWidth, estimatedHeight, 8);
+    return { x: clamped.left, y: clamped.top };
+  });
 
-  // Boundary adjustment to keep menu inside screen
-  useEffect(() => {
+  // Boundary adjustment to keep menu inside screen without flickering
+  useLayoutEffect(() => {
     if (!menuRef.current) return;
     const rect = menuRef.current.getBoundingClientRect();
-    let newX = x;
-    let newY = y;
+    const targetX = align === 'right' ? x - rect.width : x;
+    const clamped = clampToViewport(targetX, y, rect.width, rect.height, 8);
 
-    if (newX + rect.width > window.innerWidth - 8) {
-      newX = Math.max(8, window.innerWidth - rect.width - 8);
-    }
-    if (newY + rect.height > window.innerHeight - 8) {
-      newY = Math.max(8, window.innerHeight - rect.height - 8);
-    }
-
-    setCoords({ x: newX, y: newY });
-  }, [x, y]);
+    setCoords({ x: clamped.left, y: clamped.top });
+  }, [x, y, align]);
 
   // Click outside and Escape key dismissal
   useEffect(() => {
