@@ -23,11 +23,11 @@ export function getRelativeVaultPath(fullPath: string, vaultPath: string): strin
   // Comparación case-insensitive para letras de unidad en Windows (C: vs c:)
   if (normVault && normFull.toLowerCase().startsWith(normVault.toLowerCase())) {
     const rel = normFull.slice(normVault.length).replace(/^\/+/, '');
-    return rel.replace(/\.md$/i, '');
+    return rel.replace(/\.(md|canvas|base|markdown)$/i, '');
   }
   // Fallback: si sigue teniendo letra de unidad o ruta absoluta, tomar solo el nombre del archivo sin extensión
   const parts = normFull.split('/');
-  return (parts[parts.length - 1] || normFull).replace(/\.md$/i, '');
+  return (parts[parts.length - 1] || normFull).replace(/\.(md|canvas|base|markdown)$/i, '');
 }
 
 /**
