@@ -935,6 +935,12 @@ body .clickable-icon.is-active:hover {
   background-color: rgba(255, 255, 255, 0.1) !important;
   color: #dcddde !important;
   border: none !important;
+/* FileTree Toolbar action container - centered like Obsidian */
+.nav-buttons-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
 }
 
 .clickable-icon[aria-disabled='true'] {

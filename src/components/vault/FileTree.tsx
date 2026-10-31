@@ -303,7 +303,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
       <div className="flex flex-col select-none h-full">
         {/* Only top level renders the 5-button File Explorer Toolbar */}
         {depth === 0 && (
-          <div className="flex items-center justify-end px-3 py-1.5 border-b border-obsidian-border text-obsidian-muted gap-1 bg-obsidian-sidebar">
+          <div className="nav-buttons-container flex items-center justify-center px-3 py-1.5 border-b border-obsidian-border text-obsidian-muted gap-[4px] bg-obsidian-sidebar">
             {/* 1. New note */}
             <Tooltip content={t('fileTree.newNote')} position="bottom">
               <button
