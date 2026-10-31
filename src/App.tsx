@@ -13,6 +13,7 @@ import { CanvasView } from './components/canvas/CanvasView';
 import { BaseView } from './components/base/BaseView';
 import { ImageView } from './components/image/ImageView';
 import { isImagePath } from './services/storageAdapter';
+import { getRelativeVaultPath, getRelativeVaultFolderSegments } from './utils/pathUtils';
 import { FILE_RENAMED_EVENT, FileRenamedDetail } from './services/linkRefactorService';
 import { TemplateModal } from './components/templates/TemplateModal';
 import { GlobalSearchPanel } from './components/search/GlobalSearchPanel';
