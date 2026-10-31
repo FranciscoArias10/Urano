@@ -1098,7 +1098,8 @@ export const App: React.FC = () => {
               <Tooltip content={t('app.ribbon.hideSidebar')} shortcut="Ctrl+B" position="bottom">
                 <button
                   onClick={() => setShowLeftSidebar(false)}
-                  className="p-1.5 text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover rounded transition-colors"
+                  className="clickable-icon nav-action-button p-1 rounded"
+                  aria-label={t('app.ribbon.hideSidebar')}
                 >
                   <PanelLeftClose size={17} />
                 </button>
@@ -1110,11 +1111,10 @@ export const App: React.FC = () => {
                 <Tooltip content={t('app.sidebar.files')} position="bottom">
                   <button
                     onClick={() => setSidebarTab('files')}
-                    className={`p-1.5 rounded transition-colors ${
-                      sidebarTab === 'files'
-                        ? 'text-orange-500 bg-obsidian-active'
-                        : 'text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover'
+                    className={`clickable-icon nav-action-button p-1 rounded ${
+                      sidebarTab === 'files' ? 'is-active' : ''
                     }`}
+                    aria-label={t('app.sidebar.files')}
                   >
                     <Folder size={17} />
                   </button>
@@ -1124,11 +1124,10 @@ export const App: React.FC = () => {
                 <Tooltip content={t('app.sidebar.search')} position="bottom">
                   <button
                     onClick={() => setSidebarTab('search')}
-                    className={`p-1.5 rounded transition-colors ${
-                      sidebarTab === 'search'
-                        ? 'text-orange-500 bg-obsidian-active'
-                        : 'text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover'
+                    className={`clickable-icon nav-action-button p-1 rounded ${
+                      sidebarTab === 'search' ? 'is-active' : ''
                     }`}
+                    aria-label={t('app.sidebar.search')}
                   >
                     <Search size={17} />
                   </button>
@@ -1138,11 +1137,10 @@ export const App: React.FC = () => {
                 <Tooltip content={t('app.sidebar.bookmarks')} position="bottom">
                   <button
                     onClick={() => setSidebarTab('bookmarks')}
-                    className={`p-1.5 rounded transition-colors ${
-                      sidebarTab === 'bookmarks'
-                        ? 'text-orange-500 bg-obsidian-active'
-                        : 'text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover'
+                    className={`clickable-icon nav-action-button p-1 rounded ${
+                      sidebarTab === 'bookmarks' ? 'is-active' : ''
                     }`}
+                    aria-label={t('app.sidebar.bookmarks')}
                   >
                     <Bookmark size={17} />
                   </button>
