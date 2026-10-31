@@ -100,7 +100,7 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
     e.preventDefault();
     e.stopPropagation();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setMenu({ x: rect.left - 170, y: rect.bottom + 6 });
+    setMenu({ x: rect.right, y: rect.bottom + 6 });
   };
 
   const menuItems: MenuItemData[] = [
@@ -256,7 +256,13 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
       </div>
 
       {menu && (
-        <ObsidianMenu x={menu.x} y={menu.y} items={menuItems} onClose={() => setMenu(null)} />
+        <ObsidianMenu
+          x={menu.x}
+          y={menu.y}
+          align="right"
+          items={menuItems}
+          onClose={() => setMenu(null)}
+        />
       )}
     </div>
   );
