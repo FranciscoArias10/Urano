@@ -180,7 +180,7 @@ export const LanguageDropdown: React.FC<LanguageDropdownProps> = ({
         <span className="language-dropdown-button-label">
           <span dir="auto">{selected?.nativeName ?? value}</span>
         </span>
-        <ChevronsUpDown size={14} color="#888888" className="shrink-0" strokeWidth={2} aria-hidden="true" />
+        <ChevronsUpDown size={14} className="shrink-0" strokeWidth={2} aria-hidden="true" />
       </button>
 
       {open && (
