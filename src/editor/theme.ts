@@ -53,35 +53,34 @@ export const obsidianTheme = EditorView.theme(
       backgroundColor: 'transparent !important',
       color: 'var(--text-muted, #888888)',
     },
-  },
-  { dark: true }
+  }
 );
 
 export const obsidianHighlightStyle = HighlightStyle.define([
   // Markdown structures
-  { tag: t.strong, fontWeight: '700', color: '#ffffff' },
-  { tag: t.emphasis, fontStyle: 'italic', color: '#dcddde' },
-  { tag: t.link, color: '#e06c1b', textDecoration: 'underline' },
-  { tag: t.url, color: '#f97316' },
+  { tag: t.strong, fontWeight: '700', color: 'var(--text-normal)' },
+  { tag: t.emphasis, fontStyle: 'italic', color: 'var(--text-normal)' },
+  { tag: t.link, color: 'var(--interactive-accent, #e06c1b)', textDecoration: 'underline' },
+  { tag: t.url, color: 'var(--text-accent, #f97316)' },
   // Remove background pill effect from monospace inside code blocks
-  { tag: t.monospace, color: '#fed7aa', fontFamily: "'JetBrains Mono', 'Fira Code', monospace" },
-  { tag: t.comment, color: '#78716c', fontStyle: 'italic' },
-  { tag: t.quote, color: '#888888', fontStyle: 'italic' },
-  { tag: t.heading, fontWeight: '700', color: '#ffffff' },
+  { tag: t.monospace, color: 'var(--color-orange, #e06c1b)', fontFamily: "'JetBrains Mono', 'Fira Code', monospace" },
+  { tag: t.comment, color: 'var(--text-faint, #78716c)', fontStyle: 'italic' },
+  { tag: t.quote, color: 'var(--text-muted, #888888)', fontStyle: 'italic' },
+  { tag: t.heading, fontWeight: '700', color: 'var(--text-normal)' },
 
   // Programming Languages Syntax Highlighting (Obsidian style with Urano orange accent)
   { tag: [t.keyword, t.operatorKeyword, t.modifier], color: '#f97316', fontWeight: '600' },
-  { tag: [t.string, t.special(t.string)], color: '#86efac' },
-  { tag: [t.number, t.integer, t.float], color: '#38bdf8' },
-  { tag: [t.function(t.variableName), t.function(t.propertyName), t.macroName], color: '#facc15' },
-  { tag: [t.typeName, t.className, t.standard(t.typeName)], color: '#f472b6' },
-  { tag: [t.operator, t.compareOperator, t.arithmeticOperator, t.logicOperator], color: '#e06c1b' },
-  { tag: [t.bracket, t.squareBracket, t.paren], color: '#d6d3d1' },
-  { tag: [t.punctuation, t.separator], color: '#888888' },
-  { tag: [t.propertyName, t.attributeName], color: '#67e8f9' },
-  { tag: [t.bool, t.null], color: '#c084fc', fontWeight: '500' },
-  { tag: [t.variableName, t.definition(t.variableName)], color: '#fed7aa' },
-  { tag: t.meta, color: '#fb7185' },
+  { tag: [t.string, t.special(t.string)], color: '#16a34a' },
+  { tag: [t.number, t.integer, t.float], color: '#0284c7' },
+  { tag: [t.function(t.variableName), t.function(t.propertyName), t.macroName], color: '#d97706' },
+  { tag: [t.typeName, t.className, t.standard(t.typeName)], color: '#db2777' },
+  { tag: [t.operator, t.compareOperator, t.arithmeticOperator, t.logicOperator], color: 'var(--interactive-accent, #e06c1b)' },
+  { tag: [t.bracket, t.squareBracket, t.paren], color: 'var(--text-muted, #888888)' },
+  { tag: [t.punctuation, t.separator], color: 'var(--text-muted, #888888)' },
+  { tag: [t.propertyName, t.attributeName], color: '#0891b2' },
+  { tag: [t.bool, t.null], color: '#9333ea', fontWeight: '500' },
+  { tag: [t.variableName, t.definition(t.variableName)], color: 'var(--text-normal)' },
+  { tag: t.meta, color: '#e11d48' },
 ]);
 
 export const obsidianSyntax = syntaxHighlighting(obsidianHighlightStyle);
