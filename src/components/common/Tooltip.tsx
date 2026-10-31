@@ -90,7 +90,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
       {visible &&
         ReactDOM.createPortal(
           <div
-            className={`urano-tooltip mod-${position}`}
+            role="tooltip"
+            className={`tooltip urano-tooltip mod-${position}`}
             style={{
               top: `${coords.top}px`,
               left: `${coords.left}px`,
@@ -104,11 +105,11 @@ export const Tooltip: React.FC<TooltipProps> = ({
                   : 'translate(-50%, -100%)',
             }}
           >
-            <div className="urano-tooltip-arrow" />
+            <div className="tooltip-arrow urano-tooltip-arrow" />
             <div className="flex items-center gap-1.5">
               <span>{content}</span>
               {shortcut && (
-                <span className="text-[10px] text-obsidian-muted font-mono bg-[var(--interactive-normal)] px-1 py-0.2 rounded border border-obsidian-border">
+                <span className="text-[10px] text-gray-300 font-mono bg-white/10 px-1 py-0.5 rounded border border-white/10">
                   {shortcut}
                 </span>
               )}
