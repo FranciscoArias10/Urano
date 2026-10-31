@@ -43,7 +43,7 @@ export const RecentVaultContextMenu: React.FC<RecentVaultContextMenuProps> = ({
         left: position.left,
         zIndex: 400,
       }}
-      className="bg-[#1e1e1e] border border-[#333333] rounded-[8px] p-1 min-w-[190px] shadow-2xl"
+      className="bg-obsidian-bg border border-obsidian-border rounded-[8px] p-1 min-w-[190px] shadow-2xl"
       onClick={(e) => e.stopPropagation()}
     >
       <button
@@ -52,9 +52,9 @@ export const RecentVaultContextMenu: React.FC<RecentVaultContextMenuProps> = ({
           onClose();
           onShowInExplorer(path);
         }}
-        className="w-full flex items-center gap-2 px-3 py-1.5 text-[13px] text-[#dcddde] hover:text-white hover:bg-[#2b2b2b] rounded-[5px] text-left transition-colors cursor-pointer"
+        className="w-full flex items-center gap-2 px-3 py-1.5 text-[13px] text-obsidian-text hover:text-obsidian-text hover:bg-[var(--interactive-hover)] rounded-[5px] text-left transition-colors cursor-pointer"
       >
-        <FolderOpen size={14} className="text-[#888888]" />
+        <FolderOpen size={14} className="text-obsidian-muted" />
         <span>{t('vaultManager.menu.showInExplorer')}</span>
       </button>
 
@@ -64,13 +64,13 @@ export const RecentVaultContextMenu: React.FC<RecentVaultContextMenuProps> = ({
           onClose();
           onMoveVault(path, name);
         }}
-        className="w-full flex items-center gap-2 px-3 py-1.5 text-[13px] text-[#dcddde] hover:text-white hover:bg-[#2b2b2b] rounded-[5px] text-left transition-colors cursor-pointer"
+        className="w-full flex items-center gap-2 px-3 py-1.5 text-[13px] text-obsidian-text hover:text-obsidian-text hover:bg-[var(--interactive-hover)] rounded-[5px] text-left transition-colors cursor-pointer"
       >
-        <FolderInput size={14} className="text-[#888888]" />
+        <FolderInput size={14} className="text-obsidian-muted" />
         <span>{t('vaultManager.menu.moveVault')}</span>
       </button>
 
-      <div className="border-t border-[#2e2e2e] my-1" />
+      <div className="border-t border-obsidian-border my-1" />
 
       <button
         type="button"

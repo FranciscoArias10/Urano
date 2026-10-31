@@ -110,12 +110,12 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/70 flex items-center justify-center select-none"
+      className="fixed inset-0 bg-[var(--background-modifier-cover)] flex items-center justify-center select-none"
       style={{ zIndex: 350 }}
       onClick={onClose}
     >
       <div
-        className="w-[800px] h-[580px] flex rounded-[10px] overflow-hidden border border-[#2a2a2a] bg-[#161616] shadow-2xl relative"
+        className="w-[800px] h-[580px] flex rounded-[10px] overflow-hidden border border-obsidian-border bg-obsidian-sidebar shadow-2xl relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top titlebar drag region */}
@@ -144,7 +144,7 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
         />
 
         {/* Right Column: Brand Header + Actions */}
-        <main className="flex-1 bg-[#161616] flex flex-col items-center justify-center p-8 px-11 relative">
+        <main className="flex-1 bg-obsidian-sidebar flex flex-col items-center justify-center p-8 px-11 relative">
           {/* Window controls in top right */}
           <div className="absolute top-3 right-3.5 flex items-center gap-1.5 z-10">
             <button
@@ -157,7 +157,7 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
                   await invoke('minimize_window').catch(() => {});
                 }
               }}
-              className="p-1.5 text-[#888888] hover:text-[#e0e0e0] hover:bg-[#262626] rounded transition-colors cursor-pointer"
+              className="p-1.5 text-obsidian-muted hover:text-obsidian-text hover:bg-[var(--interactive-hover)] rounded transition-colors cursor-pointer"
               title={t('window.minimize')}
             >
               <Minus size={14} strokeWidth={1.6} />
@@ -174,7 +174,7 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
                   setIsMaximized((prev) => !prev);
                 }
               }}
-              className="p-1.5 text-[#888888] hover:text-[#e0e0e0] hover:bg-[#262626] rounded transition-colors cursor-pointer"
+              className="p-1.5 text-obsidian-muted hover:text-obsidian-text hover:bg-[var(--interactive-hover)] rounded transition-colors cursor-pointer"
               title={isMaximized ? t('window.restore') : t('window.maximize')}
             >
               {isMaximized ? (
@@ -193,7 +193,7 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
                   await invoke('close_window').catch(() => {});
                 }
               }}
-              className="p-1.5 text-[#888888] hover:text-white hover:bg-[#e81123] rounded transition-colors cursor-pointer"
+              className="p-1.5 text-obsidian-muted hover:text-obsidian-text hover:bg-[#e81123] rounded transition-colors cursor-pointer"
               title={t('common.close')}
             >
               <X size={15} strokeWidth={1.6} />
@@ -205,10 +205,10 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
             <div className="w-[84px] h-[84px] mb-3 flex items-center justify-center">
               <UranoLogo size={84} />
             </div>
-            <h1 className="text-[28px] font-bold text-white tracking-tight leading-none">
+            <h1 className="text-[28px] font-bold text-obsidian-text tracking-tight leading-none">
               {t('vaultManager.title')}
             </h1>
-            <p className="text-[13px] text-[#888888] mt-1.5">
+            <p className="text-[13px] text-obsidian-muted mt-1.5">
               {t('vaultManager.version')}
             </p>
           </div>
@@ -224,7 +224,7 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
               }}
             />
           ) : (
-            <div className="w-full max-w-[460px] bg-[#1e1e1e] border border-[#2a2a2a] rounded-[10px] px-5 py-1">
+            <div className="w-full max-w-[460px] bg-obsidian-bg border border-obsidian-border rounded-[10px] px-5 py-1">
               <CreateVaultForm
                 onBack={() => setView('main')}
                 onSubmit={handleCreateVaultSubmit}

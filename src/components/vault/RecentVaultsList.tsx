@@ -38,10 +38,10 @@ export const RecentVaultsList: React.FC<RecentVaultsListProps> = ({
   const activeVaultItem = vaults.find((v) => v.path === activeMenuPath);
 
   return (
-    <aside className="w-[260px] bg-[#212121] border-r border-[#2c2c2c] p-3 flex flex-col shrink-0">
+    <aside className="w-[260px] bg-obsidian-sidebar border-r border-obsidian-border p-3 flex flex-col shrink-0">
       <div className="flex-1 overflow-y-auto flex flex-col gap-1 pr-0.5 custom-scrollbar">
         {vaults.length === 0 ? (
-          <div className="text-[12px] text-[#666666] italic px-2 py-4">
+          <div className="text-[12px] text-obsidian-faint italic px-2 py-4">
             {t('vaultManager.noRecentVaults')}
           </div>
         ) : (
@@ -52,15 +52,15 @@ export const RecentVaultsList: React.FC<RecentVaultsListProps> = ({
                 key={vault.path}
                 onClick={() => onSelectVault(vault.path)}
                 className={`group px-3 py-2.5 rounded-[6px] flex items-center justify-between cursor-pointer transition-colors ${
-                  isActive ? 'bg-[#2b2b2b]' : 'hover:bg-[#282828]'
+                  isActive ? 'bg-[var(--interactive-normal)]' : 'hover:bg-[var(--interactive-hover)]'
                 }`}
               >
                 <div className="flex flex-col min-w-0 pr-2">
-                  <span className="text-[14px] font-medium text-[#e0e0e0] truncate group-hover:text-white">
+                  <span className="text-[14px] font-medium text-obsidian-text truncate group-hover:text-obsidian-text">
                     {vault.name}
                   </span>
                   <span
-                    className="text-[11.5px] text-[#888888] truncate max-w-[185px]"
+                    className="text-[11.5px] text-obsidian-muted truncate max-w-[185px]"
                     title={vault.path}
                   >
                     {vault.path}
@@ -70,7 +70,7 @@ export const RecentVaultsList: React.FC<RecentVaultsListProps> = ({
                 <button
                   type="button"
                   onClick={(e) => handleOpenMenu(e, vault.path)}
-                  className="p-1 rounded text-[#888888] hover:text-[#e0e0e0] hover:bg-[#333333] transition-colors shrink-0"
+                  className="p-1 rounded text-obsidian-muted hover:text-obsidian-text hover:bg-[var(--interactive-hover)] transition-colors shrink-0"
                   title={t('common.more')}
                 >
                   <MoreVertical size={16} />
