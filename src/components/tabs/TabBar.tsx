@@ -178,7 +178,7 @@ export const TabBar: React.FC<TabBarProps> = ({
     });
 
     const rect = tabListButtonRef.current?.getBoundingClientRect();
-    const x = rect ? rect.left : e.clientX;
+    const x = rect ? rect.right : e.clientX;
     const y = rect ? rect.bottom + 4 : e.clientY;
     setTabListMenu({ x, y, items });
   };
@@ -362,6 +362,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         <ObsidianMenu
           x={tabListMenu.x}
           y={tabListMenu.y}
+          align="right"
           items={tabListMenu.items}
           onClose={closeMenus}
         />
