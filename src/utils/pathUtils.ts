@@ -41,3 +41,14 @@ export function getRelativeVaultFolderSegments(fullPath: string, vaultPath: stri
   parts.pop(); // descarta el nombre de la nota
   return parts;
 }
+
+/**
+ * Obtiene el nombre del archivo limpio (sin carpetas padre y sin extensiones .md, .canvas o .base).
+ */
+export function getCleanFileName(filePath: string): string {
+  if (!filePath) return '';
+  const norm = normalizePath(filePath);
+  const parts = norm.split('/').filter(Boolean);
+  const last = parts[parts.length - 1] || '';
+  return last.replace(/\.(md|canvas|base)$/i, '') || last;
+}
