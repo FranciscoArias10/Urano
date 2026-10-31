@@ -363,9 +363,17 @@ body.theme-light {
   color: var(--text-normal);
   background: var(--background-modifier-hover);
 }
+.theme-light .side-dock-ribbon-action.is-active,
+body.theme-light .side-dock-ribbon-action.is-active {
+  color: var(--text-normal);
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+.theme-dark .side-dock-ribbon-action.is-active,
+body.theme-dark .side-dock-ribbon-action.is-active,
 .side-dock-ribbon-action.is-active {
-  color: var(--text-accent);
-  background: rgba(234, 88, 12, 0.15);
+  color: var(--text-normal);
+  background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* ========================================================
@@ -1463,12 +1471,41 @@ mark.hl-purple {
   border-radius: 8px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 2px 6px rgba(0, 0, 0, 0.4);
   padding: 6px;
-  min-width: 185px;
-  max-width: 290px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
   z-index: 9999;
   font-size: 13px;
   color: var(--text-normal);
   backdrop-filter: blur(12px);
+}
+
+/* Popover de controles del Canvas (anclados hacia la izquierda, 1:1 con Obsidian) */
+.canvas-control-popover {
+  position: absolute;
+  top: 0;
+  right: calc(100% + 8px);
+  left: auto !important;
+  min-width: 220px;
+  max-width: calc(100vw - 24px);
+  z-index: 500;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+.canvas-control-popover.mod-bottom {
+  top: auto;
+  bottom: 0;
+  right: calc(100% + 8px);
+  left: auto !important;
+}
+
+.canvas-control-item.is-active {
+  color: var(--text-normal) !important;
+  background-color: var(--background-modifier-hover) !important;
 }
 
 .menu-scroll {
@@ -2553,4 +2590,83 @@ mark.hl-purple {
 .obsidian-slider::-webkit-slider-thumb:hover {
   transform: scale(1.15);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* ========================================================
+   Quick Switcher & Command Palette (.prompt, .suggestion-item, .prompt-instructions)
+   1:1 Obsidian contrast & single-line instruction bar
+   ======================================================== */
+.theme-light .suggestion-item.is-selected,
+body.theme-light .suggestion-item.is-selected {
+  background-color: rgba(0, 0, 0, 0.065) !important;
+  color: #222222 !important;
+  border: none !important;
+}
+
+.theme-dark .suggestion-item.is-selected,
+body.theme-dark .suggestion-item.is-selected,
+.suggestion-item.is-selected {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #dcddde !important;
+  border: none !important;
+}
+
+.prompt-instructions {
+  white-space: nowrap !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 14px !important;
+  font-size: 11.5px !important;
+}
+
+/* ========================================================
+   Canvas Nodes - Reactive Theme Colors, Text Contrast & Accent Selection
+   ======================================================== */
+.canvas-node-container {
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+/* Modo Claro: Fondo claro pastel y borde suave para nodos con color */
+.theme-light .canvas-node.is-themed .canvas-node-container,
+body.theme-light .canvas-node.is-themed .canvas-node-container {
+  background-color: color-mix(in srgb, var(--canvas-node-color) 12%, #ffffff) !important;
+  border: 1px solid color-mix(in srgb, var(--canvas-node-color) 65%, #ffffff) !important;
+}
+
+/* Modo Oscuro: Fondo oscuro mezclado y borde visible para nodos con color */
+.theme-dark .canvas-node.is-themed .canvas-node-container,
+body.theme-dark .canvas-node.is-themed .canvas-node-container,
+.canvas-node.is-themed .canvas-node-container {
+  background-color: color-mix(in srgb, var(--canvas-node-color) 18%, #1e1e1e) !important;
+  border: 1px solid color-mix(in srgb, var(--canvas-node-color) 70%, #1e1e1e) !important;
+}
+
+/* Selección sin color temático: var(--interactive-accent) */
+.canvas-node.is-selected .canvas-node-container,
+.canvas-node.is-focused .canvas-node-container,
+.canvas-node.is-editing .canvas-node-container {
+  border: 2px solid var(--interactive-accent, #e06c1b) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent, #e06c1b) 25%, transparent) !important;
+}
+
+/* Selección con color temático: resalta su propio color */
+.canvas-node.is-selected.is-themed .canvas-node-container,
+.canvas-node.is-focused.is-themed .canvas-node-container,
+.canvas-node.is-editing.is-themed .canvas-node-container {
+  border: 2px solid var(--canvas-node-color) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--canvas-node-color) 25%, transparent) !important;
+}
+
+/* Contraste garantizado del texto y cursor al escribir dentro de la tarjeta */
+.canvas-node-content,
+.canvas-node-content textarea,
+.canvas-node-content .cm-editor,
+.canvas-node-content .cm-content {
+  background-color: transparent !important;
+  color: var(--text-normal) !important;
+  caret-color: var(--interactive-accent, #e06c1b) !important;
+  font-family: var(--font-text) !important;
 }
