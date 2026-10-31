@@ -869,9 +869,25 @@ body.theme-light {
   outline: none;
   box-shadow: none;
 }
-.clickable-icon:hover {
-  background-color: var(--background-modifier-hover);
-  color: var(--icon-color-hover);
+/* Hover state */
+.theme-light .nav-action-button:hover,
+body.theme-light .nav-action-button:hover,
+.theme-light .clickable-icon:hover,
+body.theme-light .clickable-icon:hover {
+  background-color: rgba(0, 0, 0, 0.065);
+  color: #222222;
+  border: none;
+}
+
+.theme-dark .nav-action-button:hover,
+body.theme-dark .nav-action-button:hover,
+.theme-dark .clickable-icon:hover,
+body.theme-dark .clickable-icon:hover,
+body .nav-action-button:hover,
+body .clickable-icon:hover {
+  background-color: rgba(255, 255, 255, 0.075);
+  color: #dcddde;
+  border: none;
 }
 .clickable-icon[aria-disabled='true'] {
   background-color: unset;
