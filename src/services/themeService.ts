@@ -93,8 +93,10 @@ export class ThemeService {
 
     if (fonts.interfaceFont) {
       root.style.setProperty('--font-interface-override', `"${fonts.interfaceFont}", Inter, sans-serif`);
+      root.style.setProperty('--font-interface', `"${fonts.interfaceFont}", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Ubuntu, sans-serif`);
     } else {
       root.style.removeProperty('--font-interface-override');
+      root.style.removeProperty('--font-interface');
     }
 
     if (fonts.textFont) {
