@@ -149,18 +149,18 @@ export const FontPickerModal: React.FC<FontPickerModalProps> = ({
         <div
           className="modal-header flex items-center justify-between px-6 py-4"
           style={{
-            borderBottom: '1px solid var(--background-modifier-border, #282828)',
+            borderBottom: '1px solid var(--background-modifier-border)',
           }}
         >
           <div className="flex items-center gap-2.5">
             <Type size={18} className="text-[#e06c1b]" />
-            <h2 className="text-base font-semibold text-[#dcddde] m-0">
+            <h2 className="text-base font-semibold text-[var(--text-normal)] m-0">
               {targetTitle}
             </h2>
           </div>
           <button
             type="button"
-            className="clickable-icon p-1.5 text-[#888] hover:text-[#dcddde] transition-colors rounded"
+            className="clickable-icon p-1.5 text-[var(--text-muted)] hover:text-[var(--text-normal)] transition-colors rounded"
             title={t('general.close') || 'Cerrar'}
             onClick={onClose}
           >
@@ -171,19 +171,19 @@ export const FontPickerModal: React.FC<FontPickerModalProps> = ({
         {/* Search Bar / Input */}
         <form
           onSubmit={handleCustomSubmit}
-          className="px-6 py-3 border-b border-[#242424] bg-[var(--background-primary,#161616)] flex items-center gap-2"
+          className="px-6 py-3 border-b border-[var(--background-modifier-border)] bg-[var(--background-primary)] flex items-center gap-2"
         >
           <div className="relative flex-1">
             <Search
               size={15}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#777]"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
             />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('appearance.fontModalCustomPlaceholder')}
-              className="w-full bg-[#202020] text-[#dcddde] text-xs pl-9 pr-3 py-2 rounded-md border border-[#333] focus:border-[#e06c1b] focus:outline-none placeholder-[#666]"
+              className="w-full bg-[var(--background-modifier-form-field)] text-[var(--text-normal)] text-xs pl-9 pr-3 py-2 rounded-md border border-[var(--background-modifier-border)] focus:border-[var(--interactive-accent)] focus:outline-none placeholder-[var(--text-faint)]"
               autoFocus
             />
           </div>
@@ -198,12 +198,12 @@ export const FontPickerModal: React.FC<FontPickerModalProps> = ({
         </form>
 
         {/* Current status & Reset button */}
-        <div className="px-6 py-2.5 bg-[#1a1a1a] border-b border-[#242424] flex items-center justify-between">
-          <div className="text-xs text-[#888]">
+        <div className="px-6 py-2.5 bg-[var(--background-primary-alt)] border-b border-[var(--background-modifier-border)] flex items-center justify-between">
+          <div className="text-xs text-[var(--text-muted)]">
             {currentValue ? (
               <span>
                 Activa:{' '}
-                <strong className="text-[#dcddde]" style={{ fontFamily: currentValue }}>
+                <strong className="text-[var(--text-normal)]" style={{ fontFamily: currentValue }}>
                   {currentValue}
                 </strong>
               </span>
@@ -214,7 +214,7 @@ export const FontPickerModal: React.FC<FontPickerModalProps> = ({
           {currentValue && (
             <button
               type="button"
-              className="flex items-center gap-1.5 text-xs text-[#888] hover:text-[#e06c1b] transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[#e06c1b] transition-colors cursor-pointer"
               onClick={handleResetToDefault}
               title={t('appearance.fontModalReset')}
             >
@@ -230,16 +230,16 @@ export const FontPickerModal: React.FC<FontPickerModalProps> = ({
           <div
             className={`p-3 rounded-lg border transition-all cursor-pointer flex items-center justify-between ${
               !currentValue
-                ? 'bg-[#242424] border-[#e06c1b]'
-                : 'bg-[#181818] border-[#262626] hover:bg-[#202020]'
+                ? 'bg-[var(--background-modifier-hover)] border-[#e06c1b]'
+                : 'bg-[var(--background-primary)] border-[var(--background-modifier-border)] hover:bg-[var(--background-modifier-hover)]'
             }`}
             onClick={handleResetToDefault}
           >
             <div>
-              <div className="text-xs font-semibold text-[#dcddde]">
+              <div className="text-xs font-semibold text-[var(--text-normal)]">
                 {t('appearance.defaultTheme') || 'Por defecto'}
               </div>
-              <div className="text-[11px] text-[#777] mt-0.5">
+              <div className="text-[11px] text-[var(--text-muted)] mt-0.5">
                 Fuente del sistema / Urano predeterminada
               </div>
             </div>
@@ -254,20 +254,20 @@ export const FontPickerModal: React.FC<FontPickerModalProps> = ({
                 key={font}
                 className={`p-3 rounded-lg border transition-all cursor-pointer flex items-center justify-between ${
                   isSelected
-                    ? 'bg-[#242424] border-[#e06c1b]'
-                    : 'bg-[#181818] border-[#262626] hover:bg-[#202020]'
+                    ? 'bg-[var(--background-modifier-hover)] border-[#e06c1b]'
+                    : 'bg-[var(--background-primary)] border-[var(--background-modifier-border)] hover:bg-[var(--background-modifier-hover)]'
                 }`}
                 onClick={() => handleSelectFont(font)}
               >
                 <div className="flex-1 min-w-0 pr-3">
                   <div
-                    className="text-sm font-semibold text-[#dcddde] truncate"
+                    className="text-sm font-semibold text-[var(--text-normal)] truncate"
                     style={{ fontFamily: font }}
                   >
                     {font}
                   </div>
                   <div
-                    className="text-xs text-[#888] truncate mt-1"
+                    className="text-xs text-[var(--text-muted)] truncate mt-1"
                     style={{ fontFamily: font }}
                   >
                     El veloz murciélago hindú comía feliz cardillo y kiwi. 1234567890
