@@ -2300,25 +2300,23 @@ export const Editor: React.FC<EditorProps> = ({
             }`}
           >
             {/* Inline Title (.inline-title) directly above the CodeMirror 6 canvas */}
-            <div
-              className={`w-full max-w-[var(--file-line-width,820px)] mx-auto px-12 pt-6 shrink-0${
-                showInlineTitle ? '' : ' hidden'
-              }`}
-            >
-              <input
-                ref={inlineTitleRef}
-                type="text"
-                className="inline-title"
-                value={draftTitle}
-                spellCheck={spellcheck}
-                autoCorrect="on"
-                autoCapitalize="on"
-                lang={language}
-                onChange={(e) => setDraftTitle(e.target.value)}
-                onKeyDown={handleTitleKeyDown}
-                onBlur={handleTitleBlur}
-              />
-            </div>
+            {showInlineTitle && (
+              <div className="w-full max-w-[var(--file-line-width,820px)] mx-auto px-12 pt-6 shrink-0">
+                <input
+                  ref={inlineTitleRef}
+                  type="text"
+                  className="inline-title"
+                  value={draftTitle}
+                  spellCheck={spellcheck}
+                  autoCorrect="on"
+                  autoCapitalize="on"
+                  lang={language}
+                  onChange={(e) => setDraftTitle(e.target.value)}
+                  onKeyDown={handleTitleKeyDown}
+                  onBlur={handleTitleBlur}
+                />
+              </div>
+            )}
 
             {/* CodeMirror 6 Editor Canvas */}
             <div ref={editorRef} className="flex-1 min-h-0" />
