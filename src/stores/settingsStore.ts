@@ -71,7 +71,12 @@ export interface UranoSettings {
   // Interface
   showRibbon: boolean;
   showInlineTitle: boolean;
+  showTabTitleBar: boolean;
   showStatusBar: boolean;
+  ribbonItems: RibbonItemSetting[];
+  windowFrameStyle: WindowFrameStyle;
+  translucentWindow: boolean;
+  nativeMenus: boolean;
 
   // Editor (CodeMirror 6)
   spellcheck: boolean;
