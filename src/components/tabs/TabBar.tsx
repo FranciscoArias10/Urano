@@ -15,6 +15,7 @@ import {
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 import { WindowControls } from '../layout/WindowControls';
 import { useT } from '../../stores/localeStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -83,6 +84,7 @@ export const TabBar: React.FC<TabBarProps> = ({
   onSplitDown,
 }) => {
   const t = useT();
+  const windowFrameStyle = useSettingsStore((s) => s.settings.windowFrameStyle);
   const [contextMenu, setContextMenu] = useState<MenuState | null>(null);
   const [tabListMenu, setTabListMenu] = useState<MenuState | null>(null);
   const tabListButtonRef = useRef<HTMLSpanElement>(null);
@@ -345,7 +347,7 @@ export const TabBar: React.FC<TabBarProps> = ({
           )}
 
           {/* Native window controls ------------------------------------- */}
-          <WindowControls />
+          {windowFrameStyle !== 'native' && <WindowControls />}
         </div>
       </div>
 
