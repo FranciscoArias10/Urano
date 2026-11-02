@@ -27,6 +27,24 @@ export const CORE_PLUGIN_IDS = [
 ] as const;
 export type CorePluginId = (typeof CORE_PLUGIN_IDS)[number];
 
+export type WindowFrameStyle = 'custom' | 'native';
+
+export interface RibbonItemSetting {
+  id: string;
+  visible: boolean;
+}
+
+export const DEFAULT_RIBBON_ITEMS: RibbonItemSetting[] = [
+  { id: 'switcher', visible: true },
+  { id: 'graph', visible: true },
+  { id: 'canvas', visible: true },
+  { id: 'daily-notes', visible: true },
+  { id: 'templates', visible: true },
+  { id: 'command-palette', visible: true },
+  { id: 'bases', visible: true },
+  { id: 'sync', visible: true },
+];
+
 /** Everything Urano persists in `.urano/settings.json` (and mirrors in localStorage). */
 export interface UranoSettings {
   // General
