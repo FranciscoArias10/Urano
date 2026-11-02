@@ -406,6 +406,25 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
       applyBaseTheme(value as ThemeMode);
     }
 
+    if (key === 'translucentWindow' && typeof document !== 'undefined') {
+      document.body.classList.toggle('is-translucent', Boolean(value));
+    }
+
+    if (key === 'zoomLevel' && typeof document !== 'undefined') {
+      const zoomFactor = (Number(value) || 100) / 100;
+      document.body.style.zoom = value === 100 ? '' : String(zoomFactor);
+      (document.documentElement.style as CSSStyleDeclaration & { zoom?: string }).zoom =
+        value === 100 ? '' : String(zoomFactor);
+    }
+
+    if (key === 'windowFrameStyle') {
+      import('@tauri-apps/api/window')
+        .then(({ getCurrentWindow }) => {
+          getCurrentWindow().setDecorations(value === 'native').catch(() => {});
+        })
+        .catch(() => {});
+    }
+
     if (key === 'language' || key === 'spellcheck') {
       invoke('set_spellcheck_language', {
         lang: next.language,
