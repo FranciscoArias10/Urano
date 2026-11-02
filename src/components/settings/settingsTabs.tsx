@@ -36,6 +36,7 @@ import {
   UpdateLinksPref,
   AttachmentLocation,
   StorageBackend,
+  WindowFrameStyle,
 } from '../../stores/settingsStore';
 import { useSyncStore } from '../../stores/syncStore';
 import { useLocaleStore } from '../../stores/localeStore';
@@ -728,25 +729,150 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
     section: 'options',
     groups: [
       {
-        id: 'interface-layout',
+        id: 'interface-workspace',
+        heading: t('interface.workspaceHeading'),
         items: [
-          {
-            id: 'show-ribbon',
-            name: t('interface.showRibbon'),
-            desc: t('interface.showRibbonDesc'),
-            control: <Toggle value={settings.showRibbon} onChange={set('showRibbon')} ariaLabel={t('interface.showRibbon')} />,
-          },
           {
             id: 'show-inline-title',
             name: t('interface.showInlineTitle'),
             desc: t('interface.showInlineTitleDesc'),
-            control: <Toggle value={settings.showInlineTitle} onChange={set('showInlineTitle')} ariaLabel={t('interface.showInlineTitle')} />,
+            control: (
+              <Toggle
+                value={settings.showInlineTitle}
+                onChange={set('showInlineTitle')}
+                ariaLabel={t('interface.showInlineTitle')}
+              />
+            ),
+          },
+          {
+            id: 'show-tab-title-bar',
+            name: t('interface.showTabTitleBar'),
+            desc: t('interface.showTabTitleBarDesc'),
+            control: (
+              <Toggle
+                value={settings.showTabTitleBar}
+                onChange={set('showTabTitleBar')}
+                ariaLabel={t('interface.showTabTitleBar')}
+              />
+            ),
           },
           {
             id: 'show-status-bar',
             name: t('interface.showStatusBar'),
             desc: t('interface.showStatusBarDesc'),
-            control: <Toggle value={settings.showStatusBar} onChange={set('showStatusBar')} ariaLabel={t('interface.showStatusBar')} />,
+            control: (
+              <Toggle
+                value={settings.showStatusBar}
+                onChange={set('showStatusBar')}
+                ariaLabel={t('interface.showStatusBar')}
+              />
+            ),
+          },
+        ],
+      },
+      {
+        id: 'interface-ribbon',
+        heading: t('interface.ribbonHeading'),
+        items: [
+          {
+            id: 'show-ribbon',
+            name: t('interface.showRibbon'),
+            desc: t('interface.showRibbonDesc'),
+            control: (
+              <Toggle
+                value={settings.showRibbon}
+                onChange={set('showRibbon')}
+                ariaLabel={t('interface.showRibbon')}
+              />
+            ),
+          },
+          {
+            id: 'ribbon-config',
+            name: t('interface.ribbonConfig'),
+            desc: t('interface.ribbonConfigDesc'),
+            control: (
+              <SettingButton
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('urano:open-ribbon-config'));
+                }}
+              >
+                {t('interface.manage')}
+              </SettingButton>
+            ),
+          },
+        ],
+      },
+      {
+        id: 'interface-window',
+        heading: t('interface.windowHeading'),
+        items: [
+          {
+            id: 'window-frame-style',
+            name: t('interface.windowFrameStyle'),
+            desc: t('interface.windowFrameStyleDesc'),
+            control: (
+              <Dropdown<WindowFrameStyle>
+                value={settings.windowFrameStyle}
+                options={[
+                  { value: 'custom', label: t('interface.frameUrano') },
+                  { value: 'native', label: t('interface.frameNative') },
+                ]}
+                onChange={set('windowFrameStyle')}
+                ariaLabel={t('interface.windowFrameStyle')}
+              />
+            ),
+          },
+          {
+            id: 'translucent-window',
+            name: t('interface.translucentWindow'),
+            desc: t('interface.translucentWindowDesc'),
+            control: (
+              <Toggle
+                value={settings.translucentWindow}
+                onChange={set('translucentWindow')}
+                ariaLabel={t('interface.translucentWindow')}
+              />
+            ),
+          },
+          {
+            id: 'zoom-level',
+            name: t('interface.zoomLevel'),
+            desc: t('interface.zoomLevelDesc'),
+            control: (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-obsidian-muted hover:text-obsidian-text transition-colors rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                  aria-label={t('interface.resetZoom')}
+                  title={t('interface.resetZoom')}
+                  disabled={settings.zoomLevel === 100}
+                  onClick={() => setSetting('zoomLevel', 100)}
+                >
+                  <RotateCcw size={15} />
+                </button>
+                <Slider
+                  min={70}
+                  max={150}
+                  step={5}
+                  value={settings.zoomLevel}
+                  onChange={(v) => setSetting('zoomLevel', v)}
+                  format={(v) => `${v}%`}
+                  ariaLabel={t('interface.zoomLevel')}
+                />
+              </div>
+            ),
+          },
+          {
+            id: 'native-menus',
+            name: t('interface.nativeMenus'),
+            desc: t('interface.nativeMenusDesc'),
+            control: (
+              <Toggle
+                value={settings.nativeMenus}
+                onChange={set('nativeMenus')}
+                ariaLabel={t('interface.nativeMenus')}
+              />
+            ),
           },
         ],
       },
