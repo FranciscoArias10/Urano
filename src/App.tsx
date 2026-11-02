@@ -1220,24 +1220,26 @@ export const App: React.FC = () => {
           />
 
           {/* Obsidian View Header (second row) */}
-          <ViewHeader
-            title={activeFileTitle}
-            parentPath={activeParentPath}
-            canGoBack={canGoBack}
-            canGoForward={canGoForward}
-            onNavigateBack={handleNavigateBack}
-            onNavigateForward={handleNavigateForward}
-            viewMode={viewMode}
-            onToggleViewMode={toggleReadingView}
-            onRename={handleRenameFile}
-            onMoveFile={handleMoveFile}
-            onDuplicateFile={handleDuplicateFile}
-            onDeleteFile={handleDeleteFile}
-            onCopyLink={handleCopyLink}
-            onCopyPath={handleCopyPath}
-            onSplitRight={handleSplitUnavailable}
-            onSplitDown={handleSplitUnavailable}
-          />
+          {settings.showTabTitleBar && (
+            <ViewHeader
+              title={activeFileTitle}
+              parentPath={activeParentPath}
+              canGoBack={canGoBack}
+              canGoForward={canGoForward}
+              onNavigateBack={handleNavigateBack}
+              onNavigateForward={handleNavigateForward}
+              viewMode={viewMode}
+              onToggleViewMode={toggleReadingView}
+              onRename={handleRenameFile}
+              onMoveFile={handleMoveFile}
+              onDuplicateFile={handleDuplicateFile}
+              onDeleteFile={handleDeleteFile}
+              onCopyLink={handleCopyLink}
+              onCopyPath={handleCopyPath}
+              onSplitRight={handleSplitUnavailable}
+              onSplitDown={handleSplitUnavailable}
+            />
+          )}
 
           {/* Tab Content Canvas */}
           <div className="flex-1 overflow-hidden relative">
