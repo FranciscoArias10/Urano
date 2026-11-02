@@ -945,6 +945,97 @@ export const App: React.FC = () => {
     return true;
   });
 
+  const renderRibbonAction = (itemId: string) => {
+    switch (itemId) {
+      case 'switcher':
+        return corePlugins.switcher ? (
+          <Tooltip key="switcher" content={t('app.ribbon.openQuickSwitcher')} shortcut="Ctrl+O" position="right">
+            <button
+              onClick={() => {
+                setPaletteMode('files');
+                setPaletteOpen(true);
+              }}
+              className="side-dock-ribbon-action"
+            >
+              <FileSearch size={18} />
+            </button>
+          </Tooltip>
+        ) : null;
+      case 'graph':
+        return (
+          <Tooltip key="graph" content={t('app.ribbon.openGraphView')} shortcut="Ctrl+G" position="right">
+            <button
+              onClick={handleOpenGraphTab}
+              className={`side-dock-ribbon-action ${activeTabId === 'workspace-graph-view' ? 'is-active' : ''}`}
+            >
+              <GitFork size={18} />
+            </button>
+          </Tooltip>
+        );
+      case 'canvas':
+        return corePlugins.canvas ? (
+          <Tooltip key="canvas" content={t('app.ribbon.createNewCanvas')} position="right">
+            <button onClick={handleCreateCanvas} className="side-dock-ribbon-action">
+              <Grid2X2 size={18} />
+            </button>
+          </Tooltip>
+        ) : null;
+      case 'daily-notes':
+        return corePlugins['daily-notes'] ? (
+          <Tooltip key="daily-notes" content={t('app.ribbon.openDailyNote')} position="right">
+            <button onClick={handleOpenDailyNote} className="side-dock-ribbon-action">
+              <Calendar size={18} />
+            </button>
+          </Tooltip>
+        ) : null;
+      case 'templates':
+        return corePlugins.templates ? (
+          <Tooltip key="templates" content={t('app.ribbon.insertTemplate')} position="right">
+            <button onClick={() => setShowTemplateModal(true)} className="side-dock-ribbon-action">
+              <Copy size={18} />
+            </button>
+          </Tooltip>
+        ) : null;
+      case 'command-palette':
+        return corePlugins['command-palette'] ? (
+          <Tooltip key="command-palette" content={t('app.ribbon.openCommandPalette')} shortcut="Ctrl+P" position="right">
+            <button
+              onClick={() => {
+                setPaletteMode('commands');
+                setPaletteOpen(true);
+              }}
+              className="side-dock-ribbon-action"
+            >
+              <Terminal size={18} />
+            </button>
+          </Tooltip>
+        ) : null;
+      case 'bases':
+        return (
+          <Tooltip key="bases" content={t('app.ribbon.createNewBase')} position="right">
+            <button onClick={handleCreateBase} className="side-dock-ribbon-action">
+              <LayoutList size={18} />
+            </button>
+          </Tooltip>
+        );
+      case 'sync':
+        return corePlugins.sync ? (
+          <Tooltip key="sync" content={t('app.ribbon.syncNow')} position="right">
+            <button
+              onClick={() => {
+                if (activeVault) triggerSync(activeVault);
+              }}
+              className="side-dock-ribbon-action hover:text-sky-400"
+            >
+              <RefreshCw size={17} className={isSyncing ? 'animate-spin text-sky-400' : ''} />
+            </button>
+          </Tooltip>
+        ) : null;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen w-screen bg-obsidian-bg text-obsidian-text overflow-hidden select-none">
       {/* Main Workspace Body */}
