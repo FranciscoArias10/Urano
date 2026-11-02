@@ -368,6 +368,13 @@ export interface SettingsStoreState {
 const initialSettings = readLocalSettings();
 if (typeof window !== 'undefined') {
   applyBaseTheme(initialSettings.theme);
+  if (initialSettings.translucentWindow) {
+    document.body.classList.add('is-translucent');
+  }
+  const zoomFactor = (initialSettings.zoomLevel || 100) / 100;
+  if (initialSettings.zoomLevel !== 100) {
+    document.body.style.zoom = String(zoomFactor);
+  }
 }
 
 export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
