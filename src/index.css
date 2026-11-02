@@ -2670,3 +2670,23 @@ body.theme-dark .canvas-node.is-themed .canvas-node-container,
   caret-color: var(--interactive-accent, #e06c1b) !important;
   font-family: var(--font-text) !important;
 }
+
+/* ============================================================================
+   Translucent window support (.is-translucent) — Obsidian 1:1
+   ============================================================================ */
+body.is-translucent {
+  background-color: transparent !important;
+}
+
+body.is-translucent .side-dock-ribbon {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background-color: color-mix(in srgb, var(--background-secondary) 80%, transparent) !important;
+}
+
+body.is-translucent aside.bg-obsidian-sidebar {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background-color: color-mix(in srgb, var(--background-secondary) 85%, transparent) !important;
+}
+
