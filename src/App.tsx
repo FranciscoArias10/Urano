@@ -1410,7 +1410,7 @@ export const App: React.FC = () => {
             className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[5px] text-[13px] text-obsidian-text hover:text-obsidian-text hover:bg-[var(--interactive-hover)] transition-colors cursor-pointer text-left"
           >
             <Vault size={16} className="text-obsidian-muted shrink-0" />
-            <span>{t('vaultMenu.manageVaults')}</span>
+            <span>{t('app.vaultMenu.manageVaults')}</span>
           </button>
         </div>
       )}
