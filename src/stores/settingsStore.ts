@@ -140,11 +140,16 @@ export const DEFAULT_SETTINGS: UranoSettings = {
   baseFontSizeAction: true,
   customIcon: null,
   editorFontSize: 16,
-  zoomLevel: 1,
+  zoomLevel: 100,
 
   showRibbon: true,
   showInlineTitle: true,
+  showTabTitleBar: true,
   showStatusBar: true,
+  ribbonItems: DEFAULT_RIBBON_ITEMS,
+  windowFrameStyle: 'custom',
+  translucentWindow: false,
+  nativeMenus: false,
 
   spellcheck: true,
   customDictionary: [],
