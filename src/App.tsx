@@ -1063,107 +1063,12 @@ export const App: React.FC = () => {
             </Tooltip>
           )}
 
-          {/* 1. Open quick switcher (Ctrl+O) */}
-          {corePlugins.switcher && (
-          <Tooltip content={t('app.ribbon.openQuickSwitcher')} shortcut="Ctrl+O" position="right">
-            <button
-              onClick={() => {
-                setPaletteMode('files');
-                setPaletteOpen(true);
-              }}
-              className="side-dock-ribbon-action"
-            >
-              <FileSearch size={18} />
-            </button>
-          </Tooltip>
-          )}
-
-          {/* 2. Open graph view (Ctrl+G) */}
-          <Tooltip content={t('app.ribbon.openGraphView')} shortcut="Ctrl+G" position="right">
-            <button
-              onClick={handleOpenGraphTab}
-              className={`side-dock-ribbon-action ${activeTabId === 'workspace-graph-view' ? 'is-active' : ''}`}
-            >
-              <GitFork size={18} />
-            </button>
-          </Tooltip>
-
-          {/* 3. Create new canvas */}
-          {corePlugins.canvas && (
-          <Tooltip content={t('app.ribbon.createNewCanvas')} position="right">
-            <button
-              onClick={handleCreateCanvas}
-              className="side-dock-ribbon-action"
-            >
-              <Grid2X2 size={18} />
-            </button>
-          </Tooltip>
-          )}
-
-          {/* 4. Open today's daily note */}
-          {corePlugins['daily-notes'] && (
-          <Tooltip content={t('app.ribbon.openDailyNote')} position="right">
-            <button
-              onClick={handleOpenDailyNote}
-              className="side-dock-ribbon-action"
-            >
-              <Calendar size={18} />
-            </button>
-          </Tooltip>
-          )}
-
-          {/* 5. Insert template */}
-          {corePlugins.templates && (
-          <Tooltip content={t('app.ribbon.insertTemplate')} position="right">
-            <button
-              onClick={() => setShowTemplateModal(true)}
-              className="side-dock-ribbon-action"
-            >
-              <Copy size={18} />
-            </button>
-          </Tooltip>
-          )}
-
-          {/* 6. Open command palette (Ctrl+P) */}
-          {corePlugins['command-palette'] && (
-          <Tooltip content={t('app.ribbon.openCommandPalette')} shortcut="Ctrl+P" position="right">
-            <button
-              onClick={() => {
-                setPaletteMode('commands');
-                setPaletteOpen(true);
-              }}
-              className="side-dock-ribbon-action"
-            >
-              <Terminal size={18} />
-            </button>
-          </Tooltip>
-          )}
-
-          {/* 7. Create new base */}
-          <Tooltip content={t('app.ribbon.createNewBase')} position="right">
-            <button
-              onClick={handleCreateBase}
-              className="side-dock-ribbon-action"
-            >
-              <LayoutList size={18} />
-            </button>
-          </Tooltip>
+          {/* Dynamic Ribbon Items according to user configuration and order */}
+          {(settings.ribbonItems || [])
+            .filter((item) => item.visible)
+            .map((item) => renderRibbonAction(item.id))}
 
           <div className="flex-1" />
-
-          {/* Google Drive Sync Trigger */}
-          {corePlugins.sync && (
-          <Tooltip content={t('app.ribbon.syncNow')} position="right">
-            <button
-              onClick={() => {
-                if (activeVault) triggerSync(activeVault);
-              }}
-              className="side-dock-ribbon-action hover:text-sky-400"
-            >
-              <RefreshCw size={17} className={isSyncing ? 'animate-spin text-sky-400' : ''} />
-            </button>
-          </Tooltip>
-          )}
 
           {/* Settings (Ctrl+,) at Bottom of Ribbon */}
           <Tooltip content={t('app.ribbon.settings')} shortcut="Ctrl+," position="right">
