@@ -21,7 +21,9 @@
     "loading": "Cargando…",
     "retry": "Reintentar",
     "none": "Ninguno",
-    "untitled": "Sin título"
+    "untitled": "Sin título",
+    "more": "Más",
+    "dragToRearrange": "Arrastra para reordenar"
   },
   "language": {
     "title": "Idioma",
@@ -32,6 +34,10 @@
     "openLocalesFolder": "Abrir la carpeta de idiomas",
     "customBadge": "Bóveda",
     "missingKeys": "{count} textos se muestran en inglés en este idioma."
+  },
+  "general": {
+    "help": "Ayuda",
+    "language": "Idioma"
   },
   "settings": {
     "tab": {
@@ -68,6 +74,7 @@
       "close": "Cerrar"
     },
     "general": {
+      "close": "Cerrar",
       "version": "Versión {{version}}",
       "installerVersion": "Versión del instalador: {{version}}",
       "readChangelog": "Leer el registro de cambios.",
@@ -159,17 +166,37 @@
       "customIcon": "Ícono personalizado",
       "customIconDesc": "Configure un ícono personalizado para la aplicación.",
       "chooseIcon": "Elegir",
-      "resetIcon": "Restaurar",
-      "zoom": "Nivel de zoom",
-      "zoomDesc": "Ajusta el nivel de zoom de toda la ventana."
+      "resetIcon": "Restaurar"
     },
     "interface": {
-      "showRibbon": "Mostrar cinta lateral",
-      "showRibbonDesc": "Muestra la cinta de iconos a la izquierda de la ventana.",
+      "workspaceHeading": "Espacio de trabajo",
       "showInlineTitle": "Mostrar título en línea",
-      "showInlineTitleDesc": "Muestra el título de la nota en la parte superior.",
+      "showInlineTitleDesc": "Muestra el nombre del archivo como un título editable al principio de cada nota.",
+      "showTabTitleBar": "Mostrar barra de título de pestaña",
+      "showTabTitleBarDesc": "Muestra la cabecera con la ruta del archivo y las acciones en la parte superior de cada pestaña.",
       "showStatusBar": "Mostrar barra de estado",
-      "showStatusBarDesc": "Muestra la barra de estado en la parte inferior de la ventana."
+      "showStatusBarDesc": "Muestra el recuento de palabras, caracteres y enlaces entrantes en la esquina inferior derecha.",
+      "ribbonHeading": "Barra de herramientas",
+      "showRibbon": "Mostrar barra de herramientas",
+      "showRibbonDesc": "Muestra la columna vertical de acciones rápidas en el borde izquierdo de la ventana.",
+      "ribbonConfig": "Elementos de la barra de herramientas",
+      "ribbonConfigDesc": "Configura qué comandos aparecen en la barra lateral izquierda y su orden.",
+      "manage": "Administrar",
+      "ribbonModalTitle": "Ajustes de la barra de herramientas",
+      "ribbonModalDesc": "Elige qué elementos deben mostrarse en la barra lateral izquierda. Arrastra o usa los botones para cambiar el orden.",
+      "otherRibbonItems": "Otros elementos de la barra de herramientas",
+      "windowHeading": "Ventana",
+      "windowFrameStyle": "Marco de la ventana",
+      "windowFrameStyleDesc": "Elige el estilo de la barra de título superior de la ventana de escritorio.",
+      "frameUrano": "Marco de Urano (oculto)",
+      "frameNative": "Marco nativo",
+      "translucentWindow": "Ventana translúcida",
+      "translucentWindowDesc": "Añade un efecto de desenfoque translúcido detrás de la barra lateral (según soporte del sistema operativo).",
+      "zoomLevel": "Nivel de zoom",
+      "zoomLevelDesc": "Ajusta el nivel de escala visual de toda la interfaz de la aplicación.",
+      "resetZoom": "Restaurar",
+      "nativeMenus": "Menús nativos",
+      "nativeMenusDesc": "Usa el estilo de menús contextuales integrados con el tema actual."
     },
     "editor": {
       "behavior": "Comportamiento",

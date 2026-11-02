@@ -21,7 +21,9 @@
     "loading": "Loading…",
     "retry": "Retry",
     "none": "None",
-    "untitled": "Untitled"
+    "untitled": "Untitled",
+    "more": "More",
+    "dragToRearrange": "Drag to rearrange"
   },
   "language": {
     "title": "Language",
@@ -32,6 +34,10 @@
     "openLocalesFolder": "Open the locales folder",
     "customBadge": "Vault",
     "missingKeys": "{count} strings fall back to English in this language."
+  },
+  "general": {
+    "help": "Help",
+    "language": "Language"
   },
   "settings": {
     "tab": {
@@ -68,6 +74,7 @@
       "close": "Close"
     },
     "general": {
+      "close": "Close",
       "version": "Version {{version}}",
       "installerVersion": "Installer version: {{version}}",
       "readChangelog": "Read the changelog.",
@@ -159,17 +166,37 @@
       "customIcon": "Custom icon",
       "customIconDesc": "Configure a custom icon for the application.",
       "chooseIcon": "Choose",
-      "resetIcon": "Restore",
-      "zoom": "Zoom level",
-      "zoomDesc": "Adjust the zoom level of the whole app window."
+      "resetIcon": "Restore"
     },
     "interface": {
-      "showRibbon": "Show ribbon",
-      "showRibbonDesc": "Show the ribbon on the left side of the window.",
+      "workspaceHeading": "Workspace",
       "showInlineTitle": "Show inline title",
-      "showInlineTitleDesc": "Show the note title at the top of the note.",
+      "showInlineTitleDesc": "Show the note title as an editable title at the top of each note.",
+      "showTabTitleBar": "Show tab title bar",
+      "showTabTitleBarDesc": "Show the header with the file path and actions at the top of each tab.",
       "showStatusBar": "Show status bar",
-      "showStatusBarDesc": "Show the status bar at the bottom of the window."
+      "showStatusBarDesc": "Show the word, character, and backlink count in the bottom right corner.",
+      "ribbonHeading": "Ribbon",
+      "showRibbon": "Show ribbon",
+      "showRibbonDesc": "Show the vertical quick-action column on the left edge of the window.",
+      "ribbonConfig": "Ribbon menu configuration",
+      "ribbonConfigDesc": "Configure which commands appear in the left ribbon and their order.",
+      "manage": "Manage",
+      "ribbonModalTitle": "Ribbon configuration",
+      "ribbonModalDesc": "Choose which items to show on the left ribbon. Drag or use the buttons to change their order.",
+      "otherRibbonItems": "Other ribbon items",
+      "windowHeading": "Window",
+      "windowFrameStyle": "Window frame style",
+      "windowFrameStyleDesc": "Choose the title bar style for the desktop window.",
+      "frameUrano": "Urano frame (hidden)",
+      "frameNative": "Native frame",
+      "translucentWindow": "Translucent window",
+      "translucentWindowDesc": "Add a translucent blur effect behind the sidebar (depending on OS support).",
+      "zoomLevel": "Zoom level",
+      "zoomLevelDesc": "Adjust the visual scale level for the entire application interface.",
+      "resetZoom": "Restore",
+      "nativeMenus": "Native menus",
+      "nativeMenusDesc": "Use the context menu style integrated with the current theme."
     },
     "editor": {
       "behavior": "Behavior",
