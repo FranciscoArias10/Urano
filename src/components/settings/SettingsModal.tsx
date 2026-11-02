@@ -14,6 +14,7 @@ import { useVaultStore } from '../../stores/vaultStore';
 import { CssSnippetsModal } from './appearance/CssSnippetsModal';
 import { CommunityThemesModal } from './appearance/CommunityThemesModal';
 import { FontPickerModal, FontTarget } from './appearance/FontPickerModal';
+import { RibbonConfigModal } from './interface/RibbonConfigModal';
 import './settingsStyles.css';
 
 /* ----------------------------------------------------------------------------
@@ -94,6 +95,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     isOpen: false,
     target: 'interfaceFontFamily',
   });
+  const [showRibbonModal, setShowRibbonModal] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -108,6 +110,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const handler = () => setShowCommunityThemesModal(true);
     window.addEventListener('urano:open-community-themes', handler);
     return () => window.removeEventListener('urano:open-community-themes', handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setShowRibbonModal(true);
+    window.addEventListener('urano:open-ribbon-config', handler);
+    return () => window.removeEventListener('urano:open-ribbon-config', handler);
   }, []);
 
   useEffect(() => {
@@ -408,6 +416,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           isOpen={fontPickerState.isOpen}
           target={fontPickerState.target}
           onClose={() => setFontPickerState((s) => ({ ...s, isOpen: false }))}
+        />
+      )}
+
+      {showRibbonModal && (
+        <RibbonConfigModal
+          isOpen={showRibbonModal}
+          onClose={() => setShowRibbonModal(false)}
         />
       )}
     </div>
