@@ -363,7 +363,7 @@ export const Slider: React.FC<SliderProps> = ({
         disabled={disabled}
         aria-label={ariaLabel}
         style={{
-          background: `linear-gradient(to right, var(--interactive-accent) 0%, var(--interactive-accent) ${percent}%, var(--background-modifier-border-hover, #333333) ${percent}%, var(--background-modifier-border-hover, #333333) 100%)`,
+          background: `linear-gradient(to right, var(--interactive-accent) 0%, var(--interactive-accent) ${percent}%, var(--background-modifier-border) ${percent}%, var(--background-modifier-border) 100%)`,
         }}
         onChange={(e) => onChange(Number(e.target.value))}
       />
