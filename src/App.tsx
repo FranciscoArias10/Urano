@@ -1399,7 +1399,7 @@ export const App: React.FC = () => {
             );
           })}
 
-          <div style={{ borderTop: '1px solid #2e2e2e', margin: '4px 0' }} />
+          <div style={{ borderTop: '1px solid var(--background-modifier-border)', margin: '4px 0' }} />
 
           <button
             type="button"
