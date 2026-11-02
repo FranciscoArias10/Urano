@@ -233,11 +233,25 @@ export const App: React.FC = () => {
     root.style.setProperty('--editor-font-size', `${settings.editorFontSize}px`);
     root.style.setProperty('--file-line-width', settings.readableLineLength ? '820px' : '100%');
     root.style.setProperty('--editor-tab-size', String(settings.tabSize));
+    const zoomFactor = (settings.zoomLevel || 100) / 100;
     (root.style as CSSStyleDeclaration & { zoom?: string }).zoom =
-      settings.zoomLevel === 1 ? '' : String(settings.zoomLevel);
+      settings.zoomLevel === 100 ? '' : String(zoomFactor);
+    document.body.style.zoom = settings.zoomLevel === 100 ? '' : String(zoomFactor);
+    document.body.classList.toggle('is-translucent', Boolean(settings.translucentWindow));
     // `lang` / `dir` del documento los gestiona el motor i18n (locales/i18n.ts)
     applyBaseTheme(settings.theme);
   }, [settings]);
+
+  // Synchronize window decorations with windowFrameStyle
+  useEffect(() => {
+    try {
+      import('@tauri-apps/api/window')
+        .then(({ getCurrentWindow }) => {
+          getCurrentWindow().setDecorations(settings.windowFrameStyle === 'native').catch(() => {});
+        })
+        .catch(() => {});
+    } catch {}
+  }, [settings.windowFrameStyle]);
 
   // On mount: restore previous vault and Google auth status
   useEffect(() => {
@@ -1042,7 +1056,7 @@ export const App: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* ========================================================
             Obsidian Left Ribbon (.side-dock-ribbon)
-            Section B: Los 7 Iconos en orden exacto con tooltips oscuros
+            Configurable dynamic actions with dark tooltips
             ======================================================== */}
         {settings.showRibbon && (
         <div className="side-dock-ribbon">
