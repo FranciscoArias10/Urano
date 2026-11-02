@@ -254,8 +254,42 @@ function mergeSettings(raw: unknown): UranoSettings {
   out.baseFontSize = typeof src?.baseFontSize === 'number' ? Math.min(30, Math.max(10, Math.round(src.baseFontSize))) : 16;
   out.baseFontSizeAction = src?.baseFontSizeAction !== undefined ? Boolean(src.baseFontSizeAction) : true;
   out.customIcon = typeof src?.customIcon === 'string' ? src.customIcon : null;
-  out.editorFontSize = typeof src?.editorFontSize === 'number' ? Math.min(30, Math.max(10, Math.round(src.editorFontSize))) : out.baseFontSize;
-  out.zoomLevel = Math.min(2, Math.max(0.5, Math.round(out.zoomLevel * 10) / 10));
+  out.showRibbon = src?.showRibbon !== undefined ? Boolean(src.showRibbon) : true;
+  out.showInlineTitle = src?.showInlineTitle !== undefined ? Boolean(src.showInlineTitle) : true;
+  out.showTabTitleBar = src?.showTabTitleBar !== undefined ? Boolean(src.showTabTitleBar) : true;
+  out.showStatusBar = src?.showStatusBar !== undefined ? Boolean(src.showStatusBar) : true;
+  out.translucentWindow = Boolean(src?.translucentWindow);
+  out.nativeMenus = Boolean(src?.nativeMenus);
+  out.windowFrameStyle = src?.windowFrameStyle === 'native' ? 'native' : 'custom';
+
+  if (Array.isArray(src?.ribbonItems)) {
+    const rawItems = src.ribbonItems as { id?: string; visible?: boolean }[];
+    const knownIds = new Set(DEFAULT_RIBBON_ITEMS.map((i) => i.id));
+    const merged: RibbonItemSetting[] = [];
+    const seen = new Set<string>();
+
+    for (const item of rawItems) {
+      if (item && typeof item.id === 'string' && knownIds.has(item.id) && !seen.has(item.id)) {
+        merged.push({ id: item.id, visible: item.visible !== false });
+        seen.add(item.id);
+      }
+    }
+    for (const def of DEFAULT_RIBBON_ITEMS) {
+      if (!seen.has(def.id)) {
+        merged.push({ ...def });
+      }
+    }
+    out.ribbonItems = merged;
+  } else {
+    out.ribbonItems = DEFAULT_RIBBON_ITEMS.map((item) => ({ ...item }));
+  }
+
+  if (typeof src?.zoomLevel === 'number') {
+    const zl = src.zoomLevel <= 2 ? Math.round(src.zoomLevel * 100) : src.zoomLevel;
+    out.zoomLevel = Math.min(150, Math.max(70, Math.round(zl / 5) * 5));
+  } else {
+    out.zoomLevel = 100;
+  }
   out.tabSize = [2, 3, 4, 6, 8].includes(out.tabSize) ? out.tabSize : 4;
   return out;
 }
