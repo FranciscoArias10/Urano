@@ -1,6 +1,7 @@
 import React from 'react';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useSyncStore } from '../../stores/syncStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { useT } from '../../stores/localeStore';
 import {
   HardDrive,
@@ -9,6 +10,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Pencil,
+  BookOpen,
 } from 'lucide-react';
 
 interface StatusBarProps {
@@ -29,6 +31,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   const t = useT();
   const { fileContent } = useVaultStore();
   const { status, isSyncing, isAuthenticated } = useSyncStore();
+  const showEditorStatus = useSettingsStore((s) => s.settings.showEditorStatus);
 
   const words = fileContent.trim() ? fileContent.trim().split(/\s+/).length : 0;
   const chars = fileContent.length;
@@ -38,7 +41,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       {/* Left: Spacer */}
       <div className="flex items-center gap-2" />
 
-      {/* Right: Compact Status Pill (0 backlinks  [pencil]  55 palabras  497 caracteres + sync icon) */}
+      {/* Right: Compact Status Pill (0 backlinks  [book/pencil]  55 palabras  497 caracteres + sync icon) */}
       <div className="flex items-center">
         <div className="flex items-center gap-2.5 bg-obsidian-bg hover:bg-obsidian-hover px-2.5 py-0.5 rounded-full border border-obsidian-border text-[11px] text-obsidian-muted transition-colors">
           <button
@@ -51,19 +54,19 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 
           <span className="text-obsidian-muted select-none opacity-40">•</span>
 
-          {onToggleViewMode && (
+          {showEditorStatus && onToggleViewMode && (
             <>
               <button
                 onClick={onToggleViewMode}
                 className="hover:text-orange-400 transition-colors cursor-pointer flex items-center justify-center"
                 title={
-                  viewMode === 'source'
-                    ? t('statusBar.switchToLivePreview')
-                    : t('statusBar.switchToSourceMode')
+                  viewMode === 'reading'
+                    ? t('statusBar.switchToEditing')
+                    : t('statusBar.switchToReading')
                 }
                 aria-label={t('statusBar.toggleViewMode')}
               >
-                <Pencil size={13} />
+                {viewMode === 'reading' ? <Pencil size={13} /> : <BookOpen size={13} />}
               </button>
               <span className="text-obsidian-muted select-none opacity-40">•</span>
             </>
