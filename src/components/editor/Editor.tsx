@@ -1,10 +1,19 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { EditorState, Compartment } from '@codemirror/state';
-import { EditorView, keymap, lineNumbers } from '@codemirror/view';
+import { EditorState, Compartment, RangeSetBuilder } from '@codemirror/state';
+import {
+  EditorView,
+  keymap,
+  lineNumbers,
+  ViewPlugin,
+  Decoration,
+  DecorationSet,
+  ViewUpdate,
+} from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
-import { indentUnit } from '@codemirror/language';
-import { useSettingsStore, UranoSettings } from '../../stores/settingsStore';
+import { indentUnit, codeFolding, foldGutter, foldService } from '@codemirror/language';
+import { closeBrackets } from '@codemirror/autocomplete';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { languages } from '@codemirror/language-data';
 import { obsidianTheme, obsidianSyntax } from '../../editor/theme';
 import { liveMarkdownExtension } from '../../editor/liveMarkdown';
@@ -107,27 +116,125 @@ export const Editor: React.FC<EditorProps> = ({
   const inlineTitleRef = useRef<HTMLInputElement>(null);
   const lastDispatchedDocRef = useRef<string>('');
 
-  // Holds the Live Preview rendering extensions; emptied in Source Mode
+  // Independent CodeMirror 6 Compartments for dynamic reconfiguration without recreating the view
   const livePreviewCompartment = useRef(new Compartment());
-
-  // Settings → Editor (line numbers, tab size, indent unit, spellcheck) live in
-  // their own compartment so changes apply without recreating the editor.
+  const lineNumbersCompartment = useRef(new Compartment());
+  const foldingCompartment = useRef(new Compartment());
+  const readableLineLengthCompartment = useRef(new Compartment());
+  const indentGuidesCompartment = useRef(new Compartment());
+  const rtlCompartment = useRef(new Compartment());
   const editorSettingsCompartment = useRef(new Compartment());
+
   const showLineNumbers = useSettingsStore((st) => st.settings.showLineNumbers);
+  const foldHeading = useSettingsStore((st) => st.settings.foldHeading);
+  const foldIndent = useSettingsStore((st) => st.settings.foldIndent);
+  const readableLineLength = useSettingsStore((st) => st.settings.readableLineLength);
+  const indentGuides = useSettingsStore((st) => st.settings.indentGuides);
+  const rightToLeft = useSettingsStore((st) => st.settings.rightToLeft);
   const tabSize = useSettingsStore((st) => st.settings.tabSize);
   const useTabs = useSettingsStore((st) => st.settings.useTabs);
+  const smartIndent = useSettingsStore((st) => st.settings.smartIndent);
   const spellcheck = useSettingsStore((st) => st.settings.spellcheck);
   const language = useSettingsStore((st) => st.settings.language);
   const customDictionary = useSettingsStore((st) => st.settings.customDictionary);
   const strictLineBreaks = useSettingsStore((st) => st.settings.strictLineBreaks);
   const showInlineTitle = useSettingsStore((st) => st.settings.showInlineTitle);
-  const editorSettingsRef = useRef({ showLineNumbers, tabSize, useTabs, spellcheck, language });
-  editorSettingsRef.current = { showLineNumbers, tabSize, useTabs, spellcheck, language };
+  const autoPairBrackets = useSettingsStore((st) => st.settings.autoPairBrackets);
+  const autoPairMarkdown = useSettingsStore((st) => st.settings.autoPairMarkdown);
+  const propertiesInDocument = useSettingsStore((st) => st.settings.propertiesInDocument);
 
-  const buildEditorSettingsExtensions = (
-    s: Pick<UranoSettings, 'showLineNumbers' | 'tabSize' | 'useTabs' | 'spellcheck' | 'language'>
-  ) => [
-    ...(s.showLineNumbers ? [lineNumbers()] : []),
+  const buildFoldingExtensions = (foldHeadingEnabled: boolean, foldIndentEnabled: boolean) => {
+    if (!foldHeadingEnabled && !foldIndentEnabled) return [];
+    const ext: any[] = [codeFolding(), foldGutter()];
+    if (foldIndentEnabled) {
+      ext.push(
+        foldService.of((state: EditorState, lineStart: number) => {
+          const line = state.doc.lineAt(lineStart);
+          const text = line.text;
+          if (!text.trim()) return null;
+          const match = text.match(/^\s*/);
+          const currentIndent = match ? match[0].length : 0;
+
+          let lastLine = line;
+          for (let i = line.number + 1; i <= state.doc.lines; i++) {
+            const nextLine = state.doc.line(i);
+            if (!nextLine.text.trim()) continue;
+            const nextIndent = (nextLine.text.match(/^\s*/) || [''])[0].length;
+            if (nextIndent <= currentIndent) break;
+            lastLine = nextLine;
+          }
+          if (lastLine.number > line.number) {
+            return { from: line.to, to: lastLine.to };
+          }
+          return null;
+        })
+      );
+    }
+    return ext;
+  };
+
+  const buildReadableLineLengthExtension = (readable: boolean) => [
+    EditorView.theme({
+      '.cm-content': {
+        maxWidth: readable ? 'var(--file-line-width, 700px)' : '100%',
+        marginLeft: readable ? 'auto' : '0',
+        marginRight: readable ? 'auto' : '0',
+      },
+      '.cm-line': {
+        maxWidth: readable ? 'var(--file-line-width, 700px)' : '100%',
+      },
+    }),
+  ];
+
+  const indentGuidesExtension = useMemo(
+    () =>
+      ViewPlugin.fromClass(
+        class {
+          decorations: DecorationSet;
+          constructor(view: EditorView) {
+            this.decorations = this.buildDeco(view);
+          }
+          update(update: ViewUpdate) {
+            if (update.docChanged || update.viewportChanged || update.geometryChanged) {
+              this.decorations = this.buildDeco(update.view);
+            }
+          }
+          buildDeco(view: EditorView) {
+            const builder = new RangeSetBuilder<Decoration>();
+            for (const { from, to } of view.visibleRanges) {
+              let pos = from;
+              while (pos <= to) {
+                const line = view.state.doc.lineAt(pos);
+                const match = line.text.match(/^(\s+)/);
+                if (match && match[1].length > 1) {
+                  builder.add(
+                    line.from,
+                    line.from + match[1].length,
+                    Decoration.mark({ class: 'cm-indent-guide' })
+                  );
+                }
+                pos = line.to + 1;
+              }
+            }
+            return builder.finish();
+          }
+        },
+        {
+          decorations: (v) => v.decorations,
+        }
+      ),
+    []
+  );
+
+  const buildEditorSettingsExtensions = (s: {
+    tabSize: number;
+    useTabs: boolean;
+    spellcheck: boolean;
+    language: string;
+    autoPairBrackets: boolean;
+    autoPairMarkdown: boolean;
+    smartIndent: boolean;
+  }) => [
     EditorState.tabSize.of(s.tabSize),
     indentUnit.of(s.useTabs ? '\t' : ' '.repeat(s.tabSize)),
     EditorView.contentAttributes.of({
@@ -136,6 +243,7 @@ export const Editor: React.FC<EditorProps> = ({
       autocapitalize: 'on',
       contenteditable: 'true',
     }),
+    ...(s.autoPairBrackets || s.autoPairMarkdown ? [closeBrackets()] : []),
     ...(s.spellcheck ? spellcheckExtension : []),
   ];
 
@@ -375,11 +483,27 @@ export const Editor: React.FC<EditorProps> = ({
         markdown({ codeLanguages: languages }),
         obsidianTheme,
         obsidianSyntax,
-        // Live Preview rendering lives in a compartment so Source Mode can
-        // disable every decoration and show the raw Markdown (Obsidian "Source mode").
+        // Dynamic Compartments for Live Preview, Line Numbers, Folding, Line Length, Indent Guides, RTL & Settings
         livePreviewCompartment.current.of(buildLivePreviewExtensions(editorMode)),
+        lineNumbersCompartment.current.of(showLineNumbers ? [lineNumbers()] : []),
+        foldingCompartment.current.of(buildFoldingExtensions(foldHeading, foldIndent)),
+        readableLineLengthCompartment.current.of(
+          buildReadableLineLengthExtension(readableLineLength)
+        ),
+        indentGuidesCompartment.current.of(indentGuides ? [indentGuidesExtension] : []),
+        rtlCompartment.current.of(
+          rightToLeft ? [EditorView.theme({ '&': { direction: 'rtl' } })] : []
+        ),
         editorSettingsCompartment.current.of(
-          buildEditorSettingsExtensions(editorSettingsRef.current)
+          buildEditorSettingsExtensions({
+            tabSize,
+            useTabs,
+            spellcheck,
+            language,
+            autoPairBrackets,
+            autoPairMarkdown,
+            smartIndent,
+          })
         ),
         createImageDropPasteHandler(),
         EditorView.lineWrapping,
@@ -460,14 +584,45 @@ export const Editor: React.FC<EditorProps> = ({
     if (!view) return;
     view.dispatch({
       effects: [
+        lineNumbersCompartment.current.reconfigure(showLineNumbers ? [lineNumbers()] : []),
+        foldingCompartment.current.reconfigure(buildFoldingExtensions(foldHeading, foldIndent)),
+        readableLineLengthCompartment.current.reconfigure(
+          buildReadableLineLengthExtension(readableLineLength)
+        ),
+        indentGuidesCompartment.current.reconfigure(indentGuides ? [indentGuidesExtension] : []),
+        rtlCompartment.current.reconfigure(
+          rightToLeft ? [EditorView.theme({ '&': { direction: 'rtl' } })] : []
+        ),
         editorSettingsCompartment.current.reconfigure(
-          buildEditorSettingsExtensions({ showLineNumbers, tabSize, useTabs, spellcheck, language })
+          buildEditorSettingsExtensions({
+            tabSize,
+            useTabs,
+            spellcheck,
+            language,
+            autoPairBrackets,
+            autoPairMarkdown,
+            smartIndent,
+          })
         ),
         triggerSpellCheckEffect.of(true),
       ],
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showLineNumbers, tabSize, useTabs, spellcheck, language]);
+  }, [
+    showLineNumbers,
+    foldHeading,
+    foldIndent,
+    readableLineLength,
+    indentGuides,
+    rightToLeft,
+    tabSize,
+    useTabs,
+    smartIndent,
+    spellcheck,
+    language,
+    autoPairBrackets,
+    autoPairMarkdown,
+  ]);
 
   // Re-validate visible words when the custom dictionary changes (Settings → Editor,
   // "Add to dictionary" or edits to .urano/dictionary.txt)
@@ -2267,7 +2422,12 @@ export const Editor: React.FC<EditorProps> = ({
   return (
     <div
       onContextMenu={handleContextMenu}
-      className="flex-1 flex flex-col h-full bg-obsidian-bg overflow-hidden relative"
+      dir={rightToLeft ? 'rtl' : 'ltr'}
+      style={{ direction: rightToLeft ? 'rtl' : 'ltr' }}
+      data-properties-mode={propertiesInDocument}
+      className={`flex-1 flex flex-col h-full bg-obsidian-bg overflow-hidden relative ${
+        rightToLeft ? 'is-rtl' : ''
+      } properties-${propertiesInDocument}`}
     >
       {/* Clean Document Canvas */}
       <div className="flex-1 overflow-hidden relative flex flex-col">
@@ -2279,7 +2439,11 @@ export const Editor: React.FC<EditorProps> = ({
 
         {editorMode === 'reading' ? (
           /* Reading View Mode */
-          <div className="h-full overflow-y-auto px-12 py-10 max-w-[var(--file-line-width,820px)] mx-auto text-obsidian-text leading-relaxed font-sans">
+          <div
+            className={`h-full overflow-y-auto px-12 py-10 ${
+              readableLineLength ? 'max-w-[var(--file-line-width,700px)] mx-auto' : 'w-full max-w-none'
+            } text-obsidian-text leading-relaxed font-sans`}
+          >
             {showInlineTitle && (
               <h1 className="text-3xl font-bold text-obsidian-text mb-6 border-b border-obsidian-border pb-3">
                 {cleanTitle}
@@ -2301,7 +2465,11 @@ export const Editor: React.FC<EditorProps> = ({
           >
             {/* Inline Title (.inline-title) directly above the CodeMirror 6 canvas */}
             {showInlineTitle && (
-              <div className="w-full max-w-[var(--file-line-width,820px)] mx-auto px-12 pt-6 shrink-0">
+              <div
+                className={`w-full ${
+                  readableLineLength ? 'max-w-[var(--file-line-width,700px)] mx-auto' : ''
+                } px-12 pt-6 shrink-0`}
+              >
                 <input
                   ref={inlineTitleRef}
                   type="text"
