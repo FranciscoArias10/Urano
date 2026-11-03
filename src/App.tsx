@@ -56,6 +56,8 @@ import {
   Bookmark,
   Vault,
   Check,
+  BookOpen,
+  Code,
 } from 'lucide-react';
 
 /** Stable, unique identifier for a workspace leaf (tab). */
@@ -76,16 +78,22 @@ export const App: React.FC = () => {
   >({});
 
   // Live Preview / Reading View (Obsidian "Toggle reading view", Ctrl+E)
-  const [viewMode, setViewMode] = useState<ViewMode>('live-preview');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const s = useSettingsStore.getState().settings;
+    if (s.defaultViewMode === 'preview') return 'reading';
+    return s.livePreview ? 'live-preview' : 'source';
+  });
   // Ctrl+E / header button: Reading View <-> the editing mode used before it
-  const lastEditingModeRef = useRef<Exclude<ViewMode, 'reading'>>('live-preview');
+  const lastEditingModeRef = useRef<Exclude<ViewMode, 'reading'>>(
+    useSettingsStore.getState().settings.livePreview ? 'live-preview' : 'source'
+  );
   const toggleReadingView = () =>
     setViewMode((mode) => {
       if (mode === 'reading') return lastEditingModeRef.current;
       lastEditingModeRef.current = mode;
       return 'reading';
     });
-  // Status bar pencil: Live Preview <-> Source Mode (raw Markdown)
+  // Live Preview <-> Source Mode (raw Markdown)
   const toggleSourceMode = () =>
     setViewMode((mode) => (mode === 'source' ? 'live-preview' : 'source'));
 
@@ -99,11 +107,13 @@ export const App: React.FC = () => {
     forward: () => void;
     newTab: () => void;
     toggleViewMode: () => void;
+    toggleSourceMode: () => void;
   }>({
     back: () => {},
     forward: () => {},
     newTab: () => {},
     toggleViewMode: () => {},
+    toggleSourceMode: () => {},
   });
 
   // Left Sidebar State (Toggle + 3 Tabs: files, search, bookmarks)
@@ -231,7 +241,7 @@ export const App: React.FC = () => {
     root.style.setProperty('--background-modifier-border-hover', `${accent}59`);
     root.style.setProperty('--background-modifier-active-hover', `${accent}26`);
     root.style.setProperty('--editor-font-size', `${settings.editorFontSize}px`);
-    root.style.setProperty('--file-line-width', settings.readableLineLength ? '820px' : '100%');
+    root.style.setProperty('--file-line-width', settings.readableLineLength ? '700px' : '100%');
     root.style.setProperty('--editor-tab-size', String(settings.tabSize));
     const zoomFactor = (settings.zoomLevel || 100) / 100;
     (root.style as CSSStyleDeclaration & { zoom?: string }).zoom =
@@ -410,6 +420,7 @@ export const App: React.FC = () => {
     forward: handleNavigateForward,
     newTab: () => handleCreateUntitledNote(),
     toggleViewMode: toggleReadingView,
+    toggleSourceMode: toggleSourceMode,
   };
 
   // Global Keyboard Shortcuts (Obsidian matching)
@@ -944,6 +955,19 @@ export const App: React.FC = () => {
       action: () => openSettings(),
     },
     {
+      id: 'markdown:toggle-preview',
+      name: t('commands.editor.toggleReadingView', { defaultValue: 'Markdown: Alternar vista de lectura' }),
+      shortcut: 'Ctrl+E',
+      icon: <BookOpen size={15} />,
+      action: toggleReadingView,
+    },
+    {
+      id: 'editor:toggle-source',
+      name: t('commands.editor.toggleSourceMode', { defaultValue: 'Editor: Alternar código fuente / vista previa en vivo' }),
+      icon: <Code size={15} />,
+      action: toggleSourceMode,
+    },
+    {
       id: 'app:sync-config',
       name: t('commands.app.syncConfig'),
       icon: <Settings size={15} />,
@@ -1322,7 +1346,7 @@ export const App: React.FC = () => {
           backlinksCount={backlinksCount}
           onOpenLogs={() => setShowLogs(true)}
           viewMode={viewMode}
-          onToggleViewMode={toggleSourceMode}
+          onToggleViewMode={toggleReadingView}
         />
       )}
 
