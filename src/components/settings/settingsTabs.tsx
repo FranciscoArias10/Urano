@@ -886,44 +886,183 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
     icon: <PenLine size={ICON} />,
     section: 'options',
     groups: [
+      /* Tarjeta 1 — Opciones Predeterminadas de Vista y Modo (Sin Título de Sección) */
       {
-        id: 'editor-behavior',
-        heading: t('editor.behavior'),
+        id: 'editor-views',
         items: [
           {
-            id: 'spellcheck',
-            name: t('editor.spellcheck'),
-            desc: t('editor.spellcheckDesc'),
-            aliases: ['ortografía', 'corrector'],
-            control: <Toggle value={settings.spellcheck} onChange={set('spellcheck')} ariaLabel={t('editor.spellcheck')} />,
+            id: 'default-view-mode',
+            name: t('editor.defaultViewMode'),
+            desc: t('editor.defaultViewModeDesc'),
+            control: (
+              <Dropdown<'source' | 'preview'>
+                value={settings.defaultViewMode}
+                ariaLabel={t('editor.defaultViewMode')}
+                options={[
+                  { value: 'source', label: t('editor.defaultViewModeEditing') },
+                  { value: 'preview', label: t('editor.defaultViewModeReading') },
+                ]}
+                onChange={set('defaultViewMode')}
+              />
+            ),
+          },
+          {
+            id: 'default-editing-mode',
+            name: t('editor.defaultEditingMode'),
+            desc: t('editor.defaultEditingModeDesc'),
+            aliases: ['live-preview', 'source'],
+            control: (
+              <Dropdown
+                value={settings.livePreview ? 'live-preview' : 'source'}
+                ariaLabel={t('editor.defaultEditingMode')}
+                options={[
+                  { value: 'live-preview', label: t('editor.defaultEditingModeLivePreview') },
+                  { value: 'source', label: t('editor.defaultEditingModeSource') },
+                ]}
+                onChange={(v) => setSetting('livePreview', v === 'live-preview')}
+              />
+            ),
+          },
+          {
+            id: 'editor-status',
+            name: t('editor.editorStatus'),
+            desc: t('editor.editorStatusDesc'),
+            control: (
+              <Toggle
+                value={settings.showEditorStatus}
+                onChange={set('showEditorStatus')}
+                ariaLabel={t('editor.editorStatus')}
+              />
+            ),
           },
         ],
       },
+      /* Tarjeta 2 — Pantalla */
       {
         id: 'editor-display',
         heading: t('editor.display'),
         items: [
           {
+            id: 'show-inline-title',
+            name: t('editor.showInlineTitle'),
+            desc: t('editor.showInlineTitleDesc'),
+            control: (
+              <Toggle
+                value={settings.showInlineTitle}
+                onChange={set('showInlineTitle')}
+                ariaLabel={t('editor.showInlineTitle')}
+              />
+            ),
+          },
+          {
             id: 'readable-line-length',
             name: t('editor.readableLineLength'),
             desc: t('editor.readableLineLengthDesc'),
-            control: <Toggle value={settings.readableLineLength} onChange={set('readableLineLength')} ariaLabel={t('editor.readableLineLength')} />,
+            control: (
+              <Toggle
+                value={settings.readableLineLength}
+                onChange={set('readableLineLength')}
+                ariaLabel={t('editor.readableLineLength')}
+              />
+            ),
           },
           {
             id: 'strict-line-breaks',
             name: t('editor.strictLineBreaks'),
             desc: t('editor.strictLineBreaksDesc'),
-            control: <Toggle value={settings.strictLineBreaks} onChange={set('strictLineBreaks')} ariaLabel={t('editor.strictLineBreaks')} />,
+            control: (
+              <Toggle
+                value={settings.strictLineBreaks}
+                onChange={set('strictLineBreaks')}
+                ariaLabel={t('editor.strictLineBreaks')}
+              />
+            ),
+          },
+          {
+            id: 'properties-in-document',
+            name: t('editor.propertiesInDocument'),
+            desc: t('editor.propertiesInDocumentDesc'),
+            control: (
+              <Dropdown<'visible' | 'hidden' | 'source'>
+                value={settings.propertiesInDocument}
+                ariaLabel={t('editor.propertiesInDocument')}
+                options={[
+                  { value: 'visible', label: t('editor.propertiesVisible') },
+                  { value: 'hidden', label: t('editor.propertiesHidden') },
+                  { value: 'source', label: t('editor.propertiesSource') },
+                ]}
+                onChange={set('propertiesInDocument')}
+              />
+            ),
+          },
+          {
+            id: 'fold-heading',
+            name: t('editor.foldHeading'),
+            desc: t('editor.foldHeadingDesc'),
+            aliases: ['encabezado', 'h1', 'h2', 'h3'],
+            control: (
+              <Toggle
+                value={settings.foldHeading}
+                onChange={set('foldHeading')}
+                ariaLabel={t('editor.foldHeading')}
+              />
+            ),
+          },
+          {
+            id: 'fold-indent',
+            name: t('editor.foldIndent'),
+            desc: t('editor.foldIndentDesc'),
+            aliases: ['sangrado', 'listas'],
+            control: (
+              <Toggle
+                value={settings.foldIndent}
+                onChange={set('foldIndent')}
+                ariaLabel={t('editor.foldIndent')}
+              />
+            ),
           },
           {
             id: 'show-line-numbers',
             name: t('editor.showLineNumbers'),
             desc: t('editor.showLineNumbersDesc'),
-            aliases: ['gutter', 'números de línea'],
-            control: <Toggle value={settings.showLineNumbers} onChange={set('showLineNumbers')} ariaLabel={t('editor.showLineNumbers')} />,
+            aliases: ['gutter', 'números de línea', 'line numbers'],
+            control: (
+              <Toggle
+                value={settings.showLineNumbers}
+                onChange={set('showLineNumbers')}
+                ariaLabel={t('editor.showLineNumbers')}
+              />
+            ),
+          },
+          {
+            id: 'indent-guides',
+            name: t('editor.indentGuides'),
+            desc: t('editor.indentGuidesDesc'),
+            aliases: ['guías', 'indentation guides'],
+            control: (
+              <Toggle
+                value={settings.indentGuides}
+                onChange={set('indentGuides')}
+                ariaLabel={t('editor.indentGuides')}
+              />
+            ),
+          },
+          {
+            id: 'right-to-left',
+            name: t('editor.rightToLeft'),
+            desc: t('editor.rightToLeftDesc'),
+            aliases: ['rtl', 'árabe', 'hebreo'],
+            control: (
+              <Toggle
+                value={settings.rightToLeft}
+                onChange={set('rightToLeft')}
+                ariaLabel={t('editor.rightToLeft')}
+              />
+            ),
           },
         ],
       },
+      /* Tarjeta 3 — Sangría */
       {
         id: 'editor-indent',
         heading: t('editor.indentation'),
@@ -932,7 +1071,13 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             id: 'use-tabs',
             name: t('editor.useTabs'),
             desc: t('editor.useTabsDesc'),
-            control: <Toggle value={settings.useTabs} onChange={set('useTabs')} ariaLabel={t('editor.useTabs')} />,
+            control: (
+              <Toggle
+                value={settings.useTabs}
+                onChange={set('useTabs')}
+                ariaLabel={t('editor.useTabs')}
+              />
+            ),
           },
           {
             id: 'tab-size',
@@ -945,6 +1090,91 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 ariaLabel={t('editor.tabSize')}
                 options={['2', '3', '4', '6', '8'].map((v) => ({ value: v, label: v }))}
                 onChange={(v) => setSetting('tabSize', Number(v))}
+              />
+            ),
+          },
+          {
+            id: 'smart-indent',
+            name: t('editor.smartIndent'),
+            desc: t('editor.smartIndentDesc'),
+            aliases: ['sangrado inteligente', 'smart lists'],
+            control: (
+              <Toggle
+                value={settings.smartIndent}
+                onChange={set('smartIndent')}
+                ariaLabel={t('editor.smartIndent')}
+              />
+            ),
+          },
+        ],
+      },
+      /* Tarjeta 4 — Comportamiento */
+      {
+        id: 'editor-behavior',
+        heading: t('editor.behavior'),
+        items: [
+          {
+            id: 'spellcheck',
+            name: t('editor.spellcheck'),
+            desc: t('editor.spellcheckDesc'),
+            aliases: ['ortografía', 'corrector'],
+            control: (
+              <Toggle
+                value={settings.spellcheck}
+                onChange={set('spellcheck')}
+                ariaLabel={t('editor.spellcheck')}
+              />
+            ),
+          },
+          {
+            id: 'auto-pair-brackets',
+            name: t('editor.autoPairBrackets'),
+            desc: t('editor.autoPairBracketsDesc'),
+            aliases: ['corchetes', 'brackets', 'quotes'],
+            control: (
+              <Toggle
+                value={settings.autoPairBrackets}
+                onChange={set('autoPairBrackets')}
+                ariaLabel={t('editor.autoPairBrackets')}
+              />
+            ),
+          },
+          {
+            id: 'auto-pair-markdown',
+            name: t('editor.autoPairMarkdown'),
+            desc: t('editor.autoPairMarkdownDesc'),
+            aliases: ['markdown', 'negrita', 'cursiva'],
+            control: (
+              <Toggle
+                value={settings.autoPairMarkdown}
+                onChange={set('autoPairMarkdown')}
+                ariaLabel={t('editor.autoPairMarkdown')}
+              />
+            ),
+          },
+          {
+            id: 'auto-convert-html',
+            name: t('editor.autoConvertHtml'),
+            desc: t('editor.autoConvertHtmlDesc'),
+            aliases: ['html', 'pegar', 'paste'],
+            control: (
+              <Toggle
+                value={settings.autoConvertHtml}
+                onChange={set('autoConvertHtml')}
+                ariaLabel={t('editor.autoConvertHtml')}
+              />
+            ),
+          },
+          {
+            id: 'vim-mode',
+            name: t('editor.vimMode'),
+            desc: t('editor.vimModeDesc'),
+            aliases: ['vim', 'modal', 'keymap'],
+            control: (
+              <Toggle
+                value={settings.vimMode}
+                onChange={set('vimMode')}
+                ariaLabel={t('editor.vimMode')}
               />
             ),
           },
