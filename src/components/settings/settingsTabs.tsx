@@ -35,7 +35,6 @@ import {
   ThemeMode,
   UpdateLinksPref,
   AttachmentLocation,
-  StorageBackend,
   WindowFrameStyle,
 } from '../../stores/settingsStore';
 import { useSyncStore } from '../../stores/syncStore';
@@ -47,11 +46,6 @@ import { themeService } from '../../services/themeService';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { open as openFileDialog } from '@tauri-apps/plugin-dialog';
 import { ThemeSelectorControl, InstalledThemesRow } from './appearance/ThemeSelectorControl';
-import {
-  LocalAdapter,
-  GoogleDriveAdapter,
-  setStorageAdapter,
-} from '../../services/storageAdapter';
 import type { CommandItem } from '../palette/CommandPalette';
 import {
   Toggle,
@@ -1318,16 +1312,22 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
         heading: t('keychain.secrets'),
         items: [
           {
-            id: 'gdrive-oauth',
+            id: 'gdrive-session',
             name: t('keychain.gdrive'),
             desc: t('keychain.gdriveDesc'),
-            aliases: ['oauth', 'client id', 'secret'],
+            aliases: ['oauth', 'google', 'session', 'token'],
             control: (
               <>
-                <StatusPill tone={sync.clientId ? 'success' : 'neutral'}>
-                  {sync.clientId ? t('keychain.configured') : t('keychain.notConfigured')}
+                <StatusPill tone={sync.isAuthenticated ? 'success' : 'neutral'}>
+                  {sync.isAuthenticated ? t('keychain.connected') : t('keychain.notConnected')}
                 </StatusPill>
-                <SettingButton onClick={() => sync.setShowConfigModal(true)}>{t('keychain.edit')}</SettingButton>
+                {sync.isAuthenticated ? (
+                  <SettingButton onClick={() => sync.logout()}>{t('keychain.revoke')}</SettingButton>
+                ) : (
+                  <SettingButton disabled={sync.isAuthenticating} onClick={() => sync.loginWithGoogle()}>
+                    {t('keychain.signIn')}
+                  </SettingButton>
+                )}
               </>
             ),
           },
@@ -1609,77 +1609,74 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
     },
   ]);
 
-  /* ---------------- Sync (StorageAdapter: Local / Google Drive) ---------------- */
-  const statusKey = `sync.status.${sync.isSyncing ? 'syncing' : sync.status}` as Parameters<Translate>[0];
-  const statusTone =
-    sync.isSyncing ? 'active' : sync.status === 'synced' ? 'success' : sync.status === 'conflict' ? 'warning' : sync.status === 'error' ? 'error' : 'neutral';
-
-  const applyBackend = (backend: StorageBackend) => {
-    setStorageAdapter(backend === 'gdrive' ? new GoogleDriveAdapter() : new LocalAdapter());
-    setSetting('storageBackend', backend);
-  };
+  /* ---------------- Sync (Google Drive) ----------------
+     Mirrors Obsidian's Sync tab (obsidian.asar/app.js `mie.display`): account / remote vault
+     first, then "Sync status" with its Pause/Resume-style action, then "Activity log" → View
+     (`optionSyncLog` + `buttonView`). */
+  const syncStatusKey = `sync.status.${sync.isSyncing ? 'syncing' : sync.status}` as Parameters<Translate>[0];
+  const syncStatusTone =
+    sync.isSyncing
+      ? 'active'
+      : sync.status === 'synced'
+      ? 'success'
+      : sync.status === 'conflict'
+      ? 'warning'
+      : sync.status === 'error' || sync.status === 'offline'
+      ? 'error'
+      : 'neutral';
 
   const syncTab = pluginTab('sync', [
     {
-      id: 'sync-storage',
-      heading: t('sync.storage'),
+      id: 'sync-account-group',
+      heading: t('sync.account'),
       items: [
         {
-          id: 'sync-adapter',
-          name: t('sync.adapterName'),
-          desc: t('sync.adapterDesc'),
-          aliases: ['local', 'google drive', 'storage adapter'],
-          control: (
-            <Dropdown<StorageBackend>
-              value={settings.storageBackend}
-              ariaLabel={t('sync.adapterName')}
-              options={[
-                { value: 'local', label: t('sync.adapter.local') },
-                { value: 'gdrive', label: t('sync.adapter.gdrive') },
-              ]}
-              onChange={applyBackend}
-            />
-          ),
-        },
-        {
           id: 'sync-account',
-          name: t('sync.account'),
+          name: sync.isAuthenticated && sync.user ? sync.user.name : t('sync.account'),
           desc: sync.isAuthenticated && sync.user
             ? t('sync.connectedAs', { name: sync.user.name, email: sync.user.email })
             : t('sync.notConnected'),
+          aliases: ['google', 'drive', 'login', 'sign in', 'account'],
           control: sync.isAuthenticated ? (
-            <>
-              <SettingButton onClick={() => sync.setShowConfigModal(true)}>{t('sync.configure')}</SettingButton>
+            <div className="flex items-center gap-2">
+              {sync.userAvatar ? (
+                <img
+                  src={sync.userAvatar}
+                  alt={sync.userName || 'Google'}
+                  referrerPolicy="no-referrer"
+                  className="w-6 h-6 rounded-full border border-obsidian-border"
+                />
+              ) : null}
               <SettingButton onClick={() => sync.logout()}>{t('sync.disconnect')}</SettingButton>
-            </>
+            </div>
           ) : (
-            <>
-              <SettingButton onClick={() => sync.setShowConfigModal(true)}>{t('sync.configure')}</SettingButton>
-              <SettingButton cta onClick={() => sync.loginWithGoogle()}>{t('sync.connect')}</SettingButton>
-            </>
-          ),
-        },
-        {
-          id: 'sync-remote-folder',
-          name: t('sync.remoteFolder'),
-          desc: t('sync.remoteFolderDesc'),
-          control: (
-            <TextInput
-              value={sync.folderName}
-              onChange={(v) => sync.setCredentials(sync.clientId, sync.clientSecret, v.trim() || 'UranoVault')}
-              ariaLabel={t('sync.remoteFolder')}
-            />
+            <SettingButton cta disabled={sync.isAuthenticating} onClick={() => sync.loginWithGoogle()}>
+              {sync.isAuthenticating ? t('sync.connecting') : t('sync.connect')}
+            </SettingButton>
           ),
         },
       ],
     },
     {
-      id: 'sync-status-group',
+      id: 'sync-options-group',
       heading: t('sync.statusName'),
       items: [
         {
+          id: 'sync-auto',
+          name: t('sync.autoSync'),
+          desc: t('sync.autoSyncDesc'),
+          aliases: ['auto', 'automatic', 'real time'],
+          control: (
+            <Toggle
+              value={sync.autoSyncEnabled}
+              onChange={(enabled) => sync.setAutoSyncEnabled(enabled)}
+              ariaLabel={t('sync.autoSync')}
+            />
+          ),
+        },
+        {
           id: 'sync-status',
-          name: t(statusKey),
+          name: t('sync.statusName'),
           desc: activeVault
             ? sync.lastSynced
               ? t('sync.lastSynced', { time: sync.lastSynced })
@@ -1687,16 +1684,33 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             : t('sync.noVault'),
           control: (
             <>
-              <StatusPill tone={statusTone}>{t(statusKey)}</StatusPill>
-              <SettingButton onClick={ctx.onOpenSyncLogs}>{t('sync.viewLog')}</SettingButton>
+              <StatusPill tone={syncStatusTone}>{t(syncStatusKey)}</StatusPill>
               <SettingButton
                 cta
-                disabled={!activeVault || sync.isSyncing}
+                disabled={!activeVault || sync.isSyncing || !sync.isAuthenticated || !sync.isOnline}
                 onClick={() => activeVault && sync.triggerSync(activeVault)}
               >
                 {t('sync.syncNow')}
               </SettingButton>
             </>
+          ),
+        },
+        {
+          id: 'sync-log',
+          name: t('sync.activityLog'),
+          desc: t('sync.activityLogDesc'),
+          aliases: ['log', 'history'],
+          control: <SettingButton onClick={ctx.onOpenSyncLogs}>{t('sync.viewLog')}</SettingButton>,
+        },
+        {
+          id: 'sync-manage',
+          name: t('sync.manage'),
+          desc: t('sync.manageDesc'),
+          aliases: ['drive', 'remote', 'download', 'vaults'],
+          control: (
+            <SettingButton disabled={!sync.isAuthenticated} onClick={() => sync.setShowConfigModal(true)}>
+              {t('general.manage')}
+            </SettingButton>
           ),
         },
       ],
