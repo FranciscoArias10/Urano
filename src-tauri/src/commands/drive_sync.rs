@@ -376,3 +376,253 @@ fn get_app_data_dir(app: &AppHandle) -> PathBuf {
     dir
 }
 
+fn get_auth_file_path(app: &AppHandle) -> PathBuf {
+    get_app_data_dir(app).join("google_auth.json")
+}
+
+/// OAuth client used for "Sign in with Google". Never shown in the UI: `.env`
+/// (`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`) overrides the client baked into the
+/// binary. If the process env does not carry them we read `.env` and `../.env` manually.
+fn resolve_credentials() -> (String, String) {
+    if let (Some(env_id), Some(env_secret)) = (
+        env_or_dotenv("GOOGLE_CLIENT_ID"),
+        env_or_dotenv("GOOGLE_CLIENT_SECRET"),
+    ) {
+        if !env_id.trim().is_empty() && !env_secret.trim().is_empty() {
+            return (env_id.trim().to_string(), env_secret.trim().to_string());
+        }
+    }
+    (DEFAULT_CLIENT_ID.to_string(), DEFAULT_CLIENT_SECRET.to_string())
+}
+
+fn compute_md5(data: &[u8]) -> String {
+    use md5::{Digest, Md5};
+    let mut hasher = Md5::new();
+    hasher.update(data);
+    format!("{:x}", hasher.finalize())
+}
+
+fn generate_pkce() -> (String, String) {
+    let mut random_bytes = [0u8; 32];
+    rand::thread_rng().fill_bytes(&mut random_bytes);
+    let verifier = URL_SAFE_NO_PAD.encode(random_bytes);
+
+    let mut hasher = Sha256::new();
+    hasher.update(verifier.as_bytes());
+    let challenge = URL_SAFE_NO_PAD.encode(hasher.finalize());
+
+    (verifier, challenge)
+}
+
+fn should_ignore_rel_path(rel_path: &str) -> bool {
+    let lower = rel_path.to_lowercase();
+    if lower == ".ds_store" || lower.ends_with("/.ds_store") {
+        return true;
+    }
+    if lower == "thumbs.db" || lower.ends_with("/thumbs.db") {
+        return true;
+    }
+    if lower.starts_with(".git/") || lower == ".git" {
+        return true;
+    }
+    if lower.starts_with("node_modules/") || lower.contains("/node_modules/") {
+        return true;
+    }
+    if lower.starts_with(".urano/sync.db")
+        || lower.starts_with(".urano/drive_sync_manifest.json")
+        || lower.starts_with(".urano/trash/")
+    {
+        return true;
+    }
+    if lower.ends_with("~") || lower.ends_with(".tmp") {
+        return true;
+    }
+    false
+}
+
+fn get_mime_type(file_name: &str) -> &'static str {
+    let lower = file_name.to_lowercase();
+    if lower.ends_with(".md") || lower.ends_with(".markdown") {
+        "text/markdown"
+    } else if lower.ends_with(".canvas") || lower.ends_with(".json") || lower.ends_with(".base") {
+        "application/json"
+    } else if lower.ends_with(".txt") {
+        "text/plain"
+    } else if lower.ends_with(".css") {
+        "text/css"
+    } else if lower.ends_with(".png") {
+        "image/png"
+    } else if lower.ends_with(".jpg") || lower.ends_with(".jpeg") {
+        "image/jpeg"
+    } else if lower.ends_with(".gif") {
+        "image/gif"
+    } else if lower.ends_with(".webp") {
+        "image/webp"
+    } else if lower.ends_with(".svg") {
+        "image/svg+xml"
+    } else if lower.ends_with(".pdf") {
+        "application/pdf"
+    } else {
+        "application/octet-stream"
+    }
+}
+
+/* ============================================================================
+   OAuth Token Management & Silent Refresh
+   ============================================================================ */
+
+/// Keeps Google's raw error body readable without dumping megabytes into the UI/log.
+fn truncate_chars(text: &str, max: usize) -> String {
+    if text.chars().count() <= max {
+        text.to_string()
+    } else {
+        let preview: String = text.chars().take(max).collect();
+        format!("{}…", preview)
+    }
+}
+
+/// Builds an error string that always carries the HTTP status (so callers can detect a
+/// 401 and retry after refreshing the token) plus the exact body returned by Google.
+async fn response_error(context: &str, resp: reqwest::Response) -> String {
+    let status = resp.status();
+    let body = resp.text().await.unwrap_or_default();
+    let body = body.trim();
+    if body.is_empty() {
+        format!("{} (HTTP {})", context, status.as_u16())
+    } else {
+        format!(
+            "{} (HTTP {}): {}",
+            context,
+            status.as_u16(),
+            truncate_chars(body, 1200)
+        )
+    }
+}
+
+/// True when Google rejected the access token (expired/revoked) and a refresh + retry is
+/// worth attempting. Permission errors (403) are deliberately not retried.
+fn is_auth_error(error: &str) -> bool {
+    let lower = error.to_lowercase();
+    error.contains("(HTTP 401)")
+        || lower.contains("401 unauthorized")
+        || lower.contains("invalid credentials")
+        || lower.contains("invalid authentication credentials")
+        || lower.contains("unauthenticated")
+}
+
+async fn ensure_valid_token_impl(app: &AppHandle, force_refresh: bool) -> Result<String, String> {
+    let auth_path = get_auth_file_path(app);
+    if !auth_path.exists() {
+        // Fallback: check ~/.config/urano/tokens.json legacy path
+        let legacy_path = PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".to_string()))
+            .join(".config")
+            .join("urano")
+            .join("tokens.json");
+        if legacy_path.exists() {
+            if let Ok(content) = fs::read_to_string(&legacy_path) {
+                let _ = fs::write(&auth_path, content);
+            }
+        }
+    }
+
+    if !auth_path.exists() {
+        let err = "No se ha iniciado sesión en Google Drive".to_string();
+        eprintln!("[Drive Sync Error] {}", err);
+        return Err(err);
+    }
+
+    let data = fs::read_to_string(&auth_path).map_err(|e| {
+        let err = format!("No se pudo leer el archivo de sesión de Google: {}", e);
+        eprintln!("[Drive Sync Error] {}", err);
+        err
+    })?;
+    let mut stored: StoredTokens = serde_json::from_str(&data).map_err(|e| {
+        let err = format!("El archivo de sesión de Google está corrupto: {}", e);
+        eprintln!("[Drive Sync Error] {}", err);
+        err
+    })?;
+
+    let now = Utc::now().timestamp();
+    if !force_refresh && now < stored.expires_at - 60 {
+        return Ok(stored.access_token);
+    }
+
+    let refresh_token = stored
+        .refresh_token
+        .as_ref()
+        .filter(|token| !token.trim().is_empty())
+        .ok_or_else(|| {
+            let err = "No hay refresh token disponible. Inicie sesión nuevamente.".to_string();
+            eprintln!("[Drive Sync Error] {}", err);
+            err
+        })?
+        .clone();
+
+    // If the stored client credentials are empty (older login or a changed .env), fall
+    // back to the environment / project-root .env.
+    if stored.client_id.trim().is_empty() || stored.client_secret.trim().is_empty() {
+        let (client_id, client_secret) = resolve_credentials();
+    if client_id.trim().is_empty() || client_secret.trim().is_empty() {
+        return Err("Credenciales de Google OAuth no configuradas. Por favor configura GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en .env".to_string());
+    }
+        stored.client_id = client_id;
+        stored.client_secret = client_secret;
+    }
+
+    let client = reqwest::Client::new();
+    let resp = client
+        .post("https://oauth2.googleapis.com/token")
+        .form(&[
+            ("client_id", stored.client_id.as_str()),
+            ("client_secret", stored.client_secret.as_str()),
+            ("refresh_token", refresh_token.as_str()),
+            ("grant_type", "refresh_token"),
+        ])
+        .send()
+        .await
+        .map_err(|e| {
+            let err = format!("Error contactando servidor de Google: {}", e);
+            eprintln!("[Drive Sync Error] {}", err);
+            err
+        })?;
+
+    if !resp.status().is_success() {
+        let err = response_error("Google rechazó la renovación de sesión", resp).await;
+        eprintln!("[Drive Sync Error] {}", err);
+        return Err(err);
+    }
+
+    #[derive(Deserialize)]
+    struct RefreshResp {
+        access_token: String,
+        expires_in: i64,
+    }
+
+    let ref_data: RefreshResp = resp.json().await.map_err(|e| {
+        let err = format!("Error leyendo la respuesta de renovación de Google: {}", e);
+        eprintln!("[Drive Sync Error] {}", err);
+        err
+    })?;
+    stored.access_token = ref_data.access_token.clone();
+    stored.expires_at = now + ref_data.expires_in - 60;
+
+    let _ = fs::write(
+        &auth_path,
+        serde_json::to_string_pretty(&stored).unwrap_or_default(),
+    );
+
+    Ok(stored.access_token)
+}
+
+/// Returns a valid access token, refreshing it with the stored refresh token when it has
+/// expired (or is about to expire).
+pub async fn ensure_valid_token(app: &AppHandle) -> Result<String, String> {
+    ensure_valid_token_impl(app, false).await
+}
+
+/// Forces a refresh even when `expires_at` still looks valid. Used after a 401: the token
+/// can be revoked before its advertised expiry.
+pub async fn refresh_access_token(app: &AppHandle) -> Result<String, String> {
+    ensure_valid_token_impl(app, true).await
+}
+
