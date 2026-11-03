@@ -6,4 +6,5 @@ pub mod sync;
 pub mod vault;
 pub mod theme;
 pub mod window;
+pub mod drive_sync;
 
