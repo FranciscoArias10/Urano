@@ -23,7 +23,8 @@
     "none": "None",
     "untitled": "Untitled",
     "more": "More",
-    "dragToRearrange": "Drag to rearrange"
+    "dragToRearrange": "Drag to rearrange",
+    "refresh": "Refresh"
   },
   "language": {
     "title": "Language",
@@ -281,11 +282,12 @@
       "desc": "Secrets such as API keys and tokens are stored securely on this device.",
       "secrets": "Secrets",
       "empty": "No secrets stored.",
-      "gdrive": "Google Drive OAuth client",
-      "gdriveDesc": "Client ID and secret used to connect your vault to Google Drive.",
-      "configured": "Configured",
-      "notConfigured": "Not configured",
-      "edit": "Edit"
+      "gdrive": "Google Drive session",
+      "gdriveDesc": "Urano manages the OAuth client internally; only your sign-in token is stored on this device.",
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "revoke": "Log out",
+      "signIn": "Sign in"
     },
     "corePlugins": {
       "desc": "Core plugins are built into Urano. Turn them on or off here.",
@@ -392,11 +394,8 @@
       "account": "Google Drive account",
       "notConnected": "Not connected. Log in to sync this vault with Google Drive.",
       "connectedAs": "Connected as {{name}} ({{email}}).",
-      "connect": "Connect",
-      "disconnect": "Disconnect",
-      "configure": "Configure...",
-      "remoteFolder": "Remote folder name",
-      "remoteFolderDesc": "Folder in Google Drive that mirrors this vault.",
+      "connect": "Sign in with Google",
+      "disconnect": "Log out",
       "statusName": "Sync status",
       "status": {
         "idle": "Idle",
@@ -410,7 +409,14 @@
       "never": "Never synced",
       "syncNow": "Sync now",
       "viewLog": "View log",
-      "noVault": "Open a vault to sync it."
+      "noVault": "Open a vault to sync it.",
+      "connecting": "Signing in…",
+      "autoSync": "Automatic real-time sync",
+      "autoSyncDesc": "Upload and download changes a few seconds after you edit, create, rename or delete anything in the vault.",
+      "activityLog": "Activity log",
+      "activityLogDesc": "View recent sync activities for debugging.",
+      "manage": "Google Drive panel",
+      "manageDesc": "Status of the open vault, “Sync now” and the vaults stored in “Urano Vaults” on your Drive."
     }
   },
   "app": {
@@ -921,37 +927,92 @@
     "synced": "Synced with Google Drive",
     "syncError": "Google Drive sync error",
     "connected": "Google Drive connected",
-    "localVault": "Local vault (not synced)"
+    "localVault": "Local vault (not synced)",
+    "syncNotConnected": "Sync: not connected. Click to sign in with Google.",
+    "syncOffline": "Sync: offline",
+    "syncConflict": "Synced with Google Drive (conflicts kept as copies)",
+    "syncedAgo": "Synced with Google Drive ({ago})",
+    "syncMenuStatus": "Sync: {status}",
+    "syncNow": "Sync now",
+    "activityLog": "Activity log",
+    "syncSettings": "Settings",
+    "signIn": "Sign in with Google",
+    "syncStatus": {
+      "disconnected": "not connected",
+      "offline": "offline",
+      "idle": "connected",
+      "syncing": "syncing…",
+      "synced": "synced",
+      "error": "error",
+      "conflict": "conflicts"
+    },
+    "ago": {
+      "justNow": "just now",
+      "minutes": "{count} min ago",
+      "hours": "{count} h ago",
+      "days": "{count} d ago"
+    },
+    "syncProgress": "Syncing with Google Drive... {current}/{total}",
+    "syncDoneUploaded": "Synced: {count} files uploaded",
+    "syncDoneMixed": "Synced: {uploaded} uploaded, {downloaded} downloaded",
+    "syncDoneErrors": "Synced with {errors} error(s)"
   },
   "sync": {
     "config": {
-      "title": "Google Drive settings",
+      "title": "Google Drive",
       "logout": "Log out",
       "privacyTitle": "100% privacy guaranteed:",
       "privacyBody": "Urano only uses the {scope} permission. The app can only access the notes and folders it creates itself in your personal Google Drive account.",
-      "clientIdLabel": "Google Client ID (OAuth 2.0)",
-      "howToGet": "How do I get it?",
-      "clientIdPlaceholder": "e.g. 123456789-xxxxxx.apps.googleusercontent.com",
-      "clientSecretLabel": "Client Secret (optional if you use a PKCE desktop client)",
-      "folderNameLabel": "Remote folder name in Google Drive",
-      "stepsTitle": "Steps in Google Cloud Console:",
-      "openConsole": "Open console",
-      "step1": "Create a project (e.g. \"Urano Notes\").",
-      "step2": "Enable the {api} in the API Library.",
-      "step3": "In the OAuth consent screen, choose \"External\" and add the {scope} scope.",
-      "step4": "In Credentials, create an {clientId} of type {appType}.",
-      "step4ClientId": "OAuth client ID",
-      "step4AppType": "Desktop app",
-      "step5": "Copy the resulting Client ID here. Done!",
-      "saveChanges": "Save changes",
-      "saveAndConnect": "Save and connect with Google"
+      "localVault": {
+        "title": "Current local vault",
+        "none": "Open a vault to sync it with Google Drive."
+      },
+      "state": {
+        "syncing": "Syncing…",
+        "synced": "Synced",
+        "pending": "Pending upload",
+        "conflict": "Synced (conflict copies kept)",
+        "offline": "Offline",
+        "error": "Error"
+      },
+      "progress": {
+        "scan": "Comparing files…",
+        "upload": "Uploading {current}/{total}",
+        "download": "Downloading {current}/{total}",
+        "done": "Finishing…"
+      },
+      "lastSynced": "Last synced: {time}",
+      "neverSynced": "Not synced yet",
+      "lastResult": "{uploaded} uploaded, {downloaded} downloaded",
+      "autoSync": "Automatic sync",
+      "syncNow": "Sync now",
+      "remote": {
+        "title": "Vaults in Google Drive",
+        "empty": "No vaults in “Urano Vaults” yet. Sync the current vault to create the first one.",
+        "connected": "Connected",
+        "downloadAndOpen": "Download and open",
+        "opened": "Vault “{name}” downloaded and opened.",
+        "hint": "Each vault lives in its own subfolder of “{folder}” in your Google Drive."
+      }
     },
     "logsModal": {
       "title": "Sync log",
-      "empty": "No sync logs yet."
+      "empty": "No sync logs yet.",
+      "filterLabel": "Event type",
+      "filterAll": "All",
+      "filterErrors": "Errors",
+      "filterWarnings": "Warnings",
+      "searchPlaceholder": "Filter…",
+      "copy": "Copy sync log",
+      "copied": "Successfully copied sync log.",
+      "clear": "Clear",
+      "done": "Done",
+      "levelInfo": "Info",
+      "levelSuccess": "OK",
+      "levelWarn": "Warn",
+      "levelError": "Error"
     },
     "log": {
-      "enterCredentials": "Enter your Google OAuth credentials to continue.",
       "startingAuth": "Starting OAuth 2.0 PKCE authentication flow...",
       "authSuccess": "Authentication successful",
       "authSuccessUser": "Authentication successful: {name}",
@@ -960,9 +1021,28 @@
       "loggedOut": "Signed out of Google Drive.",
       "loginRequired": "Sign in to Google Drive to sync.",
       "startingSync": "Starting differential sync with Google Drive...",
-      "syncConflicts": "Sync finished with {conflicts} conflict(s) resolved without data loss. Uploaded: {uploaded}, Downloaded: {downloaded}",
-      "syncDone": "Vault synced. Uploaded: {uploaded}, Downloaded: {downloaded}",
-      "syncError": "Sync error: {error}"
+      "syncConflicts": "Sync finished with {conflicts} conflict(s) kept as copies. Uploaded: {uploaded}, downloaded: {downloaded}.",
+      "syncDone": "Vault synced. Uploaded: {uploaded}, downloaded: {downloaded}, deleted: {deleted}.",
+      "syncError": "Sync error: {error}",
+      "autoSyncOn": "Automatic sync enabled.",
+      "autoSyncOff": "Automatic sync disabled.",
+      "sessionRestored": "Google session restored for {email}.",
+      "listVaultsError": "Could not list vaults in Google Drive: {error}",
+      "downloadingVault": "Downloading remote vault to “{path}”…",
+      "downloadDone": "Remote vault downloaded and linked: {downloaded} files, {errors} errors.",
+      "downloadError": "Could not download vault: {error}",
+      "syncingVault": "Syncing vault “{name}” with Google Drive…",
+      "offline": "No internet connection. Sync will resume when you are back online.",
+      "backOnline": "Connection restored.",
+      "event": {
+        "upload": "Uploaded {file}",
+        "download": "Downloaded {file}",
+        "trash": "Moved {file} to the Google Drive trash (deleted locally)",
+        "local_trash": "{file} was deleted on another device; local copy moved to .urano/trash",
+        "conflict": "Conflict in {file}: remote version saved as {detail}",
+        "error": "Error with {file}: {detail}"
+      },
+      "syncDoneWithErrors": "Sync finished with {errors} error(s); the failed files will be retried on the next pass. Uploaded: {uploaded}, downloaded: {downloaded}."
     }
   },
   "table": {
@@ -1098,7 +1178,10 @@
       "buttonOpen": "Open",
       "openSync": "Open vault from Urano Sync",
       "openSyncDesc": "Set up a synced vault with existing remote vault.",
-      "buttonSignIn": "Sign in"
+      "buttonSignIn": "Sign in",
+      "buttonBrowse": "Browse",
+      "buttonConnect": "Connect",
+      "buttonSigningIn": "Signing in…"
     },
     "createForm": {
       "back": "Back",
@@ -1124,6 +1207,14 @@
       "moveDest": "Select new parent destination for vault",
       "moveSuccess": "Vault moved successfully",
       "moveFailed": "Failed to move vault"
+    },
+    "remote": {
+      "title": "Your remote vaults",
+      "loading": "Looking for vaults in Google Drive…",
+      "empty": "You don’t have any remote vaults in the “Urano Vaults” folder of Google Drive.",
+      "downloading": "Downloading…",
+      "chooseFolder": "Choose where to download “{name}”",
+      "modified": "Modified {time}"
     }
   }
 }
