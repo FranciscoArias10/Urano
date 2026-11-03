@@ -2690,5 +2690,32 @@ body.is-translucent aside.bg-obsidian-sidebar {
   background-color: color-mix(in srgb, var(--background-secondary) 85%, transparent) !important;
 }
 
+/* ============================================================================
+   Settings Modal Sidebar Navigation — Obsidian 1:1
+   ============================================================================ */
+.vertical-tab-nav-item {
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 5px;
+  padding: 6px 12px;
+  border: none !important;
+}
+
+.vertical-tab-nav-item:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.vertical-tab-nav-item.is-active {
+  background-color: var(--background-modifier-active-hover, rgba(255, 255, 255, 0.08)) !important;
+  color: var(--text-normal) !important;
+  border: none !important;
+  font-weight: 500;
+}
+
+.vertical-tab-nav-item.is-active .vertical-tab-nav-item-icon {
+  color: var(--text-normal) !important;
+}
+
 
 
