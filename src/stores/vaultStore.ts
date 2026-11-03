@@ -3,7 +3,14 @@ import { invoke } from '@tauri-apps/api/core';
 import { FileItem, SortOrder, BookmarkItem } from '../types';
 import { isImagePath } from '../services/storageAdapter';
 import { useSettingsStore } from './settingsStore';
+import { useSyncStore } from './syncStore';
 import { t } from '../locales/i18n';
+
+const triggerAutoSync = (vaultPath?: string | null, vaultName?: string | null) => {
+  if (vaultPath) {
+    useSyncStore.getState().notifyVaultChanged(vaultPath, vaultName || undefined);
+  }
+};
 
 // Prohibited characters matching Obsidian specification: \ / : * ? " < > | # ^ [ ]
 export const ILLEGAL_FILENAME_CHARS = /[\\/:*?"<>|#^[\]]/;
@@ -259,6 +266,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
       get().addRecentVault(vaultName, vaultPath);
       get().loadAllNotesContent();
+      triggerAutoSync(vaultPath, vaultName);
     } catch (err) {
       set({ isLoading: false });
       console.error('Error al abrir bóveda:', err);
@@ -343,6 +351,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       await invoke('write_file', { filePath: activeFile, content: fileContent });
       set({ isDirty: false });
       get().loadAllNotesContent();
+      triggerAutoSync(get().activeVault, get().vaultName);
     } catch (err) {
       console.error('Error al guardar archivo:', err);
     }
@@ -354,6 +363,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     await invoke('create_file', { filePath: fullPath });
     await get().refreshTree();
     await get().selectFile(fullPath);
+    triggerAutoSync(get().activeVault, get().vaultName);
     return fullPath;
   },
 
@@ -394,6 +404,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     await refreshTree();
     await selectFile(fullPath);
     set({ autoFocusTitle: true, shouldSelectTitleOnOpen: true });
+    triggerAutoSync(get().activeVault, get().vaultName);
 
     return { path: fullPath, name: candidateName.replace(/\.md$/, '') };
   },
@@ -761,6 +772,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     const fullPath = `${parentPath}/${name}`.replace(/\/+/g, '/');
     await invoke('create_folder', { folderPath: fullPath });
     await get().refreshTree();
+    triggerAutoSync(get().activeVault, get().vaultName);
   },
 
   deleteItem: async (path: string) => {
@@ -770,6 +782,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       set({ activeFile: null, activeFileName: null, fileContent: '', isDirty: false });
     }
     await get().refreshTree();
+    triggerAutoSync(get().activeVault, get().vaultName);
   },
 
   renameItem: async (oldPath: string, newPath: string) => {
@@ -780,6 +793,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       set({ activeFile: newPath, activeFileName: parts[parts.length - 1] });
     }
     await get().refreshTree();
+    triggerAutoSync(get().activeVault, get().vaultName);
   },
 
   openOrCreateWikilink: async (noteName: string) => {
