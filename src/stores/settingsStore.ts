@@ -79,13 +79,26 @@ export interface UranoSettings {
   nativeMenus: boolean;
 
   // Editor (CodeMirror 6)
+  defaultViewMode: 'source' | 'preview';
+  livePreview: boolean;
+  showEditorStatus: boolean;
   spellcheck: boolean;
   customDictionary: string[];
   readableLineLength: boolean;
   strictLineBreaks: boolean;
+  propertiesInDocument: 'visible' | 'hidden' | 'source';
+  foldHeading: boolean;
+  foldIndent: boolean;
   showLineNumbers: boolean;
+  indentGuides: boolean;
+  rightToLeft: boolean;
   useTabs: boolean;
   tabSize: number;
+  smartIndent: boolean;
+  autoPairBrackets: boolean;
+  autoPairMarkdown: boolean;
+  autoConvertHtml: boolean;
+  vimMode: boolean;
 
   // Files and links
   confirmFileDeletion: boolean;
@@ -151,13 +164,26 @@ export const DEFAULT_SETTINGS: UranoSettings = {
   translucentWindow: false,
   nativeMenus: false,
 
+  defaultViewMode: 'source',
+  livePreview: true,
+  showEditorStatus: true,
   spellcheck: true,
   customDictionary: [],
   readableLineLength: true,
   strictLineBreaks: false,
+  propertiesInDocument: 'visible',
+  foldHeading: true,
+  foldIndent: true,
   showLineNumbers: false,
-  useTabs: false,
+  indentGuides: true,
+  rightToLeft: false,
+  useTabs: true,
   tabSize: 4,
+  smartIndent: true,
+  autoPairBrackets: true,
+  autoPairMarkdown: true,
+  autoConvertHtml: true,
+  vimMode: false,
 
   confirmFileDeletion: true,
   alwaysUpdateLinks: 'prompt',
@@ -291,6 +317,23 @@ function mergeSettings(raw: unknown): UranoSettings {
     out.zoomLevel = 100;
   }
   out.tabSize = [2, 3, 4, 6, 8].includes(out.tabSize) ? out.tabSize : 4;
+  out.defaultViewMode = src?.defaultViewMode === 'preview' ? 'preview' : 'source';
+  out.livePreview = src?.livePreview !== undefined ? Boolean(src.livePreview) : true;
+  out.showEditorStatus = src?.showEditorStatus !== undefined ? Boolean(src.showEditorStatus) : true;
+  out.propertiesInDocument = ['visible', 'hidden', 'source'].includes(src?.propertiesInDocument as string)
+    ? (src?.propertiesInDocument as 'visible' | 'hidden' | 'source')
+    : 'visible';
+  out.foldHeading = src?.foldHeading !== undefined ? Boolean(src.foldHeading) : true;
+  out.foldIndent = src?.foldIndent !== undefined ? Boolean(src.foldIndent) : true;
+  out.showLineNumbers = src?.showLineNumbers !== undefined ? Boolean(src.showLineNumbers) : false;
+  out.indentGuides = src?.indentGuides !== undefined ? Boolean(src.indentGuides) : true;
+  out.rightToLeft = Boolean(src?.rightToLeft);
+  out.useTabs = src?.useTabs !== undefined ? Boolean(src.useTabs) : true;
+  out.smartIndent = src?.smartIndent !== undefined ? Boolean(src.smartIndent) : true;
+  out.autoPairBrackets = src?.autoPairBrackets !== undefined ? Boolean(src.autoPairBrackets) : true;
+  out.autoPairMarkdown = src?.autoPairMarkdown !== undefined ? Boolean(src.autoPairMarkdown) : true;
+  out.autoConvertHtml = src?.autoConvertHtml !== undefined ? Boolean(src.autoConvertHtml) : true;
+  out.vimMode = Boolean(src?.vimMode);
   return out;
 }
 
