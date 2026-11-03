@@ -29,7 +29,7 @@ html, body, #root, button, input, select, textarea, .view-header, .workspace-tab
   /* Settings-driven (Settings → Appearance / Editor); overridden at runtime on <html> */
   --editor-font-size: 16px;
   --font-text-size: 16px;
-  --file-line-width: 820px;
+  --file-line-width: 700px;
   --editor-tab-size: 4;
 
 
@@ -2689,4 +2689,6 @@ body.is-translucent aside.bg-obsidian-sidebar {
   -webkit-backdrop-filter: blur(20px);
   background-color: color-mix(in srgb, var(--background-secondary) 85%, transparent) !important;
 }
+
+
 
