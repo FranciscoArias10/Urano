@@ -2717,5 +2717,16 @@ body.is-translucent aside.bg-obsidian-sidebar {
   color: var(--text-normal) !important;
 }
 
+/* CodeMirror 6 Indentation Guides */
+.cm-indent-guide {
+  background-image: linear-gradient(
+    to right,
+    var(--indentation-guide-color, rgba(255, 255, 255, 0.12)) 1px,
+    transparent 1px
+  );
+  background-size: calc(var(--editor-tab-size, 4) * 1ch) 100%;
+  background-repeat: repeat-x;
+}
+
 
 
