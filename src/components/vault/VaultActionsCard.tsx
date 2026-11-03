@@ -2,6 +2,7 @@ import React from 'react';
 import { HelpCircle } from 'lucide-react';
 import { LanguageDropdown } from '../settings/LanguageDropdown';
 import { useLocaleStore, useT } from '../../stores/localeStore';
+import { useSyncStore } from '../../stores/syncStore';
 
 export interface VaultActionsCardProps {
   onCreateClick: () => void;
@@ -18,6 +19,8 @@ export const VaultActionsCard: React.FC<VaultActionsCardProps> = ({
 }) => {
   const t = useT();
   const { language, languages, setLanguage } = useLocaleStore();
+  const isAuthenticated = useSyncStore((s) => s.isAuthenticated);
+  const isAuthenticating = useSyncStore((s) => s.isAuthenticating);
 
   return (
     <div className="vault-actions-card w-full max-w-[460px] bg-obsidian-bg border border-obsidian-border rounded-[10px] px-5 py-1">
@@ -72,9 +75,14 @@ export const VaultActionsCard: React.FC<VaultActionsCardProps> = ({
         <button
           type="button"
           onClick={onSyncClick}
+          disabled={isAuthenticating}
           className="bg-[var(--interactive-normal)] hover:bg-[var(--interactive-hover)] border border-obsidian-border text-obsidian-text hover:text-obsidian-text font-medium text-[13px] rounded-[5px] h-[32px] px-4 whitespace-nowrap inline-flex items-center justify-center min-w-[86px] transition-colors cursor-pointer text-center"
         >
-          {t('vaultManager.options.buttonSignIn')}
+          {isAuthenticating
+            ? t('vaultManager.options.buttonSigningIn')
+            : isAuthenticated
+            ? t('vaultManager.options.buttonBrowse')
+            : t('vaultManager.options.buttonSignIn')}
         </button>
       </div>
 
