@@ -1284,3 +1284,750 @@ pub async fn google_logout(app: AppHandle) -> Result<(), String> {
     }
     Ok(())
 }
+
+async fn list_remote_drive_vaults_impl(
+    app: &AppHandle,
+    force_refresh: bool,
+) -> Result<Vec<RemoteVaultInfo>, String> {
+    let token = if force_refresh {
+        refresh_access_token(app).await?
+    } else {
+        ensure_valid_token(app).await?
+    };
+    let client = reqwest::Client::new();
+
+    let root_vaults_id =
+        find_or_create_remote_folder(&client, &token, ROOT_FOLDER_NAME, None).await?;
+    let children = list_folder_children(&client, &token, &root_vaults_id).await?;
+
+    let mut vaults = Vec::new();
+    for child in children {
+        if child.mime_type == "application/vnd.google-apps.folder" {
+            vaults.push(RemoteVaultInfo {
+                id: child.id,
+                name: child.name,
+                modified_time: child.modified_time,
+                file_count: None,
+            });
+        }
+    }
+    vaults.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+
+    Ok(vaults)
+}
+
+#[tauri::command]
+pub async fn list_remote_drive_vaults(app: AppHandle) -> Result<Vec<RemoteVaultInfo>, String> {
+    match list_remote_drive_vaults_impl(&app, false).await {
+        Ok(vaults) => Ok(vaults),
+        Err(err) => {
+            eprintln!("[Drive Sync Error] {}", err);
+            if is_auth_error(&err) {
+                eprintln!("[Drive Sync Error] Token rechazado al listar bóvedas; renovando y reintentando…");
+                let retried = list_remote_drive_vaults_impl(&app, true).await;
+                if let Err(ref retry_err) = retried {
+                    eprintln!("[Drive Sync Error] {}", retry_err);
+                }
+                retried
+            } else {
+                Err(err)
+            }
+        }
+    }
+}
+
+/* ----------------------------------------------------------------------------
+   Differential sync: plan → execute
+   ---------------------------------------------------------------------------- */
+
+/// One file operation decided by comparing the local vault, the Drive folder and the
+/// manifest of the previous pass. Planning first lets the UI show an exact `current/total`.
+#[derive(Debug)]
+enum PlannedOp {
+    /// New local file (or edited after being deleted remotely): create it in Drive.
+    UploadNew { rel: String, abs: PathBuf, hash: String, mtime: i64 },
+    /// Edited locally, untouched remotely: replace the Drive content (PATCH).
+    UpdateRemote { rel: String, abs: PathBuf, hash: String, mtime: i64, file_id: String },
+    /// Edited remotely or created on another device: download into the vault.
+    Download { rel: String, file_id: String, remote_hash: String },
+    /// Edited on both sides: keep the remote copy as "(Conflicto …)" and push the local one.
+    Conflict { rel: String, abs: PathBuf, hash: String, mtime: i64, file_id: String },
+    /// Deleted on another device while untouched here: move the local copy to `.urano/trash`.
+    LocalTrash { rel: String, abs: PathBuf },
+    /// Deleted locally: move the Drive file to the trash.
+    RemoteTrash { rel: String, file_id: String },
+}
+
+impl PlannedOp {
+    fn rel(&self) -> &str {
+        match self {
+            PlannedOp::UploadNew { rel, .. }
+            | PlannedOp::UpdateRemote { rel, .. }
+            | PlannedOp::Download { rel, .. }
+            | PlannedOp::Conflict { rel, .. }
+            | PlannedOp::LocalTrash { rel, .. }
+            | PlannedOp::RemoteTrash { rel, .. } => rel,
+        }
+    }
+
+    fn phase(&self) -> &'static str {
+        match self {
+            PlannedOp::Download { .. } | PlannedOp::LocalTrash { .. } => "download",
+            _ => "upload",
+        }
+    }
+}
+
+struct LocalFile {
+    abs: PathBuf,
+    hash: String,
+    mtime: i64,
+}
+
+/// Recursively scans the vault: every regular file (`.md`, `.canvas`, images, …) keyed by its
+/// `/`-separated relative path, plus every directory so the Drive tree mirrors it. Hidden
+/// entries other than `.urano`, `.git`, `node_modules`, the sync manifest and `.urano/trash`
+/// are skipped (see `should_ignore_rel_path`).
+fn scan_local_vault(v_path: &Path) -> (HashMap<String, LocalFile>, Vec<String>) {
+    let mut files: HashMap<String, LocalFile> = HashMap::new();
+    let mut dirs: Vec<String> = Vec::new();
+
+    let walker = WalkDir::new(v_path)
+        .follow_links(false)
+        .into_iter()
+        .filter_entry(|e| {
+            if e.depth() == 0 {
+                return true;
+            }
+            let name = e.file_name().to_string_lossy();
+            if name.starts_with('.') && name != ".urano" {
+                return false;
+            }
+            name != "node_modules"
+        });
+
+    for entry in walker.flatten() {
+        if entry.depth() == 0 {
+            continue;
+        }
+        let p = entry.path();
+        let Ok(rel) = p.strip_prefix(v_path) else { continue };
+        let rel_str = rel.to_string_lossy().replace('\\', "/");
+        if should_ignore_rel_path(&rel_str) {
+            continue;
+        }
+
+        if entry.file_type().is_dir() {
+            if !rel_str.starts_with(".urano/trash") {
+                dirs.push(rel_str);
+            }
+            continue;
+        }
+        if !entry.file_type().is_file() {
+            continue;
+        }
+
+        let Ok(bytes) = fs::read(p) else {
+            eprintln!(
+                "[Drive Sync Error] No se pudo leer {} para sincronizar",
+                p.display()
+            );
+            log::warn!("No se pudo leer {} para sincronizar", p.display());
+            continue;
+        };
+        let hash = compute_md5(&bytes);
+        let mtime = entry
+            .metadata()
+            .ok()
+            .and_then(|m| m.modified().ok())
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_millis() as i64)
+            .unwrap_or(0);
+        files.insert(rel_str, LocalFile { abs: p.to_path_buf(), hash, mtime });
+    }
+
+    // Parents before children so `ensure_remote_folder` creates them in order.
+    dirs.sort_by(|a, b| a.matches('/').count().cmp(&b.matches('/').count()).then(a.cmp(b)));
+    (files, dirs)
+}
+
+fn plan_sync(
+    local_files: &HashMap<String, LocalFile>,
+    remote_files: &HashMap<String, DriveItem>,
+    manifest: &mut DriveSyncManifest,
+) -> Vec<PlannedOp> {
+    let mut ops: Vec<PlannedOp> = Vec::new();
+
+    let mut local_paths: Vec<&String> = local_files.keys().collect();
+    local_paths.sort();
+
+    for rel_path in local_paths {
+        let local = &local_files[rel_path];
+        let manifest_entry = manifest.files.get(rel_path).cloned();
+        let remote_item = remote_files.get(rel_path);
+
+        match (manifest_entry, remote_item) {
+            // New file locally (not in manifest, not in Drive)
+            (None, None) => ops.push(PlannedOp::UploadNew {
+                rel: rel_path.clone(),
+                abs: local.abs.clone(),
+                hash: local.hash.clone(),
+                mtime: local.mtime,
+            }),
+
+            // Known on both sides → differential check
+            (Some(entry), Some(r_file)) => {
+                let r_hash = r_file.md5_checksum.as_deref().unwrap_or("");
+                let local_changed = local.hash != entry.hash;
+                let remote_changed = !r_hash.is_empty() && r_hash != entry.hash;
+
+                if local_changed && remote_changed && local.hash != r_hash {
+                    ops.push(PlannedOp::Conflict {
+                        rel: rel_path.clone(),
+                        abs: local.abs.clone(),
+                        hash: local.hash.clone(),
+                        mtime: local.mtime,
+                        file_id: r_file.id.clone(),
+                    });
+                } else if local_changed && !remote_changed {
+                    ops.push(PlannedOp::UpdateRemote {
+                        rel: rel_path.clone(),
+                        abs: local.abs.clone(),
+                        hash: local.hash.clone(),
+                        mtime: local.mtime,
+                        file_id: r_file.id.clone(),
+                    });
+                } else if remote_changed && !local_changed {
+                    ops.push(PlannedOp::Download {
+                        rel: rel_path.clone(),
+                        file_id: r_file.id.clone(),
+                        remote_hash: r_hash.to_string(),
+                    });
+                } else {
+                    // Identical (or both converged to the same content): just refresh the pairing.
+                    manifest.files.insert(
+                        rel_path.clone(),
+                        ManifestFileEntry {
+                            drive_id: r_file.id.clone(),
+                            modified_ms: local.mtime,
+                            hash: local.hash.clone(),
+                        },
+                    );
+                }
+            }
+
+            // Exists locally and in Drive but was never paired (first sync of an existing vault)
+            (None, Some(r_file)) => {
+                let r_hash = r_file.md5_checksum.as_deref().unwrap_or("");
+                if local.hash == r_hash {
+                    manifest.files.insert(
+                        rel_path.clone(),
+                        ManifestFileEntry {
+                            drive_id: r_file.id.clone(),
+                            modified_ms: local.mtime,
+                            hash: local.hash.clone(),
+                        },
+                    );
+                } else {
+                    ops.push(PlannedOp::Conflict {
+                        rel: rel_path.clone(),
+                        abs: local.abs.clone(),
+                        hash: local.hash.clone(),
+                        mtime: local.mtime,
+                        file_id: r_file.id.clone(),
+                    });
+                }
+            }
+
+            // Registered in manifest but gone from Drive → deleted on another device
+            (Some(entry), None) => {
+                if local.hash == entry.hash {
+                    ops.push(PlannedOp::LocalTrash {
+                        rel: rel_path.clone(),
+                        abs: local.abs.clone(),
+                    });
+                } else {
+                    // Edited here after the remote deletion: local edits win, re-upload it.
+                    manifest.files.remove(rel_path);
+                    ops.push(PlannedOp::UploadNew {
+                        rel: rel_path.clone(),
+                        abs: local.abs.clone(),
+                        hash: local.hash.clone(),
+                        mtime: local.mtime,
+                    });
+                }
+            }
+        }
+    }
+
+    // Remote files that do not exist locally
+    let mut remote_paths: Vec<&String> = remote_files
+        .keys()
+        .filter(|rel| !local_files.contains_key(*rel))
+        .collect();
+    remote_paths.sort();
+    for r_rel in remote_paths {
+        let r_item = &remote_files[r_rel];
+        if manifest.files.contains_key(r_rel) {
+            // Deleted locally since the last pass → trash on Drive
+            ops.push(PlannedOp::RemoteTrash {
+                rel: r_rel.clone(),
+                file_id: r_item.id.clone(),
+            });
+        } else {
+            // New file from another device → download
+            ops.push(PlannedOp::Download {
+                rel: r_rel.clone(),
+                file_id: r_item.id.clone(),
+                remote_hash: r_item.md5_checksum.clone().unwrap_or_default(),
+            });
+        }
+    }
+
+    ops
+}
+
+/// Writes `bytes` at `dest`, creating parent folders; returns the md5 of what was written.
+fn write_downloaded_file(dest: &Path, bytes: &[u8]) -> Result<(), String> {
+    if let Some(parent) = dest.parent() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    fs::write(dest, bytes).map_err(|e| e.to_string())
+}
+
+/// Full differential sync of the open vault with `Urano Vaults/<vault_name>` in Google Drive:
+///   1. ensure the root folder `Urano Vaults` exists;
+///   2. find or create the subfolder named exactly `vault_name`;
+///   3. walk `vault_path` recursively, mirror its folders and upload every file with its real
+///      content (metadata POST + media PATCH);
+///   4. PATCH files edited locally, download files edited or created remotely, keep both
+///      versions on conflicts and propagate deletions through the trash on each side.
+/// Per-file failures are logged (`drive-sync:log` kind `error`) and counted but never abort
+/// the pass, so one unreadable file cannot leave the whole vault un-synced.
+async fn sync_vault_with_drive_impl(
+    app: AppHandle,
+    vault_path: String,
+    vault_name: String,
+    force_refresh: bool,
+) -> Result<SyncSummary, String> {
+    let token = if force_refresh {
+        refresh_access_token(&app).await?
+    } else {
+        ensure_valid_token(&app).await?
+    };
+    let client = reqwest::Client::new();
+    let v_path = Path::new(&vault_path);
+
+    if !v_path.is_dir() {
+        return Err(format!("La ruta de la bóveda no existe: {}", vault_path));
+    }
+    let vault_name = vault_name.trim().to_string();
+    if vault_name.is_empty() {
+        return Err("El nombre de la bóveda no puede estar vacío".to_string());
+    }
+
+    emit_progress(&app, "scan", 0, 0, None);
+
+    // 1-2. Root "Urano Vaults" folder, then the subfolder for this vault
+    let root_vaults_id =
+        find_or_create_remote_folder(&client, &token, ROOT_FOLDER_NAME, None).await?;
+    let vault_remote_id =
+        find_or_create_remote_folder(&client, &token, &vault_name, Some(&root_vaults_id)).await?;
+
+    // Manifest of the previous pass (.urano/drive_sync_manifest.json)
+    let urano_dir = v_path.join(".urano");
+    let _ = fs::create_dir_all(&urano_dir);
+    let manifest_path = urano_dir.join("drive_sync_manifest.json");
+
+    let mut manifest: DriveSyncManifest = fs::read_to_string(&manifest_path)
+        .ok()
+        .and_then(|data| serde_json::from_str(&data).ok())
+        .unwrap_or_default();
+    if manifest.remote_folder_id != vault_remote_id {
+        // Linked to a different Drive folder (renamed vault / first sync): forget old ids.
+        manifest.files.clear();
+    }
+    manifest.vault_name = vault_name.clone();
+    manifest.remote_folder_id = vault_remote_id.clone();
+
+    // 3. Scan both sides
+    let (local_files, local_dirs) = scan_local_vault(v_path);
+
+    let mut remote_files: HashMap<String, DriveItem> = HashMap::new();
+    let mut folder_cache: HashMap<String, String> = HashMap::new();
+    list_all_remote_items_recursive(
+        &client,
+        &token,
+        &vault_remote_id,
+        "",
+        &mut remote_files,
+        &mut folder_cache,
+    )
+    .await?;
+    folder_cache.insert(String::new(), vault_remote_id.clone());
+
+    // Plan
+    let ops = plan_sync(&local_files, &remote_files, &mut manifest);
+    let total_ops = ops.len();
+
+    let mut uploaded = 0;
+    let mut downloaded = 0;
+    let mut conflicts = 0;
+    let mut deleted = 0;
+    let mut errors = 0;
+    let mut first_error: Option<String> = None;
+    let mut newly_downloaded: HashSet<String> = HashSet::new();
+
+    let mut record_error = |app: &AppHandle, rel: &str, err: String| {
+        eprintln!("[Drive Sync Error] {}", err);
+        log::warn!("Sync de {} falló: {}", rel, err);
+        emit_log(app, "error", Some(rel), Some(&err));
+        errors += 1;
+        if first_error.is_none() {
+            first_error = Some(err);
+        }
+    };
+
+    // Mirror every local folder (including empty ones) in Drive.
+    for dir_rel in &local_dirs {
+        if let Err(err) =
+            ensure_remote_folder(&client, &token, &vault_remote_id, dir_rel, &mut folder_cache).await
+        {
+            record_error(&app, dir_rel, err);
+        }
+    }
+
+    // 4. Execute
+    for (index, op) in ops.into_iter().enumerate() {
+        emit_progress(&app, op.phase(), index + 1, total_ops, Some(op.rel()));
+
+        match op {
+            PlannedOp::UploadNew { rel, abs, hash, mtime } => {
+                let result: Result<DriveItem, String> = async {
+                    let parent_id = ensure_remote_parent_folder(
+                        &client,
+                        &token,
+                        &vault_remote_id,
+                        &rel,
+                        &mut folder_cache,
+                    )
+                    .await?;
+                    let file_name = rel.rsplit('/').next().unwrap_or(&rel);
+                    let bytes = fs::read(&abs).map_err(|e| e.to_string())?;
+                    upload_new_file(&client, &token, file_name, &parent_id, get_mime_type(file_name), &bytes)
+                        .await
+                }
+                .await;
+
+                match result {
+                    Ok(created) => {
+                        manifest.files.insert(
+                            rel.clone(),
+                            ManifestFileEntry { drive_id: created.id, modified_ms: mtime, hash },
+                        );
+                        emit_log(&app, "upload", Some(&rel), None);
+                        uploaded += 1;
+                    }
+                    Err(err) => record_error(&app, &rel, err),
+                }
+            }
+
+            PlannedOp::UpdateRemote { rel, abs, hash, mtime, file_id } => {
+                let result: Result<DriveItem, String> = async {
+                    let bytes = fs::read(&abs).map_err(|e| e.to_string())?;
+                    update_file_content(&client, &token, &file_id, &bytes).await
+                }
+                .await;
+
+                match result {
+                    Ok(updated) => {
+                        manifest.files.insert(
+                            rel.clone(),
+                            ManifestFileEntry { drive_id: updated.id, modified_ms: mtime, hash },
+                        );
+                        emit_log(&app, "upload", Some(&rel), None);
+                        uploaded += 1;
+                    }
+                    Err(err) => record_error(&app, &rel, err),
+                }
+            }
+
+            PlannedOp::Download { rel, file_id, remote_hash } => {
+                let result: Result<String, String> = async {
+                    let bytes = download_file_bytes(&client, &token, &file_id).await?;
+                    write_downloaded_file(&v_path.join(&rel), &bytes)?;
+                    Ok(if remote_hash.is_empty() { compute_md5(&bytes) } else { remote_hash.clone() })
+                }
+                .await;
+
+                match result {
+                    Ok(hash) => {
+                        manifest.files.insert(
+                            rel.clone(),
+                            ManifestFileEntry {
+                                drive_id: file_id,
+                                modified_ms: Utc::now().timestamp_millis(),
+                                hash,
+                            },
+                        );
+                        newly_downloaded.insert(rel.clone());
+                        emit_log(&app, "download", Some(&rel), None);
+                        downloaded += 1;
+                    }
+                    Err(err) => record_error(&app, &rel, err),
+                }
+            }
+
+            PlannedOp::Conflict { rel, abs, hash, mtime, file_id } => {
+                // Keep the remote version next to the local one, then push the local one.
+                let stamp = Utc::now().format("%Y-%m-%d_%H-%M").to_string();
+                let conflict_rel = conflict_file_name(&rel, &stamp);
+                match download_file_bytes(&client, &token, &file_id).await {
+                    Ok(remote_bytes) => {
+                        if let Err(err) = write_downloaded_file(&v_path.join(&conflict_rel), &remote_bytes) {
+                            record_error(&app, &conflict_rel, err);
+                        }
+                    }
+                    Err(err) => record_error(&app, &conflict_rel, err),
+                }
+                emit_log(&app, "conflict", Some(&rel), Some(&conflict_rel));
+                conflicts += 1;
+
+                let result: Result<DriveItem, String> = async {
+                    let bytes = fs::read(&abs).map_err(|e| e.to_string())?;
+                    update_file_content(&client, &token, &file_id, &bytes).await
+                }
+                .await;
+
+                match result {
+                    Ok(updated) => {
+                        manifest.files.insert(
+                            rel.clone(),
+                            ManifestFileEntry { drive_id: updated.id, modified_ms: mtime, hash },
+                        );
+                        emit_log(&app, "upload", Some(&rel), None);
+                        uploaded += 1;
+                    }
+                    Err(err) => record_error(&app, &rel, err),
+                }
+            }
+
+            PlannedOp::LocalTrash { rel, abs } => {
+                move_to_local_trash(v_path, &rel, &abs);
+                manifest.files.remove(&rel);
+                emit_log(&app, "local_trash", Some(&rel), None);
+                deleted += 1;
+            }
+
+            PlannedOp::RemoteTrash { rel, file_id } => match trash_remote_file(&client, &token, &file_id).await {
+                Ok(()) => {
+                    manifest.files.remove(&rel);
+                    emit_log(&app, "trash", Some(&rel), None);
+                    deleted += 1;
+                }
+                Err(err) => record_error(&app, &rel, err),
+            },
+        }
+    }
+
+    // Drop stale manifest entries (files that no longer exist locally nor were just downloaded).
+    manifest
+        .files
+        .retain(|rel, _| local_files.contains_key(rel) || newly_downloaded.contains(rel));
+
+    // 5. Save the manifest
+    manifest.last_synced_at = Utc::now().timestamp();
+    let manifest_json = serde_json::to_string_pretty(&manifest).map_err(|e| e.to_string())?;
+    if let Err(err) = fs::write(&manifest_path, manifest_json) {
+        eprintln!(
+            "[Drive Sync Error] No se pudo guardar el manifiesto de sync en {}: {}",
+            manifest_path.display(),
+            err
+        );
+    }
+
+    emit_progress(&app, "done", total_ops, total_ops, None);
+
+    let succeeded = uploaded + downloaded + deleted + conflicts;
+    // A 401 means the access token was revoked/expired mid-pass: surface it even when some
+    // files went through so the command wrapper refreshes the token and retries once.
+    if let Some(err) = first_error.as_ref() {
+        if is_auth_error(err) {
+            return Err(err.clone());
+        }
+    }
+    if errors > 0 && succeeded == 0 && total_ops > 0 {
+        // Nothing went through (expired session, no network…): surface the real cause.
+        return Err(first_error.unwrap_or_else(|| "La sincronización falló".to_string()));
+    }
+
+    let now_display = Utc::now().format("%H:%M:%S").to_string();
+    let message = format!(
+        "Sincronización completada a las {}: {} subidos, {} descargados, {} eliminados, {} conflictos, {} errores.",
+        now_display, uploaded, downloaded, deleted, conflicts, errors
+    );
+
+    Ok(SyncSummary {
+        uploaded,
+        downloaded,
+        deleted,
+        conflicts,
+        errors,
+        total: manifest.files.len(),
+        message,
+        timestamp: now_display,
+    })
+}
+
+/// Manual "Sync now" / debounced auto-sync entry point.
+///
+/// Arguments are explicitly exposed in camelCase so the frontend call
+/// `invoke('sync_vault_with_drive', { vaultPath, vaultName })` maps to
+/// `vault_path` / `vault_name` regardless of Tauri defaults. If Google answers 401,
+/// the stored refresh token is used to get a new access token and the pass is retried once.
+#[tauri::command(rename_all = "camelCase")]
+pub async fn sync_vault_with_drive(
+    app: AppHandle,
+    vault_path: String,
+    vault_name: String,
+) -> Result<SyncSummary, String> {
+    match sync_vault_with_drive_impl(
+        app.clone(),
+        vault_path.clone(),
+        vault_name.clone(),
+        false,
+    )
+    .await
+    {
+        Ok(summary) => Ok(summary),
+        Err(err) => {
+            eprintln!("[Drive Sync Error] {}", err);
+            if is_auth_error(&err) {
+                eprintln!(
+                    "[Drive Sync Error] Token rechazado durante la sincronización; renovando y reintentando…"
+                );
+                let retried =
+                    sync_vault_with_drive_impl(app, vault_path, vault_name, true).await;
+                if let Err(ref retry_err) = retried {
+                    eprintln!("[Drive Sync Error] {}", retry_err);
+                }
+                retried
+            } else {
+                Err(err)
+            }
+        }
+    }
+}
+
+/// Downloads a whole remote vault (`Urano Vaults/<name>`) into `local_dest_path`, mirroring
+/// its folders, and writes the manifest so the next `sync_vault_with_drive` is incremental.
+#[tauri::command(rename_all = "camelCase")]
+pub async fn download_remote_vault(
+    app: AppHandle,
+    remote_folder_id: String,
+    local_dest_path: String,
+) -> Result<SyncSummary, String> {
+    let token = ensure_valid_token(&app).await?;
+    let client = reqwest::Client::new();
+    let dest_dir = Path::new(&local_dest_path);
+
+    fs::create_dir_all(dest_dir).map_err(|e| e.to_string())?;
+    emit_progress(&app, "scan", 0, 0, None);
+
+    let mut remote_files: HashMap<String, DriveItem> = HashMap::new();
+    let mut remote_folders: HashMap<String, String> = HashMap::new();
+    list_all_remote_items_recursive(
+        &client,
+        &token,
+        &remote_folder_id,
+        "",
+        &mut remote_files,
+        &mut remote_folders,
+    )
+    .await?;
+
+    for dir_rel in remote_folders.keys() {
+        let _ = fs::create_dir_all(dest_dir.join(dir_rel));
+    }
+
+    let urano_dir = dest_dir.join(".urano");
+    let _ = fs::create_dir_all(&urano_dir);
+    let manifest_path = urano_dir.join("drive_sync_manifest.json");
+
+    let mut manifest = DriveSyncManifest {
+        vault_name: dest_dir
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("Urano Vault")
+            .to_string(),
+        remote_folder_id,
+        last_synced_at: Utc::now().timestamp(),
+        files: HashMap::new(),
+    };
+
+    let total = remote_files.len();
+    let mut downloaded = 0;
+    let mut errors = 0;
+    let mut first_error: Option<String> = None;
+
+    let mut remote_paths: Vec<String> = remote_files.keys().cloned().collect();
+    remote_paths.sort();
+
+    for (index, rel_path) in remote_paths.into_iter().enumerate() {
+        emit_progress(&app, "download", index + 1, total, Some(&rel_path));
+        let item = &remote_files[&rel_path];
+        let result: Result<String, String> = async {
+            let bytes = download_file_bytes(&client, &token, &item.id).await?;
+            write_downloaded_file(&dest_dir.join(&rel_path), &bytes)?;
+            Ok(item.md5_checksum.clone().unwrap_or_else(|| compute_md5(&bytes)))
+        }
+        .await;
+
+        match result {
+            Ok(hash) => {
+                emit_log(&app, "download", Some(&rel_path), None);
+                manifest.files.insert(
+                    rel_path,
+                    ManifestFileEntry {
+                        drive_id: item.id.clone(),
+                        modified_ms: Utc::now().timestamp_millis(),
+                        hash,
+                    },
+                );
+                downloaded += 1;
+            }
+            Err(err) => {
+                log::warn!("Descarga de {} falló: {}", rel_path, err);
+                emit_log(&app, "error", Some(&rel_path), Some(&err));
+                errors += 1;
+                if first_error.is_none() {
+                    first_error = Some(err);
+                }
+            }
+        }
+    }
+
+    let manifest_json = serde_json::to_string_pretty(&manifest).map_err(|e| e.to_string())?;
+    let _ = fs::write(manifest_path, manifest_json);
+    emit_progress(&app, "done", total, total, None);
+
+    if errors > 0 && downloaded == 0 && total > 0 {
+        return Err(first_error.unwrap_or_else(|| "La descarga falló".to_string()));
+    }
+
+    let now_display = Utc::now().format("%H:%M:%S").to_string();
+    Ok(SyncSummary {
+        uploaded: 0,
+        downloaded,
+        deleted: 0,
+        conflicts: 0,
+        errors,
+        total: manifest.files.len(),
+        message: format!(
+            "Bóveda descargada a las {}: {} archivos, {} errores.",
+            now_display, downloaded, errors
+        ),
+        timestamp: now_display,
+    })
+}
+
