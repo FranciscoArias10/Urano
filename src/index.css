@@ -2730,3 +2730,41 @@ body.is-translucent aside.bg-obsidian-sidebar {
 
 
 
+
+/* ---------------------------------------------------------------------------
+   Sync status icon (status bar, bottom-right). Evidence: obsidian.asar/app.css
+     .sync-status-icon { display: flex; align-items: center; cursor: var(--cursor); }
+     .sync-status-icon.mod-success { color: var(--text-success); }   (--text-success: var(--color-green))
+     .sync-status-icon.mod-working { color: var(--interactive-accent); }
+     .sync-status-icon.mod-error   { color: var(--text-error); }     (--text-error: var(--color-red))
+   Urano adds `.mod-warning` for syncs that ended with conflict copies and a smooth spin
+   while uploading/downloading (`.is-syncing`).
+   --------------------------------------------------------------------------- */
+.sync-status-icon {
+  display: flex;
+  align-items: center;
+  cursor: var(--cursor, pointer);
+}
+.sync-status-icon.mod-success {
+  color: var(--color-green);
+}
+.sync-status-icon.mod-working {
+  color: var(--interactive-accent);
+}
+.sync-status-icon.mod-error {
+  color: var(--color-red);
+}
+.sync-status-icon.mod-warning {
+  color: var(--color-yellow);
+}
+.sync-status-icon.is-syncing svg {
+  animation: urano-sync-spin 1.4s linear infinite;
+}
+@keyframes urano-sync-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
