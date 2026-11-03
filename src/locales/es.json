@@ -23,7 +23,8 @@
     "none": "Ninguno",
     "untitled": "Sin título",
     "more": "Más",
-    "dragToRearrange": "Arrastra para reordenar"
+    "dragToRearrange": "Arrastra para reordenar",
+    "refresh": "Actualizar"
   },
   "language": {
     "title": "Idioma",
@@ -281,11 +282,12 @@
       "desc": "Los secretos como claves de API y tokens se guardan de forma segura en este dispositivo.",
       "secrets": "Secretos",
       "empty": "No hay secretos guardados.",
-      "gdrive": "Cliente OAuth de Google Drive",
-      "gdriveDesc": "Client ID y secreto usados para conectar la bóveda con Google Drive.",
-      "configured": "Configurado",
-      "notConfigured": "Sin configurar",
-      "edit": "Editar"
+      "gdrive": "Sesión de Google Drive",
+      "gdriveDesc": "Urano gestiona el cliente OAuth internamente; en este dispositivo solo se guarda tu token de sesión.",
+      "connected": "Conectada",
+      "notConnected": "Sin conectar",
+      "revoke": "Cerrar sesión",
+      "signIn": "Iniciar sesión"
     },
     "corePlugins": {
       "desc": "Los plugins principales vienen integrados en Urano. Actívalos o desactívalos aquí.",
@@ -392,11 +394,8 @@
       "account": "Cuenta de Google Drive",
       "notConnected": "Sin conectar. Inicia sesión para sincronizar esta bóveda con Google Drive.",
       "connectedAs": "Conectado como {{name}} ({{email}}).",
-      "connect": "Conectar",
-      "disconnect": "Desconectar",
-      "configure": "Configurar...",
-      "remoteFolder": "Nombre de la carpeta remota",
-      "remoteFolderDesc": "Carpeta de Google Drive que replica esta bóveda.",
+      "connect": "Iniciar sesión con Google",
+      "disconnect": "Cerrar sesión",
       "statusName": "Estado de sincronización",
       "status": {
         "idle": "Inactivo",
@@ -410,7 +409,14 @@
       "never": "Nunca sincronizado",
       "syncNow": "Sincronizar ahora",
       "viewLog": "Ver registro",
-      "noVault": "Abre una bóveda para sincronizarla."
+      "noVault": "Abre una bóveda para sincronizarla.",
+      "connecting": "Iniciando sesión…",
+      "autoSync": "Sincronización automática en tiempo real",
+      "autoSyncDesc": "Sube y baja los cambios unos segundos después de editar, crear, renombrar o eliminar algo en la bóveda.",
+      "activityLog": "Registro de actividad",
+      "activityLogDesc": "Consulta las actividades de sincronización recientes para depurar.",
+      "manage": "Panel de Google Drive",
+      "manageDesc": "Estado de la bóveda abierta, «Sincronizar ahora» y las bóvedas guardadas en «Urano Vaults» de tu Drive."
     }
   },
   "app": {
@@ -921,37 +927,92 @@
     "synced": "Sincronizado con Google Drive",
     "syncError": "Error de sincronización con Google Drive",
     "connected": "Google Drive conectado",
-    "localVault": "Bóveda local (sin sincronizar)"
+    "localVault": "Bóveda local (sin sincronizar)",
+    "syncNotConnected": "Sync: sin conectar. Haz clic para iniciar sesión con Google.",
+    "syncOffline": "Sync: sin conexión",
+    "syncConflict": "Sincronizado con Google Drive (conflictos guardados como copias)",
+    "syncedAgo": "Sincronizado con Google Drive ({ago})",
+    "syncMenuStatus": "Sync: {status}",
+    "syncNow": "Sincronizar ahora",
+    "activityLog": "Registro de actividad",
+    "syncSettings": "Ajustes",
+    "signIn": "Iniciar sesión con Google",
+    "syncStatus": {
+      "disconnected": "sin conectar",
+      "offline": "sin conexión",
+      "idle": "conectado",
+      "syncing": "sincronizando…",
+      "synced": "sincronizado",
+      "error": "error",
+      "conflict": "conflictos"
+    },
+    "ago": {
+      "justNow": "ahora mismo",
+      "minutes": "hace {count} min",
+      "hours": "hace {count} h",
+      "days": "hace {count} d"
+    },
+    "syncProgress": "Sincronizando con Google Drive... {current}/{total}",
+    "syncDoneUploaded": "Sincronizado: {count} archivos subidos",
+    "syncDoneMixed": "Sincronizado: {uploaded} subidos, {downloaded} descargados",
+    "syncDoneErrors": "Sincronizado con {errors} error(es)"
   },
   "sync": {
     "config": {
-      "title": "Configuración de Google Drive",
+      "title": "Google Drive",
       "logout": "Cerrar sesión",
       "privacyTitle": "Privacidad 100% garantizada:",
       "privacyBody": "Urano utiliza exclusivamente el permiso {scope}. La aplicación solo tiene acceso a las notas y carpetas que ella misma crea en tu cuenta personal de Google Drive.",
-      "clientIdLabel": "Google Client ID (OAuth 2.0)",
-      "howToGet": "¿Cómo obtenerlo?",
-      "clientIdPlaceholder": "ej: 123456789-xxxxxx.apps.googleusercontent.com",
-      "clientSecretLabel": "Client Secret (opcional si usas cliente de escritorio PKCE)",
-      "folderNameLabel": "Nombre de la carpeta remota en Google Drive",
-      "stepsTitle": "Pasos en Google Cloud Console:",
-      "openConsole": "Abrir consola",
-      "step1": "Crea un proyecto (ej: \"Urano Notes\").",
-      "step2": "Habilita la {api} en Biblioteca de APIs.",
-      "step3": "En Pantalla de consentimiento OAuth, selecciona \"Externo\" y añade el scope {scope}.",
-      "step4": "En Credenciales, crea un {clientId} de tipo {appType}.",
-      "step4ClientId": "ID de cliente de OAuth",
-      "step4AppType": "App de escritorio",
-      "step5": "Copia el Client ID resultante aquí. ¡Listo!",
-      "saveChanges": "Guardar cambios",
-      "saveAndConnect": "Guardar y conectar con Google"
+      "localVault": {
+        "title": "Bóveda local actual",
+        "none": "Abre una bóveda para sincronizarla con Google Drive."
+      },
+      "state": {
+        "syncing": "Sincronizando...",
+        "synced": "Sincronizado",
+        "pending": "Pendiente de subir",
+        "conflict": "Sincronizado (copias de conflicto guardadas)",
+        "offline": "Sin conexión",
+        "error": "Error"
+      },
+      "progress": {
+        "scan": "Comparando archivos…",
+        "upload": "Subiendo {current}/{total}",
+        "download": "Descargando {current}/{total}",
+        "done": "Finalizando…"
+      },
+      "lastSynced": "Última sincronización: {time}",
+      "neverSynced": "Aún no sincronizada",
+      "lastResult": "{uploaded} subidos, {downloaded} descargados",
+      "autoSync": "Sincronización automática",
+      "syncNow": "Sincronizar ahora",
+      "remote": {
+        "title": "Bóvedas en Google Drive",
+        "empty": "Aún no hay bóvedas en «Urano Vaults». Sincroniza la bóveda actual para crear la primera.",
+        "connected": "Conectada",
+        "downloadAndOpen": "Descargar y abrir",
+        "opened": "Bóveda «{name}» descargada y abierta.",
+        "hint": "Cada bóveda vive en su propia subcarpeta de «{folder}» en tu Google Drive."
+      }
     },
     "logsModal": {
       "title": "Registro de sincronización",
-      "empty": "No hay registros de sincronización aún."
+      "empty": "No hay registros de sincronización aún.",
+      "filterLabel": "Tipo de evento",
+      "filterAll": "Todos",
+      "filterErrors": "Errores",
+      "filterWarnings": "Advertencias",
+      "searchPlaceholder": "Filtrar…",
+      "copy": "Copiar registro",
+      "copied": "Registro de sincronización copiado.",
+      "clear": "Limpiar",
+      "done": "Listo",
+      "levelInfo": "Info",
+      "levelSuccess": "OK",
+      "levelWarn": "Aviso",
+      "levelError": "Error"
     },
     "log": {
-      "enterCredentials": "Ingresa tus credenciales de Google OAuth para continuar.",
       "startingAuth": "Iniciando flujo de autenticación OAuth 2.0 PKCE...",
       "authSuccess": "Autenticación exitosa",
       "authSuccessUser": "Autenticación exitosa: {name}",
@@ -960,9 +1021,28 @@
       "loggedOut": "Sesión de Google Drive cerrada.",
       "loginRequired": "Inicia sesión en Google Drive para sincronizar.",
       "startingSync": "Iniciando sincronización diferencial con Google Drive...",
-      "syncConflicts": "Sincronización finalizada con {conflicts} conflicto(s) resueltos sin pérdida. Subidos: {uploaded}, Descargados: {downloaded}",
-      "syncDone": "Bóveda sincronizada. Subidos: {uploaded}, Descargados: {downloaded}",
-      "syncError": "Error de sincronización: {error}"
+      "syncConflicts": "Sincronización finalizada con {conflicts} conflicto(s) guardados como copias. Subidos: {uploaded}, descargados: {downloaded}.",
+      "syncDone": "Bóveda sincronizada. Subidos: {uploaded}, descargados: {downloaded}, eliminados: {deleted}.",
+      "syncError": "Error de sincronización: {error}",
+      "autoSyncOn": "Sincronización automática activada.",
+      "autoSyncOff": "Sincronización automática desactivada.",
+      "sessionRestored": "Sesión de Google restaurada para {email}.",
+      "listVaultsError": "No se pudieron listar las bóvedas de Google Drive: {error}",
+      "downloadingVault": "Descargando la bóveda remota en «{path}»…",
+      "downloadDone": "Bóveda remota descargada y vinculada: {downloaded} archivos, {errors} errores.",
+      "downloadError": "No se pudo descargar la bóveda: {error}",
+      "syncingVault": "Sincronizando la bóveda «{name}» con Google Drive…",
+      "offline": "Sin conexión a internet. La sincronización se reanudará al volver a estar en línea.",
+      "backOnline": "Conexión restablecida.",
+      "event": {
+        "upload": "Subido {file}",
+        "download": "Descargado {file}",
+        "trash": "{file} movido a la papelera de Google Drive (eliminado en local)",
+        "local_trash": "{file} se eliminó en otro dispositivo; la copia local se movió a .urano/trash",
+        "conflict": "Conflicto en {file}: la versión remota se guardó como {detail}",
+        "error": "Error en {file}: {detail}"
+      },
+      "syncDoneWithErrors": "Sincronización finalizada con {errors} error(es); los archivos fallidos se reintentarán en la próxima pasada. Subidos: {uploaded}, descargados: {downloaded}."
     }
   },
   "table": {
@@ -1098,7 +1178,10 @@
       "buttonOpen": "Abrir",
       "openSync": "Abrir bóveda desde Urano Sync",
       "openSyncDesc": "Configurar una bóveda sincronizada con una bóveda remota existente.",
-      "buttonSignIn": "Iniciar sesión"
+      "buttonSignIn": "Iniciar sesión",
+      "buttonBrowse": "Explorar",
+      "buttonConnect": "Conectar",
+      "buttonSigningIn": "Iniciando sesión…"
     },
     "createForm": {
       "back": "Atrás",
@@ -1124,6 +1207,14 @@
       "moveDest": "Seleccionar nuevo destino para la bóveda",
       "moveSuccess": "Bóveda movida correctamente",
       "moveFailed": "Error al mover la bóveda"
+    },
+    "remote": {
+      "title": "Tus bóvedas remotas",
+      "loading": "Buscando bóvedas en Google Drive…",
+      "empty": "No tienes bóvedas remotas en la carpeta «Urano Vaults» de Google Drive.",
+      "downloading": "Descargando…",
+      "chooseFolder": "Elige dónde descargar «{name}»",
+      "modified": "Modificado {time}"
     }
   }
 }
