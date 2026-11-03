@@ -67,6 +67,9 @@ const makeTabId = () => {
   return `tab_${Date.now()}_${tabIdCounter}`;
 };
 
+/** Background pull interval for Google Drive changes made on other devices. */
+const BACKGROUND_SYNC_INTERVAL_MS = 5 * 60 * 1000;
+
 export const App: React.FC = () => {
   // Tabs State (Obsidian Workspace Leaf Tabs)
   const [tabs, setTabs] = useState<TabItem[]>([]);
@@ -158,7 +161,10 @@ export const App: React.FC = () => {
     deleteItem,
   } = useVaultStore();
 
-  const { checkAuthStatus, triggerSync, isSyncing, setShowConfigModal } = useSyncStore();
+  const { checkAuthStatus, triggerSync, isSyncing, notifyVaultChanged } = useSyncStore();
+  const syncAuthenticated = useSyncStore((s) => s.isAuthenticated);
+  const autoSyncEnabled = useSyncStore((s) => s.autoSyncEnabled);
+  const syncOnline = useSyncStore((s) => s.isOnline);
   const { showNotice } = useNoticeStore();
   const t = useT();
 
@@ -273,6 +279,22 @@ export const App: React.FC = () => {
       });
     }
   }, []);
+
+  // Google Drive auto-sync: as soon as the session, the open vault and the connection are all
+  // ready (sign-in, restored session at startup, vault switch, back online) the vault is pushed
+  // to `Urano Vaults/<vaultName>` immediately, then a periodic background pull brings in edits
+  // made on other devices (Drive has no push channel). Local edits are pushed by `vaultStore`
+  // → `notifyVaultChanged` (3 s debounce).
+  useEffect(() => {
+    if (!syncAuthenticated || !autoSyncEnabled || !syncOnline || !activeVault) return;
+    void triggerSync(activeVault, vaultName ?? undefined);
+    const interval = setInterval(
+      () => notifyVaultChanged(activeVault, vaultName ?? undefined),
+      BACKGROUND_SYNC_INTERVAL_MS
+    );
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [syncAuthenticated, autoSyncEnabled, syncOnline, activeVault]);
 
   // Keep tabs pointing at the new path when a file is renamed (sidebar inline rename,
   // editor title rename). Runs before the store re-points activeFile, so the tab sync
@@ -1457,7 +1479,6 @@ export const App: React.FC = () => {
       <VaultManagerModal
         isOpen={showVaultManager}
         onClose={() => setShowVaultManager(false)}
-        onOpenSync={() => setShowConfigModal(true)}
       />
 
       {/* Obsidian Floating Notices */}
