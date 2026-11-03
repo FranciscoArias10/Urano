@@ -12,7 +12,8 @@ export interface Vault {
   name: string;
 }
 
-export type SyncState = 'synced' | 'syncing' | 'idle' | 'offline' | 'error' | 'conflict';
+export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error' | 'offline' | 'conflict';
+export type SyncState = SyncStatus;
 
 export interface SyncLog {
   id: string;
@@ -20,11 +21,47 @@ export interface SyncLog {
   message: string;
   type: 'info' | 'success' | 'warn' | 'error';
 }
+export type SyncLogEntry = SyncLog;
 
-export interface GoogleUser {
+export interface GoogleUserProfile {
   email: string;
   name: string;
   picture?: string;
+}
+export type GoogleUser = GoogleUserProfile;
+
+export interface RemoteVaultInfo {
+  id: string;
+  name: string;
+  modified_time?: string;
+  file_count?: number;
+}
+
+export interface SyncSummary {
+  uploaded: number;
+  downloaded: number;
+  deleted: number;
+  conflicts: number;
+  /** Files that failed in this pass (the sync keeps going and retries next time). */
+  errors: number;
+  total: number;
+  message: string;
+  timestamp: string;
+}
+
+/** Per-file event emitted by the Rust sync engine (`drive-sync:log`). */
+export interface SyncLogEvent {
+  kind: 'upload' | 'download' | 'trash' | 'local_trash' | 'conflict' | 'error' | (string & {});
+  file?: string | null;
+  detail?: string | null;
+}
+
+/** Live progress emitted by the Rust sync engine (`drive-sync:progress`). */
+export interface SyncProgress {
+  phase: 'scan' | 'upload' | 'download' | 'done' | (string & {});
+  current: number;
+  total: number;
+  file?: string | null;
 }
 
 export interface GraphNode {
