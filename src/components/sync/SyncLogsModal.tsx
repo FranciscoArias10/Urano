@@ -1,89 +1,167 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
+import { X, Copy, Search } from 'lucide-react';
 import { useSyncStore } from '../../stores/syncStore';
 import { useT } from '../../stores/localeStore';
-import { X, Activity, CheckCircle, AlertTriangle, AlertCircle, Info } from 'lucide-react';
+import { useNoticeStore } from '../common/Notice';
+import type { SyncLog } from '../../types';
 
+/**
+ * Sync activity log, modelled on Obsidian's `.modal.mod-sync-log.mod-lg` (obsidian.asar/app.js,
+ * class `Tie`): title "Sync log", an event-type dropdown (All / Errors / …) next to a filter
+ * search box, a monospace `.sync-log-container` with one `.list-item` per entry (`.mod-error`
+ * in `--text-error`), and a `.modal-button-container` with "Copy sync log" (mod-cta) + "Done".
+ */
 interface SyncLogsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+type LogFilter = 'all' | 'errors' | 'warnings';
+
+const LEVEL_KEY: Record<SyncLog['type'], string> = {
+  info: 'sync.logsModal.levelInfo',
+  success: 'sync.logsModal.levelSuccess',
+  warn: 'sync.logsModal.levelWarn',
+  error: 'sync.logsModal.levelError',
+};
+
+const LEVEL_CLASS: Record<SyncLog['type'], string> = {
+  info: '',
+  success: 'text-obsidian-text',
+  warn: 'text-[var(--color-yellow)]',
+  error: 'mod-error text-[var(--color-red)]',
+};
+
 export const SyncLogsModal: React.FC<SyncLogsModalProps> = ({ isOpen, onClose }) => {
-  const { logs } = useSyncStore();
+  const logs = useSyncStore((s) => s.logs);
+  const clearLogs = useSyncStore((s) => s.clearLogs);
+  const showNotice = useNoticeStore((s) => s.showNotice);
   const t = useT();
+  const [filter, setFilter] = useState<LogFilter>('all');
+  const [query, setQuery] = useState('');
+
+  const visibleLogs = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return logs.filter((log) => {
+      if (filter === 'errors' && log.type !== 'error') return false;
+      if (filter === 'warnings' && log.type !== 'warn' && log.type !== 'error') return false;
+      return !q || log.message.toLowerCase().includes(q);
+    });
+  }, [logs, filter, query]);
 
   if (!isOpen) return null;
 
+  const levelLabel = (type: SyncLog['type']) => t(LEVEL_KEY[type]);
+
+  const handleCopy = async () => {
+    // Oldest first, like Obsidian's "Copy sync log" (`ts Error/Info message`).
+    const text = [...visibleLogs]
+      .reverse()
+      .map((log) => `${log.timestamp} ${levelLabel(log.type).padEnd(5)} ${log.message}`)
+      .join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      showNotice(t('sync.logsModal.copied'));
+    } catch (err) {
+      console.error('No se pudo copiar el registro de sincronización:', err);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--background-modifier-cover)] backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-obsidian-sidebar border border-obsidian-border rounded-xl w-full max-w-lg max-h-[80vh] shadow-2xl flex flex-col overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--background-modifier-cover)] p-4 animate-in fade-in duration-200"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('sync.logsModal.title')}
+        className="modal mod-sync-log bg-obsidian-sidebar border border-obsidian-border rounded-xl w-full max-w-2xl h-[70vh] shadow-2xl flex flex-col overflow-hidden"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-obsidian-border bg-obsidian-bg/50">
-          <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-orange-400" />
-            <h2 className="text-base font-semibold text-obsidian-text">{t('sync.logsModal.title')}</h2>
-          </div>
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-obsidian-border">
+          <h2 className="text-[15px] font-semibold text-obsidian-text">{t('sync.logsModal.title')}</h2>
           <button
+            type="button"
             onClick={onClose}
-            className="text-obsidian-muted hover:text-obsidian-text p-1 rounded-md transition-colors"
+            className="text-obsidian-muted hover:text-obsidian-text p-1 rounded-md transition-colors cursor-pointer"
+            aria-label={t('common.close')}
           >
-            <X className="w-4 h-4" />
+            <X size={16} />
           </button>
         </div>
 
-        {/* Content list */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2 font-mono text-[11px]">
-          {logs.length === 0 ? (
-            <div className="text-center text-obsidian-muted py-8 font-sans text-xs">
-              {t('sync.logsModal.empty')}
+        <div className="flex flex-col flex-1 min-h-0 px-5 py-4 gap-3">
+          {/* Toolbar: event-type dropdown + filter search (Obsidian: addDropdown + addSearch) */}
+          <div className="flex items-center gap-2">
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as LogFilter)}
+              aria-label={t('sync.logsModal.filterLabel')}
+              className="h-[30px] rounded-[5px] border border-obsidian-border bg-[var(--interactive-normal)] text-obsidian-text text-[13px] px-2 outline-none cursor-pointer"
+            >
+              <option value="all">{t('sync.logsModal.filterAll')}</option>
+              <option value="errors">{t('sync.logsModal.filterErrors')}</option>
+              <option value="warnings">{t('sync.logsModal.filterWarnings')}</option>
+            </select>
+            <div className="relative flex-1">
+              <Search
+                size={13}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-obsidian-faint pointer-events-none"
+              />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t('sync.logsModal.searchPlaceholder')}
+                className="w-full h-[30px] rounded-[5px] border border-obsidian-border bg-obsidian-bg text-obsidian-text text-[13px] pl-8 pr-2 outline-none focus:border-[var(--interactive-accent)]"
+              />
             </div>
-          ) : (
-            logs.map((log) => {
-              let Icon = Info;
-              let iconColor = 'text-blue-400';
-              let bgColor = 'bg-blue-500/5';
-              let borderColor = 'border-blue-500/20';
+          </div>
 
-              if (log.type === 'success') {
-                Icon = CheckCircle;
-                iconColor = 'text-emerald-400';
-                bgColor = 'bg-emerald-500/5';
-                borderColor = 'border-emerald-500/20';
-              } else if (log.type === 'warn') {
-                Icon = AlertTriangle;
-                iconColor = 'text-amber-400';
-                bgColor = 'bg-amber-500/5';
-                borderColor = 'border-amber-500/20';
-              } else if (log.type === 'error') {
-                Icon = AlertCircle;
-                iconColor = 'text-red-400';
-                bgColor = 'bg-red-500/5';
-                borderColor = 'border-red-500/20';
-              }
-
-              return (
-                <div
-                  key={log.id}
-                  className={`flex items-start gap-2.5 p-2 rounded-lg border ${bgColor} ${borderColor}`}
-                >
-                  <Icon className={`w-3.5 h-3.5 ${iconColor} shrink-0 mt-0.5`} />
-                  <div className="flex-1 min-w-0">
-                    <span className="text-obsidian-muted mr-2">[{log.timestamp}]</span>
-                    <span className="text-obsidian-text break-words">{log.message}</span>
-                  </div>
+          {/* .sync-log-container — newest entries at the bottom (column-reverse keeps the
+              scroll anchored there, like a terminal) */}
+          <div className="sync-log-container flex-1 min-h-0 overflow-y-auto flex flex-col-reverse rounded-[6px] border border-obsidian-border bg-obsidian-bg p-3 font-mono text-[11px] leading-[1.6] text-obsidian-muted whitespace-pre-wrap">
+            {visibleLogs.length === 0 ? (
+              <div className="m-auto font-sans text-xs text-obsidian-faint">{t('sync.logsModal.empty')}</div>
+            ) : (
+              visibleLogs.map((log) => (
+                <div key={log.id} className={`list-item ${LEVEL_CLASS[log.type]}`}>
+                  <span className="opacity-70">{log.timestamp}</span>{' '}
+                  <span className="uppercase opacity-60">{levelLabel(log.type)}</span> {log.message}
                 </div>
-              );
-            })
-          )}
+              ))
+            )}
+          </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-3 border-t border-obsidian-border bg-obsidian-bg/50 flex justify-end">
+        {/* .modal-button-container: Clear · Copy sync log (mod-cta) · Done */}
+        <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-obsidian-border">
           <button
-            onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-obsidian-active hover:bg-obsidian-hover text-obsidian-text text-xs transition-colors"
+            type="button"
+            onClick={clearLogs}
+            disabled={logs.length === 0}
+            className="h-[32px] px-4 rounded-[5px] text-[13px] font-medium text-obsidian-muted hover:text-obsidian-text hover:bg-[var(--interactive-hover)] disabled:opacity-40 transition-colors cursor-pointer"
           >
-            {t('common.close')}
+            {t('sync.logsModal.clear')}
+          </button>
+          <button
+            type="button"
+            onClick={handleCopy}
+            disabled={visibleLogs.length === 0}
+            className="h-[32px] px-4 rounded-[5px] text-[13px] font-medium text-white bg-[var(--interactive-accent)] hover:bg-[var(--interactive-accent-hover)] disabled:opacity-40 inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Copy size={13} />
+            {t('sync.logsModal.copy')}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-[32px] px-4 rounded-[5px] text-[13px] font-medium text-obsidian-text bg-[var(--interactive-normal)] hover:bg-[var(--interactive-hover)] border border-obsidian-border transition-colors cursor-pointer"
+          >
+            {t('sync.logsModal.done')}
           </button>
         </div>
       </div>
