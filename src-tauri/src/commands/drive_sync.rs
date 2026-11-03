@@ -626,3 +626,661 @@ pub async fn refresh_access_token(app: &AppHandle) -> Result<String, String> {
     ensure_valid_token_impl(app, true).await
 }
 
+
+/* ============================================================================
+   Google Drive API v3 Primitives
+   ============================================================================ */
+
+async fn find_or_create_remote_folder(
+    client: &reqwest::Client,
+    token: &str,
+    folder_name: &str,
+    parent_id: Option<&str>,
+) -> Result<String, String> {
+    let mut query = format!(
+        "name = '{}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+        folder_name.replace('\'', "\\'")
+    );
+    if let Some(parent) = parent_id {
+        query.push_str(&format!(" and '{}' in parents", parent));
+    }
+
+    let url = format!(
+        "https://www.googleapis.com/drive/v3/files?q={}&fields=files(id,name,mimeType)",
+        urlencoding::encode(&query)
+    );
+
+    let resp = client
+        .get(&url)
+        .bearer_auth(token)
+        .send()
+        .await
+        .map_err(|e| {
+            let err = format!("Error consultando carpetas en Google Drive: {}", e);
+            eprintln!("[Drive Sync Error] {}", err);
+            err
+        })?;
+
+    if !resp.status().is_success() {
+        let err = response_error("Error consultando carpetas en Google Drive", resp).await;
+        eprintln!("[Drive Sync Error] {}", err);
+        return Err(err);
+    }
+
+    #[derive(Deserialize)]
+    struct ListResponse {
+        files: Option<Vec<DriveItem>>,
+    }
+
+    let list_data: ListResponse = resp.json().await.map_err(|e| {
+        let err = format!("Error leyendo la lista de carpetas de Google Drive: {}", e);
+        eprintln!("[Drive Sync Error] {}", err);
+        err
+    })?;
+    if let Some(files) = list_data.files {
+        if let Some(first) = files.first() {
+            return Ok(first.id.clone());
+        }
+    }
+
+    // Create folder
+    let mut metadata = serde_json::json!({
+        "name": folder_name,
+        "mimeType": "application/vnd.google-apps.folder"
+    });
+    if let Some(parent) = parent_id {
+        metadata["parents"] = serde_json::json!([parent]);
+    }
+
+    let create_resp = client
+        .post("https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType")
+        .bearer_auth(token)
+        .header(CONTENT_TYPE, "application/json")
+        .json(&metadata)
+        .send()
+        .await
+        .map_err(|e| {
+            let err = format!("Error creando la carpeta «{}» en Google Drive: {}", folder_name, e);
+            eprintln!("[Drive Sync Error] {}", err);
+            err
+        })?;
+
+    if !create_resp.status().is_success() {
+        let err = response_error(
+            &format!("Error creando la carpeta «{}» en Google Drive", folder_name),
+            create_resp,
+        )
+        .await;
+        eprintln!("[Drive Sync Error] {}", err);
+        return Err(err);
+    }
+
+    let created: DriveItem = create_resp.json().await.map_err(|e| {
+        let err = format!("Error leyendo la carpeta creada en Google Drive: {}", e);
+        eprintln!("[Drive Sync Error] {}", err);
+        err
+    })?;
+    Ok(created.id)
+}
+
+async fn list_folder_children(
+    client: &reqwest::Client,
+    token: &str,
+    parent_id: &str,
+) -> Result<Vec<DriveItem>, String> {
+    let mut all_items = Vec::new();
+    let mut page_token: Option<String> = None;
+
+    loop {
+        let query = format!("'{}' in parents and trashed = false", parent_id);
+        let mut url = format!(
+            "https://www.googleapis.com/drive/v3/files?q={}&pageSize=1000&fields=nextPageToken,files(id,name,mimeType,md5Checksum,modifiedTime,trashed,parents)",
+            urlencoding::encode(&query)
+        );
+        if let Some(pt) = &page_token {
+            url.push_str(&format!("&pageToken={}", urlencoding::encode(pt)));
+        }
+
+        let resp = client
+            .get(&url)
+            .bearer_auth(token)
+            .send()
+            .await
+            .map_err(|e| {
+                let err = format!("Error listando archivos de Google Drive: {}", e);
+                eprintln!("[Drive Sync Error] {}", err);
+                err
+            })?;
+
+        if !resp.status().is_success() {
+            let err = response_error("Error listando archivos de Google Drive", resp).await;
+            eprintln!("[Drive Sync Error] {}", err);
+            return Err(err);
+        }
+
+        #[derive(Deserialize)]
+        struct PageResponse {
+            files: Option<Vec<DriveItem>>,
+            #[serde(rename = "nextPageToken")]
+            next_page_token: Option<String>,
+        }
+
+        let data: PageResponse = resp.json().await.map_err(|e| {
+            let err = format!("Error leyendo la lista de archivos de Google Drive: {}", e);
+            eprintln!("[Drive Sync Error] {}", err);
+            err
+        })?;
+        if let Some(files) = data.files {
+            all_items.extend(files);
+        }
+        page_token = data.next_page_token;
+        if page_token.is_none() {
+            break;
+        }
+    }
+
+    Ok(all_items)
+}
+
+/// Walks a Drive folder recursively. Files land in `result_map` keyed by their vault-relative
+/// path; every folder found lands in `folder_map` (`"notes/2026" → id`) so the uploader can
+/// reuse existing folders instead of querying Drive for each one.
+async fn list_all_remote_items_recursive(
+    client: &reqwest::Client,
+    token: &str,
+    folder_id: &str,
+    current_rel_prefix: &str,
+    result_map: &mut HashMap<String, DriveItem>,
+    folder_map: &mut HashMap<String, String>,
+) -> Result<(), String> {
+    let children = list_folder_children(client, token, folder_id).await?;
+    for child in children {
+        let child_rel_path = if current_rel_prefix.is_empty() {
+            child.name.clone()
+        } else {
+            format!("{}/{}", current_rel_prefix, child.name)
+        };
+
+        if child.mime_type == "application/vnd.google-apps.folder" {
+            folder_map.insert(child_rel_path.clone(), child.id.clone());
+            Box::pin(list_all_remote_items_recursive(
+                client,
+                token,
+                &child.id,
+                &child_rel_path,
+                result_map,
+                folder_map,
+            ))
+            .await?;
+        } else {
+            result_map.insert(child_rel_path, child);
+        }
+    }
+    Ok(())
+}
+
+const UPLOAD_FIELDS: &str = "fields=id,name,mimeType,md5Checksum,modifiedTime";
+
+/// Step 1 of the safe upload: create the file record (metadata only) in `parent_id` with
+/// `Content-Type: application/json`. Google Drive API v3 rejects `multipart/form-data`
+/// against `uploadType=multipart`, so metadata and bytes are sent in separate requests.
+async fn create_file_record(
+    client: &reqwest::Client,
+    token: &str,
+    name: &str,
+    parent_id: &str,
+    mime_type: &str,
+) -> Result<DriveItem, String> {
+    let metadata = serde_json::json!({
+        "name": name,
+        "parents": [parent_id],
+        "mimeType": mime_type
+    });
+
+    let resp = client
+        .post("https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType")
+        .bearer_auth(token)
+        .header(CONTENT_TYPE, "application/json")
+        .json(&metadata)
+        .send()
+        .await
+        .map_err(|e| {
+            let err = format!("Error creando el archivo «{}» en Google Drive: {}", name, e);
+            eprintln!("[Drive Sync Error] {}", err);
+            err
+        })?;
+
+    if !resp.status().is_success() {
+        let err = response_error(
+            &format!("Error creando el archivo «{}» en Google Drive", name),
+            resp,
+        )
+        .await;
+        eprintln!("[Drive Sync Error] {}", err);
+        return Err(err);
+    }
+
+    resp.json().await.map_err(|e| {
+        let err = format!("Error leyendo el archivo creado en Google Drive: {}", e);
+        eprintln!("[Drive Sync Error] {}", err);
+        err
+    })
+}
+
+/// Step 2 (new files) and updates: `PATCH .../upload/drive/v3/files/{id}?uploadType=media`
+/// with the raw file bytes and `Content-Type: application/octet-stream`.
+async fn upload_file_content(
+    client: &reqwest::Client,
+    token: &str,
+    file_id: &str,
+    content: &[u8],
+) -> Result<DriveItem, String> {
+    let url = format!(
+        "https://www.googleapis.com/upload/drive/v3/files/{}?uploadType=media&{}",
+        urlencoding::encode(file_id),
+        UPLOAD_FIELDS
+    );
+
+    let mut last_error = String::new();
+    for attempt in 1..=3u32 {
+        let sent = client
+            .patch(&url)
+            .bearer_auth(token)
+            .header(CONTENT_TYPE, "application/octet-stream")
+            .body(content.to_vec())
+            .send()
+            .await;
+
+        match sent {
+            Ok(resp) => {
+                if resp.status().is_success() {
+                    return resp.json().await.map_err(|e| {
+                        let err =
+                            format!("Error leyendo la respuesta de subida de Google Drive: {}", e);
+                        eprintln!("[Drive Sync Error] {}", err);
+                        err
+                    });
+                }
+
+                let status = resp.status();
+                let retryable = status.is_server_error() || status.as_u16() == 429;
+                let err = response_error(
+                    &format!("Error subiendo contenido del archivo {}", file_id),
+                    resp,
+                )
+                .await;
+                eprintln!("[Drive Sync Error] {}", err);
+                if !retryable || attempt == 3 {
+                    return Err(err);
+                }
+                last_error = err;
+            }
+            Err(e) => {
+                let err = format!(
+                    "Error subiendo contenido a Google Drive (intento {}/3): {}",
+                    attempt, e
+                );
+                eprintln!("[Drive Sync Error] {}", err);
+                last_error = err;
+            }
+        }
+
+        if attempt < 3 {
+            tokio::time::sleep(Duration::from_millis(500 * u64::from(attempt))).await;
+        }
+    }
+
+    Err(last_error)
+}
+
+/// Creates a new file in `parent_id` with the real bytes of the local file:
+///   1. `POST /drive/v3/files` (JSON metadata) to obtain the Drive file id;
+///   2. `PATCH /upload/drive/v3/files/{id}?uploadType=media` with the raw bytes.
+async fn upload_new_file(
+    client: &reqwest::Client,
+    token: &str,
+    name: &str,
+    parent_id: &str,
+    mime_type: &str,
+    content: &[u8],
+) -> Result<DriveItem, String> {
+    let created = create_file_record(client, token, name, parent_id, mime_type).await?;
+    upload_file_content(client, token, &created.id, content).await
+}
+
+/// `PATCH .../upload/drive/v3/files/{id}?uploadType=media` — replaces the content of an
+/// existing Drive file with the current local bytes.
+async fn update_file_content(
+    client: &reqwest::Client,
+    token: &str,
+    file_id: &str,
+    content: &[u8],
+) -> Result<DriveItem, String> {
+    upload_file_content(client, token, file_id, content).await
+}
+
+async fn download_file_bytes(
+    client: &reqwest::Client,
+    token: &str,
+    file_id: &str,
+) -> Result<Vec<u8>, String> {
+    let url = format!("https://www.googleapis.com/drive/v3/files/{}?alt=media", file_id);
+
+    let resp = client
+        .get(&url)
+        .bearer_auth(token)
+        .send()
+        .await
+        .map_err(|e| {
+            let err = format!("Error descargando archivo de Google Drive: {}", e);
+            eprintln!("[Drive Sync Error] {}", err);
+            err
+        })?;
+
+    if !resp.status().is_success() {
+        let err = response_error(
+            &format!("Error descargando el archivo {} de Google Drive", file_id),
+            resp,
+        )
+        .await;
+        eprintln!("[Drive Sync Error] {}", err);
+        return Err(err);
+    }
+
+    let bytes = resp.bytes().await.map_err(|e| {
+        let err = format!("Error leyendo el contenido descargado de Google Drive: {}", e);
+        eprintln!("[Drive Sync Error] {}", err);
+        err
+    })?;
+    Ok(bytes.to_vec())
+}
+
+async fn trash_remote_file(
+    client: &reqwest::Client,
+    token: &str,
+    file_id: &str,
+) -> Result<(), String> {
+    let url = format!("https://www.googleapis.com/drive/v3/files/{}", file_id);
+    let resp = client
+        .patch(&url)
+        .bearer_auth(token)
+        .header(CONTENT_TYPE, "application/json")
+        .json(&serde_json::json!({ "trashed": true }))
+        .send()
+        .await
+        .map_err(|e| {
+            let err = format!("Error moviendo a papelera un archivo de Google Drive: {}", e);
+            eprintln!("[Drive Sync Error] {}", err);
+            err
+        })?;
+
+    if !resp.status().is_success() {
+        let err = response_error(
+            &format!("Error moviendo a papelera el archivo {} de Google Drive", file_id),
+            resp,
+        )
+        .await;
+        eprintln!("[Drive Sync Error] {}", err);
+        return Err(err);
+    }
+    Ok(())
+}
+
+/// Returns the Drive id of the folder `dir_rel` (`""` = vault root, `"a/b"` = nested),
+/// creating any missing segment. `folder_cache` is pre-filled with the remote listing so
+/// existing folders cost no extra request.
+async fn ensure_remote_folder(
+    client: &reqwest::Client,
+    token: &str,
+    root_vault_id: &str,
+    dir_rel: &str,
+    folder_cache: &mut HashMap<String, String>,
+) -> Result<String, String> {
+    if dir_rel.is_empty() {
+        return Ok(root_vault_id.to_string());
+    }
+    if let Some(id) = folder_cache.get(dir_rel) {
+        return Ok(id.clone());
+    }
+
+    let mut current_parent_id = root_vault_id.to_string();
+    let mut current_rel = String::new();
+    for seg in dir_rel.split('/').filter(|s| !s.is_empty()) {
+        if current_rel.is_empty() {
+            current_rel = seg.to_string();
+        } else {
+            current_rel = format!("{}/{}", current_rel, seg);
+        }
+
+        if let Some(cached_id) = folder_cache.get(&current_rel) {
+            current_parent_id = cached_id.clone();
+        } else {
+            let new_id =
+                find_or_create_remote_folder(client, token, seg, Some(&current_parent_id)).await?;
+            folder_cache.insert(current_rel.clone(), new_id.clone());
+            current_parent_id = new_id;
+        }
+    }
+    Ok(current_parent_id)
+}
+
+/// Drive id of the folder that must hold `rel_file_path` (`notes/a/b.md` → folder `notes/a`).
+async fn ensure_remote_parent_folder(
+    client: &reqwest::Client,
+    token: &str,
+    root_vault_id: &str,
+    rel_file_path: &str,
+    folder_cache: &mut HashMap<String, String>,
+) -> Result<String, String> {
+    let dir_rel = rel_file_path.rsplit_once('/').map(|(d, _)| d).unwrap_or("");
+    ensure_remote_folder(client, token, root_vault_id, dir_rel, folder_cache).await
+}
+
+/* ============================================================================
+   Tauri Commands
+   ============================================================================ */
+
+#[tauri::command]
+pub async fn google_oauth_login(app: AppHandle) -> Result<GoogleUserProfile, String> {
+    let (client_id, client_secret) = resolve_credentials();
+    if client_id.trim().is_empty() || client_secret.trim().is_empty() {
+        return Err("Credenciales de Google OAuth no configuradas. Por favor configura GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en .env".to_string());
+    }
+    let (verifier, challenge) = generate_pkce();
+
+    let server = Server::http("127.0.0.1:0").map_err(|e| e.to_string())?;
+    let port = server
+        .server_addr()
+        .to_ip()
+        .ok_or_else(|| "No se pudo obtener la IP local".to_string())?
+        .port();
+
+    let redirect_uri = format!("http://127.0.0.1:{}/callback", port);
+    let scope = "https://www.googleapis.com/auth/drive.file openid email profile";
+
+    let auth_url = format!(
+        "https://accounts.google.com/o/oauth2/v2/auth?client_id={}&redirect_uri={}&response_type=code&scope={}&code_challenge={}&code_challenge_method=S256&access_type=offline&prompt=consent",
+        urlencoding::encode(&client_id),
+        urlencoding::encode(&redirect_uri),
+        urlencoding::encode(scope),
+        challenge
+    );
+
+    if let Err(e) = open::that(&auth_url) {
+        log::warn!("No se pudo abrir el navegador automáticamente: {}", e);
+    }
+
+    /// Give the user up to five minutes to finish the consent screen before freeing the port.
+    const OAUTH_TIMEOUT_SECS: u64 = 300;
+
+    let auth_code = tokio::task::spawn_blocking(move || -> Result<String, String> {
+        let request = server
+            .recv_timeout(Duration::from_secs(OAUTH_TIMEOUT_SECS))
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| {
+                "Tiempo de espera agotado: no se completó el inicio de sesión en el navegador."
+                    .to_string()
+            })?;
+        let url_str = format!("http://127.0.0.1{}", request.url());
+        let parsed_url = Url::parse(&url_str).map_err(|e| e.to_string())?;
+
+        let mut code: Option<String> = None;
+        let mut oauth_error: Option<String> = None;
+        for (k, v) in parsed_url.query_pairs() {
+            match k.as_ref() {
+                "code" => code = Some(v.to_string()),
+                "error" => oauth_error = Some(v.to_string()),
+                _ => {}
+            }
+        }
+
+        let (html, result) = match (code, oauth_error) {
+            (Some(c), _) => (oauth_result_page(true, None), Ok(c)),
+            (None, Some(e)) => (
+                oauth_result_page(false, Some(&e)),
+                Err(format!("Google rechazó el inicio de sesión: {}", e)),
+            ),
+            (None, None) => (
+                oauth_result_page(false, None),
+                Err("No se encontró el parámetro 'code' en la respuesta de Google".to_string()),
+            ),
+        };
+
+        let response = Response::from_string(html).with_header(
+            Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..]).unwrap(),
+        );
+        let _ = request.respond(response);
+
+        result
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+
+    let client = reqwest::Client::new();
+    let resp = client
+        .post("https://oauth2.googleapis.com/token")
+        .form(&[
+            ("client_id", client_id.as_str()),
+            ("client_secret", client_secret.as_str()),
+            ("code", auth_code.as_str()),
+            ("code_verifier", verifier.as_str()),
+            ("grant_type", "authorization_code"),
+            ("redirect_uri", redirect_uri.as_str()),
+        ])
+        .send()
+        .await
+        .map_err(|e| format!("Error intercambiando código con Google: {}", e))?;
+
+    if !resp.status().is_success() {
+        let err_body = resp.text().await.unwrap_or_default();
+        return Err(format!("Google rechazó la autorización: {}", err_body));
+    }
+
+    #[derive(Deserialize)]
+    struct TokenResponse {
+        access_token: String,
+        expires_in: i64,
+        refresh_token: Option<String>,
+    }
+
+    let token_data: TokenResponse = resp
+        .json()
+        .await
+        .map_err(|e| format!("Error deserializando tokens: {}", e))?;
+
+    let user_resp = client
+        .get("https://www.googleapis.com/oauth2/v2/userinfo")
+        .bearer_auth(&token_data.access_token)
+        .send()
+        .await
+        .map_err(|e| format!("Error obteniendo perfil: {}", e))?;
+
+    #[derive(Deserialize)]
+    struct RawUser {
+        email: String,
+        name: Option<String>,
+        picture: Option<String>,
+    }
+
+    let raw: RawUser = user_resp
+        .json()
+        .await
+        .map_err(|e| format!("Error leyendo perfil de usuario: {}", e))?;
+
+    let profile = GoogleUserProfile {
+        email: raw.email.clone(),
+        name: raw.name.unwrap_or_else(|| raw.email.clone()),
+        picture: raw.picture,
+    };
+
+    let expires_at = Utc::now().timestamp() + token_data.expires_in - 60;
+    let stored = StoredTokens {
+        access_token: token_data.access_token,
+        refresh_token: token_data.refresh_token,
+        expires_at,
+        client_id,
+        client_secret,
+        user: Some(profile.clone()),
+    };
+
+    let auth_path = get_auth_file_path(&app);
+    let _ = fs::write(
+        &auth_path,
+        serde_json::to_string_pretty(&stored).map_err(|e| e.to_string())?,
+    );
+
+    Ok(profile)
+}
+
+#[tauri::command]
+pub async fn google_check_auth(app: AppHandle) -> Result<Option<GoogleUserProfile>, String> {
+    match ensure_valid_token(&app).await {
+        Ok(token) => {
+            let auth_path = get_auth_file_path(&app);
+            if let Ok(content) = fs::read_to_string(&auth_path) {
+                if let Ok(stored) = serde_json::from_str::<StoredTokens>(&content) {
+                    if let Some(user) = stored.user {
+                        return Ok(Some(user));
+                    }
+                }
+            }
+
+            // Fetch live profile if missing
+            let client = reqwest::Client::new();
+            if let Ok(resp) = client
+                .get("https://www.googleapis.com/oauth2/v2/userinfo")
+                .bearer_auth(token)
+                .send()
+                .await
+            {
+                if resp.status().is_success() {
+                    #[derive(Deserialize)]
+                    struct RawUser {
+                        email: String,
+                        name: Option<String>,
+                        picture: Option<String>,
+                    }
+                    if let Ok(raw) = resp.json::<RawUser>().await {
+                        let profile = GoogleUserProfile {
+                            email: raw.email.clone(),
+                            name: raw.name.unwrap_or_else(|| raw.email.clone()),
+                            picture: raw.picture,
+                        };
+                        return Ok(Some(profile));
+                    }
+                }
+            }
+            Ok(None)
+        }
+        Err(_) => Ok(None),
+    }
+}
+
+#[tauri::command]
+pub async fn google_logout(app: AppHandle) -> Result<(), String> {
+    let auth_path = get_auth_file_path(&app);
+    if auth_path.exists() {
+        let _ = fs::remove_file(auth_path);
+    }
+    Ok(())
+}
