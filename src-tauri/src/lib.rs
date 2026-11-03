@@ -8,6 +8,8 @@ use std::sync::Arc;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // `.env` (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET) before anything reads the environment.
+    commands::drive_sync::load_dotenv();
     commands::spellcheck::setup_hunspell_dictionaries();
 
     let oauth_service = Arc::new(OAuthService::new());
@@ -64,6 +66,12 @@ pub fn run() {
             commands::auth::get_google_user,
             commands::auth::logout_google,
             commands::sync::sync_vault,
+            commands::drive_sync::google_oauth_login,
+            commands::drive_sync::google_check_auth,
+            commands::drive_sync::google_logout,
+            commands::drive_sync::list_remote_drive_vaults,
+            commands::drive_sync::sync_vault_with_drive,
+            commands::drive_sync::download_remote_vault,
             commands::canvas::set_canvas_pinch_capture,
             commands::locales::list_custom_locales,
             commands::locales::get_custom_locales_dir,
