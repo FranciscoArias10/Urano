@@ -1060,4 +1060,26 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     }
   },
 
+  rebuildVaultCache: async () => {
+    const { activeVault, refreshTree } = get();
+    if (!activeVault) return;
+    try {
+      // 1. Limpiar caché en memoria de notas, enlaces, backlinks y metadatos
+      set({ notesContentMap: {} });
+      // 2. Re-escanear todos los archivos de la bóveda desde el backend de Rust
+      await refreshTree();
+      // 3. Volver a indexar el contenido de todas las notas en el mapa en memoria
+      const map = await invoke<Record<string, string>>('get_vault_notes_content', {
+        vaultPath: activeVault,
+      });
+      set({ notesContentMap: map || {} });
+      // 4. Emitir evento para cualquier componente que observe cambios en el caché
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('urano:rebuild-cache'));
+      }
+    } catch (err) {
+      console.error('Error al reconstruir caché de la bóveda:', err);
+      throw err;
+    }
+  },
 }));
