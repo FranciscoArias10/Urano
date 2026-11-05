@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useMemo, useState } from 'react';
 import ForceGraph from 'force-graph';
 import { extractWikilinks } from '../../editor/wikilinks';
 import { useVaultStore } from '../../stores/vaultStore';
+import { useSettingsStore } from '../../stores/settingsStore';
+import { isPathExcluded } from '../../utils/pathUtils';
 import { GraphData, GraphNode, GraphLink } from '../../types';
 import { Settings, Wand2 } from 'lucide-react';
 
@@ -54,14 +56,18 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
   }, []);
 
   const { notesContentMap, activeFile } = useVaultStore();
+  const userIgnoreFilters = useSettingsStore((s) => s.settings.userIgnoreFilters) || [];
 
-  // Compute graph nodes and links from notesContentMap
+  // Compute graph nodes and links from notesContentMap (respecting userIgnoreFilters)
   const graphData: GraphData = useMemo(() => {
     const nodesMap = new Map<string, GraphNode>();
     const links: GraphLink[] = [];
 
     // 1. Create nodes for all notes
     for (const [filePath, content] of Object.entries(notesContentMap)) {
+      if (isPathExcluded(filePath, userIgnoreFilters)) {
+        continue;
+      }
       const fileName = filePath.replace(/\\/g, '/').split('/').pop() || '';
       const baseName = fileName.replace(/\.md$/i, '');
       const id = baseName.toLowerCase();
@@ -105,7 +111,7 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
       nodes: Array.from(nodesMap.values()),
       links,
     };
-  }, [notesContentMap, activeFile]);
+  }, [notesContentMap, activeFile, userIgnoreFilters]);
 
   useEffect(() => {
     if (!containerRef.current) return;
