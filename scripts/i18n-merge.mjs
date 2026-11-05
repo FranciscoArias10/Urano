@@ -7,8 +7,9 @@
  */
 import { readFileSync, writeFileSync, readdirSync, unlinkSync, existsSync, rmdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const LOCALES = new URL('../src/locales/', import.meta.url).pathname;
+const LOCALES = fileURLToPath(new URL('../src/locales/', import.meta.url));
 const FRAGMENTS = join(LOCALES, '_fragments');
 if (!existsSync(FRAGMENTS)) {
   console.log('Sin fragmentos que fusionar.');
