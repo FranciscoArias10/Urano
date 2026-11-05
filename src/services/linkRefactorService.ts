@@ -4,31 +4,35 @@ import { renameImageInCache } from '../editor/imageExtension';
 import { getActiveEditorView } from '../components/editor/Editor';
 import { FileItem } from '../types';
 
-export type AlwaysUpdatePreference = 'always' | 'prompt' | 'never';
+export type AlwaysUpdatePreference = boolean | 'always' | 'prompt' | 'never';
 
 const PREF_KEY = 'urano_always_update_links';
 
 /**
- * Gets the persistent preference from localStorage. Default is "prompt".
+ * Gets the persistent preference from localStorage. Default is true (always update).
  */
-export function getAlwaysUpdateLinksPref(): AlwaysUpdatePreference {
+export function getAlwaysUpdateLinksPref(): boolean {
   try {
     const val = localStorage.getItem(PREF_KEY);
-    if (val === 'always' || val === 'never' || val === 'prompt') {
-      return val;
+    if (val === 'true' || val === 'always') {
+      return true;
+    }
+    if (val === 'false' || val === 'never' || val === 'prompt') {
+      return false;
     }
   } catch {
     // localStorage unavailable
   }
-  return 'prompt';
+  return true;
 }
 
 /**
  * Sets the persistent preference in localStorage.
  */
-export function setAlwaysUpdateLinksPref(pref: AlwaysUpdatePreference): void {
+export function setAlwaysUpdateLinksPref(pref: boolean | 'always' | 'prompt' | 'never'): void {
   try {
-    localStorage.setItem(PREF_KEY, pref);
+    const boolVal = typeof pref === 'boolean' ? pref : pref === 'always';
+    localStorage.setItem(PREF_KEY, String(boolVal));
   } catch {
     // localStorage unavailable
   }
