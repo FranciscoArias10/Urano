@@ -1184,38 +1184,77 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
     icon: <Folder size={ICON} />,
     section: 'options',
     groups: [
-      {
+      // Tarjeta 1 — Opciones Generales de Archivos (Sin Encabezado Superior, 1:1 con Obsidian)
+{
         id: 'files-general',
         items: [
+          // Fila 1 — Archivo predeterminado al abrir
           {
-            id: 'confirm-deletion',
-            name: t('files.confirmDeletion'),
-            desc: t('files.confirmDeletionDesc'),
-            control: <Toggle value={settings.confirmFileDeletion} onChange={set('confirmFileDeletion')} ariaLabel={t('files.confirmDeletion')} />,
-          },
-          {
-            id: 'update-links',
-            name: t('files.updateLinksName'),
-            desc: t('files.updateLinksDesc'),
-            aliases: ['rename', 'renombrar', 'wikilink'],
+            id: 'default-file-to-open',
+            name: t('files.defaultFileToOpen'),
+            desc: t('files.defaultFileToOpenDesc'),
             control: (
-              <Dropdown<UpdateLinksPref>
-                value={settings.alwaysUpdateLinks}
-                ariaLabel={t('files.updateLinksName')}
+              <Dropdown<DefaultFileToOpen>
+                value={settings.defaultFileToOpen}
+                ariaLabel={t('files.defaultFileToOpen')}
                 options={[
-                  { value: 'always', label: t('files.updateLinks.always') },
-                  { value: 'prompt', label: t('files.updateLinks.prompt') },
-                  { value: 'never', label: t('files.updateLinks.never') },
+                  { value: 'last-opened', label: t('files.defaultFileToOpenOptions.lastOpened') },
+                  { value: 'daily-note', label: t('files.defaultFileToOpenOptions.dailyNote') },
+                  { value: 'none', label: t('files.defaultFileToOpenOptions.none') },
                 ]}
-                onChange={set('alwaysUpdateLinks')}
+                onChange={set('defaultFileToOpen')}
               />
             ),
           },
-        ],
-      },
-      {
-        id: 'files-attachments',
-        items: [
+          // Fila 2 — Siempre fijar el foco en las pestañas nuevas
+          {
+            id: 'always-focus-new-tabs',
+            name: t('files.alwaysFocusNewTabs'),
+            desc: t('files.alwaysFocusNewTabsDesc'),
+            control: (
+              <Toggle
+                value={settings.alwaysFocusNewTabs}
+                onChange={set('alwaysFocusNewTabs')}
+                ariaLabel={t('files.alwaysFocusNewTabs')}
+              />
+            ),
+          },
+          // Fila 3 — Ubicación por defecto para nuevas notas
+          {
+            id: 'new-file-location',
+            name: t('files.newFileLocation'),
+            desc: t('files.newFileLocationDesc'),
+            control: (
+              <Dropdown<NewFileLocation>
+                value={settings.newFileLocation}
+                ariaLabel={t('files.newFileLocation')}
+                options={[
+                  { value: 'root', label: t('files.newFileLocationOptions.root') },
+                  { value: 'current', label: t('files.newFileLocationOptions.current') },
+                  { value: 'folder', label: t('files.newFileLocationOptions.folder') },
+                ]}
+                onChange={set('newFileLocation')}
+              />
+            ),
+          },
+          ...(settings.newFileLocation === 'folder'
+            ? [
+                {
+                  id: 'new-file-folder-path',
+                  name: t('files.newFileFolderPath'),
+                  desc: t('files.newFileFolderPathDesc'),
+                  control: (
+                    <TextInput
+                      value={settings.newFileFolderPath}
+                      placeholder={t('files.folderPlaceholder')}
+                      onChange={set('newFileFolderPath')}
+                      ariaLabel={t('files.newFileFolderPath')}
+                    />
+                  ),
+                } as SettingItemDef,
+              ]
+            : []),
+          // Fila 4 — Ubicación predeterminada para los archivos adjuntos nuevos
           {
             id: 'attachment-location',
             name: t('files.attachmentLocation'),
@@ -1226,9 +1265,10 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 value={settings.attachmentLocation}
                 ariaLabel={t('files.attachmentLocation')}
                 options={[
-                  { value: 'root', label: t('files.attachment.root') },
-                  { value: 'folder', label: t('files.attachment.folder') },
-                  { value: 'current', label: t('files.attachment.current') },
+                  { value: 'root', label: t('files.attachmentLocationOptions.root') },
+                  { value: 'folder', label: t('files.attachmentLocationOptions.folder') },
+                  { value: 'current', label: t('files.attachmentLocationOptions.current') },
+                  { value: 'subfolder', label: t('files.attachmentLocationOptions.subfolder') },
                 ]}
                 onChange={set('attachmentLocation')}
               />
@@ -1238,14 +1278,31 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             ? [
                 {
                   id: 'attachment-folder',
-                  name: t('files.attachmentFolder'),
-                  desc: t('files.attachmentFolderDesc'),
+                  name: t('files.attachmentFolderPath'),
+                  desc: t('files.attachmentFolderPathDesc'),
                   control: (
                     <TextInput
                       value={settings.attachmentFolderPath}
-                      placeholder={t('files.folderPlaceholder')}
+                      placeholder={t('files.attachmentDefaultPlaceholder')}
                       onChange={set('attachmentFolderPath')}
-                      ariaLabel={t('files.attachmentFolder')}
+                      ariaLabel={t('files.attachmentFolderPath')}
+                    />
+                  ),
+                } as SettingItemDef,
+              ]
+            : []),
+          ...(settings.attachmentLocation === 'subfolder'
+            ? [
+                {
+                  id: 'attachment-subfolder',
+                  name: t('files.attachmentSubfolderPath'),
+                  desc: t('files.attachmentSubfolderPathDesc'),
+                  control: (
+                    <TextInput
+                      value={settings.attachmentSubfolderPath}
+                      placeholder={t('files.attachmentDefaultPlaceholder')}
+                      onChange={set('attachmentSubfolderPath')}
+                      ariaLabel={t('files.attachmentSubfolderPath')}
                     />
                   ),
                 } as SettingItemDef,
@@ -1253,6 +1310,8 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             : []),
         ],
       },
+
+      // Sección "Enlaces" (Tarjeta 2 con Encabezado Enlaces, 1:1 con Obsidian)
     ],
   };
 
