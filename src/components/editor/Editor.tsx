@@ -36,7 +36,7 @@ import { getStorageAdapter, toUint8Array } from '../../services/storageAdapter';
 import { themeService } from '../../services/themeService';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
-import { getRelativeVaultPath } from '../../utils/pathUtils';
+import { getRelativeVaultPath, isPathExcluded } from '../../utils/pathUtils';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 import { useNoticeStore } from '../common/Notice';
 import { useT } from '../../stores/localeStore';
@@ -364,13 +364,16 @@ export const Editor: React.FC<EditorProps> = ({
     setDraftTitle(cleanTitle);
   }, [cleanTitle]);
 
-  // Compute available notes for autocompletion
+  // Compute available notes for autocompletion (respecting userIgnoreFilters)
+  const userIgnoreFilters = useSettingsStore((s) => s.settings.userIgnoreFilters) || [];
   const availableNotes = useMemo(() => {
     const list: string[] = [];
     const traverse = (items: FileItem[]) => {
       for (const item of items) {
         if (!item.isDir && item.name.endsWith('.md')) {
-          list.push(item.name.replace(/\.md$/i, ''));
+          if (!isPathExcluded(item.path, userIgnoreFilters)) {
+            list.push(item.name.replace(/\.md$/i, ''));
+          }
         }
         if (item.children) traverse(item.children);
       }
@@ -379,7 +382,7 @@ export const Editor: React.FC<EditorProps> = ({
     return list.filter((name) =>
       name.toLowerCase().includes(suggestQuery.toLowerCase())
     );
-  }, [fileTree, suggestQuery]);
+  }, [fileTree, suggestQuery, userIgnoreFilters]);
 
   // Report stats to parent / status bar
   useEffect(() => {
