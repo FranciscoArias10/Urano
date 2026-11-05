@@ -27,15 +27,6 @@ import { copyImageBlobToClipboard } from '../../editor/imageExtension';
 import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
 import { useNoticeStore } from '../common/Notice';
 import { Tooltip } from '../common/Tooltip';
-import { UpdateLinksModal } from '../common/UpdateLinksModal';
-import {
-  scanAffectedLinks,
-  executeLinkRefactor,
-  executeFileRenameOnly,
-  getAlwaysUpdateLinksPref,
-  setAlwaysUpdateLinksPref,
-  LinkScanResult,
-} from '../../services/linkRefactorService';
 
 /**
  * Extracts the base name (without extension) and extension for any file.
@@ -82,7 +73,6 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
     createUntitledNote,
     createUntitledCanvas,
     createUntitledFolder,
-    activeVault,
     fileTree,
     selectFile,
   } = useVaultStore();
@@ -96,12 +86,6 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
   const [sortMenu, setSortMenu] = useState<{ x: number; y: number } | null>(null);
   const [rootContextMenu, setRootContextMenu] = useState<{ x: number; y: number } | null>(null);
 
-  const [pendingRename, setPendingRename] = useState<{
-    plan: LinkScanResult;
-    oldPath: string;
-    newPath: string;
-  } | null>(null);
-
   const requestFileRename = async (oldPath: string, finalName: string, isDir: boolean) => {
     const normOld = oldPath.replace(/\\/g, '/');
     const parentDir = normOld.substring(0, normOld.lastIndexOf('/'));
@@ -111,20 +95,19 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
       return;
     }
 
-    // Sibling collision (case-insensitive, like Obsidian on case-insensitive filesystems)
-    const target = newPath.toLowerCase();
-    const collides = (items: FileItem[]): boolean =>
-      items.some((f) => {
-        const p = f.path.replace(/\\/g, '/');
-        if (p.toLowerCase() === target && p !== normOld) return true;
-        return f.children ? collides(f.children) : false;
-      });
-    if (collides(fileTree)) {
-      showNotice(t('fileTree.notices.nameExists'), 3000, 'error');
-      return;
-    }
-
     if (isDir) {
+      // Sibling collision (case-insensitive, like Obsidian on case-insensitive filesystems)
+      const target = newPath.toLowerCase();
+      const collides = (items: FileItem[]): boolean =>
+        items.some((f) => {
+          const p = f.path.replace(/\\/g, '/');
+          if (p.toLowerCase() === target && p !== normOld) return true;
+          return f.children ? collides(f.children) : false;
+        });
+      if (collides(fileTree)) {
+        showNotice(t('fileTree.notices.nameExists'), 3000, 'error');
+        return;
+      }
       try {
         await useVaultStore.getState().renameItem(oldPath, newPath);
       } catch (err: any) {
@@ -134,58 +117,10 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
     }
 
     try {
-      const scanResult = await scanAffectedLinks(activeVault || '', oldPath, newPath);
-
-      if (scanResult.totalLinks === 0) {
-        await executeFileRenameOnly(oldPath, newPath);
-        return;
+      const res = await useVaultStore.getState().renameNoteWithLinkRefactor(oldPath, finalName);
+      if (!res.success) {
+        showNotice(res.error || t('fileTree.notices.renameFileError'), 3000, 'error');
       }
-
-      const pref = getAlwaysUpdateLinksPref();
-      if (pref === 'always') {
-        await executeLinkRefactor(scanResult, oldPath, newPath);
-        notifyLinksUpdated(scanResult);
-      } else if (pref === 'never') {
-        await executeFileRenameOnly(oldPath, newPath);
-      } else {
-        // 'prompt' -> Obsidian 1:1 "Update links" modal decides
-        setPendingRename({ plan: scanResult, oldPath, newPath });
-      }
-    } catch (err: any) {
-      console.error('Error during rename:', err);
-      showNotice(err?.toString() || t('fileTree.notices.renameFileError'), 3000, 'error');
-    }
-  };
-
-  const notifyLinksUpdated = (plan: LinkScanResult) => {
-    const key =
-      plan.totalLinks === 1
-        ? plan.totalFiles === 1
-          ? 'fileTree.notices.linkUpdatedInFile'
-          : 'fileTree.notices.linkUpdatedInFiles'
-        : plan.totalFiles === 1
-        ? 'fileTree.notices.linksUpdatedInFile'
-        : 'fileTree.notices.linksUpdatedInFiles';
-    showNotice(t(key, { links: plan.totalLinks, files: plan.totalFiles }), 3000, 'success');
-  };
-
-  /** Resolves the pending "Update links" modal. */
-  const resolvePendingRename = async (mode: 'always' | 'once' | 'skip') => {
-    const pr = pendingRename;
-    setPendingRename(null);
-    if (!pr) return;
-    try {
-      if (mode === 'skip') {
-        await executeFileRenameOnly(pr.oldPath, pr.newPath);
-        return;
-      }
-      if (mode === 'always') {
-        setAlwaysUpdateLinksPref('always');
-        // Keep Settings → Files and links → "Automatically update internal links" in sync
-        useSettingsStore.getState().setSetting('alwaysUpdateLinks', 'always');
-      }
-      await executeLinkRefactor(pr.plan, pr.oldPath, pr.newPath);
-      notifyLinksUpdated(pr.plan);
     } catch (err: any) {
       console.error('Error during rename:', err);
       showNotice(err?.toString() || t('fileTree.notices.renameFileError'), 3000, 'error');
@@ -402,18 +337,6 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
           />
         )}
       </div>
-
-      {/* Obsidian 1:1 "Update links" Modal */}
-      {pendingRename && (
-        <UpdateLinksModal
-          isOpen={true}
-          totalLinks={pendingRename.plan.totalLinks}
-          totalFiles={pendingRename.plan.totalFiles}
-          onAlwaysUpdate={() => resolvePendingRename('always')}
-          onJustOnce={() => resolvePendingRename('once')}
-          onDoNotUpdate={() => resolvePendingRename('skip')}
-        />
-      )}
     </FileTreeContext.Provider>
   );
 };
