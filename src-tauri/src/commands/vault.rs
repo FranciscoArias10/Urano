@@ -4,13 +4,13 @@ use std::path::Path;
 use tauri::ipc::Response;
 
 #[tauri::command]
-pub fn open_vault(vault_path: String) -> Result<Vec<FileItem>, String> {
-    VaultService::open_vault(Path::new(&vault_path))
+pub fn open_vault(vault_path: String, detect_all: Option<bool>, config_dir: Option<String>) -> Result<Vec<FileItem>, String> {
+    VaultService::open_vault(Path::new(&vault_path), detect_all.unwrap_or(false), config_dir.as_deref())
 }
 
 #[tauri::command]
-pub fn list_vault_files(vault_path: String) -> Result<Vec<FileItem>, String> {
-    VaultService::open_vault(Path::new(&vault_path))
+pub fn list_vault_files(vault_path: String, detect_all: Option<bool>, config_dir: Option<String>) -> Result<Vec<FileItem>, String> {
+    VaultService::open_vault(Path::new(&vault_path), detect_all.unwrap_or(false), config_dir.as_deref())
 }
 
 #[tauri::command]
@@ -123,6 +123,16 @@ pub fn create_folder(folder_path: String) -> Result<(), String> {
 #[tauri::command]
 pub fn delete_item(path: String) -> Result<(), String> {
     VaultService::delete_item(Path::new(&path))
+}
+
+#[tauri::command]
+pub fn move_to_system_trash(path: String) -> Result<(), String> {
+    trash::delete(Path::new(&path)).map_err(|e| format!("Error al mover a la papelera del sistema: {e}"))
+}
+
+#[tauri::command]
+pub fn open_file_in_default_app(file_path: String) -> Result<(), String> {
+    open::that_detached(&file_path).map_err(|e| format!("No se pudo abrir el archivo: {e}"))
 }
 
 
