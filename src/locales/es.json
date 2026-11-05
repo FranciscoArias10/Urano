@@ -252,25 +252,6 @@
       "vimModeDesc": "Permite el uso de los atajos de teclado de Vim en el editor."
     },
     "files": {
-      "confirmDeletion": "Confirmar eliminación de archivos",
-      "confirmDeletionDesc": "Evita borrar archivos por accidente.",
-      "updateLinksName": "Actualizar enlaces internos automáticamente",
-      "updateLinksDesc": "Actualiza los enlaces internos al renombrar o mover un archivo.",
-      "updateLinks": {
-        "always": "Actualizar siempre",
-        "prompt": "Preguntar",
-        "never": "No actualizar"
-      },
-      "attachmentLocation": "Ubicación predeterminada para los archivos adjuntos nuevos",
-      "attachmentLocationDesc": "Dónde se ubican los archivos adjuntos recién agregados.",
-      "attachment": {
-        "root": "Carpeta de la bóveda",
-        "folder": "En la carpeta indicada abajo",
-        "current": "Misma carpeta que el archivo actual"
-      },
-      "attachmentFolder": "Ruta de la carpeta de adjuntos",
-      "attachmentFolderDesc": "Los adjuntos nuevos, como imágenes, se guardarán en esta carpeta.",
-      "folderPlaceholder": "Ejemplo: carpeta 1/carpeta 2",
       "defaultFileToOpen": "Archivo predeterminado al abrir",
       "defaultFileToOpenDesc": "Elija qué archivo se abrirá cuando la aplicación se inicie.",
       "defaultFileToOpenOptions": {
@@ -289,6 +270,8 @@
       },
       "newFileFolderPath": "Carpeta por defecto para las notas nuevas",
       "newFileFolderPathDesc": "Las notas nuevas aparecerán en esta carpeta.",
+      "attachmentLocation": "Ubicación predeterminada para los archivos adjuntos nuevos",
+      "attachmentLocationDesc": "Dónde se ubican los archivos adjuntos recién agregados.",
       "attachmentLocationOptions": {
         "root": "Carpeta de la bóveda",
         "folder": "En la carpeta especificada abajo",
@@ -315,7 +298,52 @@
       "detectAllFileExtensions": "Mostrar todos los tipos de archivo",
       "detectAllFileExtensionsDesc": "Muestra archivos con cualquier extensión, incluso si Urano no puede abrirlos de forma nativa, para que pueda vincularlos y verlos en el Explorador de Archivos y el Selector Rápido.",
       "detectAllFileTypes": "Detectar todos los tipos de archivo",
-      "detectAllFileTypesDesc": "Muestra archivos con cualquier extensión incluso si Urano no puede abrirlos nativamente."
+      "detectAllFileTypesDesc": "Muestra archivos con cualquier extensión incluso si Urano no puede abrirlos nativamente.",
+      "trashHeading": "Papelera",
+      "confirmFileDeletion": "Confirmar antes de eliminar archivos",
+      "confirmFileDeletionDesc": "Evita eliminar archivos accidentalmente.",
+      "deleteAttachmentsWithFile": "Eliminar adjuntos al eliminar archivos",
+      "deleteAttachmentsWithFileDesc": "Eliminar automáticamente los adjuntos enlazados al archivo eliminado si no se usan en otro lugar.",
+      "deleteAttachmentsOptions": {
+        "ask": "Preguntar cada vez",
+        "always": "Eliminar siempre",
+        "never": "No eliminar nunca"
+      },
+      "trashOption": "Archivos eliminados",
+      "trashOptionDesc": "Qué hacer con los archivos eliminados.",
+      "trashOptionOptions": {
+        "system": "Mover a la papelera de reciclaje",
+        "local": "Mover a la papelera de Urano (.trash)",
+        "none": "Eliminar permanentemente"
+      },
+      "deletedFilesDestination": "Archivos eliminados",
+      "deletedFilesDestinationDesc": "Qué hacer con los archivos eliminados.",
+      "deletedFilesDestinationOptions": {
+        "system": "Mover a la papelera del sistema",
+        "trash": "Mover a la papelera de Urano (.trash)",
+        "permanent": "Eliminar permanentemente"
+      },
+      "advancedHeading": "Avanzado",
+      "excludedFiles": "Archivos excluidos",
+      "excludedFilesDesc": "Los archivos excluidos se ocultarán o se harán menos visibles en diferentes lugares como el Selector Rápido, la función de Sugerencia de Enlaces y la Vista Gráfica.",
+      "configFolderOverride": "Anular la carpeta de configuración",
+      "configFolderOverrideDesc": "Utilice una carpeta de configuración diferente a la predeterminada.",
+      "configFolderOverrideMustStartWithDot": "Debe comenzar con un punto.",
+      "configFolderPlaceholder": ".urano",
+      "uriCallbacks": "Permitir URI callbacks",
+      "uriCallbacksDesc": "Habilitar el uso de x-callback-url a través de x-success o x-error al manejar una URI de Urano (urano://).",
+      "reindexVault": "Reconstruir caché de la bóveda",
+      "reindexVaultDesc": "Reconstruir el caché podría tomar segundos o minutos dependiendo del tamaño de su bóveda.",
+      "reindexButton": "Reconstruir",
+      "reindexSuccess": "El caché de la bóveda fue reconstruido correctamente.",
+      "learnMore": "Aprender más",
+      "manage": "Administrar",
+      "folderPlaceholder": "Ejemplo: carpeta 1/carpeta 2",
+      "excludedFilesModalTitle": "Archivos excluidos",
+      "excludedFilesModalDesc": "Los archivos excluidos se ocultarán o se harán menos visibles en diferentes lugares como el Selector Rápido y la Vista Gráfica.",
+      "addFilter": "Añadir exclusión",
+      "filterPlaceholder": "Introduce una ruta o patrón (ej: *.tmp o /node_modules/)",
+      "noFilters": "No se han añadido exclusiones."
     },
     "hotkeys": {
       "search": "Buscar atajos",
@@ -1177,6 +1205,7 @@
     "defaultVaultName": "Bóveda",
     "defaultNoteName": "Nota",
     "dailyNoteBody": "# {date}\n\n## Objetivos del día\n- [ ] \n\n## Notas\n\n",
+    "confirmDeleteUnlinkedAttachments": "Esta nota contiene {count} adjunto(s) no enlazado(s) en ninguna otra nota. ¿Deseas eliminarlo(s) también?",
     "errors": {
       "nameEmpty": "El nombre de archivo no puede estar vacío.",
       "nameInvalidChars": "El nombre de archivo no puede contener ninguno de los siguientes caracteres: * \" \\ / < > : | ? # ^ [ ]",
