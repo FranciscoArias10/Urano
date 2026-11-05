@@ -52,3 +52,47 @@ export function getCleanFileName(filePath: string): string {
   const last = parts[parts.length - 1] || '';
   return last.replace(/\.(md|canvas|base)$/i, '') || last;
 }
+
+/**
+ * Determina si una ruta de archivo coincide con alguna de las reglas de exclusión
+ * de Obsidian/Urano (rutas de carpeta, prefijos, sufijos wildcard o expresiones regulares).
+ */
+export function isPathExcluded(filePath: string, filters: string[]): boolean {
+  if (!filePath || !filters || filters.length === 0) return false;
+  const norm = normalizePath(filePath).toLowerCase();
+  const fileName = norm.split('/').pop() || '';
+
+  return filters.some((filter) => {
+    const clean = (filter || '').trim().toLowerCase();
+    if (!clean) return false;
+
+    // Sintaxis de expresión regular: /patrón/
+    if (clean.startsWith('/') && clean.endsWith('/') && clean.length > 2) {
+      try {
+        const regex = new RegExp(clean.slice(1, -1));
+        return regex.test(norm) || regex.test(fileName);
+      } catch {
+        return false;
+      }
+    }
+
+    // Ruta de carpeta: termina con '/'
+    if (clean.endsWith('/')) {
+      const folder = clean.slice(0, -1);
+      return (
+        norm.includes(`/${folder}/`) ||
+        norm.startsWith(`${folder}/`) ||
+        norm.endsWith(`/${folder}`) ||
+        norm === folder
+      );
+    }
+
+    // Wildcard: p. ej. *.excalidraw.md
+    if (clean.startsWith('*')) {
+      const suffix = clean.slice(1);
+      return norm.endsWith(suffix) || fileName.endsWith(suffix);
+    }
+
+    return norm.includes(clean) || fileName === clean;
+  });
+}
