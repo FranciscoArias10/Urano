@@ -22,22 +22,31 @@ pub struct VaultService;
 
 impl VaultService {
     /// Opens a vault and returns the tree of markdown files and directories
-    pub fn open_vault(vault_path: &Path) -> Result<Vec<FileItem>, String> {
+    pub fn open_vault(vault_path: &Path, detect_all: bool, config_dir: Option<&str>) -> Result<Vec<FileItem>, String> {
         if !vault_path.exists() {
             return Err("La ruta de la bóveda no existe".to_string());
         }
 
-        // Ensure internal config directory .urano exists
-        let urano_dir = vault_path.join(".urano");
-        if !urano_dir.exists() {
-            let _ = fs::create_dir_all(&urano_dir);
+        // Ensure active config directory exists (settingsStore.configFolderOverride || ".urano")
+        let raw_cfg = config_dir.unwrap_or(".urano");
+        let trimmed = raw_cfg.trim();
+        let cfg_name = if trimmed.is_empty() {
+            ".urano".to_string()
+        } else if trimmed.starts_with('.') {
+            trimmed.to_string()
+        } else {
+            format!(".{}", trimmed)
+        };
+        let target_config_dir = vault_path.join(&cfg_name);
+        if !target_config_dir.exists() {
+            let _ = fs::create_dir_all(&target_config_dir);
         }
 
-        Self::list_files_recursive(vault_path, vault_path)
+        Self::list_files_recursive(vault_path, vault_path, detect_all)
     }
 
     /// Recursively lists files in a vault, skipping hidden directories like .urano or .git
-    pub fn list_files_recursive(dir: &Path, _root: &Path) -> Result<Vec<FileItem>, String> {
+    pub fn list_files_recursive(dir: &Path, _root: &Path, detect_all: bool) -> Result<Vec<FileItem>, String> {
         let mut items = Vec::new();
 
         let entries = fs::read_dir(dir).map_err(|e| e.to_string())?;
@@ -65,7 +74,7 @@ impl VaultService {
             let size = if is_dir { None } else { Some(metadata.len()) };
 
             if is_dir {
-                let children = Self::list_files_recursive(&path, _root).unwrap_or_default();
+                let children = Self::list_files_recursive(&path, _root, detect_all).unwrap_or_default();
                 items.push(FileItem {
                     path: path.to_string_lossy().to_string(),
                     name: file_name,
@@ -75,14 +84,16 @@ impl VaultService {
                     size,
                 });
             } else {
-                // Include markdown files (.md, .markdown), canvas files (.canvas), base files (.base), and images
                 let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-                if ext.eq_ignore_ascii_case("md")
+                let is_supported = detect_all
+                    || ext.eq_ignore_ascii_case("md")
                     || ext.eq_ignore_ascii_case("markdown")
                     || ext.eq_ignore_ascii_case("canvas")
                     || ext.eq_ignore_ascii_case("base")
-                    || IMAGE_EXTENSIONS.iter().any(|&ie| ext.eq_ignore_ascii_case(ie))
-                {
+                    || ext.eq_ignore_ascii_case("pdf")
+                    || IMAGE_EXTENSIONS.iter().any(|&ie| ext.eq_ignore_ascii_case(ie));
+
+                if is_supported {
                     items.push(FileItem {
                         path: path.to_string_lossy().to_string(),
                         name: file_name,
