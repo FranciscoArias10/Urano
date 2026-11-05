@@ -2,14 +2,36 @@ import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { FileItem, SortOrder, BookmarkItem } from '../types';
 import { isImagePath } from '../services/storageAdapter';
-import { useSettingsStore, getConfigFolder } from './settingsStore';
+import { useSettingsStore, resolveNewFileDir } from './settingsStore';
 import { useSyncStore } from './syncStore';
+import { useNoticeStore } from '../components/common/Notice';
 import { t } from '../locales/i18n';
+import {
+  scanAffectedLinks,
+  executeLinkRefactor,
+  executeFileRenameOnly,
+  LinkScanResult,
+  setAlwaysUpdateLinksPref,
+} from '../services/linkRefactorService';
 
 const triggerAutoSync = (vaultPath?: string | null, vaultName?: string | null) => {
   if (vaultPath) {
     useSyncStore.getState().notifyVaultChanged(vaultPath, vaultName || undefined);
   }
+};
+
+const notifyLinksUpdated = (plan: LinkScanResult) => {
+  const key =
+    plan.totalLinks === 1
+      ? plan.totalFiles === 1
+        ? 'fileTree.notices.linkUpdatedInFile'
+        : 'fileTree.notices.linkUpdatedInFiles'
+      : plan.totalFiles === 1
+      ? 'fileTree.notices.linksUpdatedInFile'
+      : 'fileTree.notices.linksUpdatedInFiles';
+  useNoticeStore
+    .getState()
+    .showNotice(t(key, { links: plan.totalLinks, files: plan.totalFiles }), 3000, 'success');
 };
 
 // Prohibited characters matching Obsidian specification: \ / : * ? " < > | # ^ [ ]
@@ -85,6 +107,11 @@ interface VaultState {
   notesContentMap: Record<string, string>; // path -> content for graph & backlinks
   autoFocusTitle: boolean;
   shouldSelectTitleOnOpen: boolean;
+  pendingRenamePrompt: {
+    oldPath: string;
+    newPath: string;
+    plan: LinkScanResult;
+  } | null;
 
   // Recent Vaults Actions
   addRecentVault: (name: string, path: string) => void;
@@ -124,12 +151,14 @@ interface VaultState {
   renameNoteWithLinkRefactor: (
     oldPath: string,
     newTitle: string
-  ) => Promise<{ success: boolean; error?: string; newPath?: string }>;
+  ) => Promise<{ success: boolean; error?: string; newPath?: string; pendingPrompt?: boolean }>;
+  resolvePendingRename: (mode: 'always' | 'once' | 'skip') => Promise<void>;
   createFolder: (parentPath: string, name: string) => Promise<void>;
   deleteItem: (path: string) => Promise<void>;
   renameItem: (oldPath: string, newPath: string) => Promise<void>;
   openOrCreateWikilink: (noteName: string) => Promise<void>;
   loadAllNotesContent: () => Promise<void>;
+  rebuildVaultCache: () => Promise<void>;
   setAutoFocusTitle: (focus: boolean) => void;
   setShouldSelectTitleOnOpen: (focus: boolean) => void;
 }
@@ -168,6 +197,28 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   notesContentMap: {},
   autoFocusTitle: false,
   shouldSelectTitleOnOpen: false,
+  pendingRenamePrompt: null,
+
+  resolvePendingRename: async (mode: 'always' | 'once' | 'skip') => {
+    const { pendingRenamePrompt } = get();
+    set({ pendingRenamePrompt: null });
+    if (!pendingRenamePrompt) return;
+    const { oldPath, newPath, plan } = pendingRenamePrompt;
+    try {
+      if (mode === 'skip') {
+        await executeFileRenameOnly(oldPath, newPath);
+        return;
+      }
+      if (mode === 'always') {
+        useSettingsStore.getState().setSetting('alwaysUpdateLinks', true);
+        setAlwaysUpdateLinksPref(true);
+      }
+      await executeLinkRefactor(plan, oldPath, newPath);
+      notifyLinksUpdated(plan);
+    } catch (err) {
+      console.error('Error resolviendo renombrado:', err);
+    }
+  },
 
   addRecentVault: (name: string, path: string) => {
     const { recentVaults } = get();
@@ -247,7 +298,10 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   setVault: async (vaultPath: string) => {
     try {
       set({ isLoading: true });
-      const tree = await invoke<FileItem[]>('open_vault', { vaultPath });
+      const settings = useSettingsStore.getState().settings;
+      const detectAll = settings.detectAllFileExtensions;
+      const configDir = settings.configFolderOverride || '.urano';
+      const tree = await invoke<FileItem[]>('open_vault', { vaultPath, detectAll, configDir });
       const parts = vaultPath.replace(/\\/g, '/').split('/');
       const vaultName = parts[parts.length - 1] || t('vault.defaultVaultName');
 
@@ -267,6 +321,17 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       get().addRecentVault(vaultName, vaultPath);
       get().loadAllNotesContent();
       triggerAutoSync(vaultPath, vaultName);
+
+      // Restore file based on Settings → Files and links → "Default file to open"
+      const defaultToOpen = useSettingsStore.getState().settings.defaultFileToOpen;
+      if (defaultToOpen === 'daily-note') {
+        get().openDailyNote().catch((e) => console.warn('Error opening daily note:', e));
+      } else if (defaultToOpen === 'last-opened') {
+        const lastFile = localStorage.getItem(`urano_last_file_${vaultPath}`);
+        if (lastFile) {
+          get().selectFile(lastFile).catch(() => {});
+        }
+      }
     } catch (err) {
       set({ isLoading: false });
       console.error('Error al abrir bóveda:', err);
@@ -278,7 +343,10 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     const { activeVault, sortOrder } = get();
     if (!activeVault) return;
     try {
-      const tree = await invoke<FileItem[]>('list_vault_files', { vaultPath: activeVault });
+      const settings = useSettingsStore.getState().settings;
+      const detectAll = settings.detectAllFileExtensions;
+      const configDir = settings.configFolderOverride || '.urano';
+      const tree = await invoke<FileItem[]>('list_vault_files', { vaultPath: activeVault, detectAll, configDir });
       set({ fileTree: sortFileTree(tree, sortOrder) });
       get().loadAllNotesContent();
     } catch (err) {
@@ -289,6 +357,23 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   selectFile: async (filePath: string) => {
     const { activeFile, isDirty, saveCurrentFile } = get();
     if (activeFile === filePath) return;
+
+    // Check if the file is natively supported in Urano's editor/viewers
+    const isNative =
+      filePath.endsWith('.md') ||
+      filePath.endsWith('.markdown') ||
+      filePath.endsWith('.canvas') ||
+      filePath.endsWith('.base') ||
+      isImagePath(filePath);
+
+    if (!isNative) {
+      try {
+        await invoke('open_file_in_default_app', { filePath });
+      } catch (err) {
+        console.warn('Error al abrir con la aplicación del sistema:', err);
+      }
+      return;
+    }
 
     if (isDirty && activeFile) {
       await saveCurrentFile();
@@ -308,6 +393,13 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         isDirty: false,
         isLoading: false,
       });
+
+      const { activeVault } = get();
+      if (activeVault) {
+        try {
+          localStorage.setItem(`urano_last_file_${activeVault}`, filePath);
+        } catch {}
+      }
     } catch (err) {
       set({ isLoading: false });
       console.error('Error al leer archivo:', err);
@@ -358,8 +450,18 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   },
 
   createNote: async (parentPath: string, name: string): Promise<string> => {
+    const { activeVault, activeFile } = get();
+    let targetDir = parentPath;
+    if (activeVault && (!targetDir || targetDir === activeVault)) {
+      targetDir = resolveNewFileDir(activeVault, activeFile);
+    }
+    if (activeVault && targetDir && targetDir !== activeVault) {
+      try {
+        await invoke('create_folder', { folderPath: targetDir });
+      } catch {}
+    }
     const cleanName = name.endsWith('.md') ? name : `${name}.md`;
-    const fullPath = `${parentPath}/${cleanName}`.replace(/\/+/g, '/');
+    const fullPath = `${targetDir}/${cleanName}`.replace(/\/+/g, '/');
     await invoke('create_file', { filePath: fullPath });
     await get().refreshTree();
     await get().selectFile(fullPath);
@@ -369,9 +471,19 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
   // Obsidian native prompt-free creation with auto-increment resolution
   createUntitledNote: async (parentPath?: string): Promise<{ path: string; name: string }> => {
-    const { activeVault, fileTree, refreshTree, selectFile } = get();
-    const targetDir = parentPath || activeVault;
-    if (!targetDir) return { path: '', name: '' };
+    const { activeVault, fileTree, refreshTree, selectFile, activeFile } = get();
+    if (!activeVault) return { path: '', name: '' };
+
+    let targetDir = parentPath;
+    if (!targetDir || targetDir === activeVault) {
+      targetDir = resolveNewFileDir(activeVault, activeFile);
+    }
+
+    if (targetDir !== activeVault) {
+      try {
+        await invoke('create_folder', { folderPath: targetDir });
+      } catch {}
+    }
 
     // Collect all existing names in targetDir
     const existingNames = new Set<string>();
@@ -681,8 +793,8 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   renameNoteWithLinkRefactor: async (
     oldPath: string,
     newTitle: string
-  ): Promise<{ success: boolean; error?: string; newPath?: string }> => {
-    const { activeFile, fileTree, notesContentMap, refreshTree } = get();
+  ): Promise<{ success: boolean; error?: string; newPath?: string; pendingPrompt?: boolean }> => {
+    const { activeVault, fileTree } = get();
 
     const validation = validateFileName(newTitle);
     if (!validation.valid) {
@@ -692,8 +804,12 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     const cleanTitle = newTitle.trim();
     const parentDir = oldPath.substring(0, oldPath.lastIndexOf('/'));
     const oldFileName = oldPath.substring(oldPath.lastIndexOf('/') + 1);
-    const oldBaseName = oldFileName.replace(/\.md$/i, '');
-    const newFileName = `${cleanTitle}.md`;
+    const lastDot = oldFileName.lastIndexOf('.');
+    const ext = lastDot > 0 ? oldFileName.substring(lastDot) : '.md';
+    const oldBaseName = lastDot > 0 ? oldFileName.substring(0, lastDot) : oldFileName;
+    const newFileName = cleanTitle.toLowerCase().endsWith(ext.toLowerCase())
+      ? cleanTitle
+      : `${cleanTitle}${ext}`;
     const newPath = `${parentDir}/${newFileName}`.replace(/\/+/g, '/');
 
     // If name didn't change
@@ -714,54 +830,22 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     }
 
     try {
-      // 1. Rename the physical file
-      await invoke('rename_item', { oldPath, newPath });
+      const scanResult = await scanAffectedLinks(activeVault || '', oldPath, newPath);
+      const alwaysUpdate = useSettingsStore.getState().settings.alwaysUpdateLinks;
 
-      // 2. Refactor wikilinks across all notes in the vault
-      const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const wikiRegex = new RegExp('\\[\\[' + escapeRegExp(oldBaseName) + '([\\|\\]#])', 'g');
-
-      const updatedMap = { ...notesContentMap };
-      let refactoredCount = 0;
-
-      for (const [notePath, content] of Object.entries(notesContentMap)) {
-        if (notePath === oldPath) continue;
-
-        if (wikiRegex.test(content)) {
-          const newContent = content.replace(wikiRegex, '[[' + cleanTitle + '$1');
-          updatedMap[notePath] = newContent;
-          try {
-            await invoke('write_file', { filePath: notePath, content: newContent });
-            refactoredCount++;
-          } catch (writeErr) {
-            console.warn(`Error al actualizar enlace en ${notePath}:`, writeErr);
-          }
-        }
+      if (scanResult.totalLinks === 0) {
+        await executeFileRenameOnly(oldPath, newPath);
+        return { success: true, newPath };
       }
 
-      // 3. Notify tabs/breadcrumbs, then update activeFile reference if renamed note was open
-      window.dispatchEvent(
-        new CustomEvent('urano-file-renamed', {
-          detail: { oldPath, newPath, newFileName, newBaseName: cleanTitle },
-        })
-      );
-      if (activeFile === oldPath) {
-        set({
-          activeFile: newPath,
-          activeFileName: newFileName,
-        });
+      if (alwaysUpdate) {
+        await executeLinkRefactor(scanResult, oldPath, newPath);
+        notifyLinksUpdated(scanResult);
+        return { success: true, newPath };
+      } else {
+        set({ pendingRenamePrompt: { oldPath, newPath, plan: scanResult } });
+        return { success: true, newPath, pendingPrompt: true };
       }
-
-      // Update in-memory content map key
-      if (updatedMap[oldPath]) {
-        updatedMap[newPath] = updatedMap[oldPath];
-        delete updatedMap[oldPath];
-      }
-
-      set({ notesContentMap: updatedMap });
-      await refreshTree();
-
-      return { success: true, newPath };
     } catch (err: any) {
       console.error('Error durante el renombrado:', err);
       return { success: false, error: err?.toString() || t('vault.errors.renameFailed') };
@@ -776,12 +860,143 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   },
 
   deleteItem: async (path: string) => {
-    await invoke('delete_item', { path });
-    const { activeFile } = get();
+    const { activeVault, activeFile, refreshTree, notesContentMap, fileTree } = get();
+    const settings = useSettingsStore.getState().settings;
+    const trashOption =
+      settings.trashOption ||
+      (settings.deletedFilesDestination === 'trash'
+        ? 'local'
+        : settings.deletedFilesDestination === 'permanent'
+        ? 'none'
+        : 'system');
+    const deleteAttachmentsMode = settings.deleteAttachmentsWithFile || 'never';
+
+    const removeSinglePath = async (targetPath: string) => {
+      if (trashOption === 'system') {
+        try {
+          await invoke('move_to_system_trash', { path: targetPath });
+        } catch (sysErr) {
+          console.warn('move_to_system_trash falló, usando delete_item:', sysErr);
+          await invoke('delete_item', { path: targetPath });
+        }
+      } else if (trashOption === 'local' && activeVault) {
+        try {
+          const parts = targetPath.replace(/\\/g, '/').split('/');
+          const fileName = parts[parts.length - 1];
+          const trashDir = `${activeVault}/.trash`.replace(/\/+/g, '/');
+          try {
+            await invoke('create_folder', { folderPath: trashDir });
+          } catch {}
+
+          let targetTrashPath = `${trashDir}/${fileName}`.replace(/\/+/g, '/');
+          const now = Date.now();
+          try {
+            await invoke('rename_item', { oldPath: targetPath, newPath: targetTrashPath });
+          } catch {
+            const dotIdx = fileName.lastIndexOf('.');
+            const base = dotIdx !== -1 ? fileName.substring(0, dotIdx) : fileName;
+            const ext = dotIdx !== -1 ? fileName.substring(dotIdx) : '';
+            targetTrashPath = `${trashDir}/${base} ${now}${ext}`.replace(/\/+/g, '/');
+            await invoke('rename_item', { oldPath: targetPath, newPath: targetTrashPath });
+          }
+        } catch (trashErr) {
+          console.warn('Failed to move to .trash, falling back to delete_item:', trashErr);
+          await invoke('delete_item', { path: targetPath });
+        }
+      } else {
+        await invoke('delete_item', { path: targetPath });
+      }
+    };
+
+    // If deleting a markdown note and deleteAttachmentsWithFile is enabled (ask / always)
+    if ((path.endsWith('.md') || path.endsWith('.markdown')) && deleteAttachmentsMode !== 'never') {
+      try {
+        const noteContent =
+          notesContentMap[path] ||
+          (await invoke<string>('read_file', { filePath: path }).catch(() => ''));
+        if (noteContent) {
+          // Collect all attachment references
+          const targets = new Set<string>();
+          const wikiRegex = /!\[\[([^\]|#]+)(?:\|[^\]]*)?\]\]/g;
+          let m: RegExpExecArray | null;
+          while ((m = wikiRegex.exec(noteContent)) !== null) {
+            targets.add(m[1].trim());
+          }
+          const mdRegex = /!\[[^\]]*\]\(([^)]+)\)/g;
+          while ((m = mdRegex.exec(noteContent)) !== null) {
+            if (!m[1].startsWith('http://') && !m[1].startsWith('https://')) {
+              targets.add(decodeURIComponent(m[1].trim()));
+            }
+          }
+
+          if (targets.size > 0) {
+            // Find physical files
+            const allFiles: FileItem[] = [];
+            const collect = (items: FileItem[]) => {
+              for (const it of items) {
+                if (!it.isDir) allFiles.push(it);
+                if (it.children) collect(it.children);
+              }
+            };
+            collect(fileTree);
+
+            const unlinkedAttachments: string[] = [];
+            for (const target of targets) {
+              const cleanTarget = target.replace(/\\/g, '/');
+              const targetName = cleanTarget.split('/').pop()?.toLowerCase();
+              const found = allFiles.find((f) => {
+                const p = f.path.replace(/\\/g, '/');
+                return (
+                  p.toLowerCase().endsWith(cleanTarget.toLowerCase()) ||
+                  f.name.toLowerCase() === targetName
+                );
+              });
+              if (found && isImagePath(found.path)) {
+                // Check if used in other notes
+                const attName = found.name;
+                const nameWithoutExt = attName.substring(0, attName.lastIndexOf('.'));
+                const isUsedElsewhere = Object.entries(notesContentMap).some(
+                  ([otherNotePath, content]) => {
+                    if (otherNotePath.replace(/\\/g, '/') === path.replace(/\\/g, '/')) return false;
+                    return (
+                      content.includes(attName) ||
+                      (nameWithoutExt && content.includes(nameWithoutExt))
+                    );
+                  }
+                );
+                if (!isUsedElsewhere) {
+                  unlinkedAttachments.push(found.path);
+                }
+              }
+            }
+
+            if (unlinkedAttachments.length > 0) {
+              let shouldDelete = deleteAttachmentsMode === 'always';
+              if (deleteAttachmentsMode === 'ask') {
+                shouldDelete = window.confirm(
+                  t('vault.confirmDeleteUnlinkedAttachments', { count: unlinkedAttachments.length })
+                );
+              }
+              if (shouldDelete) {
+                for (const att of unlinkedAttachments) {
+                  await removeSinglePath(att);
+                }
+              }
+            }
+          }
+        }
+      } catch (attErr) {
+        console.warn('Error checking unlinked attachments:', attErr);
+      }
+    }
+
+    // Delete the main item
+    await removeSinglePath(path);
+
     if (activeFile === path) {
       set({ activeFile: null, activeFileName: null, fileContent: '', isDirty: false });
     }
-    await get().refreshTree();
+    await refreshTree();
     triggerAutoSync(get().activeVault, get().vaultName);
   },
 
@@ -844,4 +1059,5 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       console.warn('No se pudo cargar contenido de notas:', err);
     }
   },
+
 }));
