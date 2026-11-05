@@ -1379,7 +1379,67 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
         ],
       },
 
-      // Tarjeta 3 — Sección Papelera (Tarjeta con Encabezado Papelera, 1:1 con Obsidian)
+      // Tarjeta 3 — Sección Papelera (Tarjeta con Encabezado Papelera, 1:1 con Obsidian),
+{
+        id: 'files-trash',
+        heading: t('files.trashHeading'),
+        items: [
+          // Fila 1 — Confirmar antes de eliminar archivos
+          {
+            id: 'confirm-file-deletion',
+            name: t('files.confirmFileDeletion'),
+            desc: t('files.confirmFileDeletionDesc'),
+            aliases: ['confirm', 'delete', 'eliminar', 'confirmar'],
+            control: (
+              <Toggle
+                value={settings.confirmFileDeletion}
+                onChange={set('confirmFileDeletion')}
+                ariaLabel={t('files.confirmFileDeletion')}
+              />
+            ),
+          },
+          // Fila 2 — Eliminar adjuntos al eliminar archivos
+          {
+            id: 'delete-attachments-with-file',
+            name: t('files.deleteAttachmentsWithFile'),
+            desc: t('files.deleteAttachmentsWithFileDesc'),
+            aliases: ['attachments', 'adjuntos', 'delete', 'eliminar', 'unlinked'],
+            control: (
+              <Dropdown<DeleteAttachmentsWithFile>
+                value={settings.deleteAttachmentsWithFile}
+                ariaLabel={t('files.deleteAttachmentsWithFile')}
+                options={[
+                  { value: 'ask', label: t('files.deleteAttachmentsOptions.ask') },
+                  { value: 'always', label: t('files.deleteAttachmentsOptions.always') },
+                  { value: 'never', label: t('files.deleteAttachmentsOptions.never') },
+                ]}
+                onChange={set('deleteAttachmentsWithFile')}
+              />
+            ),
+          },
+          // Fila 3 — Archivos eliminados
+          {
+            id: 'trash-option',
+            name: t('files.trashOption'),
+            desc: t('files.trashOptionDesc'),
+            aliases: ['trash', 'papelera', 'reciclaje', 'delete', 'recycle'],
+            control: (
+              <Dropdown<TrashOption>
+                value={settings.trashOption}
+                ariaLabel={t('files.trashOption')}
+                options={[
+                  { value: 'system', label: t('files.trashOptionOptions.system') },
+                  { value: 'local', label: t('files.trashOptionOptions.local') },
+                  { value: 'none', label: t('files.trashOptionOptions.none') },
+                ]}
+                onChange={set('trashOption')}
+              />
+            ),
+          },
+        ],
+      },
+
+      // Tarjeta 4 — Sección Avanzado (Tarjeta con Encabezado Avanzado, 1:1 con Obsidian)
     ],
   };
 
