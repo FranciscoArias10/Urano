@@ -33,8 +33,12 @@ import {
   CORE_PLUGIN_IDS,
   URANO_ACCENT,
   ThemeMode,
-  UpdateLinksPref,
+  DefaultFileToOpen,
+  NewFileLocation,
   AttachmentLocation,
+  NewLinkFormat,
+  DeleteAttachmentsWithFile,
+  TrashOption,
   WindowFrameStyle,
 } from '../../stores/settingsStore';
 import { useSyncStore } from '../../stores/syncStore';
@@ -147,6 +151,33 @@ const CheckForUpdatesButton: React.FC<{ t: Translate }> = ({ t }) => {
     >
       {t('general.checkForUpdates')}
     </SettingButton>
+  );
+};
+
+const RebuildVaultCacheButton: React.FC<{ t: Translate }> = ({ t }) => {
+  const [loading, setLoading] = useState(false);
+  const { showNotice } = useNoticeStore();
+  return (
+    <button
+      type="button"
+      className={`mod-button${loading ? ' mod-loading' : ''}`}
+      disabled={loading}
+      onClick={async () => {
+        setLoading(true);
+        try {
+          const { rebuildVaultCache } = useVaultStore.getState();
+          await rebuildVaultCache();
+          showNotice(t('files.reindexSuccess'), 3000, 'success');
+        } catch (err) {
+          console.error(err);
+          showNotice(String(err), 3000, 'error');
+        } finally {
+          setLoading(false);
+        }
+      }}
+    >
+      {t('files.reindexButton')}
+    </button>
   );
 };
 
@@ -1185,7 +1216,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
     section: 'options',
     groups: [
       // Tarjeta 1 — Opciones Generales de Archivos (Sin Encabezado Superior, 1:1 con Obsidian)
-{
+      {
         id: 'files-general',
         items: [
           // Fila 1 — Archivo predeterminado al abrir
@@ -1311,8 +1342,8 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
         ],
       },
 
-      // Sección "Enlaces" (Tarjeta 2 con Encabezado Enlaces, 1:1 con Obsidian),
-{
+      // Sección "Enlaces" (Tarjeta 2 con Encabezado Enlaces, 1:1 con Obsidian)
+      {
         id: 'files-links',
         heading: t('files.linksHeading'),
         items: [
@@ -1379,8 +1410,8 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
         ],
       },
 
-      // Tarjeta 3 — Sección Papelera (Tarjeta con Encabezado Papelera, 1:1 con Obsidian),
-{
+      // Tarjeta 3 — Sección Papelera (Tarjeta con Encabezado Papelera, 1:1 con Obsidian)
+      {
         id: 'files-trash',
         heading: t('files.trashHeading'),
         items: [
@@ -1440,6 +1471,132 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
       },
 
       // Tarjeta 4 — Sección Avanzado (Tarjeta con Encabezado Avanzado, 1:1 con Obsidian)
+      {
+        id: 'files-advanced',
+        heading: t('files.advancedHeading'),
+        items: [
+          // Fila 1 — Archivos excluidos
+          {
+            id: 'excluded-files',
+            name: t('files.excludedFiles'),
+            desc: t('files.excludedFilesDesc'),
+            aliases: ['ignore', 'exclude', 'excluir', 'filtros', 'filters'],
+            className: 'mod-clickable',
+            onClick: () => {
+              window.dispatchEvent(new CustomEvent('urano:open-excluded-files'));
+            },
+            control: (
+              <div
+                className="clickable-icon flex items-center justify-center p-1 text-obsidian-muted hover:text-obsidian-text transition-colors cursor-pointer"
+                aria-label={t('files.excludedFiles')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.dispatchEvent(new CustomEvent('urano:open-excluded-files'));
+                }}
+              >
+                <ChevronRight size={18} />
+              </div>
+            ),
+          },
+          // Fila 2 — Anular la carpeta de configuración
+          {
+            id: 'override-config-folder',
+            name: t('files.configFolderOverride'),
+            desc: (
+              <>
+                <span>{t('files.configFolderOverrideDesc')}</span>
+                <br />
+                <span>{t('files.configFolderOverrideMustStartWithDot')}</span>
+              </>
+            ),
+            aliases: ['config', 'configuration', 'configuración', 'override', 'carpeta'],
+            control: (
+              <input
+                type="text"
+                value={settings.configFolderOverride || ''}
+                placeholder={t('files.configFolderPlaceholder')}
+                aria-label={t('files.configFolderOverride')}
+                onChange={(e) => setSetting('configFolderOverride', e.target.value)}
+                onBlur={(e) => {
+                  const trimmed = e.target.value.trim();
+                  if (trimmed && !trimmed.startsWith('.')) {
+                    setSetting('configFolderOverride', `.${trimmed}`);
+                  }
+                }}
+                className="setting-override-config-input"
+                style={{
+                  backgroundColor: 'var(--background-modifier-form-field)',
+                  border: '1px solid var(--background-modifier-border)',
+                  borderRadius: '5px',
+                  padding: '5px 10px',
+                  width: '180px',
+                  color: 'var(--text-normal)',
+                  fontSize: '13px',
+                  outline: 'none',
+                }}
+              />
+            ),
+          },
+          // Fila 3 — Permitir URI callbacks
+          {
+            id: 'uri-callbacks',
+            name: t('files.uriCallbacks'),
+            desc: (
+              <>
+                <span>{t('files.uriCallbacksDesc')}&nbsp;</span>
+                <a
+                  className="setting-link"
+                  href="https://help.obsidian.md/Extending+Obsidian/Obsidian+URI"
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  {t('files.learnMore')}
+                </a>
+              </>
+            ),
+            aliases: ['uri', 'callback', 'x-callback-url', 'protocolo'],
+            control: (
+              <Toggle
+                value={settings.allowUriCallbacks}
+                onChange={set('allowUriCallbacks')}
+                ariaLabel={t('files.uriCallbacks')}
+              />
+            ),
+          },
+          // Fila 4 — Reconstruir caché de la bóveda
+          {
+            id: 'reindex-vault',
+            name: t('files.reindexVault'),
+            desc: (
+              <>
+                <span
+                  style={{ color: 'var(--text-warning, #e07a2e)' }}
+                  className="mod-warning"
+                >
+                  {t('files.reindexVaultDesc')}
+                </span>
+                <br />
+                <a
+                  className="setting-link"
+                  href="https://help.obsidian.md/Files+and+folders/Data+storage"
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  {t('files.learnMore')}
+                </a>
+              </>
+            ),
+            aliases: ['reindex', 'reconstruir', 'cache', 'caché', 'metadata', 'index'],
+            control: <RebuildVaultCacheButton t={t} />,
+          },
+        ],
+      },
     ],
   };
 
