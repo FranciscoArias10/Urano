@@ -15,6 +15,7 @@ import { CssSnippetsModal } from './appearance/CssSnippetsModal';
 import { CommunityThemesModal } from './appearance/CommunityThemesModal';
 import { FontPickerModal, FontTarget } from './appearance/FontPickerModal';
 import { RibbonConfigModal } from './interface/RibbonConfigModal';
+import { ExcludedFilesModal } from './ExcludedFilesModal';
 import './settingsStyles.css';
 
 /* ----------------------------------------------------------------------------
@@ -96,6 +97,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     target: 'interfaceFontFamily',
   });
   const [showRibbonModal, setShowRibbonModal] = useState(false);
+  const [showExcludedFilesModal, setShowExcludedFilesModal] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -116,6 +118,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const handler = () => setShowRibbonModal(true);
     window.addEventListener('urano:open-ribbon-config', handler);
     return () => window.removeEventListener('urano:open-ribbon-config', handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setShowExcludedFilesModal(true);
+    window.addEventListener('urano:open-excluded-files', handler);
+    return () => window.removeEventListener('urano:open-excluded-files', handler);
   }, []);
 
   useEffect(() => {
@@ -423,6 +431,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <RibbonConfigModal
           isOpen={showRibbonModal}
           onClose={() => setShowRibbonModal(false)}
+        />
+      )}
+
+      {showExcludedFilesModal && (
+        <ExcludedFilesModal
+          isOpen={showExcludedFilesModal}
+          onClose={() => setShowExcludedFilesModal(false)}
         />
       )}
     </div>
