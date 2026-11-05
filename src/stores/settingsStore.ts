@@ -9,8 +9,13 @@ import { applyBaseTheme } from '../services/themeService';
 /** Código de idioma BCP-47 en minúsculas (`en`, `es`, `pt-br`…). Ver `locales/languages.ts`. */
 export type Language = string;
 export type ThemeMode = 'dark' | 'light' | 'system';
-export type UpdateLinksPref = 'always' | 'prompt' | 'never';
-export type AttachmentLocation = 'root' | 'folder' | 'current';
+export type DefaultFileToOpen = 'last-opened' | 'daily-note' | 'none';
+export type NewFileLocation = 'root' | 'current' | 'folder';
+export type AttachmentLocation = 'root' | 'folder' | 'current' | 'subfolder';
+export type NewLinkFormat = 'shortest' | 'relative' | 'absolute';
+export type DeleteAttachmentsWithFile = 'ask' | 'always' | 'never';
+export type TrashOption = 'system' | 'local' | 'none';
+export type DeletedFilesDestination = 'system' | 'trash' | 'permanent';
 export type StorageBackend = 'local' | 'gdrive';
 
 export const CORE_PLUGIN_IDS = [
@@ -100,11 +105,7 @@ export interface UranoSettings {
   autoConvertHtml: boolean;
   vimMode: boolean;
 
-  // Files and links
-  confirmFileDeletion: boolean;
-  alwaysUpdateLinks: UpdateLinksPref;
-  attachmentLocation: AttachmentLocation;
-  attachmentFolderPath: string;
+
 
   // Sync / storage
   storageBackend: StorageBackend;
