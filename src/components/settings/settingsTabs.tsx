@@ -1311,7 +1311,75 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
         ],
       },
 
-      // Sección "Enlaces" (Tarjeta 2 con Encabezado Enlaces, 1:1 con Obsidian)
+      // Sección "Enlaces" (Tarjeta 2 con Encabezado Enlaces, 1:1 con Obsidian),
+{
+        id: 'files-links',
+        heading: t('files.linksHeading'),
+        items: [
+          // Fila 1 — Nuevo formato de enlace
+          {
+            id: 'new-link-format',
+            name: t('files.newLinkFormat'),
+            desc: t('files.newLinkFormatDesc'),
+            control: (
+              <Dropdown<NewLinkFormat>
+                value={settings.newLinkFormat}
+                ariaLabel={t('files.newLinkFormat')}
+                options={[
+                  { value: 'shortest', label: t('files.newLinkFormatOptions.shortest') },
+                  { value: 'relative', label: t('files.newLinkFormatOptions.relative') },
+                  { value: 'absolute', label: t('files.newLinkFormatOptions.absolute') },
+                ]}
+                onChange={set('newLinkFormat')}
+              />
+            ),
+          },
+          // Fila 2 — Actualizar los enlaces internos automáticamente
+          {
+            id: 'always-update-links',
+            name: t('files.alwaysUpdateLinks'),
+            desc: t('files.alwaysUpdateLinksDesc'),
+            aliases: ['rename', 'renombrar', 'wikilink'],
+            control: (
+              <Toggle
+                value={settings.alwaysUpdateLinks}
+                onChange={set('alwaysUpdateLinks')}
+                ariaLabel={t('files.alwaysUpdateLinks')}
+              />
+            ),
+          },
+          // Fila 3 — Usar [[Wikilinks]]
+          {
+            id: 'use-wikilinks',
+            name: t('files.useWikilinks'),
+            desc: t('files.useWikilinksDesc'),
+            aliases: ['wikilink', 'markdown', 'enlace'],
+            control: (
+              <Toggle
+                value={settings.useWikilinks}
+                onChange={set('useWikilinks')}
+                ariaLabel={t('files.useWikilinks')}
+              />
+            ),
+          },
+          // Fila 4 — Mostrar todos los tipos de archivo
+          {
+            id: 'detect-all-file-extensions',
+            name: t('files.detectAllFileExtensions'),
+            desc: t('files.detectAllFileExtensionsDesc'),
+            aliases: ['extension', 'extensiones', 'all', 'todos', 'unsupported', 'archivos'],
+            control: (
+              <Toggle
+                value={settings.detectAllFileExtensions}
+                onChange={set('detectAllFileExtensions')}
+                ariaLabel={t('files.detectAllFileExtensions')}
+              />
+            ),
+          },
+        ],
+      },
+
+      // Tarjeta 3 — Sección Papelera (Tarjeta con Encabezado Papelera, 1:1 con Obsidian)
     ],
   };
 
