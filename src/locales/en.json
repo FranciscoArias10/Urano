@@ -252,25 +252,6 @@
       "vimModeDesc": "Use Vim key bindings when editing."
     },
     "files": {
-      "confirmDeletion": "Confirm file deletion",
-      "confirmDeletionDesc": "Avoid accidentally deleting files.",
-      "updateLinksName": "Automatically update internal links",
-      "updateLinksDesc": "Automatically update internal links when renaming or moving a file.",
-      "updateLinks": {
-        "always": "Always update",
-        "prompt": "Prompt",
-        "never": "Do not update"
-      },
-      "attachmentLocation": "Default location for new attachments",
-      "attachmentLocationDesc": "Where newly added attachments are placed.",
-      "attachment": {
-        "root": "Vault folder",
-        "folder": "In the folder specified below",
-        "current": "Same folder as current file"
-      },
-      "attachmentFolder": "Attachment folder path",
-      "attachmentFolderDesc": "Place newly created attachment files, such as images, in this folder.",
-      "folderPlaceholder": "Example: folder 1/folder 2",
       "defaultFileToOpen": "Default file to open",
       "defaultFileToOpenDesc": "Choose which file to open when the app starts.",
       "defaultFileToOpenOptions": {
@@ -289,6 +270,8 @@
       },
       "newFileFolderPath": "Folder to create new notes in",
       "newFileFolderPathDesc": "Newly created notes will appear in this folder.",
+      "attachmentLocation": "Default location for new attachments",
+      "attachmentLocationDesc": "Where newly added attachments are placed.",
       "attachmentLocationOptions": {
         "root": "Vault folder",
         "folder": "In the folder specified below",
@@ -315,7 +298,52 @@
       "detectAllFileExtensions": "Show all file types",
       "detectAllFileExtensionsDesc": "Show files with any extension even if Urano can't open them natively, so you can link to them and see them in File Explorer and Quick Switcher.",
       "detectAllFileTypes": "Detect all file types",
-      "detectAllFileTypesDesc": "Show files with any extension even if Urano cannot open them natively."
+      "detectAllFileTypesDesc": "Show files with any extension even if Urano cannot open them natively.",
+      "trashHeading": "Trash",
+      "confirmFileDeletion": "Confirm before deleting files",
+      "confirmFileDeletionDesc": "Avoid accidentally deleting files.",
+      "deleteAttachmentsWithFile": "Delete attachments when deleting files",
+      "deleteAttachmentsWithFileDesc": "Automatically remove attachments linked to the deleted file if they're not used elsewhere.",
+      "deleteAttachmentsOptions": {
+        "ask": "Ask each time",
+        "always": "Always",
+        "never": "Never"
+      },
+      "trashOption": "Deleted files",
+      "trashOptionDesc": "What happens to a file after you delete it.",
+      "trashOptionOptions": {
+        "system": "Move to system trash",
+        "local": "Move to Urano trash (.trash folder)",
+        "none": "Permanently delete"
+      },
+      "deletedFilesDestination": "Deleted files",
+      "deletedFilesDestinationDesc": "What happens to a file after you delete it.",
+      "deletedFilesDestinationOptions": {
+        "system": "Move to system trash",
+        "trash": "Move to Urano trash (.trash folder)",
+        "permanent": "Permanently delete"
+      },
+      "advancedHeading": "Advanced",
+      "excludedFiles": "Excluded files",
+      "excludedFilesDesc": "Excluded files will be hidden or made less noticeable in places like Quick switcher, Link suggestion, and Graph view.",
+      "configFolderOverride": "Override config folder",
+      "configFolderOverrideDesc": "Use a different config folder than the default one.",
+      "configFolderOverrideMustStartWithDot": "Must start with a dot.",
+      "configFolderPlaceholder": ".urano",
+      "uriCallbacks": "Allow URI callbacks",
+      "uriCallbacksDesc": "Enable the use of x-callback-url through x-success or x-error when handling a Urano URI (urano://).",
+      "reindexVault": "Rebuild vault cache",
+      "reindexVaultDesc": "Rebuilding the cache could take a few seconds to a few minutes depending on the size of your vault.",
+      "reindexButton": "Rebuild",
+      "reindexSuccess": "Vault cache was rebuilt successfully.",
+      "learnMore": "Learn more",
+      "manage": "Manage",
+      "folderPlaceholder": "Example: folder 1/folder 2",
+      "excludedFilesModalTitle": "Excluded files",
+      "excludedFilesModalDesc": "Excluded files will be hidden in search, quick switcher, and graph view.",
+      "addFilter": "Add exclusion",
+      "filterPlaceholder": "Enter a path or pattern (e.g. *.tmp or /node_modules/)",
+      "noFilters": "No exclusions added."
     },
     "hotkeys": {
       "search": "Search hotkeys",
@@ -1177,6 +1205,7 @@
     "defaultVaultName": "Vault",
     "defaultNoteName": "Note",
     "dailyNoteBody": "# {date}\n\n## Goals for the day\n- [ ] \n\n## Notes\n\n",
+    "confirmDeleteUnlinkedAttachments": "This note contains {count} unlinked attachment(s) not used in any other note. Do you want to delete them as well?",
     "errors": {
       "nameEmpty": "File name cannot be empty.",
       "nameInvalidChars": "File name cannot contain any of these characters: * \" \\ / < > : | ? # ^ [ ]",
