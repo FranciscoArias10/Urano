@@ -193,6 +193,7 @@ body.theme-dark {
   --text-normal: #dcddde;
   --text-muted: #888888;
   --text-faint: #555555;
+  --text-warning: #e07a2e;
   --text-on-accent: #ffffff;
   --text-on-accent-inverted: #000000;
   --interactive-normal: #2a2a2a;
@@ -268,6 +269,7 @@ body.theme-light {
   --text-normal: #222222;
   --text-muted: #666666;
   --text-faint: #999999;
+  --text-warning: #c25e10;
   --text-on-accent: #ffffff;
   --text-on-accent-inverted: #000000;
   --interactive-normal: #f0f0f0;
@@ -2691,8 +2693,36 @@ body.is-translucent aside.bg-obsidian-sidebar {
 }
 
 /* ============================================================================
-   Settings Modal Sidebar Navigation — Obsidian 1:1
+   Settings Modal Sidebar Navigation & Layout — Obsidian 1:1
    ============================================================================ */
+.modal.mod-settings .vertical-tab-header,
+.urano-settings-root .vertical-tab-header {
+  --background-modifier-active-hover: rgba(255, 255, 255, 0.08) !important;
+}
+body.theme-light .modal.mod-settings .vertical-tab-header,
+body.theme-light .urano-settings-root .vertical-tab-header {
+  --background-modifier-active-hover: rgba(0, 0, 0, 0.06) !important;
+}
+
+.vertical-tab-header-group-container {
+  scrollbar-width: thin;
+}
+.vertical-tab-header-group-container::-webkit-scrollbar {
+  width: 6px;
+}
+.vertical-tab-header-group-container::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.vertical-tab-header-group-container::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-bg, rgba(255, 255, 255, 0.1));
+  border-radius: 3px;
+}
+.vertical-tab-header-group-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .vertical-tab-nav-item {
   background: transparent;
   color: var(--text-muted);
@@ -2715,6 +2745,27 @@ body.is-translucent aside.bg-obsidian-sidebar {
 
 .vertical-tab-nav-item.is-active .vertical-tab-nav-item-icon {
   color: var(--text-normal) !important;
+}
+
+/* Setting Rows Layout 1:1 Obsidian */
+.setting-item-info {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  padding-right: 24px !important;
+}
+
+.setting-item-name {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  word-break: normal !important;
+}
+
+.setting-item-control {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
 }
 
 /* CodeMirror 6 Indentation Guides */
@@ -2767,4 +2818,60 @@ body.is-translucent aside.bg-obsidian-sidebar {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Setting Links, Mod-Warning and Mod-Button */
+.setting-link {
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  transition: color 0.15s ease;
+}
+.setting-link:hover {
+  color: var(--text-normal);
+}
+
+.setting-item-description .mod-warning {
+  color: var(--text-warning, #e07a2e);
+}
+
+.mod-button {
+  background: var(--interactive-normal, #2a2a2a);
+  border: 1px solid var(--background-modifier-border, #333333);
+  border-radius: 5px;
+  padding: 5px 12px;
+  height: 30px;
+  color: var(--text-normal);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+.mod-button:hover {
+  background: var(--interactive-hover, #333333);
+}
+.mod-button.mod-loading {
+  color: transparent;
+  position: relative;
+  pointer-events: none;
+}
+.mod-button.mod-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 12px;
+  height: 12px;
+  border: 2px solid transparent;
+  border-top-color: var(--text-normal);
+  border-radius: 50%;
+  animation: urano-sync-spin 1s ease infinite;
 }
