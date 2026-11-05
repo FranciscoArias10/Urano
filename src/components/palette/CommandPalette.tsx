@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Command, FileText, LayoutDashboard, LayoutList } from 'lucide-react';
 import { FileItem } from '../../types';
 import { useVaultStore } from '../../stores/vaultStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { useT } from '../../stores/localeStore';
-import { getRelativeVaultPath } from '../../utils/pathUtils';
+import { getRelativeVaultPath, isPathExcluded } from '../../utils/pathUtils';
 
 export interface CommandItem {
   id: string;
@@ -39,18 +40,24 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   const { activeVault, createNote } = useVaultStore();
 
-  // Flatten all files from fileTree
+  const userIgnoreFilters = useSettingsStore((s) => s.settings.userIgnoreFilters) || [];
+
+  // Flatten all files from fileTree (respecting excluded files)
   const allFiles = React.useMemo(() => {
     const list: { name: string; path: string; basename: string; ext: string }[] = [];
     const traverse = (items: FileItem[]) => {
       for (const item of items) {
         if (!item.isDir) {
-          const extMatch = item.name.match(/\.(md|canvas|base|markdown)$/i);
-          const ext = extMatch ? extMatch[1].toLowerCase() : '';
+          if (isPathExcluded(item.path, userIgnoreFilters)) {
+            continue;
+          }
+          const lastDot = item.name.lastIndexOf('.');
+          const ext = lastDot > 0 ? item.name.substring(lastDot + 1).toLowerCase() : '';
+          const basename = lastDot > 0 ? item.name.substring(0, lastDot) : item.name;
           list.push({
             name: item.name,
             path: item.path,
-            basename: item.name.replace(/\.(md|canvas|base|markdown)$/i, ''),
+            basename,
             ext,
           });
         }
@@ -61,7 +68,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     };
     traverse(fileTree);
     return list;
-  }, [fileTree]);
+  }, [fileTree, userIgnoreFilters]);
 
   useEffect(() => {
     if (isOpen) {
@@ -242,7 +249,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               const isSelected = i === selectedIndex;
               const rel = getRelativeVaultPath(file.path, activeVault || '');
               const isSubfolder = rel.includes('/');
-              const displayName = isSubfolder ? rel.split('/').pop() || file.basename : rel || file.basename;
+              const isMarkdown = file.ext === 'md' || file.ext === 'markdown';
+              const displayName = isMarkdown
+                ? (isSubfolder ? rel.split('/').pop()?.replace(/\.(md|markdown)$/i, '') || file.basename : rel?.replace(/\.(md|markdown)$/i, '') || file.basename)
+                : file.name;
 
               return (
                 <div
@@ -278,6 +288,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     <span className="font-medium truncate">{displayName}</span>
                     {file.ext === 'canvas' && <span className="nav-file-tag">CANVAS</span>}
                     {file.ext === 'base' && <span className="nav-file-tag">BASE</span>}
+                    {!isMarkdown && file.ext !== 'canvas' && file.ext !== 'base' && file.ext && (
+                      <span className="nav-file-tag uppercase">{file.ext}</span>
+                    )}
                   </div>
                   {isSubfolder && (
                     <span className="text-[10px] text-obsidian-faint truncate max-w-[240px] ml-2 font-mono">
