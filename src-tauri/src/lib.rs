@@ -59,6 +59,8 @@ pub fn run() {
             commands::vault::create_file,
             commands::vault::create_folder,
             commands::vault::delete_item,
+            commands::vault::move_to_system_trash,
+            commands::vault::open_file_in_default_app,
             commands::vault::rename_item,
             commands::vault::get_vault_notes_content,
             commands::auth::is_authenticated,
