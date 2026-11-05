@@ -14,7 +14,7 @@ import {
   toUint8Array,
 } from '../services/storageAdapter';
 import { useVaultStore } from '../stores/vaultStore';
-import { resolveAttachmentDir } from '../stores/settingsStore';
+import { useSettingsStore, resolveAttachmentDir } from '../stores/settingsStore';
 import { useNoticeStore } from '../components/common/Notice';
 import { t } from '../locales/i18n';
 import { FileItem } from '../types';
@@ -998,8 +998,9 @@ export async function procesarPegadoDeImagen(
     const nombreImagen = await saveClipboardImageToVault(file);
     if (!nombreImagen) return null;
 
-    // Insert \n![[Pasted Image YYYYMMDDHHmmss.png]]\n at the exact cursor position right away
-    const link = `\n![[${nombreImagen}]]\n`;
+    // Insert link at the exact cursor position right away (Wikilink or standard Markdown)
+    const useWiki = useSettingsStore.getState().settings.useWikilinks;
+    const link = useWiki ? `\n![[${nombreImagen}]]\n` : `\n![${nombreImagen}](${nombreImagen})\n`;
     const fromPos = view.state.selection.main.from;
     view.dispatch({
       changes: { from: fromPos, insert: link },
@@ -1147,7 +1148,13 @@ export function createImageDropPasteHandler() {
         )
           .then(async (savedNames) => {
             await refreshTree();
-            const insertText = '\n' + savedNames.map((n) => `![[${n}]]`).join('\n') + '\n';
+            const useWiki = useSettingsStore.getState().settings.useWikilinks;
+            const insertText =
+              '\n' +
+              savedNames
+                .map((n) => (useWiki ? `![[${n}]]` : `![${n}](${n})`))
+                .join('\n') +
+              '\n';
             view.dispatch({
               changes: { from: dropPos, insert: insertText },
               selection: { anchor: dropPos + insertText.length },
@@ -1184,7 +1191,10 @@ export function createImageDropPasteHandler() {
           const coords = { x: event.clientX, y: event.clientY };
           const dropPos = view.posAtCoords(coords) ?? view.state.selection.main.head;
 
-          const insertText = `\n![[${fileName}]]\n`;
+          const useWiki = useSettingsStore.getState().settings.useWikilinks;
+          const insertText = useWiki
+            ? `\n![[${fileName}]]\n`
+            : `\n![${fileName}](${fileName})\n`;
           view.dispatch({
             changes: { from: dropPos, insert: insertText },
             selection: { anchor: dropPos + insertText.length },
@@ -1205,7 +1215,8 @@ export function createImageDropPasteHandler() {
           const dropPos = view.posAtCoords(coords) ?? view.state.selection.main.head;
           const cleanName = fileName.replace(/\.(md|canvas|base)$/i, '');
 
-          const insertText = `[[${cleanName}]]`;
+          const useWiki = useSettingsStore.getState().settings.useWikilinks;
+          const insertText = useWiki ? `[[${cleanName}]]` : `[${cleanName}](${fileName})`;
           view.dispatch({
             changes: { from: dropPos, insert: insertText },
             selection: { anchor: dropPos + insertText.length },
