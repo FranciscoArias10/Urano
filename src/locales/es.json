@@ -261,8 +261,8 @@
         "prompt": "Preguntar",
         "never": "No actualizar"
       },
-      "attachmentLocation": "Ubicación predeterminada de los adjuntos",
-      "attachmentLocationDesc": "Dónde se guardan los adjuntos nuevos (como imágenes pegadas).",
+      "attachmentLocation": "Ubicación predeterminada para los archivos adjuntos nuevos",
+      "attachmentLocationDesc": "Dónde se ubican los archivos adjuntos recién agregados.",
       "attachment": {
         "root": "Carpeta de la bóveda",
         "folder": "En la carpeta indicada abajo",
@@ -270,7 +270,52 @@
       },
       "attachmentFolder": "Ruta de la carpeta de adjuntos",
       "attachmentFolderDesc": "Los adjuntos nuevos, como imágenes, se guardarán en esta carpeta.",
-      "folderPlaceholder": "Ejemplo: carpeta 1/carpeta 2"
+      "folderPlaceholder": "Ejemplo: carpeta 1/carpeta 2",
+      "defaultFileToOpen": "Archivo predeterminado al abrir",
+      "defaultFileToOpenDesc": "Elija qué archivo se abrirá cuando la aplicación se inicie.",
+      "defaultFileToOpenOptions": {
+        "lastOpened": "Último abierto",
+        "dailyNote": "Nota diaria",
+        "none": "Ninguno"
+      },
+      "alwaysFocusNewTabs": "Siempre fijar el foco en las pestañas nuevas",
+      "alwaysFocusNewTabsDesc": "Al abrir un enlace en una nueva pestaña, cambiar a esta inmediatamente.",
+      "newFileLocation": "Ubicación por defecto para nuevas notas",
+      "newFileLocationDesc": "Dónde se ubican los archivos nuevos.",
+      "newFileLocationOptions": {
+        "root": "Carpeta de la bóveda",
+        "current": "Misma carpeta que el archivo actual",
+        "folder": "En la carpeta especificada abajo"
+      },
+      "newFileFolderPath": "Carpeta por defecto para las notas nuevas",
+      "newFileFolderPathDesc": "Las notas nuevas aparecerán en esta carpeta.",
+      "attachmentLocationOptions": {
+        "root": "Carpeta de la bóveda",
+        "folder": "En la carpeta especificada abajo",
+        "current": "Misma carpeta que el archivo actual",
+        "subfolder": "En una subcarpeta bajo la carpeta actual"
+      },
+      "attachmentFolderPath": "Ubicación de la carpeta de adjuntos",
+      "attachmentFolderPathDesc": "Los adjuntos nuevos se agregarán aquí. Incluye imágenes importadas (arrastrar y soltar o pegar) y grabaciones de audio.",
+      "attachmentSubfolderPath": "Nombre de la subcarpeta",
+      "attachmentSubfolderPathDesc": "Si su archivo está en \"bóveda/carpeta\", y su nombre de la subcarpeta establecida en \"adjuntos\", los archivos adjuntos se guardarán en \"bóveda/carpeta/adjuntos\".",
+      "attachmentDefaultPlaceholder": "Adjuntos",
+      "linksHeading": "Enlaces",
+      "newLinkFormat": "Nuevo formato de enlace",
+      "newLinkFormatDesc": "Tipo de enlace que se debe insertar cuando se generan los enlaces internos automáticamente.",
+      "newLinkFormatOptions": {
+        "shortest": "Usar la ruta más corta cuando sea posible",
+        "relative": "Ruta relativa al archivo",
+        "absolute": "Ruta absoluta en la bóveda"
+      },
+      "alwaysUpdateLinks": "Actualizar los enlaces internos automáticamente",
+      "alwaysUpdateLinksDesc": "Desactívelo si desea que se le pregunte si actualizar los enlaces luego de renombrar un archivo.",
+      "useWikilinks": "Usar [[Wikilinks]]",
+      "useWikilinksDesc": "Active esta opción si desea generar Wikilinks automáticamente para [[enlaces]] e ![[imágenes]]. Desactívela para generar enlaces de Markdown en su lugar.",
+      "detectAllFileExtensions": "Mostrar todos los tipos de archivo",
+      "detectAllFileExtensionsDesc": "Muestra archivos con cualquier extensión, incluso si Urano no puede abrirlos de forma nativa, para que pueda vincularlos y verlos en el Explorador de Archivos y el Selector Rápido.",
+      "detectAllFileTypes": "Detectar todos los tipos de archivo",
+      "detectAllFileTypesDesc": "Muestra archivos con cualquier extensión incluso si Urano no puede abrirlos nativamente."
     },
     "hotkeys": {
       "search": "Buscar atajos",
