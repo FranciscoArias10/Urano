@@ -105,7 +105,26 @@ export interface UranoSettings {
   autoConvertHtml: boolean;
   vimMode: boolean;
 
-
+  // Files and links
+  defaultFileToOpen: DefaultFileToOpen;
+  alwaysFocusNewTabs: boolean;
+  newFileLocation: NewFileLocation;
+  newFileFolderPath: string;
+  attachmentLocation: AttachmentLocation;
+  attachmentFolderPath: string;
+  attachmentSubfolderPath: string;
+  newLinkFormat: NewLinkFormat;
+  alwaysUpdateLinks: boolean;
+  useWikilinks: boolean;
+  detectAllFileExtensions: boolean;
+  detectAllFileTypes: boolean;
+  confirmFileDeletion: boolean;
+  deleteAttachmentsWithFile: DeleteAttachmentsWithFile;
+  trashOption: TrashOption;
+  deletedFilesDestination: DeletedFilesDestination;
+  userIgnoreFilters: string[];
+  configFolderOverride: string;
+  allowUriCallbacks: boolean;
 
   // Sync / storage
   storageBackend: StorageBackend;
@@ -186,7 +205,7 @@ export const DEFAULT_SETTINGS: UranoSettings = {
   autoConvertHtml: true,
   vimMode: false,
 
-defaultFileToOpen: 'last-opened',
+  defaultFileToOpen: 'last-opened',
   alwaysFocusNewTabs: true,
   newFileLocation: 'root',
   newFileFolderPath: '',
@@ -243,7 +262,12 @@ defaultFileToOpen: 'last-opened',
 const LOCAL_STORAGE_KEY = 'urano_settings';
 /** Key read by `linkRefactorService.getAlwaysUpdateLinksPref()`; kept in sync. */
 const LINKS_PREF_KEY = 'urano_always_update_links';
-const SETTINGS_FILE_RELATIVE = '.urano/settings.json';
+
+export function getConfigFolder(settings?: UranoSettings | null): string {
+  const raw = settings?.configFolderOverride?.trim();
+  if (!raw) return '.urano';
+  return raw.startsWith('.') ? raw : `.${raw}`;
+}
 
 /** Merges a partial/unknown object into the defaults, dropping unknown keys and bad types. */
 function mergeSettings(raw: unknown): UranoSettings {
@@ -284,8 +308,28 @@ function mergeSettings(raw: unknown): UranoSettings {
       ? normalizeLanguageCode(out.language)
       : DEFAULT_LANGUAGE;
   if (!['dark', 'light', 'system'].includes(out.theme)) out.theme = 'dark';
-  if (!['always', 'prompt', 'never'].includes(out.alwaysUpdateLinks)) out.alwaysUpdateLinks = 'prompt';
-  if (!['root', 'folder', 'current'].includes(out.attachmentLocation)) out.attachmentLocation = 'root';
+  if (!['last-opened', 'daily-note', 'none'].includes(out.defaultFileToOpen)) out.defaultFileToOpen = 'last-opened';
+  out.alwaysFocusNewTabs = src.alwaysFocusNewTabs !== undefined ? Boolean(src.alwaysFocusNewTabs) : true;
+  if (!['root', 'current', 'folder'].includes(out.newFileLocation)) out.newFileLocation = 'root';
+  out.newFileFolderPath = typeof src?.newFileFolderPath === 'string' ? src.newFileFolderPath : '';
+  if (!['root', 'folder', 'current', 'subfolder'].includes(out.attachmentLocation)) out.attachmentLocation = 'root';
+  out.attachmentFolderPath = typeof src?.attachmentFolderPath === 'string' && src.attachmentFolderPath.trim() ? src.attachmentFolderPath : 'attachments';
+  out.attachmentSubfolderPath = typeof src?.attachmentSubfolderPath === 'string' && src.attachmentSubfolderPath.trim() ? src.attachmentSubfolderPath : 'attachments';
+  if (!['shortest', 'relative', 'absolute'].includes(out.newLinkFormat)) out.newLinkFormat = 'shortest';
+
+  if (typeof src.alwaysUpdateLinks === 'boolean') {
+    out.alwaysUpdateLinks = src.alwaysUpdateLinks;
+  } else if (typeof src.alwaysUpdateLinks === 'string') {
+    out.alwaysUpdateLinks = src.alwaysUpdateLinks === 'always';
+  } else {
+    out.alwaysUpdateLinks = true;
+  }
+
+  out.useWikilinks = src.useWikilinks !== undefined ? Boolean(src.useWikilinks) : true;
+  out.detectAllFileTypes = Boolean(src?.detectAllFileTypes);
+  out.confirmFileDeletion = src.confirmFileDeletion !== undefined ? Boolean(src.confirmFileDeletion) : true;
+  if (!['system', 'trash', 'permanent'].includes(out.deletedFilesDestination)) out.deletedFilesDestination = 'system';
+  out.userIgnoreFilters = Array.isArray(src?.userIgnoreFilters) ? src.userIgnoreFilters.filter((x): x is string => typeof x === 'string') : [];
   if (!['local', 'gdrive'].includes(out.storageBackend)) out.storageBackend = 'local';
   if (!/^#[0-9a-fA-F]{6}$/.test(out.accentColor)) out.accentColor = URANO_ACCENT;
   out.cssTheme = typeof src?.cssTheme === 'string' ? src.cssTheme : '';
@@ -350,6 +394,21 @@ function mergeSettings(raw: unknown): UranoSettings {
   out.autoPairMarkdown = src?.autoPairMarkdown !== undefined ? Boolean(src.autoPairMarkdown) : true;
   out.autoConvertHtml = src?.autoConvertHtml !== undefined ? Boolean(src.autoConvertHtml) : true;
   out.vimMode = Boolean(src?.vimMode);
+
+  const detectAll = src?.detectAllFileExtensions ?? src?.detectAllFileTypes ?? false;
+  out.detectAllFileExtensions = Boolean(detectAll);
+  out.detectAllFileTypes = Boolean(detectAll);
+
+  const rawTrash = String(src?.trashOption ?? (src?.deletedFilesDestination === 'trash' ? 'local' : src?.deletedFilesDestination === 'permanent' ? 'none' : 'system'));
+  out.trashOption = (['system', 'local', 'none'].includes(rawTrash) ? rawTrash : 'system') as TrashOption;
+  out.deletedFilesDestination = out.trashOption === 'local' ? 'trash' : out.trashOption === 'none' ? 'permanent' : 'system';
+
+  const rawAtt = String(src?.deleteAttachmentsWithFile ?? '');
+  out.deleteAttachmentsWithFile = (['ask', 'always', 'never'].includes(rawAtt) ? rawAtt : 'never') as DeleteAttachmentsWithFile;
+  const rawConfig = typeof src?.configFolderOverride === 'string' ? src.configFolderOverride.trim() : '';
+  out.configFolderOverride = rawConfig ? (rawConfig.startsWith('.') ? rawConfig : `.${rawConfig}`) : '';
+  out.allowUriCallbacks = Boolean(src?.allowUriCallbacks);
+
   return out;
 }
 
@@ -362,7 +421,7 @@ function readLocalSettings(): UranoSettings {
     // Legacy key written by the "Update links" modal before the settings store existed
     const legacyLinks = localStorage.getItem(LINKS_PREF_KEY);
     if (!raw && (legacyLinks === 'always' || legacyLinks === 'never' || legacyLinks === 'prompt')) {
-      merged.alwaysUpdateLinks = legacyLinks;
+      merged.alwaysUpdateLinks = legacyLinks === 'always';
     }
     return merged;
   } catch {
@@ -375,7 +434,7 @@ function readLocalSettings(): UranoSettings {
 function writeLocalSettings(settings: UranoSettings): void {
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(settings));
-    localStorage.setItem(LINKS_PREF_KEY, settings.alwaysUpdateLinks);
+    localStorage.setItem(LINKS_PREF_KEY, String(settings.alwaysUpdateLinks));
   } catch {
     // localStorage unavailable
   }
@@ -388,9 +447,12 @@ function scheduleVaultWrite(vaultPath: string | null, settings: UranoSettings): 
   if (vaultWriteTimer) clearTimeout(vaultWriteTimer);
   vaultWriteTimer = setTimeout(() => {
     vaultWriteTimer = null;
-    const filePath = `${vaultPath.replace(/[\\/]+$/, '')}/${SETTINGS_FILE_RELATIVE}`;
+    const configDir = getConfigFolder(settings);
+    const folderPath = `${vaultPath.replace(/[\\/]+$/, '')}/${configDir}`;
+    const filePath = `${folderPath}/settings.json`;
+    invoke('create_folder', { folderPath }).catch(() => {});
     invoke('write_file', { filePath, content: JSON.stringify(settings, null, 2) }).catch((err) => {
-      console.warn('[Urano] No se pudo guardar .urano/settings.json:', err);
+      console.warn(`[Urano] No se pudo guardar ${configDir}/settings.json:`, err);
     });
   }, 300);
 }
@@ -457,6 +519,21 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
 
   setSetting: (key, value) => {
     const next = { ...get().settings, [key]: value };
+    if (key === 'detectAllFileExtensions') {
+      next.detectAllFileTypes = Boolean(value);
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('urano:refresh-tree'));
+    }
+    if (key === 'detectAllFileTypes') {
+      next.detectAllFileExtensions = Boolean(value);
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('urano:refresh-tree'));
+    }
+    if (key === 'trashOption') {
+      next.deletedFilesDestination = value === 'local' ? 'trash' : value === 'none' ? 'permanent' : 'system';
+    }
+    if (key === 'deletedFilesDestination') {
+      next.trashOption = value === 'trash' ? 'local' : value === 'permanent' ? 'none' : 'system';
+    }
+
     writeLocalSettings(next);
     scheduleVaultWrite(get().vaultPath, next);
     set({ settings: next });
@@ -519,9 +596,12 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
 
     const vaultPath = get().vaultPath;
     if (vaultPath) {
-      const dictFilePath = `${vaultPath.replace(/[\\/]+$/, '')}/.urano/dictionary.txt`;
+      const configDir = getConfigFolder(get().settings);
+      const folderPath = `${vaultPath.replace(/[\\/]+$/, '')}/${configDir}`;
+      const dictFilePath = `${folderPath}/dictionary.txt`;
+      invoke('create_folder', { folderPath }).catch(() => {});
       invoke('write_file', { filePath: dictFilePath, content: nextWords.join('\n') + '\n' }).catch((err) => {
-        console.warn('[Urano] No se pudo guardar .urano/dictionary.txt:', err);
+        console.warn(`[Urano] No se pudo guardar ${configDir}/dictionary.txt:`, err);
       });
     }
   },
@@ -537,14 +617,18 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
 
     const vaultPath = get().vaultPath;
     if (vaultPath) {
-      const dictFilePath = `${vaultPath.replace(/[\\/]+$/, '')}/.urano/dictionary.txt`;
+      const configDir = getConfigFolder(get().settings);
+      const folderPath = `${vaultPath.replace(/[\\/]+$/, '')}/${configDir}`;
+      const dictFilePath = `${folderPath}/dictionary.txt`;
+      invoke('create_folder', { folderPath }).catch(() => {});
       invoke('write_file', { filePath: dictFilePath, content: words.join('\n') + (words.length ? '\n' : '') }).catch(() => {});
     }
   },
 
   loadFromVault: async (vaultPath) => {
-    const filePath = `${vaultPath.replace(/[\\/]+$/, '')}/${SETTINGS_FILE_RELATIVE}`;
-    const dictFilePath = `${vaultPath.replace(/[\\/]+$/, '')}/.urano/dictionary.txt`;
+    const configDir = getConfigFolder(get().settings);
+    const filePath = `${vaultPath.replace(/[\\/]+$/, '')}/${configDir}/settings.json`;
+    const dictFilePath = `${vaultPath.replace(/[\\/]+$/, '')}/${configDir}/dictionary.txt`;
     let dictWords: string[] = [];
     try {
       const dictRaw = await invoke<string>('read_file', { filePath: dictFilePath });
@@ -557,7 +641,16 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     }
 
     try {
-      const raw = await invoke<string>('read_file', { filePath });
+      let raw = '';
+      try {
+        raw = await invoke<string>('read_file', { filePath });
+      } catch (e) {
+        if (configDir !== '.urano') {
+          raw = await invoke<string>('read_file', { filePath: `${vaultPath.replace(/[\\/]+$/, '')}/.urano/settings.json` });
+        } else {
+          throw e;
+        }
+      }
       const parsed = JSON.parse(raw);
       const merged = mergeSettings(parsed);
       merged.spellcheck = parsed?.spellcheck ?? true;
@@ -601,22 +694,56 @@ export function getSettings(): UranoSettings {
 }
 
 /**
+ * Resolves the directory where newly created notes should be placed,
+ * following Settings → Files and links → "Default location for new notes".
+ */
+export function resolveNewFileDir(vaultPath: string, activeFile: string | null): string {
+  const sep = vaultPath.includes('\\') ? '\\' : '/';
+  const cleanVault = vaultPath.replace(/[\\/]+$/, '');
+  const { newFileLocation, newFileFolderPath } = getSettings();
+
+  if (newFileLocation === 'current' && activeFile) {
+    const normalized = activeFile.replace(/\\/g, '/');
+    const idx = normalized.lastIndexOf('/');
+    return idx > 0 ? activeFile.slice(0, idx) : cleanVault;
+  }
+  if (newFileLocation === 'folder') {
+    const folder = (newFileFolderPath || '').trim().replace(/^[\\/]+|[\\/]+$/g, '');
+    return folder ? `${cleanVault}${sep}${folder.replace(/\//g, sep)}` : cleanVault;
+  }
+  return cleanVault;
+}
+
+/**
  * Directory where a new attachment (pasted/dropped image) should be written,
  * following the "Default location for new attachments" setting.
  */
 export function resolveAttachmentDir(vaultPath: string, activeFile: string | null): string {
   const sep = vaultPath.includes('\\') ? '\\' : '/';
   const cleanVault = vaultPath.replace(/[\\/]+$/, '');
-  const { attachmentLocation, attachmentFolderPath } = getSettings();
+  const { attachmentLocation, attachmentFolderPath, attachmentSubfolderPath } = getSettings();
 
-  if (attachmentLocation === 'current' && activeFile) {
-    const normalized = activeFile.replace(/\\/g, '/');
-    const idx = normalized.lastIndexOf('/');
-    return idx > 0 ? activeFile.slice(0, idx) : cleanVault;
+  if (attachmentLocation === 'current') {
+    if (activeFile) {
+      const normalized = activeFile.replace(/\\/g, '/');
+      const idx = normalized.lastIndexOf('/');
+      return idx > 0 ? activeFile.slice(0, idx) : cleanVault;
+    }
+    return cleanVault;
   }
   if (attachmentLocation === 'folder') {
-    const folder = attachmentFolderPath.trim().replace(/^[\\/]+|[\\/]+$/g, '');
+    const folder = (attachmentFolderPath || 'attachments').trim().replace(/^[\\/]+|[\\/]+$/g, '');
     return folder ? `${cleanVault}${sep}${folder.replace(/\//g, sep)}` : cleanVault;
+  }
+  if (attachmentLocation === 'subfolder') {
+    let parentDir = cleanVault;
+    if (activeFile) {
+      const normalized = activeFile.replace(/\\/g, '/');
+      const idx = normalized.lastIndexOf('/');
+      if (idx > 0) parentDir = activeFile.slice(0, idx);
+    }
+    const sub = (attachmentSubfolderPath || 'attachments').trim().replace(/^[\\/]+|[\\/]+$/g, '');
+    return sub ? `${parentDir}${sep}${sub.replace(/\//g, sep)}` : parentDir;
   }
   return cleanVault;
 }
