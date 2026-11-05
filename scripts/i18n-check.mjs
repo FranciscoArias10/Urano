@@ -12,8 +12,9 @@
  */
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SRC = join(ROOT, 'src');
 const LOCALES = join(SRC, 'locales');
 const strict = process.argv.includes('--strict');
@@ -62,7 +63,7 @@ let errors = 0;
 // 1. Claves usadas en el código
 const KEY_RE = /\b(?:t|tr|translate)\(\s*(['"])([^'"\n]+)\1/g;
 for (const file of walk(SRC)) {
-  const rel = relative(ROOT, file);
+  const rel = relative(ROOT, file).replace(/\\/g, '/');
   const settingsScoped = rel.includes('/components/settings/') || rel.endsWith('/stores/settingsStore.ts');
   const code = readFileSync(file, 'utf8');
   for (const m of code.matchAll(KEY_RE)) {
