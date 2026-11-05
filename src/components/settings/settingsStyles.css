@@ -137,6 +137,10 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  --background-modifier-active-hover: rgba(255, 255, 255, 0.08);
+}
+body.theme-light .urano-settings-root .vertical-tab-header {
+  --background-modifier-active-hover: rgba(0, 0, 0, 0.06);
 }
 
 .urano-settings-root .setting-search-container {
@@ -210,6 +214,21 @@
   overflow-y: auto;
   scrollbar-width: thin;
 }
+.urano-settings-root .vertical-tab-header-group-container::-webkit-scrollbar {
+  width: 6px;
+}
+.urano-settings-root .vertical-tab-header-group-container::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.urano-settings-root .vertical-tab-header-group-container::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-bg, rgba(255, 255, 255, 0.1));
+  border-radius: 3px;
+}
+.urano-settings-root .vertical-tab-header-group-container::-webkit-scrollbar-track {
+  background: transparent;
+}
 .urano-settings-root .vertical-tab-header-group-container.is-scrolled {
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, #000 24px);
 }
@@ -252,8 +271,8 @@
   box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 .urano-settings-root .vertical-tab-nav-item.is-active {
-  background-color: var(--background-modifier-active-hover, rgba(255, 255, 255, 0.08));
-  color: var(--text-normal);
+  background-color: var(--background-modifier-active-hover, rgba(255, 255, 255, 0.08)) !important;
+  color: var(--text-normal) !important;
   border: none !important;
   font-weight: 500;
 }
@@ -384,18 +403,30 @@
   opacity: 0.5;
   pointer-events: none;
 }
+.urano-settings-root .setting-item.mod-clickable,
+.urano-settings-root .setting-item.is-clickable {
+  cursor: pointer;
+  border-radius: 4px;
+}
+.urano-settings-root .setting-item.mod-clickable:hover,
+.urano-settings-root .setting-item.is-clickable:hover {
+  background-color: var(--background-modifier-hover, rgba(255, 255, 255, 0.04));
+}
 
 .urano-settings-root .setting-item-info {
   flex: 1 1 auto;
   min-width: 0;
+  padding-right: 24px;
 }
 .urano-settings-root .setting-item-name {
   font-size: 13px;
   font-weight: 400;
   line-height: 1.3;
   color: var(--settings-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: normal;
 }
 .urano-settings-root .setting-item-description {
   font-size: 12px;
