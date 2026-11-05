@@ -16,6 +16,7 @@ import { isImagePath } from './services/storageAdapter';
 import { getRelativeVaultPath, getRelativeVaultFolderSegments } from './utils/pathUtils';
 import { FILE_RENAMED_EVENT, FileRenamedDetail } from './services/linkRefactorService';
 import { TemplateModal } from './components/templates/TemplateModal';
+import { UpdateLinksModal } from './components/common/UpdateLinksModal';
 import { GlobalSearchPanel } from './components/search/GlobalSearchPanel';
 import { BookmarksPanel } from './components/bookmarks/BookmarksPanel';
 import { Tooltip } from './components/common/Tooltip';
@@ -159,6 +160,8 @@ export const App: React.FC = () => {
     moveItem,
     duplicateNote,
     deleteItem,
+    pendingRenamePrompt,
+    resolvePendingRename,
   } = useVaultStore();
 
   const { checkAuthStatus, triggerSync, isSyncing, notifyVaultChanged } = useSyncStore();
@@ -312,6 +315,15 @@ export const App: React.FC = () => {
     window.addEventListener(FILE_RENAMED_EVENT, onRenamed);
     return () => window.removeEventListener(FILE_RENAMED_EVENT, onRenamed);
   }, []);
+
+  // Listen for refresh tree events (e.g. toggling detectAllFileExtensions)
+  useEffect(() => {
+    const onRefresh = () => {
+      refreshTree().catch(() => {});
+    };
+    window.addEventListener('urano:refresh-tree', onRefresh);
+    return () => window.removeEventListener('urano:refresh-tree', onRefresh);
+  }, [refreshTree]);
 
   // Registers a file in the history of a leaf (Obsidian leaf history)
   const recordVisit = useCallback((tabId: string, filePath: string) => {
@@ -802,8 +814,11 @@ export const App: React.FC = () => {
       title,
     };
     setTabs((prev) => [...prev, newTab]);
-    setActiveTabId(tabId);
-    selectFile(targetPath);
+    const alwaysFocus = useSettingsStore.getState().settings.alwaysFocusNewTabs;
+    if (alwaysFocus) {
+      setActiveTabId(tabId);
+      selectFile(targetPath);
+    }
   };
 
   // Open Graph View Tab
@@ -1480,6 +1495,18 @@ export const App: React.FC = () => {
         isOpen={showVaultManager}
         onClose={() => setShowVaultManager(false)}
       />
+
+      {/* Obsidian 1:1 "Update links" Modal */}
+      {pendingRenamePrompt && (
+        <UpdateLinksModal
+          isOpen={true}
+          totalLinks={pendingRenamePrompt.plan.totalLinks}
+          totalFiles={pendingRenamePrompt.plan.totalFiles}
+          onAlwaysUpdate={() => resolvePendingRename('always')}
+          onJustOnce={() => resolvePendingRename('once')}
+          onDoNotUpdate={() => resolvePendingRename('skip')}
+        />
+      )}
 
       {/* Obsidian Floating Notices */}
       <NoticeContainer />
