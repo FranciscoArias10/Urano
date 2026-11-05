@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { FileItem, SortOrder, BookmarkItem } from '../types';
 import { isImagePath } from '../services/storageAdapter';
-import { useSettingsStore } from './settingsStore';
+import { useSettingsStore, getConfigFolder } from './settingsStore';
 import { useSyncStore } from './syncStore';
 import { t } from '../locales/i18n';
 
