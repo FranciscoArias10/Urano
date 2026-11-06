@@ -184,9 +184,26 @@ function getInitialRecentVaults(): RecentVault[] {
   return [];
 }
 
+function getInitialVaultInfo(): { activeVault: string | null; vaultName: string | null } {
+  try {
+    if (typeof localStorage === 'undefined') return { activeVault: null, vaultName: null };
+    const lastVault = localStorage.getItem('urano_last_vault');
+    if (lastVault) {
+      const parts = lastVault.replace(/\\/g, '/').split('/');
+      const vaultName = parts[parts.length - 1] || 'Vault';
+      return { activeVault: lastVault, vaultName };
+    }
+  } catch (e) {
+    console.error('Error getting initial vault info:', e);
+  }
+  return { activeVault: null, vaultName: null };
+}
+
+const initialVaultInfo = getInitialVaultInfo();
+
 export const useVaultStore = create<VaultState>((set, get) => ({
-  activeVault: null,
-  vaultName: null,
+  activeVault: initialVaultInfo.activeVault,
+  vaultName: initialVaultInfo.vaultName,
   recentVaults: getInitialRecentVaults(),
   activeFile: null,
   activeFileName: null,
