@@ -397,9 +397,6 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
         className={`canvas-node-container ${
           node.type === 'text' ? 'is-text' : node.type === 'file' ? 'is-file' : ''
         } ${isImageFile ? 'is-image' : ''}`}
-        style={{
-          cursor: isSelected && !isEditing ? (isDragging ? 'grabbing' : 'grab') : 'default',
-        }}
         onDoubleClick={(e) => {
           e.stopPropagation();
           if (readonly) return;
