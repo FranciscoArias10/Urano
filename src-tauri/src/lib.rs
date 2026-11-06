@@ -33,6 +33,15 @@ pub fn run() {
                 if let Some(icon) = app.default_window_icon() {
                     let _ = window.set_icon(icon.clone());
                 }
+
+                if let Ok(config_dir) = app.path().app_config_dir() {
+                    let style_path = config_dir.join("window_frame_style.txt");
+                    if let Ok(saved) = std::fs::read_to_string(style_path) {
+                        if saved.trim() == "native" {
+                            let _ = window.set_decorations(true);
+                        }
+                    }
+                }
             }
 
             // Linux / WebKitGTK: el pellizco del touchpad escala la página entera
@@ -84,6 +93,8 @@ pub fn run() {
             commands::window::toggle_maximize_window,
             commands::window::minimize_window,
             commands::window::close_window,
+            commands::window::set_window_decorations,
+            commands::window::open_settings_window,
             commands::window::set_custom_window_icon,
             commands::theme::list_installed_themes,
             commands::theme::read_theme_css,
