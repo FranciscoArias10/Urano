@@ -148,30 +148,13 @@ export const RibbonConfigModal: React.FC<RibbonConfigModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="modal modal-sub-dialog"
+        className="modal modal-sub-dialog mod-ribbon-config"
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '90vw',
-          maxWidth: '580px',
-          maxHeight: '80vh',
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: 'var(--background-secondary, var(--background-primary))',
-          border: '1px solid var(--background-modifier-border)',
-          borderRadius: '12px',
-          boxShadow: '0 12px 36px rgba(0,0,0,0.45)',
-          overflow: 'hidden',
-        }}
       >
         {/* Header */}
-        <div
-          className="modal-header flex items-center justify-between px-5 py-4 shrink-0"
-          style={{
-            borderBottom: '1px solid var(--background-modifier-border)',
-          }}
-        >
+        <div className="modal-header flex items-center justify-between px-5 py-4 shrink-0">
           <div className="flex items-center gap-2.5">
             <SlidersVertical size={18} className="text-[var(--interactive-accent)]" />
             <div>
