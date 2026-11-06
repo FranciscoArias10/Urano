@@ -304,7 +304,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         </div>
 
         {/* Bottom Keyboard Instruction Bar (1:1 with Obsidian) */}
-        <div className="prompt-instructions px-4 py-2 border-t border-obsidian-border bg-obsidian-sidebar text-obsidian-muted select-none">
+        <div className="prompt-instructions select-none">
           <span className="flex items-center gap-1">
             <span className="font-mono bg-[var(--interactive-normal)] text-obsidian-text px-1 py-0.2 rounded border border-obsidian-border">
               ↑↓
