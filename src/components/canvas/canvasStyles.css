@@ -60,7 +60,7 @@ body.theme-dark .canvas-wrapper {
 }
 
 .canvas-wrapper.is-dragging-canvas {
-  cursor: grabbing !important;
+  cursor: grabbing;
 }
 
 .canvas-wrapper.mod-readonly {
@@ -235,7 +235,7 @@ body.theme-dark .canvas-wrapper {
   position: absolute;
   top: 0;
   right: calc(100% + 8px);
-  left: auto !important;
+  left: auto;
   min-width: 220px;
   max-width: calc(100vw - 24px);
   z-index: 500;
@@ -254,7 +254,7 @@ body.theme-dark .canvas-wrapper {
   top: auto;
   bottom: 0;
   right: calc(100% + 8px);
-  left: auto !important;
+  left: auto;
 }
 
 .canvas-control-popover-title {
@@ -359,32 +359,32 @@ body.theme-dark .canvas-wrapper {
 /* Modo Claro (body.theme-light) */
 .theme-light .canvas-node.is-themed .canvas-node-container,
 body.theme-light .canvas-node.is-themed .canvas-node-container {
-  background-color: color-mix(in srgb, var(--canvas-node-color) 12%, #ffffff) !important;
-  border: 1px solid color-mix(in srgb, var(--canvas-node-color) 65%, #ffffff) !important;
+  background-color: color-mix(in srgb, var(--canvas-node-color) 12%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--canvas-node-color) 65%, #ffffff);
 }
 
 /* Modo Oscuro (body.theme-dark) */
 .theme-dark .canvas-node.is-themed .canvas-node-container,
 body.theme-dark .canvas-node.is-themed .canvas-node-container,
 .canvas-node.is-themed .canvas-node-container {
-  background-color: color-mix(in srgb, var(--canvas-node-color) 18%, #1e1e1e) !important;
-  border: 1px solid color-mix(in srgb, var(--canvas-node-color) 70%, #1e1e1e) !important;
+  background-color: color-mix(in srgb, var(--canvas-node-color) 18%, #1e1e1e);
+  border: 1px solid color-mix(in srgb, var(--canvas-node-color) 70%, #1e1e1e);
 }
 
 /* Estado seleccionado / enfocado sin color temático: acento naranja */
 .canvas-node.is-selected .canvas-node-container,
 .canvas-node.is-focused .canvas-node-container,
 .canvas-node.is-editing .canvas-node-container {
-  border: 2px solid var(--interactive-accent, #e06c1b) !important;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent, #e06c1b) 25%, transparent) !important;
+  border: 2px solid var(--interactive-accent, #e06c1b);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent, #e06c1b) 25%, transparent);
 }
 
 /* Estado seleccionado / enfocado con color temático: resalta su propio color */
 .canvas-node.is-selected.is-themed .canvas-node-container,
 .canvas-node.is-focused.is-themed .canvas-node-container,
 .canvas-node.is-editing.is-themed .canvas-node-container {
-  border: 2px solid var(--canvas-node-color) !important;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--canvas-node-color) 25%, transparent) !important;
+  border: 2px solid var(--canvas-node-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--canvas-node-color) 25%, transparent);
 }
 
 .canvas-node.is-dragging .canvas-node-container {
@@ -407,7 +407,7 @@ body.theme-dark .canvas-node.is-themed .canvas-node-container,
 .canvas-node.is-dragging .canvas-node-content,
 .canvas-node.is-dragging .canvas-node-body,
 .canvas-node.is-dragging .canvas-node-container {
-  cursor: grabbing !important;
+  cursor: grabbing;
 }
 
 /* Etiqueta del archivo FUERA de la tarjeta, sobre la esquina superior izquierda */
@@ -434,35 +434,35 @@ body.theme-dark .canvas-node.is-themed .canvas-node-container,
 
 /* Grupo del Canvas */
 .canvas-node-group .canvas-node-container {
-  background-color: transparent !important;
-  border: 1px solid var(--background-modifier-border) !important;
-  box-shadow: none !important;
+  background-color: transparent;
+  border: 1px solid var(--background-modifier-border);
+  box-shadow: none;
 }
 
 .theme-light .canvas-node-group .canvas-node-content,
 body.theme-light .canvas-node-group .canvas-node-content {
-  background-color: rgba(0, 0, 0, 0.03) !important;
+  background-color: rgba(0, 0, 0, 0.03);
 }
 
 .theme-dark .canvas-node-group .canvas-node-content,
 body.theme-dark .canvas-node-group .canvas-node-content,
 .canvas-node-group .canvas-node-content {
-  background-color: rgba(255, 255, 255, 0.03) !important;
+  background-color: rgba(255, 255, 255, 0.03);
 }
 
 .canvas-node-group.is-themed .canvas-node-content {
-  background-color: color-mix(in srgb, var(--canvas-node-color) 8%, transparent) !important;
+  background-color: color-mix(in srgb, var(--canvas-node-color) 8%, transparent);
 }
 
 .canvas-node-group.is-themed .canvas-node-container {
-  border: 1px solid color-mix(in srgb, var(--canvas-node-color) 60%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--canvas-node-color) 60%, transparent);
 }
 
 .canvas-group-label {
   position: absolute;
   left: 0;
   top: -30px;
-  font-family: var(--font-interface, sans-serif) !important;
+  font-family: var(--font-interface, sans-serif);
   font-size: 13px;
   font-weight: 600;
   color: var(--text-normal);
@@ -480,9 +480,9 @@ body.theme-dark .canvas-node-group .canvas-node-content,
 }
 
 .canvas-node-group.is-themed .canvas-group-label:not([contenteditable='true']) {
-  background-color: var(--canvas-node-color) !important;
-  border-color: var(--canvas-node-color) !important;
-  color: #ffffff !important;
+  background-color: var(--canvas-node-color);
+  border-color: var(--canvas-node-color);
+  color: #ffffff;
 }
 
 .canvas-group-label:active {
@@ -491,9 +491,9 @@ body.theme-dark .canvas-node-group .canvas-node-content,
 
 .canvas-group-label[contenteditable='true'] {
   cursor: text;
-  background-color: var(--background-primary) !important;
-  border-color: var(--interactive-accent, #e06c1b) !important;
-  color: var(--text-normal) !important;
+  background-color: var(--background-primary);
+  border-color: var(--interactive-accent, #e06c1b);
+  color: var(--text-normal);
   outline: none;
 }
 
@@ -502,10 +502,10 @@ body.theme-dark .canvas-node-group .canvas-node-content,
 .canvas-node-content textarea,
 .canvas-node-content .cm-editor,
 .canvas-node-content .cm-content {
-  background-color: transparent !important;
-  color: var(--text-normal) !important;
-  caret-color: var(--interactive-accent, #e06c1b) !important;
-  font-family: var(--font-text) !important;
+  background-color: transparent;
+  color: var(--text-normal);
+  caret-color: var(--interactive-accent, #e06c1b);
+  font-family: var(--font-text);
 }
 
 /* Contenido del nodo */
@@ -567,7 +567,7 @@ body.theme-dark .canvas-node-group .canvas-node-content,
 
 .canvas-node-note-body {
   padding: 20px 24px;
-  background-color: transparent !important;
+  background-color: transparent;
   color: var(--text-normal);
   overflow-y: auto;
 }
@@ -740,7 +740,7 @@ body.theme-dark .canvas-node-group .canvas-node-content,
 
 .canvas-edge-group.is-focused .canvas-display-path,
 .canvas-edge-group:hover .canvas-display-path {
-  stroke: var(--color-accent) !important;
+  stroke: var(--color-accent);
   stroke-width: 3.5px;
 }
 
