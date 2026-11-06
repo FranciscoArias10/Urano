@@ -64,6 +64,33 @@
   opacity: 0.85;
 }
 
+/* --- Standalone Settings Window Mode ------------------------------------- */
+.urano-settings-root.mod-standalone-window {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  background: var(--settings-background);
+  z-index: 10;
+}
+
+.urano-settings-root.mod-standalone-window .modal-bg {
+  display: none;
+}
+
+.urano-settings-root.mod-standalone-window .modal.mod-settings {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  animation: none;
+}
+
 /* --- .modal.mod-settings ------------------------------------------------- */
 .urano-settings-root .modal.mod-settings {
   position: relative;
@@ -208,26 +235,11 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   background: var(--interactive-hover);
 }
 
-.urano-settings-root .vertical-tab-header-group-container {
+.urano-settings-root .vertical-tab-header-group-container,
+.urano-settings-root .setting-search-results {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  scrollbar-width: thin;
-}
-.urano-settings-root .vertical-tab-header-group-container::-webkit-scrollbar {
-  width: 6px;
-}
-.urano-settings-root .vertical-tab-header-group-container::-webkit-scrollbar-button {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-.urano-settings-root .vertical-tab-header-group-container::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb-bg, rgba(255, 255, 255, 0.1));
-  border-radius: 3px;
-}
-.urano-settings-root .vertical-tab-header-group-container::-webkit-scrollbar-track {
-  background: transparent;
 }
 .urano-settings-root .vertical-tab-header-group-container.is-scrolled {
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, #000 24px);
@@ -271,9 +283,9 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 .urano-settings-root .vertical-tab-nav-item.is-active {
-  background-color: var(--background-modifier-active-hover, rgba(255, 255, 255, 0.08)) !important;
-  color: var(--text-normal) !important;
-  border: none !important;
+  background-color: var(--background-modifier-active-hover, rgba(255, 255, 255, 0.08));
+  color: var(--text-normal);
+  border: none;
   font-weight: 500;
 }
 .urano-settings-root .vertical-tab-nav-item.is-dimmed {
@@ -872,15 +884,6 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   min-width: 16px;
 }
 
-/* Scrollbars inside the modal */
-.urano-settings-root ::-webkit-scrollbar {
-  width: 8px;
-}
-.urano-settings-root ::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb-bg);
-  border-radius: 999px;
-}
-
 /* --- Language dropdown (Ajustes → General → Language) -------------------------
    Evidencia Obsidian (`obsidian.asar/app.css`, REA):
      .dropdown { height: var(--input-height); font-size: var(--font-ui-small);
@@ -951,7 +954,7 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
-  left: auto !important;
+  left: auto;
   z-index: 200;
   box-sizing: border-box;
   min-width: 180px;
@@ -968,36 +971,21 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   color: var(--settings-text);
   outline: none;
   user-select: none;
-  direction: ltr !important;
-  text-align: left !important;
+  direction: ltr;
+  text-align: left;
   animation: language-dropdown-in 90ms ease-out;
-  scrollbar-width: thin;
-  scrollbar-color: var(--background-modifier-border) transparent;
 }
 .mod-rtl .language-dropdown-menu {
-  direction: ltr !important;
-  text-align: left !important;
+  direction: ltr;
+  text-align: left;
 }
 .language-dropdown-menu.is-top,
 .language-dropdown-menu.mod-up {
   top: auto;
   bottom: calc(100% + 4px);
   right: 0;
-  left: auto !important;
+  left: auto;
   animation-name: language-dropdown-in-top;
-}
-.language-dropdown-menu::-webkit-scrollbar {
-  width: 6px;
-}
-.language-dropdown-menu::-webkit-scrollbar-track {
-  background: transparent;
-}
-.language-dropdown-menu::-webkit-scrollbar-thumb {
-  background: var(--background-modifier-border);
-  border-radius: 3px;
-}
-.language-dropdown-menu::-webkit-scrollbar-thumb:hover {
-  background: var(--background-modifier-border-hover);
 }
 @keyframes language-dropdown-in {
   from { opacity: 0; transform: translateY(-3px); }
@@ -1012,11 +1000,11 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   /* Obsidian: todas las opciones en una sola columna compacta alineada a la izquierda,
      también las RTL (el texto interno lleva dir="auto" para dibujarse en su orden bidi pero
      permaneciendo pegado al margen izquierdo). */
-  direction: ltr !important;
-  text-align: left !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
+  direction: ltr;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
   gap: 8px;
   padding: 4px 10px;
   margin: 0;
@@ -1045,8 +1033,8 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  direction: ltr !important;
-  text-align: left !important;
+  direction: ltr;
+  text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1055,7 +1043,7 @@ body.theme-light .urano-settings-root .vertical-tab-header {
 .language-dropdown-item-label [dir="auto"] {
   display: inline-block;
   direction: ltr;
-  text-align: left !important;
+  text-align: left;
   unicode-bidi: plaintext;
 }
 .language-dropdown-item-badge {
@@ -1069,4 +1057,65 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   text-transform: uppercase;
   color: inherit;
   opacity: 0.8;
+}
+
+/* Mod Settings Window (standalone) */
+.mod-settings-window {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--background-primary);
+}
+
+/* Override config folder setting input */
+.setting-override-config-input {
+  background-color: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 5px;
+  padding: 5px 10px;
+  width: 180px;
+  color: var(--text-normal);
+  font-size: 13px;
+  outline: none;
+}
+.setting-override-config-input:focus {
+  border-color: var(--interactive-accent);
+}
+
+/* Modal sub-dialogs (CommunityThemesModal, CssSnippetsModal, FontPickerModal, RibbonConfigModal) */
+.modal.modal-sub-dialog {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px var(--background-modifier-box-shadow, rgba(0, 0, 0, 0.45));
+  overflow: hidden;
+}
+.modal.modal-sub-dialog .modal-header {
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.modal.modal-community-themes {
+  width: 92vw;
+  max-width: 860px;
+  height: 84vh;
+}
+
+.modal.mod-css-snippets {
+  width: 90vw;
+  max-width: 560px;
+  max-height: 75vh;
+}
+
+.modal.mod-font-picker {
+  width: 90vw;
+  max-width: 560px;
+  max-height: 75vh;
+}
+
+.modal.mod-ribbon-config {
+  width: 90vw;
+  max-width: 580px;
+  max-height: 80vh;
 }
