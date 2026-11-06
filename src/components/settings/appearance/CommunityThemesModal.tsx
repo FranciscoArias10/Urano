@@ -139,30 +139,13 @@ export const CommunityThemesModal: React.FC<CommunityThemesModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="modal modal-community-themes"
+        className="modal modal-community-themes modal-sub-dialog"
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '92vw',
-          maxWidth: '860px',
-          height: '84vh',
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: 'var(--background-secondary, #1e1e1e)',
-          border: '1px solid var(--background-modifier-border, #2a2a2a)',
-          borderRadius: '12px',
-          boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
-          overflow: 'hidden',
-        }}
       >
         {/* Header */}
-        <div
-          className="modal-header flex items-center justify-between px-6 py-4"
-          style={{
-            borderBottom: '1px solid var(--background-modifier-border)',
-          }}
-        >
+        <div className="modal-header flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
             <Palette size={20} className="text-[#e06c1b]" />
             <h2 className="text-base font-semibold text-[var(--text-normal)] m-0">
