@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Search, X } from 'lucide-react';
 import { useSettingsStore, useT } from '../../stores/settingsStore';
 import type { CommandItem } from '../palette/CommandPalette';
@@ -25,6 +25,7 @@ import './settingsStyles.css';
  * ------------------------------------------------------------------------- */
 
 export interface SettingsModalProps {
+  standalone?: boolean;
   commands?: CommandItem[];
   onOpenHelp?: () => void;
   onOpenLocalesFolder?: () => void;
@@ -69,6 +70,7 @@ interface SearchMatch {
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
+  standalone = false,
   commands,
   onOpenHelp,
   onOpenSyncLogs,
@@ -101,6 +103,47 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const searchRef = useRef<HTMLInputElement>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // Close handler: closes native window if in standalone mode, otherwise closes integrated modal
+  const handleClose = useCallback(() => {
+    if (standalone) {
+      import('@tauri-apps/api/window')
+        .then(({ getCurrentWindow }) => getCurrentWindow().close())
+        .catch(() => window.close());
+    } else {
+      closeSettings();
+    }
+  }, [standalone, closeSettings]);
+
+  // Read initial tab from URL params if standalone
+  useEffect(() => {
+    if (standalone && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab) {
+        setActiveTab(tab);
+      }
+    }
+  }, [standalone, setActiveTab]);
+
+  // Listen for tab switch events from Tauri backend
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    import('@tauri-apps/api/event')
+      .then(({ listen }) => {
+        listen<string>('urano:set-settings-tab', (event) => {
+          if (event.payload) {
+            setActiveTab(event.payload);
+          }
+        }).then((fn) => {
+          unlisten = fn;
+        });
+      })
+      .catch(() => {});
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, [setActiveTab]);
 
   useEffect(() => {
     const handler = () => setShowSnippetsModal(true);
@@ -143,26 +186,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   // Fall back to General when the active tab disappears (core plugin turned off).
   useEffect(() => {
-    if (isOpen && activeTab && activeTab.id !== activeTabId) setActiveTab(activeTab.id);
-  }, [isOpen, activeTab, activeTabId, setActiveTab]);
+    if ((isOpen || standalone) && activeTab && activeTab.id !== activeTabId) setActiveTab(activeTab.id);
+  }, [isOpen, standalone, activeTab, activeTabId, setActiveTab]);
 
   // Reset search + focus the search box when opening (Obsidian: hasInitialInputFocus on desktop).
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen && !standalone) return;
     setQuery('');
     const id = window.setTimeout(() => searchRef.current?.focus(), 30);
     return () => window.clearTimeout(id);
-  }, [isOpen]);
+  }, [isOpen, standalone]);
 
   // Escape closes, Mod+F focuses search (Obsidian `modalEl` keydown handler).
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen && !standalone) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.isComposing) return;
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
-        closeSettings();
+        handleClose();
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         searchRef.current?.focus();
@@ -171,7 +214,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     };
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [isOpen, closeSettings]);
+  }, [isOpen, standalone, handleClose]);
 
   // Scroll content to top when switching tabs.
   useEffect(() => {
@@ -203,7 +246,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     return results;
   }, [isSearching, trimmedQuery, visibleTabs]);
 
-  if (!isOpen || !activeTab) return null;
+  if ((!isOpen && !standalone) || !activeTab) return null;
 
   const sections: { id: SettingsSection; title: string }[] = [
     { id: 'options', title: t('sidebar.options') },
@@ -288,8 +331,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="urano-settings-root modal-container mod-dim" role="presentation">
-      <div className="modal-bg" onClick={closeSettings} />
+    <div
+      className={`urano-settings-root modal-container mod-dim${standalone ? ' mod-standalone-window' : ''}`}
+      role="presentation"
+    >
+      <div className="modal-bg" onClick={handleClose} />
 
       <div
         className="modal mod-settings mod-sidebar-layout"
@@ -297,16 +343,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         aria-modal="true"
         aria-label={t('modal.title')}
       >
-        {/* × — .modal-header-button.mod-raised.clickable-icon */}
-        <button
-          type="button"
-          className="modal-header-button mod-raised clickable-icon"
-          aria-label={t('modal.close')}
-          title={`${t('modal.close')} (Esc)`}
-          onClick={closeSettings}
-        >
-          <X size={16} strokeWidth={2} />
-        </button>
+        {/* × — .modal-header-button.mod-raised.clickable-icon (only in integrated modal) */}
+        {!standalone && (
+          <button
+            type="button"
+            className="modal-header-button mod-raised clickable-icon"
+            aria-label={t('modal.close')}
+            title={`${t('modal.close')} (Esc)`}
+            onClick={handleClose}
+          >
+            <X size={16} strokeWidth={2} />
+          </button>
+        )}
 
         <div className="modal-header">
           <div className="modal-title" />
