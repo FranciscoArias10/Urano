@@ -357,7 +357,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             desc: (
               <>
                 {t('general.hwAccelDesc')}{' '}
-                <span className="mod-warning" style={{ color: '#e08a3c' }}>
+                <span className="mod-warning">
                   {t('general.hwAccelWarning')}
                 </span>
               </>
@@ -667,6 +667,18 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
         heading: t('appearance.advancedHeading'),
         items: [
           {
+            id: 'translucent-window',
+            name: t('appearance.translucentWindow'),
+            desc: t('appearance.translucentWindowDesc'),
+            control: (
+              <Toggle
+                value={settings.translucentWindow}
+                onChange={set('translucentWindow')}
+                ariaLabel={t('appearance.translucentWindow')}
+              />
+            ),
+          },
+          {
             id: 'custom-icon',
             name: t('appearance.customIcon'),
             desc: (
@@ -753,22 +765,10 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
     icon: <AppWindow size={ICON} />,
     section: 'options',
     groups: [
+      /* Tarjeta 1 — Opciones Superiores (Sin Título de Sección Encima) */
       {
-        id: 'interface-workspace',
-        heading: t('interface.workspaceHeading'),
+        id: 'interface-general',
         items: [
-          {
-            id: 'show-inline-title',
-            name: t('interface.showInlineTitle'),
-            desc: t('interface.showInlineTitleDesc'),
-            control: (
-              <Toggle
-                value={settings.showInlineTitle}
-                onChange={set('showInlineTitle')}
-                ariaLabel={t('interface.showInlineTitle')}
-              />
-            ),
-          },
           {
             id: 'show-tab-title-bar',
             name: t('interface.showTabTitleBar'),
@@ -781,24 +781,6 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
               />
             ),
           },
-          {
-            id: 'show-status-bar',
-            name: t('interface.showStatusBar'),
-            desc: t('interface.showStatusBarDesc'),
-            control: (
-              <Toggle
-                value={settings.showStatusBar}
-                onChange={set('showStatusBar')}
-                ariaLabel={t('interface.showStatusBar')}
-              />
-            ),
-          },
-        ],
-      },
-      {
-        id: 'interface-ribbon',
-        heading: t('interface.ribbonHeading'),
-        items: [
           {
             id: 'show-ribbon',
             name: t('interface.showRibbon'),
@@ -815,50 +797,21 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             id: 'ribbon-config',
             name: t('interface.ribbonConfig'),
             desc: t('interface.ribbonConfigDesc'),
+            className: 'mod-clickable',
+            onClick: () => {
+              window.dispatchEvent(new CustomEvent('urano:open-ribbon-config'));
+            },
             control: (
-              <SettingButton
-                onClick={() => {
-                  window.dispatchEvent(new CustomEvent('urano:open-ribbon-config'));
-                }}
-              >
-                {t('interface.manage')}
-              </SettingButton>
+              <ChevronRight size={18} className="text-muted" />
             ),
           },
         ],
       },
+      /* Tarjeta 2 — Sección Avanzado */
       {
-        id: 'interface-window',
-        heading: t('interface.windowHeading'),
+        id: 'interface-advanced',
+        heading: t('interface.advancedHeading'),
         items: [
-          {
-            id: 'window-frame-style',
-            name: t('interface.windowFrameStyle'),
-            desc: t('interface.windowFrameStyleDesc'),
-            control: (
-              <Dropdown<WindowFrameStyle>
-                value={settings.windowFrameStyle}
-                options={[
-                  { value: 'custom', label: t('interface.frameUrano') },
-                  { value: 'native', label: t('interface.frameNative') },
-                ]}
-                onChange={set('windowFrameStyle')}
-                ariaLabel={t('interface.windowFrameStyle')}
-              />
-            ),
-          },
-          {
-            id: 'translucent-window',
-            name: t('interface.translucentWindow'),
-            desc: t('interface.translucentWindowDesc'),
-            control: (
-              <Toggle
-                value={settings.translucentWindow}
-                onChange={set('translucentWindow')}
-                ariaLabel={t('interface.translucentWindow')}
-              />
-            ),
-          },
           {
             id: 'zoom-level',
             name: t('interface.zoomLevel'),
@@ -896,6 +849,56 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 value={settings.nativeMenus}
                 onChange={set('nativeMenus')}
                 ariaLabel={t('interface.nativeMenus')}
+              />
+            ),
+          },
+          {
+            id: 'window-frame-style',
+            name: t('interface.windowFrameStyle'),
+            desc: t('interface.windowFrameStyleDesc'),
+            control: (
+              <Dropdown<WindowFrameStyle>
+                value={settings.windowFrameStyle}
+                options={[
+                  { value: 'hidden', label: t('interface.frameHidden') },
+                  { value: 'custom', label: t('interface.frameUrano') },
+                  { value: 'native', label: t('interface.frameNative') },
+                ]}
+                onChange={set('windowFrameStyle')}
+                ariaLabel={t('interface.windowFrameStyle')}
+              />
+            ),
+          },
+          {
+            id: 'open-settings-new-window',
+            name: t('interface.openSettingsInNewWindow'),
+            desc: t('interface.openSettingsInNewWindowDesc'),
+            control: (
+              <Toggle
+                value={settings.openSettingsInNewWindow}
+                onChange={(val) => {
+                  setSetting('openSettingsInNewWindow', val);
+                  if (val) {
+                    const isStandalone =
+                      typeof window !== 'undefined' &&
+                      (new URLSearchParams(window.location.search).get('window') === 'settings' ||
+                        window.location.hash.includes('window=settings'));
+                    if (!isStandalone) {
+                      useSettingsStore.getState().closeSettings();
+                      const vaultPath = useVaultStore.getState().activeVault;
+                      const vaultName =
+                        useVaultStore.getState().vaultName ||
+                        (vaultPath ? vaultPath.split(/[\\/]/).pop() : '') ||
+                        'Urano';
+                      invoke('open_settings_window', {
+                        tabId: 'interface',
+                        vaultName,
+                        frameStyle: settings.windowFrameStyle,
+                      }).catch(() => {});
+                    }
+                  }
+                }}
+                ariaLabel={t('interface.openSettingsInNewWindow')}
               />
             ),
           },
@@ -1524,16 +1527,6 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                   }
                 }}
                 className="setting-override-config-input"
-                style={{
-                  backgroundColor: 'var(--background-modifier-form-field)',
-                  border: '1px solid var(--background-modifier-border)',
-                  borderRadius: '5px',
-                  padding: '5px 10px',
-                  width: '180px',
-                  color: 'var(--text-normal)',
-                  fontSize: '13px',
-                  outline: 'none',
-                }}
               />
             ),
           },
@@ -1572,10 +1565,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             name: t('files.reindexVault'),
             desc: (
               <>
-                <span
-                  style={{ color: 'var(--text-warning, #e07a2e)' }}
-                  className="mod-warning"
-                >
+                <span className="mod-warning">
                   {t('files.reindexVaultDesc')}
                 </span>
                 <br />
