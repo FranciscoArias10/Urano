@@ -94,30 +94,13 @@ export const CssSnippetsModal: React.FC<CssSnippetsModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="modal modal-sub-dialog"
+        className="modal modal-sub-dialog mod-css-snippets"
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '90vw',
-          maxWidth: '560px',
-          maxHeight: '75vh',
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: 'var(--background-secondary, #1e1e1e)',
-          border: '1px solid var(--background-modifier-border, #2a2a2a)',
-          borderRadius: '12px',
-          boxShadow: '0 12px 36px rgba(0,0,0,0.45)',
-          overflow: 'hidden',
-        }}
       >
         {/* Header */}
-        <div
-          className="modal-header flex items-center justify-between px-5 py-4"
-          style={{
-            borderBottom: '1px solid var(--background-modifier-border)',
-          }}
-        >
+        <div className="modal-header flex items-center justify-between px-5 py-4">
           <div className="flex items-center gap-2">
             <FileCode size={20} className="text-[#e06c1b]" />
             <h2 className="text-base font-semibold text-[var(--text-normal)] m-0">
@@ -163,10 +146,7 @@ export const CssSnippetsModal: React.FC<CssSnippetsModalProps> = ({
         </div>
 
         {/* Content list */}
-        <div
-          className="modal-content overflow-y-auto px-5 py-3 flex-1 flex flex-col gap-2"
-          style={{ minHeight: '160px' }}
-        >
+        <div className="modal-content overflow-y-auto px-5 py-3 flex-1 flex flex-col gap-2 min-h-[160px]">
           {snippets.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center gap-3 text-[var(--text-muted)]">
               <FileCode size={36} className="text-[var(--text-faint)]" />
