@@ -32,7 +32,7 @@ export const CORE_PLUGIN_IDS = [
 ] as const;
 export type CorePluginId = (typeof CORE_PLUGIN_IDS)[number];
 
-export type WindowFrameStyle = 'custom' | 'native';
+export type WindowFrameStyle = 'hidden' | 'custom' | 'native';
 
 export interface RibbonItemSetting {
   id: string;
@@ -80,6 +80,7 @@ export interface UranoSettings {
   showStatusBar: boolean;
   ribbonItems: RibbonItemSetting[];
   windowFrameStyle: WindowFrameStyle;
+  openSettingsInNewWindow: boolean;
   translucentWindow: boolean;
   nativeMenus: boolean;
 
@@ -180,7 +181,8 @@ export const DEFAULT_SETTINGS: UranoSettings = {
   showTabTitleBar: true,
   showStatusBar: true,
   ribbonItems: DEFAULT_RIBBON_ITEMS,
-  windowFrameStyle: 'custom',
+  windowFrameStyle: 'hidden',
+  openSettingsInNewWindow: false,
   translucentWindow: false,
   nativeMenus: false,
 
@@ -346,7 +348,11 @@ function mergeSettings(raw: unknown): UranoSettings {
   out.showStatusBar = src?.showStatusBar !== undefined ? Boolean(src.showStatusBar) : true;
   out.translucentWindow = Boolean(src?.translucentWindow);
   out.nativeMenus = Boolean(src?.nativeMenus);
-  out.windowFrameStyle = src?.windowFrameStyle === 'native' ? 'native' : 'custom';
+  out.windowFrameStyle =
+    src?.windowFrameStyle === 'custom' || src?.windowFrameStyle === 'native'
+      ? src.windowFrameStyle
+      : 'hidden';
+  out.openSettingsInNewWindow = Boolean(src?.openSettingsInNewWindow);
 
   if (Array.isArray(src?.ribbonItems)) {
     const rawItems = src.ribbonItems as { id?: string; visible?: boolean }[];
@@ -492,6 +498,9 @@ if (typeof window !== 'undefined') {
   if (initialSettings.translucentWindow) {
     document.body.classList.add('is-translucent');
   }
+  const isFrameless = initialSettings.windowFrameStyle !== 'native';
+  document.body.classList.toggle('is-frameless', isFrameless);
+  document.body.classList.toggle('is-hidden-frameless', initialSettings.windowFrameStyle === 'hidden');
   const zoomFactor = (initialSettings.zoomLevel || 100) / 100;
   if (initialSettings.zoomLevel !== 100) {
     document.body.style.zoom = String(zoomFactor);
@@ -511,10 +520,43 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   activeTabId: 'general',
   startupMs: null,
 
-  openSettings: (tabId) =>
-    set((state) => ({ isOpen: true, activeTabId: tabId ?? state.activeTabId })),
+  openSettings: (tabId) => {
+    const { settings } = get();
+    const isStandaloneWindow =
+      typeof window !== 'undefined' &&
+      (new URLSearchParams(window.location.search).get('window') === 'settings' ||
+        window.location.hash.includes('window=settings'));
+
+    if (settings.openSettingsInNewWindow && !isStandaloneWindow) {
+      const vPath =
+        get().vaultPath ||
+        (typeof localStorage !== 'undefined' ? localStorage.getItem('urano_last_vault') : null);
+      const vaultName = vPath ? vPath.split(/[\\/]/).pop() || 'Urano' : 'Urano';
+      invoke('open_settings_window', {
+        tabId: tabId ?? null,
+        vaultName,
+        frameStyle: settings.windowFrameStyle,
+      }).catch((err) => {
+        console.warn('[Urano] No se pudo abrir ventana de ajustes, usando modal integrado:', err);
+        set((state) => ({ isOpen: true, activeTabId: tabId ?? state.activeTabId }));
+      });
+      return;
+    }
+    set((state) => ({ isOpen: true, activeTabId: tabId ?? state.activeTabId }));
+  },
   closeSettings: () => set({ isOpen: false }),
-  toggleSettings: () => set((state) => ({ isOpen: !state.isOpen })),
+  toggleSettings: () => {
+    const { isOpen, settings, openSettings, closeSettings } = get();
+    if (settings.openSettingsInNewWindow) {
+      openSettings();
+      return;
+    }
+    if (isOpen) {
+      closeSettings();
+    } else {
+      openSettings();
+    }
+  },
   setActiveTab: (tabId) => set({ activeTabId: tabId }),
 
   setSetting: (key, value) => {
@@ -554,11 +596,18 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     }
 
     if (key === 'windowFrameStyle') {
-      import('@tauri-apps/api/window')
-        .then(({ getCurrentWindow }) => {
-          getCurrentWindow().setDecorations(value === 'native').catch(() => {});
-        })
-        .catch(() => {});
+      const isNative = value === 'native';
+      invoke('set_window_decorations', { decorations: isNative }).catch(() => {
+        import('@tauri-apps/api/window')
+          .then(({ getCurrentWindow }) => {
+            getCurrentWindow().setDecorations(isNative).catch(() => {});
+          })
+          .catch(() => {});
+      });
+      if (typeof document !== 'undefined') {
+        document.body.classList.toggle('is-frameless', !isNative);
+        document.body.classList.toggle('is-hidden-frameless', value === 'hidden');
+      }
     }
 
     if (key === 'language' || key === 'spellcheck') {
@@ -684,6 +733,32 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     set({ startupMs: Math.round(performance.now()) });
   },
 }));
+
+// Cross-window reactivity: sync settings when modified in another window
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key === LOCAL_STORAGE_KEY && event.newValue) {
+      try {
+        const parsed = JSON.parse(event.newValue);
+        const merged = mergeSettings(parsed);
+        useSettingsStore.setState({ settings: merged });
+        if (merged.theme) {
+          applyBaseTheme(merged.theme);
+        }
+        if (typeof document !== 'undefined') {
+          document.body.classList.toggle('is-translucent', Boolean(merged.translucentWindow));
+          const isFrameless = merged.windowFrameStyle !== 'native';
+          document.body.classList.toggle('is-frameless', isFrameless);
+          document.body.classList.toggle('is-hidden-frameless', merged.windowFrameStyle === 'hidden');
+          const zoomFactor = (Number(merged.zoomLevel) || 100) / 100;
+          document.body.style.zoom = merged.zoomLevel === 100 ? '' : String(zoomFactor);
+        }
+      } catch (err) {
+        console.error('Error syncing settings from storage event:', err);
+      }
+    }
+  });
+}
 
 /* ------------------------------------------------------------------ *
  * Helpers used outside React (editor extensions, services)
