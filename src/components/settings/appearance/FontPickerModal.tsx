@@ -128,30 +128,13 @@ export const FontPickerModal: React.FC<FontPickerModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="modal modal-sub-dialog"
+        className="modal modal-sub-dialog mod-font-picker"
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '90vw',
-          maxWidth: '560px',
-          maxHeight: '75vh',
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: 'var(--background-secondary, #1e1e1e)',
-          border: '1px solid var(--background-modifier-border, #2a2a2a)',
-          borderRadius: '12px',
-          boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
-          overflow: 'hidden',
-        }}
       >
         {/* Header */}
-        <div
-          className="modal-header flex items-center justify-between px-6 py-4"
-          style={{
-            borderBottom: '1px solid var(--background-modifier-border)',
-          }}
-        >
+        <div className="modal-header flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
             <Type size={18} className="text-[#e06c1b]" />
             <h2 className="text-base font-semibold text-[var(--text-normal)] m-0">
