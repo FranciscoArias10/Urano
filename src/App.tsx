@@ -26,11 +26,13 @@ import { StatusBar } from './components/layout/StatusBar';
 import { SyncConfigModal } from './components/sync/SyncConfigModal';
 import { SyncLogsModal } from './components/sync/SyncLogsModal';
 import { SettingsModal } from './components/settings/SettingsModal';
+import { SettingsWindow } from './components/settings/SettingsWindow';
 import { useSettingsStore, URANO_ACCENT } from './stores/settingsStore';
 import { applyBaseTheme } from './services/themeService';
 import { useLocaleStore, LOCALES_DIR_RELATIVE, useT } from './stores/localeStore';
 import { LocalAdapter, GoogleDriveAdapter, setStorageAdapter } from './services/storageAdapter';
 import { UranoLogo } from './components/common/UranoLogo';
+import { WindowControls } from './components/layout/WindowControls';
 import { NoticeContainer, useNoticeStore } from './components/common/Notice';
 import { VaultManagerModal } from './components/vault/VaultManagerModal';
 import {
@@ -71,7 +73,12 @@ const makeTabId = () => {
 /** Background pull interval for Google Drive changes made on other devices. */
 const BACKGROUND_SYNC_INTERVAL_MS = 5 * 60 * 1000;
 
-export const App: React.FC = () => {
+const isSettingsWindow =
+  typeof window !== 'undefined' &&
+  (new URLSearchParams(window.location.search).get('window') === 'settings' ||
+    window.location.hash.includes('window=settings'));
+
+const MainApp: React.FC = () => {
   // Tabs State (Obsidian Workspace Leaf Tabs)
   const [tabs, setTabs] = useState<TabItem[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>('');
@@ -261,15 +268,39 @@ export const App: React.FC = () => {
     applyBaseTheme(settings.theme);
   }, [settings]);
 
-  // Synchronize window decorations with windowFrameStyle
+  // Window title computed 1:1 with Obsidian: "<active_note> - <vault_name> - Urano"
+  const mainWindowTitle = useMemo(() => {
+    const noteName = activeFileName ? activeFileName.replace(/\.(md|canvas|base)$/i, '') : '';
+    const vaultPart = vaultName || (activeVault ? activeVault.split(/[\\/]/).pop() : '') || 'Urano';
+    return noteName ? `${noteName} - ${vaultPart} - Urano` : `${vaultPart} - Urano`;
+  }, [activeFileName, vaultName, activeVault]);
+
+  // Synchronize document title and Tauri window title
   useEffect(() => {
+    document.title = mainWindowTitle;
     try {
       import('@tauri-apps/api/window')
-        .then(({ getCurrentWindow }) => {
-          getCurrentWindow().setDecorations(settings.windowFrameStyle === 'native').catch(() => {});
-        })
+        .then(({ getCurrentWindow }) => getCurrentWindow().setTitle(mainWindowTitle))
         .catch(() => {});
     } catch {}
+  }, [mainWindowTitle]);
+
+  // Synchronize CSS body classes with frameStyle
+  useEffect(() => {
+    document.body.classList.toggle('is-frameless', settings.windowFrameStyle !== 'native');
+    document.body.classList.toggle('is-hidden-frameless', settings.windowFrameStyle === 'hidden');
+  }, [settings.windowFrameStyle]);
+
+  // Synchronize window decorations with windowFrameStyle
+  useEffect(() => {
+    const isNative = settings.windowFrameStyle === 'native';
+    invoke('set_window_decorations', { decorations: isNative }).catch(() => {
+      import('@tauri-apps/api/window')
+        .then(({ getCurrentWindow }) => {
+          getCurrentWindow().setDecorations(isNative).catch(() => {});
+        })
+        .catch(() => {});
+    });
   }, [settings.windowFrameStyle]);
 
   // On mount: restore previous vault and Google auth status
@@ -1113,6 +1144,29 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-obsidian-bg text-obsidian-text overflow-hidden select-none">
+      {/* Obsidian Custom Frame Titlebar (rendered in 'custom' / 'Marco de Urano' mode) */}
+      {settings.windowFrameStyle === 'custom' && (
+        <div
+          className="titlebar"
+          data-tauri-drag-region
+          onDoubleClick={async () => {
+            try {
+              const { getCurrentWindow } = await import('@tauri-apps/api/window');
+              await getCurrentWindow().toggleMaximize();
+            } catch {
+              await invoke('toggle_maximize_window').catch(() => {});
+            }
+          }}
+        >
+          <div className="titlebar-inner" data-tauri-drag-region>
+            <div className="titlebar-text" data-tauri-drag-region>
+              {mainWindowTitle}
+            </div>
+            <WindowControls />
+          </div>
+        </div>
+      )}
+
       {/* Main Workspace Body */}
       <div className="flex flex-1 overflow-hidden">
         {/* ========================================================
@@ -1512,4 +1566,11 @@ export const App: React.FC = () => {
       <NoticeContainer />
     </div>
   );
+};
+
+export const App: React.FC = () => {
+  if (isSettingsWindow) {
+    return <SettingsWindow />;
+  }
+  return <MainApp />;
 };
