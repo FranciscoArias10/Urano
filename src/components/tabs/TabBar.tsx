@@ -346,8 +346,8 @@ export const TabBar: React.FC<TabBarProps> = ({
             </div>
           )}
 
-          {/* Native window controls ------------------------------------- */}
-          {windowFrameStyle !== 'native' && <WindowControls />}
+          {/* Native window controls (integrated in tab bar only in 'hidden' frame mode) --- */}
+          {windowFrameStyle === 'hidden' && <WindowControls />}
         </div>
       </div>
 
