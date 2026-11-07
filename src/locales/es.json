@@ -998,6 +998,7 @@
     "modeReading": "Leyendo",
     "modeSource": "Codigo fuente",
     "modeLivePreview": "Vista previa",
+    "modeMenu": "Modo del editor",
     "currentReadingTooltip": "Vista actual: lectura; haz clic para editar",
     "currentEditingTooltip": "Vista actual: edición; haz clic para leer",
     "switchToLivePreview": "Cambiar a Live Preview",

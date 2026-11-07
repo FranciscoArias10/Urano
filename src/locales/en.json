@@ -998,6 +998,7 @@
     "modeReading": "Reading",
     "modeSource": "Source mode",
     "modeLivePreview": "Live preview",
+    "modeMenu": "Editor mode",
     "currentReadingTooltip": "Current view: reading; click to edit",
     "currentEditingTooltip": "Current view: editing; click to read",
     "switchToLivePreview": "Switch to Live Preview",
