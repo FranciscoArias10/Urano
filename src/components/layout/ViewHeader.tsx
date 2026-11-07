@@ -42,6 +42,7 @@ interface ViewHeaderProps {
   onCopyPath?: () => void;
   onSplitRight?: () => void;
   onSplitDown?: () => void;
+  hasActiveFile?: boolean;
 }
 
 export const ViewHeader: React.FC<ViewHeaderProps> = ({
@@ -62,6 +63,7 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
   onCopyPath,
   onSplitRight,
   onSplitDown,
+  hasActiveFile = true,
 }) => {
   const t = useT();
   const [isRenaming, setIsRenaming] = useState(false);
@@ -106,71 +108,84 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
     setMenu({ x: rect.right, y: rect.bottom + 6 });
   };
 
-  const menuItems: MenuItemData[] = [
-    {
-      title: t('viewHeader.readingView'),
-      icon: <BookOpen size={14} />,
-      checked: viewMode === 'reading',
-      action: () => onChangeViewMode?.('reading'),
-    },
-    {
-      title: t('viewHeader.livePreview'),
-      icon: <PenLine size={14} />,
-      checked: viewMode === 'live-preview',
-      action: () => onChangeViewMode?.('live-preview'),
-    },
-    {
-      title: t('viewHeader.sourceMode'),
-      icon: <Code2 size={14} />,
-      checked: viewMode === 'source',
-      action: () => onChangeViewMode?.('source'),
-    },
-    { type: 'separator' },
-    {
-      title: t('viewHeader.splitRight'),
-      icon: <Columns size={14} />,
-      action: () => onSplitRight?.(),
-    },
-    {
-      title: t('viewHeader.splitDown'),
-      icon: <Rows size={14} />,
-      action: () => onSplitDown?.(),
-    },
-    { type: 'separator' },
-    {
-      title: t('viewHeader.rename'),
-      icon: <TextCursorInput size={14} />,
-      action: () => setIsRenaming(true),
-    },
-    {
-      title: t('viewHeader.moveFileTo'),
-      icon: <FolderInput size={14} />,
-      action: () => onMoveFile?.(),
-    },
-    {
-      title: t('viewHeader.makeCopy'),
-      icon: <Copy size={14} />,
-      action: () => onDuplicateFile?.(),
-    },
-    { type: 'separator' },
-    {
-      title: t('viewHeader.copyUranoUrl'),
-      icon: <Link size={14} />,
-      action: () => onCopyLink?.(),
-    },
-    {
-      title: t('viewHeader.copyFilePath'),
-      icon: <FileText size={14} />,
-      action: () => onCopyPath?.(),
-    },
-    { type: 'separator' },
-    {
-      title: t('viewHeader.deleteFile'),
-      icon: <Trash2 size={14} />,
-      isWarning: true,
-      action: () => onDeleteFile?.(),
-    },
-  ];
+  const menuItems: MenuItemData[] = hasActiveFile
+    ? [
+        {
+          title: t('viewHeader.readingView'),
+          icon: <BookOpen size={14} />,
+          checked: viewMode === 'reading',
+          action: () => onChangeViewMode?.('reading'),
+        },
+        {
+          title: t('viewHeader.livePreview'),
+          icon: <PenLine size={14} />,
+          checked: viewMode === 'live-preview',
+          action: () => onChangeViewMode?.('live-preview'),
+        },
+        {
+          title: t('viewHeader.sourceMode'),
+          icon: <Code2 size={14} />,
+          checked: viewMode === 'source',
+          action: () => onChangeViewMode?.('source'),
+        },
+        { type: 'separator' },
+        {
+          title: t('viewHeader.splitRight'),
+          icon: <Columns size={14} />,
+          action: () => onSplitRight?.(),
+        },
+        {
+          title: t('viewHeader.splitDown'),
+          icon: <Rows size={14} />,
+          action: () => onSplitDown?.(),
+        },
+        { type: 'separator' },
+        {
+          title: t('viewHeader.rename'),
+          icon: <TextCursorInput size={14} />,
+          action: () => setIsRenaming(true),
+        },
+        {
+          title: t('viewHeader.moveFileTo'),
+          icon: <FolderInput size={14} />,
+          action: () => onMoveFile?.(),
+        },
+        {
+          title: t('viewHeader.makeCopy'),
+          icon: <Copy size={14} />,
+          action: () => onDuplicateFile?.(),
+        },
+        { type: 'separator' },
+        {
+          title: t('viewHeader.copyUranoUrl'),
+          icon: <Link size={14} />,
+          action: () => onCopyLink?.(),
+        },
+        {
+          title: t('viewHeader.copyFilePath'),
+          icon: <FileText size={14} />,
+          action: () => onCopyPath?.(),
+        },
+        { type: 'separator' },
+        {
+          title: t('viewHeader.deleteFile'),
+          icon: <Trash2 size={14} />,
+          isWarning: true,
+          action: () => onDeleteFile?.(),
+        },
+      ]
+    : [
+        {
+          title: t('viewHeader.splitRight'),
+          icon: <Columns size={14} />,
+          action: () => onSplitRight?.(),
+        },
+        {
+          title: t('viewHeader.splitDown'),
+          icon: <Rows size={14} />,
+          action: () => onSplitDown?.(),
+        },
+      ];
 
   const isReading = viewMode === 'reading';
 
@@ -218,7 +233,7 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
           </div>
         )}
 
-        {isRenaming ? (
+        {isRenaming && hasActiveFile ? (
           <input
             ref={inputRef}
             className="view-header-title-input"
@@ -240,8 +255,8 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
         ) : (
           <div
             className="view-header-title"
-            title={t('viewHeader.clickToRename')}
-            onClick={() => setIsRenaming(true)}
+            title={hasActiveFile ? t('viewHeader.clickToRename') : undefined}
+            onClick={hasActiveFile ? () => setIsRenaming(true) : undefined}
           >
             {title}
           </div>
@@ -250,23 +265,25 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
 
       {/* Right: view actions ------------------------------------------- */}
       <div className="view-actions">
-        <button
-          type="button"
-          className="view-action"
-          title={
-            isReading
-              ? t('viewHeader.currentReadingTooltip')
-              : t('viewHeader.currentEditingTooltip')
-          }
-          aria-label={
-            isReading
-              ? t('viewHeader.currentReadingTooltip')
-              : t('viewHeader.currentEditingTooltip')
-          }
-          onClick={onToggleViewMode}
-        >
-          {isReading ? <PenLine size={16} /> : <BookOpen size={16} />}
-        </button>
+        {hasActiveFile && (
+          <button
+            type="button"
+            className="view-action"
+            title={
+              isReading
+                ? t('viewHeader.currentReadingTooltip')
+                : t('viewHeader.currentEditingTooltip')
+            }
+            aria-label={
+              isReading
+                ? t('viewHeader.currentReadingTooltip')
+                : t('viewHeader.currentEditingTooltip')
+            }
+            onClick={onToggleViewMode}
+          >
+            {isReading ? <PenLine size={16} /> : <BookOpen size={16} />}
+          </button>
+        )}
         <button
           ref={menuButtonRef}
           type="button"
