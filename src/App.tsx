@@ -67,6 +67,9 @@ import {
   Check,
   BookOpen,
   Code,
+  SquarePen,
+  Table,
+  LayoutGrid,
 } from 'lucide-react';
 
 /** Stable, unique identifier for a workspace leaf (tab). */
@@ -199,6 +202,7 @@ const MainApp: React.FC = () => {
     pendingRenamePrompt,
     resolvePendingRename,
     isLoading,
+    closeActiveFile,
   } = useVaultStore();
 
   const { checkAuthStatus, triggerSync, isSyncing, notifyVaultChanged } = useSyncStore();
@@ -426,7 +430,7 @@ const MainApp: React.FC = () => {
 
   // Bidirectional sync: keep activeFile and activeTab in sync
   useEffect(() => {
-    if (!activeTab || !activeTab.filePath || activeTab.type === 'graph') return;
+    if (!activeTab || !activeTab.filePath || activeTab.type === 'graph' || activeTab.type === 'empty') return;
     if (!activeFile || !isSamePath(activeFile, activeTab.filePath)) {
       const resolved = resolveFilePathInVault(activeTab.filePath, fileTree, activeVault);
       selectFile(resolved || activeTab.filePath);
@@ -493,7 +497,9 @@ const MainApp: React.FC = () => {
     // Which leaf hosts this file?
     const existing = tabs.find((t) => isSamePath(t.filePath, activeFile));
     const reusable =
-      !existing && reuseActiveTab ? tabs.find((t) => t.id === activeTabId) : undefined;
+      !existing && (reuseActiveTab || (activeTab && (!activeTab.filePath || activeTab.type === 'empty')))
+        ? tabs.find((t) => t.id === activeTabId)
+        : undefined;
 
     let nextTabs: TabItem[];
     let targetTabId: string;
@@ -569,7 +575,7 @@ const MainApp: React.FC = () => {
   shortcutsRef.current = {
     back: handleNavigateBack,
     forward: handleNavigateForward,
-    newTab: () => handleCreateUntitledNote(),
+    newTab: () => handleCreateNewTab(),
     toggleViewMode: toggleReadingView,
     toggleSourceMode: toggleSourceMode,
   };
@@ -678,18 +684,20 @@ const MainApp: React.FC = () => {
   // Create untitled note immediately without prompt
   const handleCreateUntitledNote = async () => {
     if (!activeVault) return;
-    const newNote = await createUntitledNote(activeVault);
-    if (newNote?.path) {
-      setActiveTabId(newNote.path);
+    if (!activeTab || !activeTab.filePath || activeTab.type === 'empty') {
+      reuseActiveTabRef.current = true;
     }
+    await createUntitledNote(activeVault);
   };
 
   // Create canvas
   const handleCreateCanvas = async () => {
     if (!activeVault) return;
+    if (!activeTab || !activeTab.filePath || activeTab.type === 'empty') {
+      reuseActiveTabRef.current = true;
+    }
     const { path } = await createUntitledCanvas(activeVault);
     if (path) {
-      setActiveTabId(path);
       showNotice(t('app.notices.canvasCreated'), 2500, 'info');
     }
   };
@@ -697,9 +705,11 @@ const MainApp: React.FC = () => {
   // Create base
   const handleCreateBase = async () => {
     if (!activeVault) return;
+    if (!activeTab || !activeTab.filePath || activeTab.type === 'empty') {
+      reuseActiveTabRef.current = true;
+    }
     const { path } = await createUntitledBase(activeVault);
     if (path) {
-      setActiveTabId(path);
       showNotice(t('app.notices.baseCreated'), 2500, 'info');
     }
   };
@@ -763,22 +773,37 @@ const MainApp: React.FC = () => {
     setTabs((prev) => prev.filter((t) => t.id === tabId));
     setActiveTabId(tabId);
     const tab = tabs.find((t) => t.id === tabId);
-    if (tab?.filePath) {
+    if (tab?.filePath && tab.type !== 'empty') {
       selectFile(tab.filePath);
+    } else {
+      closeActiveFile();
     }
   };
 
   // Close all tabs (Urano keeps pinned tabs open)
   const handleCloseAllTabs = () => {
     const remaining = tabs.filter((t) => t.pinned);
+    if (remaining.length === 0) {
+      const newTabId = makeTabId();
+      const emptyTab: TabItem = {
+        id: newTabId,
+        type: 'empty',
+        title: t('tabs.newTabLabel') || 'Nueva pestaña',
+      };
+      setTabs([emptyTab]);
+      setActiveTabId(newTabId);
+      closeActiveFile();
+      return;
+    }
+
     setTabs(remaining);
     if (!remaining.some((t) => t.id === activeTabId)) {
       const next = remaining[remaining.length - 1];
-      if (next) {
-        setActiveTabId(next.id);
-        if (next.filePath) selectFile(next.filePath);
+      setActiveTabId(next.id);
+      if (next.filePath && next.type !== 'empty') {
+        selectFile(next.filePath);
       } else {
-        setActiveTabId('');
+        closeActiveFile();
       }
     }
   };
@@ -949,59 +974,88 @@ const MainApp: React.FC = () => {
     setActiveTabId(graphTabId);
   };
 
+  // Create New Tab (1:1 with Obsidian: empty leaf with "Nueva pestaña")
+  const handleCreateNewTab = useCallback(() => {
+    const newTabId = makeTabId();
+    const emptyTab: TabItem = {
+      id: newTabId,
+      type: 'empty',
+      title: t('tabs.newTabLabel') || 'Nueva pestaña',
+    };
+    setTabs((prev) => [...prev, emptyTab]);
+    setActiveTabId(newTabId);
+    closeActiveFile();
+  }, [t, closeActiveFile]);
+
   // Tab Selection
   const handleSelectTab = (tabId: string) => {
     setActiveTabId(tabId);
     const tab = tabs.find((t) => t.id === tabId);
-    if (tab && tab.filePath) {
+    if (tab && tab.filePath && tab.type !== 'empty') {
       selectFile(tab.filePath);
+    } else {
+      closeActiveFile();
     }
   };
 
   // Close Tab
   const handleCloseTab = (tabId: string) => {
-    const remaining = tabs.filter((t) => t.id !== tabId);
+    let remaining = tabs.filter((t) => t.id !== tabId);
+
+    // If no tabs remain, maintain Obsidian's 1:1 behavior: open a "Nueva pestaña"
+    if (remaining.length === 0) {
+      const newTabId = makeTabId();
+      const emptyTab: TabItem = {
+        id: newTabId,
+        type: 'empty',
+        title: t('tabs.newTabLabel') || 'Nueva pestaña',
+      };
+      setTabs([emptyTab]);
+      setActiveTabId(newTabId);
+      closeActiveFile();
+      return;
+    }
+
     setTabs(remaining);
 
     if (activeTabId === tabId) {
-      if (remaining.length > 0) {
-        const next = remaining[remaining.length - 1];
-        setActiveTabId(next.id);
-        if (next.filePath) {
-          selectFile(next.filePath);
-        }
+      const next = remaining[remaining.length - 1];
+      setActiveTabId(next.id);
+      if (next.filePath && next.type !== 'empty') {
+        selectFile(next.filePath);
       } else {
-        setActiveTabId('');
+        closeActiveFile();
       }
     }
   };
 
   // Clean title of the active note (file name without extension)
   const activeFileTitle = useMemo(() => {
-    const target = activeFile || activeTab?.filePath;
-    if (!target) return activeTab?.title || '';
+    const target = activeFile || (activeTab?.type !== 'empty' ? activeTab?.filePath : null);
+    if (!target) return t('tabs.newTabLabel') || 'Nueva pestaña';
     const rel = getRelativeVaultPath(target, activeVault || '');
     const parts = rel.split('/').filter(Boolean);
     const fileName = parts.pop() || '';
-    return fileName.replace(/\.(md|canvas|base)$/i, '') || fileName || activeTab?.title || '';
-  }, [activeFile, activeTab, activeVault]);
+    return fileName.replace(/\.(md|canvas|base)$/i, '') || fileName;
+  }, [activeFile, activeTab, activeVault, t]);
 
   // Folder breadcrumb of the active note (relative to the vault root)
   const activeParentPath = useMemo(() => {
-    const target = activeFile || activeTab?.filePath;
+    const target = activeFile || (activeTab?.type !== 'empty' ? activeTab?.filePath : null);
     if (!target) return [];
     return getRelativeVaultFolderSegments(target, activeVault || '');
   }, [activeFile, activeTab, activeVault]);
 
   // Compute backlinks count for the active file
   const backlinksCount = useMemo(() => {
+    if (!activeFile) return 0;
     const targetName = activeFileName || (activeTab?.title ? `${activeTab.title}.md` : '');
     if (!targetName) return 0;
     const base = targetName.replace(/\.(md|canvas|base)$/i, '').toLowerCase();
     let count = 0;
 
     for (const [path, content] of Object.entries(notesContentMap)) {
-      if (isSamePath(path, activeFile || activeTab?.filePath)) continue;
+      if (isSamePath(path, activeFile)) continue;
       const regex = /\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g;
       let m;
       while ((m = regex.exec(content)) !== null) {
@@ -1425,7 +1479,7 @@ const MainApp: React.FC = () => {
             onCloseTab={handleCloseTab}
             onCloseOtherTabs={handleCloseOtherTabs}
             onCloseAllTabs={handleCloseAllTabs}
-            onNewTab={handleCreateUntitledNote}
+            onNewTab={handleCreateNewTab}
             onTogglePin={handleTogglePin}
             onToggleRightSidebar={() => setShowBacklinks((prev) => !prev)}
             rightSidebarVisible={showBacklinks}
@@ -1453,6 +1507,7 @@ const MainApp: React.FC = () => {
               onCopyPath={handleCopyPath}
               onSplitRight={handleSplitUnavailable}
               onSplitDown={handleSplitUnavailable}
+              hasActiveFile={Boolean(activeFile)}
             />
           )}
 
@@ -1466,43 +1521,90 @@ const MainApp: React.FC = () => {
               <BaseView filePath={activeFile || activeTab?.filePath || ''} />
             ) : (activeFile && isImagePath(activeFile)) || activeTab?.type === 'image' ? (
               <ImageView filePath={activeFile || activeTab?.filePath || ''} />
-            ) : activeFile || (activeTab && activeTab.type === 'note') ? (
-              isLoading && !activeFile ? (
-                <div className="flex-1 h-full flex flex-col items-center justify-center text-urano-muted p-8 text-center bg-urano-bg">
-                  <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-4" />
-                  <p className="text-sm text-urano-muted">{t('common.loading') || 'Cargando...'}</p>
-                </div>
-              ) : (
-                <EditorErrorBoundary noteName={activeFileName || activeTab?.title || t('common.untitled')}>
-                  <Editor
-                    onWikilinkClick={handleWikilinkClick}
-                    onOpenInNewTab={handleOpenInNewTab}
-                    onOpenToRight={handleOpenInNewTab}
-                    viewMode={viewMode}
-                  />
-                </EditorErrorBoundary>
-              )
-            ) : (
+            ) : activeFile ? (
+              <EditorErrorBoundary noteName={activeFileName || t('common.untitled')}>
+                <Editor
+                  onWikilinkClick={handleWikilinkClick}
+                  onOpenInNewTab={handleOpenInNewTab}
+                  onOpenToRight={handleOpenInNewTab}
+                  viewMode={viewMode}
+                />
+              </EditorErrorBoundary>
+            ) : isLoading ? (
               <div className="flex-1 h-full flex flex-col items-center justify-center text-urano-muted p-8 text-center bg-urano-bg">
-                <UranoLogo size={56} className="mb-4 opacity-80" />
-                <h2 className="text-xl font-medium text-urano-text mb-2">{t('app.emptyState.title')}</h2>
-                <p className="text-sm max-w-sm text-urano-muted mb-6">
+                <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-4" />
+                <p className="text-sm text-urano-muted">{t('common.loading') || 'Cargando...'}</p>
+              </div>
+            ) : (
+              <div className="flex-1 h-full flex flex-col items-center justify-center p-8 text-center bg-urano-bg select-none">
+                <UranoLogo
+                  size={68}
+                  style={{ width: '68px', height: '68px', filter: 'drop-shadow(0 6px 16px rgba(249, 115, 22, 0.28))' }}
+                />
+                <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-normal)', marginTop: '12px' }}>
+                  {t('app.emptyState.title')}
+                </h2>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', maxWidth: '340px', textAlign: 'center', lineHeight: 1.5, marginTop: '6px', marginBottom: '24px' }}>
                   {t('app.emptyState.description')}
                 </p>
-                <div className="flex items-center gap-3">
+
+                <div className="empty-state-action-list">
                   <button
-                    onClick={handleCreateUntitledNote}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white text-xs font-medium shadow transition-colors"
+                    type="button"
+                    onClick={() => {
+                      reuseActiveTabRef.current = true;
+                      handleCreateUntitledNote();
+                    }}
+                    className="empty-state-action-btn"
                   >
-                    <FilePlus size={14} />
-                    <span>{t('app.emptyState.createNote')}</span>
+                    <div className="empty-state-action-left">
+                      <SquarePen size={16} />
+                      <span>{t('app.emptyState.newNote')}</span>
+                    </div>
+                    <span className="empty-state-action-hotkey">Ctrl + N</span>
                   </button>
+
                   <button
-                    onClick={handleOpenFolderDialog}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--interactive-normal)] hover:bg-[var(--interactive-hover)] text-urano-text text-xs font-medium transition-colors"
+                    type="button"
+                    onClick={() => {
+                      reuseActiveTabRef.current = true;
+                      handleCreateBase();
+                    }}
+                    className="empty-state-action-btn"
                   >
-                    <FolderOpen size={14} />
-                    <span>{t('app.emptyState.openFolder')}</span>
+                    <div className="empty-state-action-left">
+                      <Table size={16} />
+                      <span>{t('app.emptyState.newBase')}</span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      reuseActiveTabRef.current = true;
+                      handleCreateCanvas();
+                    }}
+                    className="empty-state-action-btn"
+                  >
+                    <div className="empty-state-action-left">
+                      <LayoutGrid size={16} />
+                      <span>{t('app.emptyState.newCanvas')}</span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPaletteMode('files');
+                      setPaletteOpen(true);
+                    }}
+                    className="empty-state-action-btn"
+                  >
+                    <div className="empty-state-action-left">
+                      <Search size={16} />
+                      <span>{t('app.emptyState.goToFile')}</span>
+                    </div>
+                    <span className="empty-state-action-hotkey">Ctrl + O</span>
                   </button>
                 </div>
               </div>
