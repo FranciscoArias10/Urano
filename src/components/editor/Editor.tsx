@@ -42,6 +42,7 @@ import { useNoticeStore } from '../common/Notice';
 import { useT } from '../../stores/localeStore';
 import { ImageLightbox } from '../common/ImageLightbox';
 import { FileItem } from '../../types';
+import { ReadingView } from './ReadingView';
 import {
   FileText,
   Highlighter,
@@ -345,6 +346,40 @@ export const Editor: React.FC<EditorProps> = ({
 
   const { showNotice } = useNoticeStore();
   const t = useT();
+
+  // Synchronize CodeMirror buffer immediately before or upon switching to 'reading' mode,
+  // and request a layout measure when switching back to editing mode.
+  useEffect(() => {
+    if (editorMode === 'reading' && viewRef.current) {
+      const liveDoc = viewRef.current.state.doc.toString();
+      if (liveDoc !== fileContent) {
+        lastDispatchedDocRef.current = liveDoc;
+        updateContent(liveDoc);
+      }
+    } else if (editorMode !== 'reading' && viewRef.current) {
+      viewRef.current.requestMeasure();
+    }
+  }, [editorMode]);
+
+  // Handle task checklist toggling from reading mode
+  const handleTaskToggle = (lineIndex: number, newChecked: boolean) => {
+    const currentDoc = viewRef.current ? viewRef.current.state.doc.toString() : fileContent;
+    const lines = currentDoc.split('\n');
+    if (lineIndex >= 0 && lineIndex < lines.length) {
+      lines[lineIndex] = lines[lineIndex].replace(
+        /^(\s*[-*+]\s+\[)([ xX])(\])/,
+        `$1${newChecked ? 'x' : ' '}$3`
+      );
+      const newDoc = lines.join('\n');
+      lastDispatchedDocRef.current = newDoc;
+      updateContent(newDoc);
+      if (viewRef.current) {
+        viewRef.current.dispatch({
+          changes: { from: 0, to: viewRef.current.state.doc.length, insert: newDoc },
+        });
+      }
+    }
+  };
 
   const cleanTitle = useMemo(() => {
     if (activeFile) {
@@ -2440,59 +2475,57 @@ export const Editor: React.FC<EditorProps> = ({
           </div>
         )}
 
-        {editorMode === 'reading' ? (
-          /* Reading View Mode */
-          <div
-            className={`h-full overflow-y-auto px-12 py-10 ${
-              readableLineLength ? 'max-w-[var(--file-line-width,700px)] mx-auto' : 'w-full max-w-none'
-            } text-urano-text leading-relaxed font-sans`}
-          >
-            {showInlineTitle && (
-              <h1 className="text-3xl font-bold text-urano-text mb-6 border-b border-urano-border pb-3">
-                {cleanTitle}
-              </h1>
-            )}
-            <div className="whitespace-pre-wrap select-text">
-              {strictLineBreaks
-                ? // Markdown spec: a single newline is a soft break (rendered as a space)
-                  fileContent.replace(/([^\n])\n(?!\n)/g, '$1 ')
-                : fileContent}
-            </div>
-          </div>
-        ) : (
-          /* Live Preview / Source Mode (CodeMirror 6) */
-          <div
-            className={`flex-1 flex flex-col h-full overflow-hidden relative ${
-              editorMode === 'source' ? 'source-mode' : ''
-            }`}
-          >
-            {/* Inline Title (.inline-title) directly above the CodeMirror 6 canvas */}
-            {showInlineTitle && (
-              <div
-                className={`w-full ${
-                  readableLineLength ? 'max-w-[var(--file-line-width,700px)] mx-auto' : ''
-                } px-12 pt-6 shrink-0`}
-              >
-                <input
-                  ref={inlineTitleRef}
-                  type="text"
-                  className="inline-title"
-                  value={draftTitle}
-                  spellCheck={spellcheck}
-                  autoCorrect="on"
-                  autoCapitalize="on"
-                  lang={language}
-                  onChange={(e) => setDraftTitle(e.target.value)}
-                  onKeyDown={handleTitleKeyDown}
-                  onBlur={handleTitleBlur}
-                />
-              </div>
-            )}
+        {/* Reading View Mode (1:1 con Obsidian) */}
+        <div
+          className={`h-full w-full overflow-hidden ${
+            editorMode === 'reading' ? 'block' : 'hidden'
+          }`}
+          style={{ display: editorMode === 'reading' ? 'block' : 'none' }}
+        >
+          <ReadingView
+            content={fileContent}
+            title={cleanTitle}
+            showInlineTitle={showInlineTitle}
+            readableLineLength={readableLineLength}
+            strictLineBreaks={strictLineBreaks}
+            onWikilinkClick={onWikilinkClick}
+            onTaskToggle={handleTaskToggle}
+          />
+        </div>
 
-            {/* CodeMirror 6 Editor Canvas */}
-            <div ref={editorRef} className="flex-1 min-h-0" />
-          </div>
-        )}
+        {/* Live Preview / Source Mode (CodeMirror 6) */}
+        <div
+          className={`flex-1 flex flex-col h-full overflow-hidden relative ${
+            editorMode === 'source' ? 'source-mode' : ''
+          } ${editorMode === 'reading' ? 'hidden' : 'flex'}`}
+          style={{ display: editorMode === 'reading' ? 'none' : 'flex' }}
+        >
+          {/* Inline Title (.inline-title) directly above the CodeMirror 6 canvas */}
+          {showInlineTitle && (
+            <div
+              className={`w-full ${
+                readableLineLength ? 'max-w-[var(--file-line-width,700px)] mx-auto' : ''
+              } px-12 pt-6 shrink-0`}
+            >
+              <input
+                ref={inlineTitleRef}
+                type="text"
+                className="inline-title"
+                value={draftTitle}
+                spellCheck={spellcheck}
+                autoCorrect="on"
+                autoCapitalize="on"
+                lang={language}
+                onChange={(e) => setDraftTitle(e.target.value)}
+                onKeyDown={handleTitleKeyDown}
+                onBlur={handleTitleBlur}
+              />
+            </div>
+          )}
+
+          {/* CodeMirror 6 Editor Canvas */}
+          <div ref={editorRef} className="flex-1 min-h-0" />
+        </div>
       </div>
 
       {/* Floating Urano [[ Wikilink Suggestion Dropdown */}
