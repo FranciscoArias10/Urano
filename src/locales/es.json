@@ -553,7 +553,11 @@
       "title": "Bóveda de Urano",
       "description": "Crea una nueva nota (Ctrl+N) o presiona Ctrl+O para abrir una nota existente.",
       "createNote": "Crear nueva nota",
-      "openFolder": "Abrir otra carpeta"
+      "openFolder": "Abrir otra carpeta",
+      "newNote": "Nueva nota",
+      "newBase": "Nueva base",
+      "newCanvas": "Nuevo lienzo",
+      "goToFile": "Ir a archivo"
     }
   },
   "backlinks": {

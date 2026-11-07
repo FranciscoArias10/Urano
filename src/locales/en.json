@@ -553,7 +553,11 @@
       "title": "Urano vault",
       "description": "Create a new note (Ctrl+N) or press Ctrl+O to open an existing note.",
       "createNote": "Create new note",
-      "openFolder": "Open another folder"
+      "openFolder": "Open another folder",
+      "newNote": "New note",
+      "newBase": "New base",
+      "newCanvas": "New canvas",
+      "goToFile": "Go to file"
     }
   },
   "backlinks": {
