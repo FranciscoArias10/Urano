@@ -160,6 +160,7 @@ interface VaultState {
   openOrCreateWikilink: (noteName: string) => Promise<void>;
   loadAllNotesContent: () => Promise<void>;
   rebuildVaultCache: () => Promise<void>;
+  closeActiveFile: () => void;
   setAutoFocusTitle: (focus: boolean) => void;
   setShouldSelectTitleOnOpen: (focus: boolean) => void;
 }
@@ -435,6 +436,15 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       set({ isLoading: false });
       console.error('Error al leer archivo:', err);
     }
+  },
+
+  closeActiveFile: () => {
+    set({
+      activeFile: null,
+      activeFileName: null,
+      fileContent: '',
+      isDirty: false,
+    });
   },
 
   updateContent: (content: string) => {
