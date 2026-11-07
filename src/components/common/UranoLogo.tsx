@@ -6,9 +6,10 @@ interface UranoLogoProps {
   className?: string;
   size?: number;
   customSrc?: string | null;
+  style?: React.CSSProperties;
 }
 
-export const UranoLogo: React.FC<UranoLogoProps> = ({ className = '', size = 24, customSrc }) => {
+export const UranoLogo: React.FC<UranoLogoProps> = ({ className = '', size = 24, customSrc, style }) => {
   const storeIcon = useSettingsStore((s) => s.settings.customIcon);
   const activeIconPath = customSrc !== undefined ? customSrc : storeIcon;
 
@@ -23,7 +24,7 @@ export const UranoLogo: React.FC<UranoLogoProps> = ({ className = '', size = 24,
         alt="Urano Logo"
         width={size}
         height={size}
-        style={{ width: `${size}px`, height: `${size}px` }}
+        style={{ width: `${size}px`, height: `${size}px`, ...style }}
         className={`object-contain rounded-sm ${className}`}
       />
     );
@@ -36,6 +37,7 @@ export const UranoLogo: React.FC<UranoLogoProps> = ({ className = '', size = 24,
       viewBox="0 0 100 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      style={style}
       className={className}
     >
       <defs>
