@@ -401,11 +401,24 @@ const MainApp: React.FC = () => {
           } else {
             setActiveTabId(parsed[parsed.length - 1].id);
           }
+          return;
         }
       }
     } catch (e) {
       console.warn('Error al restaurar pestañas desde localStorage:', e);
     }
+
+    // Default to an empty in-memory tab if no tabs were saved
+    const newTabId = makeTabId();
+    setTabs([
+      {
+        id: newTabId,
+        type: 'empty',
+        title: t('tabs.newTabLabel') || 'Nueva pestaña',
+      },
+    ]);
+    setActiveTabId(newTabId);
+    closeActiveFile();
   }, [activeVault]);
 
   // Save tabs to localStorage per vault with normalized key
