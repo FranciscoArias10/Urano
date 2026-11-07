@@ -71,7 +71,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
       case 'error':
         return <CloudRain className="w-3.5 h-3.5 text-red-400" />;
       default:
-        return <Cloud className="w-3.5 h-3.5 text-obsidian-muted" />;
+        return <Cloud className="w-3.5 h-3.5 text-urano-muted" />;
     }
   };
 
@@ -90,21 +90,21 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
   };
 
   return (
-    <header className="h-11 bg-obsidian-sidebar border-b border-obsidian-border flex items-center justify-between px-3 select-none z-30">
+    <header className="h-11 bg-urano-sidebar border-b border-urano-border flex items-center justify-between px-3 select-none z-30">
       {/* Left: Urano Logo & Vault Picker */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 font-bold text-sm tracking-wider text-obsidian-text">
+        <div className="flex items-center gap-2 font-bold text-sm tracking-wider text-urano-text">
           <UranoLogo size={22} className="shrink-0 drop-shadow-[0_0_8px_rgba(234,88,12,0.4)]" />
           <span className="bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 bg-clip-text text-transparent font-black tracking-widest">
             URANO
           </span>
         </div>
 
-        <div className="h-4 w-px bg-obsidian-border" />
+        <div className="h-4 w-px bg-urano-border" />
 
         <button
           onClick={handleSelectVault}
-          className="flex items-center gap-1.5 text-xs text-obsidian-text hover:text-obsidian-text bg-obsidian-bg hover:bg-obsidian-hover border border-obsidian-border px-2.5 py-1 rounded-md transition-colors"
+          className="flex items-center gap-1.5 text-xs text-urano-text hover:text-urano-text bg-urano-bg hover:bg-urano-hover border border-urano-border px-2.5 py-1 rounded-md transition-colors"
           title={t('header.changeVaultFolder')}
         >
           <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
@@ -115,13 +115,13 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
       </div>
 
       {/* Center: View Switcher (Editor / Graph) */}
-      <div className="flex items-center bg-obsidian-bg p-0.5 rounded-lg border border-obsidian-border text-xs">
+      <div className="flex items-center bg-urano-bg p-0.5 rounded-lg border border-urano-border text-xs">
         <button
           onClick={() => onToggleView('editor')}
           className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
             currentView === 'editor'
               ? 'bg-orange-600 text-white font-medium shadow-sm shadow-orange-600/30'
-              : 'text-obsidian-muted hover:text-obsidian-text'
+              : 'text-urano-muted hover:text-urano-text'
           }`}
         >
           <Edit3 className="w-3.5 h-3.5" />
@@ -132,7 +132,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
           className={`flex items-center gap-1.5 px-3 py-1 rounded-md transition-all ${
             currentView === 'graph'
               ? 'bg-orange-600 text-white font-medium shadow-sm shadow-orange-600/30'
-              : 'text-obsidian-muted hover:text-obsidian-text'
+              : 'text-urano-muted hover:text-urano-text'
           }`}
         >
           <Network className="w-3.5 h-3.5" />
@@ -156,7 +156,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
                 ? 'bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20'
                 : isSyncing
                 ? 'bg-orange-500/10 border-orange-500/40 text-orange-300 animate-pulse'
-                : 'bg-obsidian-bg border-obsidian-border text-obsidian-text hover:bg-obsidian-hover'
+                : 'bg-urano-bg border-urano-border text-urano-text hover:bg-urano-hover'
             }`}
             title={t('header.syncVault')}
           >
@@ -168,7 +168,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
         {/* Sync Logs Trigger */}
         <button
           onClick={onOpenLogs}
-          className="p-1.5 text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover rounded-md transition-colors"
+          className="p-1.5 text-urano-muted hover:text-urano-text hover:bg-urano-hover rounded-md transition-colors"
           title={t('header.syncLogs')}
         >
           <Activity className="w-4 h-4" />
@@ -177,13 +177,13 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onToggleView, onOpe
         {/* Google Drive Settings / Profile */}
         <button
           onClick={() => setShowConfigModal(true)}
-          className="flex items-center gap-1.5 text-xs bg-obsidian-bg hover:bg-obsidian-hover border border-obsidian-border p-1 rounded-md transition-colors"
+          className="flex items-center gap-1.5 text-xs bg-urano-bg hover:bg-urano-hover border border-urano-border p-1 rounded-md transition-colors"
           title={t('header.driveSettings')}
         >
           {isAuthenticated && user?.picture ? (
             <img src={user.picture} alt={user.name} className="w-5 h-5 rounded-full" />
           ) : (
-            <Settings className="w-4 h-4 text-obsidian-muted hover:text-obsidian-text" />
+            <Settings className="w-4 h-4 text-urano-muted hover:text-urano-text" />
           )}
         </button>
       </div>

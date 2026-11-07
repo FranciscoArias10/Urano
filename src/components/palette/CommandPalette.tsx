@@ -169,11 +169,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       onClick={onClose}
     >
       <div
-        className="prompt w-[580px] max-w-[94vw] bg-obsidian-bg border border-obsidian-border rounded-xl shadow-2xl shadow-black/90 overflow-hidden flex flex-col"
+        className="prompt w-[580px] max-w-[94vw] bg-urano-bg border border-urano-border rounded-xl shadow-2xl shadow-black/90 overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input Bar */}
-        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-obsidian-border bg-obsidian-sidebar">
+        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-urano-border bg-urano-sidebar">
           {mode === 'commands' ? (
             <Command size={16} className="text-orange-500 shrink-0" />
           ) : (
@@ -193,20 +193,20 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 ? t('commandPalette.placeholderCommands')
                 : t('commandPalette.placeholderFiles')
             }
-            className="flex-1 text-sm text-obsidian-text bg-transparent outline-none placeholder:text-obsidian-faint font-sans"
+            className="flex-1 text-sm text-urano-text bg-transparent outline-none placeholder:text-urano-faint font-sans"
           />
         </div>
 
         {/* Results List */}
         <div className="max-h-[340px] overflow-y-auto p-1.5 flex flex-col gap-0.5">
           {items.length === 0 ? (
-            <div className="p-8 text-center text-obsidian-faint text-xs">
+            <div className="p-8 text-center text-urano-faint text-xs">
               {mode === 'files' && query.trim() ? (
                 <div>
-                  <p className="text-obsidian-text mb-1">
+                  <p className="text-urano-text mb-1">
                     {t('commandPalette.notFound', { query })}
                   </p>
-                  <p className="text-obsidian-faint text-[11px]">
+                  <p className="text-urano-faint text-[11px]">
                     {createHintBefore}
                     <span className="text-orange-400 font-mono">Shift + Enter</span>
                     {createHintAfter}
@@ -227,18 +227,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 className={`suggestion-item flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors ${
                   i === selectedIndex
                     ? 'is-selected'
-                    : 'text-obsidian-text hover:bg-[var(--interactive-hover)]'
+                    : 'text-urano-text hover:bg-[var(--interactive-hover)]'
                 }`}
                 onMouseEnter={() => setSelectedIndex(i)}
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="text-obsidian-muted">
+                  <span className="text-urano-muted">
                     {cmd.icon}
                   </span>
                   <span className="font-medium">{cmd.name}</span>
                 </div>
                 {cmd.shortcut && (
-                  <span className="text-[10px] text-obsidian-muted font-mono bg-[var(--interactive-normal)] px-2 py-0.5 rounded border border-obsidian-border">
+                  <span className="text-[10px] text-urano-muted font-mono bg-[var(--interactive-normal)] px-2 py-0.5 rounded border border-urano-border">
                     {cmd.shortcut}
                   </span>
                 )}
@@ -264,7 +264,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   className={`suggestion-item flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors ${
                     isSelected
                       ? 'is-selected'
-                      : 'text-obsidian-text hover:bg-[var(--interactive-hover)]'
+                      : 'text-urano-text hover:bg-[var(--interactive-hover)]'
                   }`}
                   onMouseEnter={() => setSelectedIndex(i)}
                 >
@@ -272,17 +272,17 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     {file.ext === 'canvas' ? (
                       <LayoutDashboard
                         size={14}
-                        className="text-obsidian-muted shrink-0"
+                        className="text-urano-muted shrink-0"
                       />
                     ) : file.ext === 'base' ? (
                       <LayoutList
                         size={14}
-                        className="text-obsidian-muted shrink-0"
+                        className="text-urano-muted shrink-0"
                       />
                     ) : (
                       <FileText
                         size={14}
-                        className="text-obsidian-muted shrink-0"
+                        className="text-urano-muted shrink-0"
                       />
                     )}
                     <span className="font-medium truncate">{displayName}</span>
@@ -293,7 +293,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                     )}
                   </div>
                   {isSubfolder && (
-                    <span className="text-[10px] text-obsidian-faint truncate max-w-[240px] ml-2 font-mono">
+                    <span className="text-[10px] text-urano-faint truncate max-w-[240px] ml-2 font-mono">
                       {rel}
                     </span>
                   )}
@@ -303,16 +303,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           )}
         </div>
 
-        {/* Bottom Keyboard Instruction Bar (1:1 with Obsidian) */}
+        {/* Bottom Keyboard Instruction Bar (1:1 with Urano) */}
         <div className="prompt-instructions select-none">
           <span className="flex items-center gap-1">
-            <span className="font-mono bg-[var(--interactive-normal)] text-obsidian-text px-1 py-0.2 rounded border border-obsidian-border">
+            <span className="font-mono bg-[var(--interactive-normal)] text-urano-text px-1 py-0.2 rounded border border-urano-border">
               ↑↓
             </span>{' '}
             {t('commandPalette.toNavigate')}
           </span>
           <span className="flex items-center gap-1">
-            <span className="font-mono bg-[var(--interactive-normal)] text-obsidian-text px-1 py-0.2 rounded border border-obsidian-border">
+            <span className="font-mono bg-[var(--interactive-normal)] text-urano-text px-1 py-0.2 rounded border border-urano-border">
               ↵
             </span>{' '}
             {t('commandPalette.toOpen')}
@@ -320,13 +320,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           {mode === 'files' && (
             <>
               <span className="flex items-center gap-1">
-                <span className="font-mono bg-[var(--interactive-normal)] text-obsidian-text px-1 py-0.2 rounded border border-obsidian-border">
+                <span className="font-mono bg-[var(--interactive-normal)] text-urano-text px-1 py-0.2 rounded border border-urano-border">
                   Ctrl + ↵
                 </span>{' '}
                 {t('commandPalette.toOpenInNewTab')}
               </span>
               <span className="flex items-center gap-1">
-                <span className="font-mono bg-[var(--interactive-normal)] text-obsidian-text px-1 py-0.2 rounded border border-obsidian-border">
+                <span className="font-mono bg-[var(--interactive-normal)] text-urano-text px-1 py-0.2 rounded border border-urano-border">
                   Shift + ↵
                 </span>{' '}
                 {t('commandPalette.toCreate')}
@@ -334,7 +334,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             </>
           )}
           <span className="flex items-center gap-1">
-            <span className="font-mono bg-[var(--interactive-normal)] text-obsidian-text px-1 py-0.2 rounded border border-obsidian-border">
+            <span className="font-mono bg-[var(--interactive-normal)] text-urano-text px-1 py-0.2 rounded border border-urano-border">
               Esc
             </span>{' '}
             {t('commandPalette.toDismiss')}

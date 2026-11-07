@@ -124,16 +124,16 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
   const baseName = filePath.split('/').pop()?.replace(/\.base$/i, '') || t('base.defaultName');
 
   return (
-    <div className="flex flex-col w-full h-full bg-obsidian-sidebar text-obsidian-text select-none overflow-hidden">
+    <div className="flex flex-col w-full h-full bg-urano-sidebar text-urano-text select-none overflow-hidden">
       {/* Base Header / Filter Bar */}
-      <div className="px-6 py-4 border-b border-obsidian-border flex items-center justify-between gap-4 bg-obsidian-bg">
+      <div className="px-6 py-4 border-b border-urano-border flex items-center justify-between gap-4 bg-urano-bg">
         <div className="flex items-center gap-2.5">
           <div className="p-1.5 bg-orange-500/15 text-orange-400 rounded-md border border-orange-500/30">
             <Table size={16} />
           </div>
           <div>
-            <h1 className="text-sm font-semibold text-obsidian-text">{baseName}</h1>
-            <p className="text-[11px] text-obsidian-muted">
+            <h1 className="text-sm font-semibold text-urano-text">{baseName}</h1>
+            <p className="text-[11px] text-urano-muted">
               {t('base.indexedNotes', { shown: displayedNotes.length, total: allNotes.length })}
             </p>
           </div>
@@ -141,14 +141,14 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
 
         <div className="flex items-center gap-3">
           {/* Search Filter */}
-          <div className="flex items-center gap-2 bg-obsidian-sidebar px-2.5 py-1.5 rounded-md border border-obsidian-border text-xs">
-            <Search size={13} className="text-obsidian-muted" />
+          <div className="flex items-center gap-2 bg-urano-sidebar px-2.5 py-1.5 rounded-md border border-urano-border text-xs">
+            <Search size={13} className="text-urano-muted" />
             <input
               type="text"
               placeholder={t('base.filterPlaceholder')}
               value={filterQuery}
               onChange={(e) => setFilterQuery(e.target.value)}
-              className="bg-transparent text-obsidian-text outline-none w-64 placeholder-stone-500"
+              className="bg-transparent text-urano-text outline-none w-64 placeholder-stone-500"
             />
           </div>
 
@@ -167,11 +167,11 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
       <div className="flex-1 overflow-auto">
         <table className="w-full text-left text-xs border-collapse">
           {/* Table Headers */}
-          <thead className="sticky top-0 bg-obsidian-sidebar border-b border-obsidian-border text-obsidian-muted z-10">
+          <thead className="sticky top-0 bg-urano-sidebar border-b border-urano-border text-urano-muted z-10">
             <tr>
               <th
                 onClick={() => toggleSort('name')}
-                className="px-6 py-3 font-semibold cursor-pointer hover:text-obsidian-text transition-colors min-w-[220px]"
+                className="px-6 py-3 font-semibold cursor-pointer hover:text-urano-text transition-colors min-w-[220px]"
               >
                 <div className="flex items-center gap-1.5">
                   <FileText size={13} />
@@ -190,7 +190,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
 
               <th
                 onClick={() => toggleSort('folder')}
-                className="px-4 py-3 font-semibold cursor-pointer hover:text-obsidian-text transition-colors min-w-[150px]"
+                className="px-4 py-3 font-semibold cursor-pointer hover:text-urano-text transition-colors min-w-[150px]"
               >
                 <div className="flex items-center gap-1.5">
                   <Folder size={13} />
@@ -216,7 +216,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
 
               <th
                 onClick={() => toggleSort('mtime')}
-                className="px-4 py-3 font-semibold cursor-pointer hover:text-obsidian-text transition-colors min-w-[160px]"
+                className="px-4 py-3 font-semibold cursor-pointer hover:text-urano-text transition-colors min-w-[160px]"
               >
                 <div className="flex items-center gap-1.5">
                   <Clock size={13} />
@@ -235,7 +235,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
 
               <th
                 onClick={() => toggleSort('size')}
-                className="px-4 py-3 font-semibold cursor-pointer hover:text-obsidian-text transition-colors w-24"
+                className="px-4 py-3 font-semibold cursor-pointer hover:text-urano-text transition-colors w-24"
               >
                 <div className="flex items-center gap-1.5">
                   <HardDrive size={13} />
@@ -258,7 +258,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
           <tbody className="divide-y divide-[#262626]">
             {displayedNotes.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-12 text-center text-obsidian-faint">
+                <td colSpan={5} className="py-12 text-center text-urano-faint">
                   {t('base.noResults')}
                 </td>
               </tr>
@@ -270,7 +270,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
                   className="hover:bg-[var(--interactive-hover)] cursor-pointer transition-colors group"
                 >
                   {/* Name */}
-                  <td className="px-6 py-2.5 font-medium text-obsidian-text group-hover:text-orange-400 transition-colors flex items-center justify-between">
+                  <td className="px-6 py-2.5 font-medium text-urano-text group-hover:text-orange-400 transition-colors flex items-center justify-between">
                     <span className="truncate">{note.name}</span>
                     <ExternalLink
                       size={12}
@@ -279,7 +279,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
                   </td>
 
                   {/* Folder */}
-                  <td className="px-4 py-2.5 text-obsidian-muted truncate">
+                  <td className="px-4 py-2.5 text-urano-muted truncate">
                     {note.folder}
                   </td>
 
@@ -290,24 +290,24 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
                         note.tags.map((tag) => (
                           <span
                             key={tag}
-                            className="bg-[var(--interactive-normal)] text-obsidian-text text-[10px] px-1.5 py-0.5 rounded border border-obsidian-border"
+                            className="bg-[var(--interactive-normal)] text-urano-text text-[10px] px-1.5 py-0.5 rounded border border-urano-border"
                           >
                             #{tag}
                           </span>
                         ))
                       ) : (
-                        <span className="text-obsidian-faint">—</span>
+                        <span className="text-urano-faint">—</span>
                       )}
                     </div>
                   </td>
 
                   {/* Mtime */}
-                  <td className="px-4 py-2.5 text-obsidian-muted text-[11px] font-mono">
+                  <td className="px-4 py-2.5 text-urano-muted text-[11px] font-mono">
                     {formatDate(note.mtime)}
                   </td>
 
                   {/* Size */}
-                  <td className="px-4 py-2.5 text-obsidian-muted text-[11px] font-mono">
+                  <td className="px-4 py-2.5 text-urano-muted text-[11px] font-mono">
                     {formatSize(note.size)}
                   </td>
                 </tr>

@@ -12,7 +12,7 @@ import {
   Columns,
   Rows,
 } from 'lucide-react';
-import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
+import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { WindowControls } from '../layout/WindowControls';
 import { useT } from '../../stores/localeStore';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -43,7 +43,7 @@ interface TabBarProps {
   onSplitDown?: (tabId: string) => void;
 }
 
-/** Obsidian exposes the view type through the `data-type` attribute of the tab. */
+/** Urano exposes the view type through the `data-type` attribute of the tab. */
 const TAB_VIEW_TYPE: Record<TabItem['type'], string> = {
   note: 'markdown',
   canvas: 'canvas',
@@ -53,7 +53,7 @@ const TAB_VIEW_TYPE: Record<TabItem['type'], string> = {
 };
 
 /**
- * Obsidian only renders an icon for special views. Markdown notes keep a
+ * Urano only renders an icon for special views. Markdown notes keep a
  * clean title (the icon element is hidden through CSS, exactly like
  * `.workspace-tab-header[data-type="markdown"]`).
  */
@@ -245,7 +245,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                   title={label}
                   onClick={() => onSelectTab(tab.id)}
                   onAuxClick={(e) => {
-                    /* middle click closes the tab (Obsidian behaviour) */
+                    /* middle click closes the tab (Urano behaviour) */
                     if (e.button === 1) {
                       e.preventDefault();
                       onCloseTab(tab.id);
@@ -353,7 +353,7 @@ export const TabBar: React.FC<TabBarProps> = ({
 
       {/* Menus --------------------------------------------------------- */}
       {contextMenu && (
-        <ObsidianMenu
+        <UranoMenu
           x={contextMenu.x}
           y={contextMenu.y}
           items={contextMenu.items}
@@ -361,7 +361,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         />
       )}
       {tabListMenu && (
-        <ObsidianMenu
+        <UranoMenu
           x={tabListMenu.x}
           y={tabListMenu.y}
           align="right"

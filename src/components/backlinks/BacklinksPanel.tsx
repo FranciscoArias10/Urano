@@ -98,23 +98,23 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
 
   if (!activeFile) {
     return (
-      <aside className="w-72 bg-obsidian-sidebar border-l border-obsidian-border flex flex-col p-4 text-center text-obsidian-muted text-xs">
+      <aside className="w-72 bg-urano-sidebar border-l border-urano-border flex flex-col p-4 text-center text-urano-muted text-xs">
         <span>{t('backlinks.selectNote')}</span>
       </aside>
     );
   }
 
   return (
-    <aside className="w-72 bg-obsidian-sidebar border-l border-obsidian-border flex flex-col h-full select-none shrink-0 z-10">
+    <aside className="w-72 bg-urano-sidebar border-l border-urano-border flex flex-col h-full select-none shrink-0 z-10">
       {/* Panel Top Header */}
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-obsidian-border">
-        <div className="flex items-center gap-2 text-obsidian-text">
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-urano-border">
+        <div className="flex items-center gap-2 text-urano-text">
           <ArrowLeftRight size={14} className="text-orange-500" />
           <span className="text-xs font-semibold">{t('backlinks.title')}</span>
         </div>
         <button
           onClick={onClose}
-          className="p-1 text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover rounded transition-colors"
+          className="p-1 text-urano-muted hover:text-urano-text hover:bg-urano-hover rounded transition-colors"
           title={t('backlinks.closePanel')}
         >
           <X size={13} />
@@ -122,19 +122,19 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
       </div>
 
       {/* Active Note Name */}
-      <div className="px-3 py-1.5 bg-obsidian-sidebar text-[11px] text-obsidian-muted border-b border-obsidian-border flex items-center gap-1.5 truncate">
+      <div className="px-3 py-1.5 bg-urano-sidebar text-[11px] text-urano-muted border-b border-urano-border flex items-center gap-1.5 truncate">
         <FileText size={12} className="text-orange-400 shrink-0" />
-        <span className="text-obsidian-text font-medium truncate">{activeBaseName}</span>
+        <span className="text-urano-text font-medium truncate">{activeBaseName}</span>
       </div>
 
       {/* Tabs: Incoming (Backlinks) vs Outgoing */}
-      <div className="grid grid-cols-2 p-1 gap-1 border-b border-obsidian-border bg-obsidian-sidebar">
+      <div className="grid grid-cols-2 p-1 gap-1 border-b border-urano-border bg-urano-sidebar">
         <button
           onClick={() => setActiveTab('incoming')}
           className={`flex items-center justify-center gap-1.5 py-1.5 rounded text-[11px] font-medium transition-colors ${
             activeTab === 'incoming'
               ? 'bg-orange-600/20 text-orange-300 border border-orange-500/30'
-              : 'text-obsidian-muted hover:text-obsidian-text'
+              : 'text-urano-muted hover:text-urano-text'
           }`}
         >
           <ArrowDownLeft size={12} className="text-orange-400" />
@@ -145,7 +145,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
           className={`flex items-center justify-center gap-1.5 py-1.5 rounded text-[11px] font-medium transition-colors ${
             activeTab === 'outgoing'
               ? 'bg-orange-600/20 text-orange-300 border border-orange-500/30'
-              : 'text-obsidian-muted hover:text-obsidian-text'
+              : 'text-urano-muted hover:text-urano-text'
           }`}
         >
           <ArrowUpRight size={12} className="text-sky-400" />
@@ -157,7 +157,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
       <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-1.5">
         {activeTab === 'incoming' ? (
           incomingLinks.length === 0 ? (
-            <div className="p-4 text-center text-obsidian-muted text-[11px] italic">
+            <div className="p-4 text-center text-urano-muted text-[11px] italic">
               {noIncomingBefore}
               <code className="text-orange-400">[[{activeBaseName}]]</code>
               {noIncomingAfter}
@@ -167,21 +167,21 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
               <div
                 key={item.path}
                 onClick={() => onOpenNote(item.path)}
-                className="p-2 rounded-lg bg-obsidian-bg border border-obsidian-border hover:border-orange-500/40 cursor-pointer group transition-colors"
+                className="p-2 rounded-lg bg-urano-bg border border-urano-border hover:border-orange-500/40 cursor-pointer group transition-colors"
               >
-                <div className="flex items-center gap-1.5 text-xs font-medium text-obsidian-text group-hover:text-orange-300">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-urano-text group-hover:text-orange-300">
                   <FileText size={12} className="text-orange-400 shrink-0" />
                   <span className="truncate">{item.name}</span>
-                  <ChevronRight size={12} className="ml-auto text-obsidian-muted group-hover:text-orange-400 shrink-0" />
+                  <ChevronRight size={12} className="ml-auto text-urano-muted group-hover:text-orange-400 shrink-0" />
                 </div>
-                <p className="mt-1 text-[10px] text-obsidian-muted line-clamp-2 leading-relaxed">
+                <p className="mt-1 text-[10px] text-urano-muted line-clamp-2 leading-relaxed">
                   {item.snippet}
                 </p>
               </div>
             ))
           )
         ) : outgoingLinks.length === 0 ? (
-          <div className="p-4 text-center text-obsidian-muted text-[11px] italic">
+          <div className="p-4 text-center text-urano-muted text-[11px] italic">
             {noOutgoingBefore}
             <code className="text-orange-400">{t('backlinks.noOutgoingExample')}</code>
             {noOutgoingAfter}
@@ -191,7 +191,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
             <div
               key={item.targetName}
               onClick={() => onOpenNote(item.resolvedPath || item.targetName)}
-              className="flex items-center justify-between p-2 rounded-lg bg-obsidian-bg border border-obsidian-border hover:border-orange-500/40 cursor-pointer text-xs transition-colors"
+              className="flex items-center justify-between p-2 rounded-lg bg-urano-bg border border-urano-border hover:border-orange-500/40 cursor-pointer text-xs transition-colors"
             >
               <div className="flex items-center gap-2 truncate">
                 <span
@@ -200,7 +200,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
                   }`}
                   title={item.resolvedPath ? t('backlinks.existingNote') : t('backlinks.notCreatedYet')}
                 />
-                <span className={`truncate font-medium ${item.resolvedPath ? 'text-obsidian-text' : 'text-obsidian-muted'}`}>
+                <span className={`truncate font-medium ${item.resolvedPath ? 'text-urano-text' : 'text-urano-muted'}`}>
                   {item.targetName}
                 </span>
               </div>

@@ -131,7 +131,7 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
     const width = containerRef.current.clientWidth || 800;
     const height = containerRef.current.clientHeight || 600;
 
-    // Initialize ForceGraph 1:1 with Obsidian styling
+    // Initialize ForceGraph 1:1 with Urano styling
     const fg = (ForceGraph as any)()(containerRef.current)
       .width(width)
       .height(height)
@@ -230,7 +230,7 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
       }}
       className="graph-view select-none"
     >
-      {/* Floating Controls Top-Right (1:1 with Obsidian: gear & wand/filters) */}
+      {/* Floating Controls Top-Right (1:1 with Urano: gear & wand/filters) */}
       <div ref={controlsRef} className="graph-controls absolute top-3 right-4 z-10 flex flex-col items-end gap-1.5">
         <div className="flex items-center gap-1.5">
           <button
