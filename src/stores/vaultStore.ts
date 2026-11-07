@@ -13,6 +13,7 @@ import {
   LinkScanResult,
   setAlwaysUpdateLinksPref,
 } from '../services/linkRefactorService';
+import { normalizePath, isSamePath, resolveFilePathInVault } from '../utils/pathUtils';
 
 const triggerAutoSync = (vaultPath?: string | null, vaultName?: string | null) => {
   if (vaultPath) {
@@ -344,9 +345,13 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       if (defaultToOpen === 'daily-note') {
         get().openDailyNote().catch((e) => console.warn('Error opening daily note:', e));
       } else if (defaultToOpen === 'last-opened') {
-        const lastFile = localStorage.getItem(`urano_last_file_${vaultPath}`);
+        const normKey = normalizePath(vaultPath);
+        const lastFile =
+          localStorage.getItem(`urano_last_file_${normKey}`) ||
+          localStorage.getItem(`urano_last_file_${vaultPath}`);
         if (lastFile) {
-          get().selectFile(lastFile).catch(() => {});
+          const resolved = resolveFilePathInVault(lastFile, tree, vaultPath);
+          get().selectFile(resolved || lastFile).catch(() => {});
         }
       }
     } catch (err) {
@@ -372,20 +377,29 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   },
 
   selectFile: async (filePath: string) => {
-    const { activeFile, isDirty, saveCurrentFile } = get();
-    if (activeFile === filePath) return;
+    const { activeFile, isDirty, saveCurrentFile, fileTree, activeVault } = get();
+    if (!filePath) return;
+
+    const resolvedPath = resolveFilePathInVault(filePath, fileTree, activeVault);
+    const targetPath = resolvedPath || filePath;
+
+    if (activeFile && isSamePath(activeFile, targetPath)) {
+      if (get().fileContent !== '' || isDirty) {
+        return;
+      }
+    }
 
     // Check if the file is natively supported in Urano's editor/viewers
     const isNative =
-      filePath.endsWith('.md') ||
-      filePath.endsWith('.markdown') ||
-      filePath.endsWith('.canvas') ||
-      filePath.endsWith('.base') ||
-      isImagePath(filePath);
+      targetPath.endsWith('.md') ||
+      targetPath.endsWith('.markdown') ||
+      targetPath.endsWith('.canvas') ||
+      targetPath.endsWith('.base') ||
+      isImagePath(targetPath);
 
     if (!isNative) {
       try {
-        await invoke('open_file_in_default_app', { filePath });
+        await invoke('open_file_in_default_app', { filePath: targetPath });
       } catch (err) {
         console.warn('Error al abrir con la aplicación del sistema:', err);
       }
@@ -398,23 +412,23 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
     try {
       set({ isLoading: true });
-      const isImg = isImagePath(filePath);
-      const content = isImg ? '' : await invoke<string>('read_file', { filePath });
-      const parts = filePath.replace(/\\/g, '/').split('/');
+      const isImg = isImagePath(targetPath);
+      const content = isImg ? '' : await invoke<string>('read_file', { filePath: targetPath });
+      const parts = targetPath.replace(/\\/g, '/').split('/');
       const activeFileName = parts[parts.length - 1] || t('vault.defaultNoteName');
 
       set({
-        activeFile: filePath,
+        activeFile: targetPath,
         activeFileName,
         fileContent: content,
         isDirty: false,
         isLoading: false,
       });
 
-      const { activeVault } = get();
       if (activeVault) {
         try {
-          localStorage.setItem(`urano_last_file_${activeVault}`, filePath);
+          const normVault = normalizePath(activeVault);
+          localStorage.setItem(`urano_last_file_${normVault}`, targetPath);
         } catch {}
       }
     } catch (err) {
@@ -441,10 +455,11 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   updateNoteContent: async (filePath: string, content: string) => {
     if (!filePath) return;
     const { activeFile, fileContent, notesContentMap } = get();
+    const isActive = isSamePath(activeFile, filePath);
     set({
       notesContentMap: { ...notesContentMap, [filePath]: content },
-      fileContent: activeFile === filePath ? content : fileContent,
-      isDirty: activeFile === filePath ? true : get().isDirty,
+      fileContent: isActive ? content : fileContent,
+      isDirty: isActive ? true : get().isDirty,
     });
     try {
       await invoke('write_file', { filePath, content });
@@ -733,7 +748,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
     await invoke('rename_item', { oldPath: sourcePath, newPath });
     const { activeFile } = get();
-    if (activeFile === sourcePath) {
+    if (isSamePath(activeFile, sourcePath)) {
       set({ activeFile: newPath, activeFileName: fileName });
     }
     await get().refreshTree();
@@ -974,7 +989,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
                 const nameWithoutExt = attName.substring(0, attName.lastIndexOf('.'));
                 const isUsedElsewhere = Object.entries(notesContentMap).some(
                   ([otherNotePath, content]) => {
-                    if (otherNotePath.replace(/\\/g, '/') === path.replace(/\\/g, '/')) return false;
+                    if (isSamePath(otherNotePath, path)) return false;
                     return (
                       content.includes(attName) ||
                       (nameWithoutExt && content.includes(nameWithoutExt))
@@ -1010,7 +1025,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     // Delete the main item
     await removeSinglePath(path);
 
-    if (activeFile === path) {
+    if (isSamePath(activeFile, path)) {
       set({ activeFile: null, activeFileName: null, fileContent: '', isDirty: false });
     }
     await refreshTree();
@@ -1020,7 +1035,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   renameItem: async (oldPath: string, newPath: string) => {
     await invoke('rename_item', { oldPath, newPath });
     const { activeFile } = get();
-    if (activeFile === oldPath) {
+    if (isSamePath(activeFile, oldPath)) {
       const parts = newPath.replace(/\\/g, '/').split('/');
       set({ activeFile: newPath, activeFileName: parts[parts.length - 1] });
     }
