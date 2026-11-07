@@ -3,7 +3,7 @@ import { useVaultStore } from '../../stores/vaultStore';
 import { useSyncStore } from '../../stores/syncStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useT } from '../../stores/localeStore';
-import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
+import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import {
   RefreshCw,
   RefreshCwOff,
@@ -12,7 +12,8 @@ import {
   AlignLeft,
   Settings,
   LogIn,
-  Pencil,
+  PenLine,
+  Code2,
   BookOpen,
 } from 'lucide-react';
 
@@ -22,10 +23,11 @@ interface StatusBarProps {
   onOpenLogs?: () => void;
   viewMode?: 'live-preview' | 'reading' | 'source';
   onToggleViewMode?: () => void;
+  onChangeViewMode?: (mode: 'live-preview' | 'reading' | 'source') => void;
 }
 
 /**
- * Visual states of the sync icon. Mirrors Obsidian's `_updateStatusBar` (obsidian.asar/app.js):
+ * Visual states of the sync icon. Mirrors Urano's `_updateStatusBar` (urano.asar/app.js):
  *   disconnected → icon `refresh-cw-off` + `.mod-error`   (--text-error   = --color-red   #fb464c)
  *   syncing      → icon `sync-small`     + `.mod-working` (--interactive-accent)
  *   synced       → icon `check-small`    + `.mod-success` (--text-success = --color-green #44cf6e)
@@ -40,6 +42,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   onOpenLogs,
   viewMode = 'live-preview',
   onToggleViewMode,
+  onChangeViewMode,
 }) => {
   const t = useT();
   const fileContent = useVaultStore((s) => s.fileContent);
@@ -55,9 +58,39 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   const lastSummary = useSyncStore((s) => s.lastSummary);
   const loginWithGoogle = useSyncStore((s) => s.loginWithGoogle);
   const openSettings = useSettingsStore((s) => s.openSettings);
+  const showStatusBar = useSettingsStore((s) => s.settings.showStatusBar);
   const showEditorStatus = useSettingsStore((s) => s.settings.showEditorStatus);
 
   const [syncMenu, setSyncMenu] = useState<{ x: number; y: number } | null>(null);
+  const [showEditorMenu, setShowEditorMenu] = useState(false);
+  const editorMenuRef = useRef<HTMLDivElement>(null);
+  const editorButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Close editor menu on click outside or Escape
+  useEffect(() => {
+    if (!showEditorMenu) return;
+    const handlePointerDown = (e: MouseEvent | PointerEvent) => {
+      if (
+        editorMenuRef.current &&
+        !editorMenuRef.current.contains(e.target as Node) &&
+        editorButtonRef.current &&
+        !editorButtonRef.current.contains(e.target as Node)
+      ) {
+        setShowEditorMenu(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowEditorMenu(false);
+      }
+    };
+    window.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showEditorMenu]);
 
   // Re-render every 30 s so the "synced X min ago" tooltip stays fresh.
   const [, setClock] = useState(0);
@@ -168,9 +201,29 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 
   const openSyncMenu = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+    setShowEditorMenu(false);
     const rect = e.currentTarget.getBoundingClientRect();
     setSyncMenu({ x: rect.right, y: rect.top - 6 });
   };
+
+  const renderEditorStatusIcon = () => {
+    switch (viewMode) {
+      case 'reading':
+        return <BookOpen size={14} />;
+      case 'source':
+        return <Code2 size={14} />;
+      case 'live-preview':
+      default:
+        return <PenLine size={14} />;
+    }
+  };
+
+  const currentModeTooltip =
+    viewMode === 'reading'
+      ? t('statusBar.modeReading')
+      : viewMode === 'source'
+      ? t('statusBar.modeSource')
+      : t('statusBar.modeLivePreview');
 
   const syncMenuItems: MenuItemData[] = [
     { title: t('statusBar.syncMenuStatus', { status: statusLabel }), disabled: true },
@@ -208,90 +261,165 @@ export const StatusBar: React.FC<StatusBarProps> = ({
     },
   ];
 
+  const setMode = (mode: 'live-preview' | 'reading' | 'source') => {
+    if (onChangeViewMode) {
+      onChangeViewMode(mode);
+    } else if (onToggleViewMode && mode !== viewMode) {
+      onToggleViewMode();
+    }
+    setShowEditorMenu(false);
+  };
+
+  if (!showStatusBar) return null;
+
   return (
-    <footer className="h-6 bg-obsidian-sidebar border-t border-obsidian-border flex items-center justify-between px-3 text-[11px] text-obsidian-muted select-none z-20">
-      {/* Left: Spacer */}
-      <div className="flex items-center gap-2" />
+    <div className="status-bar" role="status" aria-label="Status Bar">
+      {/* 1. Backlinks item */}
+      <button
+        type="button"
+        onClick={onToggleBacklinks}
+        className="status-bar-item mod-clickable"
+        title={t('statusBar.toggleBacklinks')}
+      >
+        {t('statusBar.backlinks', { count: backlinksCount })}
+      </button>
 
-      {/* Right: Compact Status Pill (0 backlinks  [book/pencil]  55 palabras  497 caracteres + sync icon) */}
-      <div className="flex items-center">
-        <div className="flex items-center gap-2.5 bg-obsidian-bg hover:bg-obsidian-hover px-2.5 py-0.5 rounded-full border border-obsidian-border text-[11px] text-obsidian-muted transition-colors">
-          <button
-            onClick={onToggleBacklinks}
-            className="hover:text-orange-400 transition-colors cursor-pointer"
-            title={t('statusBar.toggleBacklinks')}
-          >
-            {t('statusBar.backlinks', { count: backlinksCount })}
-          </button>
-
-          <span className="text-obsidian-muted select-none opacity-40">•</span>
-
-          {showEditorStatus && onToggleViewMode && (
-            <>
-              <button
-                onClick={onToggleViewMode}
-                className="hover:text-orange-400 transition-colors cursor-pointer flex items-center justify-center"
-                title={
-                  viewMode === 'reading'
-                    ? t('statusBar.switchToEditing')
-                    : t('statusBar.switchToReading')
-                }
-                aria-label={t('statusBar.toggleViewMode')}
-              >
-                {viewMode === 'reading' ? <Pencil size={13} /> : <BookOpen size={13} />}
-              </button>
-              <span className="text-obsidian-muted select-none opacity-40">•</span>
-            </>
-          )}
-
-          <span className="font-mono text-[10px] text-obsidian-text">
-            {t('statusBar.words', { count: words })}
-          </span>
-
-          <span className="text-obsidian-muted select-none opacity-40">•</span>
-
-          <span className="font-mono text-[10px] text-obsidian-text">
-            {t('statusBar.characters', { count: chars })}
-          </span>
-
-          <span className="text-obsidian-muted select-none opacity-40">•</span>
-
-          {/* Live sync progress / last result (Obsidian shows it in the sync tooltip; Urano
-              also prints it inline while files move: "Syncing… 3/12" → "Synced: 5 uploaded") */}
-          {syncMessage && (
-            <>
-              <span
-                className={`max-w-[260px] truncate ${
-                  isSyncing ? 'text-[var(--interactive-accent)]' : 'text-[var(--color-green)]'
-                }`}
-                title={syncMessage}
-              >
-                {syncMessage}
-              </span>
-              <span className="text-obsidian-muted select-none opacity-40">•</span>
-            </>
-          )}
-
-          {/* Sync status icon (Obsidian: .status-bar-item.plugin-sync > .sync-status-icon) */}
-          <button
-            type="button"
-            onClick={openSyncMenu}
-            onContextMenu={openSyncMenu}
-            className="plugin-sync flex items-center hover:opacity-80 transition-opacity cursor-pointer"
-            title={tooltip}
-            aria-label={tooltip}
-          >
-            <span
-              className={`sync-status-icon ${iconModifier} ${iconState === 'syncing' ? 'is-syncing' : ''}`}
-            >
-              {renderSyncIcon()}
-            </span>
-          </button>
-        </div>
+      {/* 2. Word count */}
+      <div className="status-bar-item" title={t('statusBar.words', { count: words })}>
+        {t('statusBar.words', { count: words })}
       </div>
 
+      {/* 3. Character count */}
+      <div className="status-bar-item" title={t('statusBar.characters', { count: chars })}>
+        {t('statusBar.characters', { count: chars })}
+      </div>
+
+      {/* 4. Live sync progress (if any) */}
+      {syncMessage && (
+        <span
+          className={`status-bar-item max-w-[260px] truncate ${
+            isSyncing ? 'text-[var(--interactive-accent)]' : 'text-[var(--color-green)]'
+          }`}
+          title={syncMessage}
+        >
+          {syncMessage}
+        </span>
+      )}
+
+      {/* 5. Sync status icon */}
+      <button
+        type="button"
+        onClick={openSyncMenu}
+        onContextMenu={openSyncMenu}
+        className="status-bar-item mod-clickable plugin-sync"
+        title={tooltip}
+        aria-label={tooltip}
+      >
+        <span
+          className={`sync-status-icon ${iconModifier} ${iconState === 'syncing' ? 'is-syncing' : ''}`}
+        >
+          {renderSyncIcon()}
+        </span>
+      </button>
+
+      {/* 6. Editor status icon (far right) */}
+      {showEditorStatus && (
+        <button
+          ref={editorButtonRef}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setSyncMenu(null);
+            setShowEditorMenu((prev) => !prev);
+          }}
+          className="status-bar-item mod-clickable plugin-editor-status mod-editor-status"
+          title={currentModeTooltip}
+          aria-label={currentModeTooltip}
+          aria-haspopup="menu"
+          aria-expanded={showEditorMenu}
+        >
+          <span className="status-bar-item-icon">
+            {renderEditorStatusIcon()}
+          </span>
+        </button>
+      )}
+
+      {/* Editor mode floating popup menu (.menu.status-bar-menu) */}
+      {showEditorMenu && (
+        <div
+          ref={editorMenuRef}
+          className="menu status-bar-menu"
+          role="menu"
+          aria-label={t('statusBar.modeMenu')}
+        >
+          <div className="menu-scroll">
+            <div
+              className={`menu-item ${viewMode === 'reading' ? 'selected' : ''}`}
+              role="menuitem"
+              tabIndex={0}
+              onClick={() => setMode('reading')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  setMode('reading');
+                }
+              }}
+            >
+              <div className="menu-item-icon">
+                <BookOpen size={14} />
+              </div>
+              <div className="menu-item-title">{t('statusBar.modeReading')}</div>
+              {viewMode === 'reading' && (
+                <Check size={14} className="menu-item-check ml-auto text-orange-500" />
+              )}
+            </div>
+
+            <div
+              className={`menu-item ${viewMode === 'source' ? 'selected' : ''}`}
+              role="menuitem"
+              tabIndex={0}
+              onClick={() => setMode('source')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  setMode('source');
+                }
+              }}
+            >
+              <div className="menu-item-icon">
+                <Code2 size={14} />
+              </div>
+              <div className="menu-item-title">{t('statusBar.modeSource')}</div>
+              {viewMode === 'source' && (
+                <Check size={14} className="menu-item-check ml-auto text-orange-500" />
+              )}
+            </div>
+
+            <div
+              className={`menu-item ${viewMode === 'live-preview' ? 'selected' : ''}`}
+              role="menuitem"
+              tabIndex={0}
+              onClick={() => setMode('live-preview')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  setMode('live-preview');
+                }
+              }}
+            >
+              <div className="menu-item-icon">
+                <PenLine size={14} />
+              </div>
+              <div className="menu-item-title">{t('statusBar.modeLivePreview')}</div>
+              {viewMode === 'live-preview' && (
+                <Check size={14} className="menu-item-check ml-auto text-orange-500" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sync context menu */}
       {syncMenu && (
-        <ObsidianMenu
+        <UranoMenu
           x={syncMenu.x}
           y={syncMenu.y}
           align="right"
@@ -299,6 +427,6 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           onClose={() => setSyncMenu(null)}
         />
       )}
-    </footer>
+    </div>
   );
 };
