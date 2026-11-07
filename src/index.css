@@ -421,12 +421,14 @@ body.theme-dark .side-dock-ribbon-action.is-active,
   margin: 5px -6px calc(var(--tab-outline-width) * -1);
   padding: 1px 6px 0;
   min-width: 0;
-  overflow: clip;
-  overflow-clip-margin: calc(var(--tab-curve) * 2);
+  overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
 }
 .workspace-tab-header-container-inner::-webkit-scrollbar {
   display: none;
+  width: 0;
+  height: 0;
 }
 .workspace-tab-header-container-inner:empty {
   display: none;
@@ -442,19 +444,26 @@ body.theme-dark .side-dock-ribbon-action.is-active,
 }
 
 /* --- Tab header ------------------------------------------------------- */
-.workspace-tab-header-container .workspace-tab-header {
+.workspace-tab-header-container .workspace-tab-header,
+.workspace-tab-header {
   color: var(--tab-text-color);
   display: flex;
-  position: relative;
-  padding: 1px 3px 3px;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 90px;
+  max-width: 180px;
+  height: 34px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  user-select: none;
+  overflow: hidden;
   scroll-margin-inline-start: var(--size-2-3);
   scroll-margin-inline-end: var(--size-4-1);
   text-align: center;
   border-radius: var(--tab-radius-active);
-  max-width: var(--tab-max-width);
-  min-width: 0;
-  flex: 0 1 auto;
   cursor: var(--cursor);
+  position: relative;
+  transition: background-color 0.1s ease, color 0.1s ease;
 }
 
 /* Decorative concave curves (Urano technique) */
@@ -601,8 +610,7 @@ body.theme-dark .side-dock-ribbon-action.is-active,
   flex: 0 0 auto;
   gap: 2px;
 }
-.workspace-tab-header-status-icon,
-.workspace-tab-header-inner-close-button {
+.workspace-tab-header-status-icon {
   cursor: var(--cursor);
   padding: var(--size-2-1);
   border-radius: var(--radius-m);
@@ -623,25 +631,31 @@ body.theme-dark .side-dock-ribbon-action.is-active,
   background-color: var(--background-modifier-hover);
 }
 
-/* Close button: always visible on the active tab, hover-only elsewhere */
+/* Close button: stable dimensions and opacity transition (zero layout shift, Obsidian 1:1) */
 .workspace-tab-header-inner-close-button {
-  color: var(--tab-text-color-focused-active);
-  flex: 0 0 auto;
-}
-.workspace .mod-root .workspace-tab-header:not(.is-active) .workspace-tab-header-inner-close-button {
-  display: none;
-}
-@media (hover: hover) {
-  .workspace .mod-root .workspace-tab-header:hover .workspace-tab-header-inner-close-button {
-    display: flex;
-  }
-}
-.workspace-tab-header:hover .workspace-tab-header-inner-close-button {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  border-radius: 4px;
+  opacity: 0;
+  pointer-events: none;
+  cursor: var(--cursor);
   color: var(--tab-text-color-focused);
+  transition: opacity 0.1s ease, background-color 0.1s ease;
 }
-.workspace-tab-header:hover .workspace-tab-header-inner-close-button:hover,
-.workspace-tab-header.is-active .workspace-tab-header-inner-close-button:hover {
-  color: var(--tab-text-color-focused-active-current);
+
+.workspace-tab-header.is-active .workspace-tab-header-inner-close-button,
+.workspace-tab-header:hover .workspace-tab-header-inner-close-button {
+  opacity: 0.7;
+  pointer-events: auto;
+}
+
+.workspace-tab-header-inner-close-button:hover {
+  opacity: 1;
   background-color: var(--background-modifier-hover);
 }
 
