@@ -2457,15 +2457,7 @@ export const Editor: React.FC<EditorProps> = ({
         </div>
       );
     }
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center text-urano-muted p-8 text-center bg-urano-bg">
-        <FileText className="w-16 h-16 mb-4 text-urano-border stroke-1" />
-        <h2 className="text-xl font-medium text-urano-text mb-2">
-          {t('editor.emptyState.noFileOpen')}
-        </h2>
-        <p className="text-sm max-w-sm text-urano-muted">{t('editor.emptyState.hint')}</p>
-      </div>
-    );
+    return null;
   }
 
   return (
