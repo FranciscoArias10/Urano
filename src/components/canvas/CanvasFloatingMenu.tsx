@@ -135,7 +135,7 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
               }}
             />
 
-            {/* 2-7. Presets oficiales de Obsidian */}
+            {/* 2-7. Presets oficiales de Urano */}
             {Object.entries(CANVAS_COLORS).map(([key, col]) => (
               <button
                 type="button"

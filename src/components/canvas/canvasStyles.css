@@ -1,4 +1,4 @@
-/* Urano Canvas Styles - 1:1 con Obsidian Canvas (acento naranja de Urano: #e06c1b) */
+/* Urano Canvas Styles - 1:1 con Urano Canvas (acento naranja de Urano: #e06c1b) */
 
 .canvas-wrapper {
   position: absolute;
@@ -230,7 +230,7 @@ body.theme-dark .canvas-wrapper {
   color: var(--text-muted);
 }
 
-/* Popover de ajustes / ayuda anclado hacia la izquierda (1:1 con Obsidian) */
+/* Popover de ajustes / ayuda anclado hacia la izquierda (1:1 con Urano) */
 .canvas-control-popover {
   position: absolute;
   top: 0;
@@ -322,7 +322,7 @@ body.theme-dark .canvas-wrapper {
   /* La barra flotante (`.canvas-menu`), la etiqueta y los puntos de conexión
      son hermanos de `.canvas-node-container` (que sí recorta la tarjeta), por
      lo que el nodo no debe recortar nada. Equivale a la
-     `.canvas-node-interaction-layer` de Obsidian. */
+     `.canvas-node-interaction-layer` de Urano. */
   overflow: visible;
 }
 
@@ -823,7 +823,7 @@ body.theme-dark .canvas-node-group .canvas-node-content,
   background-color: var(--color-accent-translucent);
 }
 
-/* Selector de color (6 colores de Obsidian) */
+/* Selector de color (6 colores de Urano) */
 .canvas-submenu {
   position: absolute;
   top: calc(100% + 5px);

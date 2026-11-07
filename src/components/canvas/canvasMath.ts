@@ -7,7 +7,7 @@ import {
   CanvasGroupNode,
 } from '../../types/canvas';
 
-// Official Obsidian Canvas 6 palette colors + default neutral.
+// Official Urano Canvas 6 palette colors + default neutral.
 // `nameKey` es la clave i18n del nombre (se resuelve con `t()` al renderizar).
 export const CANVAS_COLORS: Record<
   string,
@@ -77,7 +77,7 @@ export function isCustomCanvasColor(color?: string): boolean {
 }
 
 /**
- * Resuelve tanto las claves de la paleta de Obsidian (`"1"`..`"6"`) como los
+ * Resuelve tanto las claves de la paleta de Urano (`"1"`..`"6"`) como los
  * colores hexadecimales personalizados elegidos con la rueda de color.
  */
 export function resolveCanvasColor(color?: string): CanvasColorScheme {
@@ -106,7 +106,7 @@ export function facingSide(from: CanvasBBox, to: CanvasBBox): CanvasNodeSide {
   return dy >= 0 ? 'top' : 'bottom';
 }
 
-// Generate 16-hex alphanumeric id (Obsidian standard)
+// Generate 16-hex alphanumeric id (Urano standard)
 export function generateCanvasId(): string {
   const chars = '0123456789abcdef';
   let result = '';

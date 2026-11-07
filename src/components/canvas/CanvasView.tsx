@@ -48,7 +48,7 @@ import { CanvasFloatingMenu } from './CanvasFloatingMenu';
 import { CanvasNodeView } from './CanvasNodeView';
 import { CanvasEdgeView } from './CanvasEdgeView';
 import { VaultFileModal, VaultFileModalMode } from './VaultFileModal';
-import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
+import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { isImagePath, toUint8Array } from '../../services/storageAdapter';
 import { resolveImageBlobUrl, saveClipboardImageToVault } from '../../editor/imageExtension';
 import './canvasStyles.css';
@@ -66,7 +66,7 @@ const MAX_ZOOM = 4.0;
 
 /**
  * Sensibilidad del zoom por rueda (factor exponencial `exp(-deltaY * k)`).
- * Obsidian (obsidian.asar/app.js, Canvas.onWheel) usa `-deltaY / 300` en
+ * Urano (urano.asar/app.js, Canvas.onWheel) usa `-deltaY / 300` en
  * espacio log2 con `deltaMode` normalizado (LINE ×40, PAGE ×800); aquí el
  * pellizco de trackpad (ctrlKey) es más fino y la rueda discreta del ratón más gruesa.
  */
@@ -94,7 +94,7 @@ interface TouchpadPinchPayload {
   fingers: number;
 }
 
-/** Dimensiones por defecto de los nodos (1:1 con Obsidian). */
+/** Dimensiones por defecto de los nodos (1:1 con Urano). */
 const DEFAULT_TEXT_NODE_SIZE = { width: 250, height: 100 };
 const DEFAULT_FILE_NODE_SIZE = { width: 400, height: 300 };
 const DEFAULT_IMAGE_NODE_SIZE = { width: 400, height: 300 };
@@ -164,7 +164,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   const [connectingMouseWorld, setConnectingMouseWorld] = useState<CanvasPoint | null>(null);
 
   // Flecha temporal congelada sobre el lienzo vacío: mantiene la punta en el
-  // punto de soltado y abre el menú de creación de Obsidian.
+  // punto de soltado y abre el menú de creación de Urano.
   const [pendingEdgeDrop, setPendingEdgeDrop] = useState<{
     sourceNodeId: string;
     sourceSide: CanvasNodeSide;
@@ -513,7 +513,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   }, [canvasData.nodes]);
 
   // Zoom a la selección: centra la cámara y ajusta el zoom para encuadrar
-  // el nodo indicado. Equivale a `zoomToBbox` de Obsidian, que nunca amplía
+  // el nodo indicado. Equivale a `zoomToBbox` de Urano, que nunca amplía
   // más allá del 100 %: factor = min(W / (1.1 * ancho), H / (1.1 * alto)).
   const handleZoomToNode = useCallback((nodeId: string) => {
     const node = canvasDataRef.current.nodes.find((n) => n.id === nodeId);
@@ -699,7 +699,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
   // Listener NATIVO y no pasivo. El `onWheel` de React se registra pasivo en
   // el root, así que `preventDefault()` no evita que WebKitGTK/Tauri escale la
-  // ventana entera con Ctrl + rueda / pellizco. Obsidian hace lo mismo:
+  // ventana entera con Ctrl + rueda / pellizco. Urano hace lo mismo:
   // `wrapperEl.addEventListener("wheel", this.onWheel.bind(this))`.
   useEffect(() => {
     const el = containerRef.current;
@@ -709,7 +709,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       if (e.defaultPrevented) return;
       e.preventDefault();
 
-      // Normalización de deltaMode (Obsidian: DOM_DELTA_LINE ×40, DOM_DELTA_PAGE ×800)
+      // Normalización de deltaMode (Urano: DOM_DELTA_LINE ×40, DOM_DELTA_PAGE ×800)
       let dx = e.deltaX;
       let dy = e.deltaY;
       if (e.deltaMode === WheelEvent.DOM_DELTA_LINE) {
@@ -725,7 +725,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       const isPinch = e.ctrlKey || e.metaKey;
 
       // Rueda discreta de ratón: deltas enteros múltiplos de 120 sin componente X
-      // (Obsidian: `Math.abs(wheelDeltaY) === 240 && wheelDeltaX === 0`).
+      // (Urano: `Math.abs(wheelDeltaY) === 240 && wheelDeltaX === 0`).
       const legacy = e as WheelEvent & { wheelDeltaY?: number; wheelDeltaX?: number };
       const isDiscreteMouseWheel =
         !isPinch &&
@@ -745,7 +745,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       }
 
       // Dos dedos en paralelo sobre el trackpad: desplazar la cámara.
-      // Shift + rueda vertical → desplazamiento horizontal (Obsidian).
+      // Shift + rueda vertical → desplazamiento horizontal (Urano).
       if (e.shiftKey && dx === 0) {
         panBy(dy, 0);
       } else {
@@ -1478,7 +1478,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         setSelectedEdgeId(newEdge.id);
       } else if (sourceNode) {
         // Soltado sobre el lienzo vacío: congelar la punta de la flecha y
-        // preguntar qué nodo crear (Obsidian no crea nada sin elección).
+        // preguntar qué nodo crear (Urano no crea nada sin elección).
         updatePendingEdgeDrop({
           sourceNodeId: sourceNode.id,
           sourceSide: connectingFrom.side,
@@ -2205,7 +2205,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
       {/* Menú al soltar una flecha en el lienzo vacío */}
       {edgeDropMenu && pendingEdgeDrop && !readonly && (
-        <ObsidianMenu
+        <UranoMenu
           x={edgeDropMenu.x}
           y={edgeDropMenu.y}
           items={[
@@ -2234,9 +2234,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         />
       )}
 
-      {/* 7. Obsidian Context Menu */}
+      {/* 7. Urano Context Menu */}
       {contextMenu && (
-        <ObsidianMenu
+        <UranoMenu
           x={contextMenu.x}
           y={contextMenu.y}
           items={contextMenu.items}

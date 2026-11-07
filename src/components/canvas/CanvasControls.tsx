@@ -35,7 +35,7 @@ interface PopoverProps {
   align?: 'top' | 'bottom';
 }
 
-/** Popover anclado a la izquierda del grupo de controles (estilo Obsidian). */
+/** Popover anclado a la izquierda del grupo de controles (estilo Urano). */
 const Popover: React.FC<PopoverProps> = ({ children, onClose, align = 'top' }) => {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -69,7 +69,7 @@ const Popover: React.FC<PopoverProps> = ({ children, onClose, align = 'top' }) =
 };
 
 /**
- * Controles flotantes `.canvas-controls` — 1:1 con Obsidian.
+ * Controles flotantes `.canvas-controls` — 1:1 con Urano.
  *  1. Ajustes del Canvas (snap to grid / solo lectura)
  *  2. Grupo de zoom: + / ↻ / ⛶ / —
  *  3. Grupo de historial: ↶ / ↷

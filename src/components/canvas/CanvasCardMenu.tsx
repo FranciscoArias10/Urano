@@ -13,7 +13,7 @@ interface CanvasCardMenuProps {
 }
 
 /**
- * Barra inferior `.canvas-card-menu` — 1:1 con Obsidian.
+ * Barra inferior `.canvas-card-menu` — 1:1 con Urano.
  * Tres botones, sin divisores verticales, que funcionan con clic y también
  * arrastrándose sobre el lienzo.
  */

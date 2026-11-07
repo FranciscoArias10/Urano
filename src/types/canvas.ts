@@ -1,4 +1,4 @@
-// JSON Canvas 1.0 Specification types (compatible with Obsidian Canvas)
+// JSON Canvas 1.0 Specification types (compatible with Urano Canvas)
 
 export type CanvasNodeSide = 'top' | 'right' | 'bottom' | 'left';
 export type CanvasEdgeEnd = 'none' | 'arrow';

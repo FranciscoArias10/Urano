@@ -94,7 +94,7 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { notesContentMap, updateNoteContent } = useVaultStore();
 
-  // Un nodo sin color propio usa el estilo por defecto de Obsidian:
+  // Un nodo sin color propio usa el estilo por defecto de Urano:
   // borde `1px solid #3a3a3a` y fondo `#1e1e1e` (definidos en canvasStyles.css).
   // Los colores personalizados (`#rrggbb`) también participan del tema.
   const hasTheme = Boolean(node.color);
@@ -384,7 +384,7 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleGroupLabelBlur();
               }}
-              className="bg-transparent text-obsidian-text outline-none font-semibold text-xs min-w-[80px]"
+              className="bg-transparent text-urano-text outline-none font-semibold text-xs min-w-[80px]"
             />
           ) : (
             <span>{node.label || t('canvas.node.group')}</span>
