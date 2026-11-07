@@ -37,7 +37,7 @@
   <!-- Ambient Uranium Core Aura -->
   <circle cx="50" cy="50" r="28" fill="#f97316" opacity="0.15" filter="url(#uraniumGlow)" />
 
-  <!-- Faceted Crystal (Obsidian-inspired geometric mineral shards) -->
+  <!-- Faceted Crystal (Urano-inspired geometric mineral shards) -->
   <g filter="url(#uraniumGlow)">
     <!-- Top-Left Facet -->
     <polygon points="50,8 24,34 35,46 50,38" fill="url(#facetTop)" stroke="#ffb27d" stroke-width="0.8" stroke-linejoin="round" />

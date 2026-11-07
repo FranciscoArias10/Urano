@@ -72,18 +72,18 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="w-[620px] max-h-[80vh] flex flex-col bg-obsidian-bg border border-obsidian-border rounded-xl shadow-2xl overflow-hidden select-none"
+        className="w-[620px] max-h-[80vh] flex flex-col bg-urano-bg border border-urano-border rounded-xl shadow-2xl overflow-hidden select-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-obsidian-border bg-obsidian-sidebar">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-urano-border bg-urano-sidebar">
           <div className="flex items-center gap-2">
             <FileText size={16} className="text-orange-500" />
-            <span className="text-sm font-semibold text-obsidian-text">{t('templates.title')}</span>
+            <span className="text-sm font-semibold text-urano-text">{t('templates.title')}</span>
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-obsidian-muted hover:text-obsidian-text rounded hover:bg-[var(--interactive-hover)] transition-colors"
+            className="p-1 text-urano-muted hover:text-urano-text rounded hover:bg-[var(--interactive-hover)] transition-colors"
           >
             <X size={15} />
           </button>
@@ -92,7 +92,7 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({
         {/* Modal Body: Split view (Template list on left, preview on right) */}
         <div className="flex flex-1 min-h-[340px] overflow-hidden">
           {/* Templates List */}
-          <div className="w-1/2 border-r border-obsidian-border p-3 overflow-y-auto space-y-1.5">
+          <div className="w-1/2 border-r border-urano-border p-3 overflow-y-auto space-y-1.5">
             {templates.map((tpl) => {
               const isSelected = tpl.id === selectedId;
               return (
@@ -102,14 +102,14 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({
                   className={`p-2.5 rounded-lg cursor-pointer transition-all border ${
                     isSelected
                       ? 'bg-orange-500/15 border-orange-500 text-white'
-                      : 'border-transparent text-obsidian-text hover:bg-[var(--interactive-hover)]'
+                      : 'border-transparent text-urano-text hover:bg-[var(--interactive-hover)]'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 mb-1">
                     {tpl.icon}
                     <span className="text-xs font-semibold">{tpl.name}</span>
                   </div>
-                  <p className="text-[11px] text-obsidian-muted line-clamp-2 leading-relaxed">
+                  <p className="text-[11px] text-urano-muted line-clamp-2 leading-relaxed">
                     {tpl.description}
                   </p>
                 </div>
@@ -118,25 +118,25 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({
           </div>
 
           {/* Preview Panel */}
-          <div className="w-1/2 p-4 bg-obsidian-sidebar flex flex-col">
-            <span className="text-[11px] font-semibold text-obsidian-muted uppercase tracking-wider mb-2">
+          <div className="w-1/2 p-4 bg-urano-sidebar flex flex-col">
+            <span className="text-[11px] font-semibold text-urano-muted uppercase tracking-wider mb-2">
               {t('templates.preview')}
             </span>
-            <div className="flex-1 bg-obsidian-sidebar border border-obsidian-border rounded-md p-3 font-mono text-[11px] text-obsidian-text whitespace-pre-wrap overflow-y-auto select-text">
+            <div className="flex-1 bg-urano-sidebar border border-urano-border rounded-md p-3 font-mono text-[11px] text-urano-text whitespace-pre-wrap overflow-y-auto select-text">
               {selectedTemplate.content}
             </div>
           </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-obsidian-border bg-obsidian-sidebar">
-          <span className="text-[11px] text-obsidian-faint">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-urano-border bg-urano-sidebar">
+          <span className="text-[11px] text-urano-faint">
             {t('templates.escHint')}
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-3 py-1.5 text-xs text-obsidian-muted hover:text-obsidian-text rounded-md hover:bg-[var(--interactive-hover)] transition-colors"
+              className="px-3 py-1.5 text-xs text-urano-muted hover:text-urano-text rounded-md hover:bg-[var(--interactive-hover)] transition-colors"
             >
               {t('common.cancel')}
             </button>

@@ -21,7 +21,7 @@ const MIN_SCALE = 0.25;
 const MAX_SCALE = 8;
 
 /**
- * Full-screen image viewer (Obsidian's `.lightbox`).
+ * Full-screen image viewer (Urano's `.lightbox`).
  *
  * Interaction model:
  * - mouse wheel zooms towards the cursor, clamped to [MIN_SCALE, MAX_SCALE]
@@ -190,7 +190,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
           onDoubleClick={handleDoubleClick}
           onClick={(e) => {
             e.stopPropagation();
-            // Ctrl/Cmd + click opens the file in a new leaf (Obsidian behaviour)
+            // Ctrl/Cmd + click opens the file in a new leaf (Urano behaviour)
             if ((e.ctrlKey || e.metaKey) && activeImage.filePath) {
               handleOpenInNewTab();
             }

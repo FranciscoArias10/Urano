@@ -9,13 +9,13 @@ export interface MenuItemData {
   shortcut?: string;
   isWarning?: boolean;
   disabled?: boolean;
-  /** Renders a check mark on the left (Obsidian uses it in the tab list menu) */
+  /** Renders a check mark on the left (Urano uses it in the tab list menu) */
   checked?: boolean;
   action?: () => void;
   submenu?: MenuItemData[];
 }
 
-interface ObsidianMenuProps {
+interface UranoMenuProps {
   x: number;
   y: number;
   items: MenuItemData[];
@@ -87,19 +87,20 @@ const MenuItemRow: React.FC<MenuItemRowProps> = ({ item, onTrigger }) => {
       }}
     >
       {item.icon && <span className="menu-item-icon">{item.icon}</span>}
-      {item.checked && (
-        <span className="menu-item-icon">
-          <Check size={14} className="text-orange-500" />
-        </span>
-      )}
       <span className="menu-item-title flex-1">{item.title}</span>
 
       {item.shortcut && (
         <span className="menu-item-shortcut">{item.shortcut}</span>
       )}
 
+      {item.checked && (
+        <span className="menu-item-check ml-auto flex items-center pl-2">
+          <Check size={14} className="text-orange-500" />
+        </span>
+      )}
+
       {hasSubmenu && (
-        <ChevronRight size={14} className="text-obsidian-faint ml-2" />
+        <ChevronRight size={14} className="text-urano-faint ml-2" />
       )}
 
       {/* Recursive Submenu */}
@@ -133,7 +134,7 @@ const MenuItemRow: React.FC<MenuItemRowProps> = ({ item, onTrigger }) => {
   );
 };
 
-export const ObsidianMenu: React.FC<ObsidianMenuProps> = ({ x, y, items, onClose, align = 'left' }) => {
+export const UranoMenu: React.FC<UranoMenuProps> = ({ x, y, items, onClose, align = 'left' }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState<{ x: number; y: number }>(() => {
     const estimatedWidth = 200;

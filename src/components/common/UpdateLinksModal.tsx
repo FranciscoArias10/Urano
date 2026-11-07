@@ -56,13 +56,13 @@ export const UpdateLinksModal: React.FC<UpdateLinksModalProps> = ({
         aria-modal="true"
         aria-labelledby="modal-update-links-title"
         onClick={(e) => e.stopPropagation()}
-        className="relative w-[440px] max-w-[92vw] bg-obsidian-bg border border-obsidian-border rounded-[8px] p-6 text-obsidian-text shadow-[0_20px_25px_-5px_rgba(0,0,0,0.7),0_10px_10px_-5px_rgba(0,0,0,0.5)] select-none animate-in fade-in zoom-in-95 duration-100"
+        className="relative w-[440px] max-w-[92vw] bg-urano-bg border border-urano-border rounded-[8px] p-6 text-urano-text shadow-[0_20px_25px_-5px_rgba(0,0,0,0.7),0_10px_10px_-5px_rgba(0,0,0,0.5)] select-none animate-in fade-in zoom-in-95 duration-100"
       >
         {/* Top-right close button (×) */}
         <button
           onClick={onDoNotUpdate}
           title={t('updateLinks.close')}
-          className="absolute top-4 right-4 p-1 text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover rounded transition-colors outline-none cursor-pointer"
+          className="absolute top-4 right-4 p-1 text-urano-muted hover:text-urano-text hover:bg-urano-hover rounded transition-colors outline-none cursor-pointer"
         >
           <X size={16} />
         </button>
@@ -70,17 +70,17 @@ export const UpdateLinksModal: React.FC<UpdateLinksModalProps> = ({
         {/* Modal Title */}
         <h2
           id="modal-update-links-title"
-          className="text-[17px] font-semibold text-obsidian-text tracking-tight mb-2.5 pr-6"
+          className="text-[17px] font-semibold text-urano-text tracking-tight mb-2.5 pr-6"
         >
           {t('updateLinks.title')}
         </h2>
 
         {/* Modal Body */}
         <div className="space-y-2 text-sm leading-relaxed">
-          <p className="text-obsidian-text">
+          <p className="text-urano-text">
             {t('updateLinks.question')}
           </p>
-          <p className="text-obsidian-muted">
+          <p className="text-urano-muted">
             {t('updateLinks.affects', { links: linksText, files: filesText })}
           </p>
         </div>
@@ -95,13 +95,13 @@ export const UpdateLinksModal: React.FC<UpdateLinksModalProps> = ({
           </button>
           <button
             onClick={onJustOnce}
-            className="px-3.5 py-1.5 bg-[var(--interactive-normal)] hover:bg-[var(--interactive-hover)] text-obsidian-text border border-obsidian-border text-xs font-medium rounded transition-colors outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--background-modifier-border-focus)]"
+            className="px-3.5 py-1.5 bg-[var(--interactive-normal)] hover:bg-[var(--interactive-hover)] text-urano-text border border-urano-border text-xs font-medium rounded transition-colors outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--background-modifier-border-focus)]"
           >
             {t('updateLinks.justOnce')}
           </button>
           <button
             onClick={onDoNotUpdate}
-            className="px-3.5 py-1.5 bg-[var(--interactive-normal)] hover:bg-[var(--interactive-hover)] text-obsidian-text border border-obsidian-border text-xs font-medium rounded transition-colors outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--background-modifier-border-focus)]"
+            className="px-3.5 py-1.5 bg-[var(--interactive-normal)] hover:bg-[var(--interactive-hover)] text-urano-text border border-urano-border text-xs font-medium rounded transition-colors outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--background-modifier-border-focus)]"
           >
             {t('updateLinks.doNotUpdate')}
           </button>
