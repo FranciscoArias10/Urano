@@ -3,7 +3,8 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
-  Pencil,
+  PenLine,
+  Code2,
   MoreVertical,
   Columns,
   Rows,
@@ -14,7 +15,7 @@ import {
   Link,
   FileText,
 } from 'lucide-react';
-import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
+import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { useT } from '../../stores/localeStore';
 
 export type ViewMode = 'live-preview' | 'reading' | 'source';
@@ -32,6 +33,7 @@ interface ViewHeaderProps {
   onNavigateForward: () => void;
   viewMode: ViewMode;
   onToggleViewMode: () => void;
+  onChangeViewMode?: (mode: ViewMode) => void;
   onRename?: (newTitle: string) => void | Promise<void>;
   onMoveFile?: () => void;
   onDuplicateFile?: () => void;
@@ -51,6 +53,7 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
   onNavigateForward,
   viewMode,
   onToggleViewMode,
+  onChangeViewMode,
   onRename,
   onMoveFile,
   onDuplicateFile,
@@ -104,6 +107,25 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
   };
 
   const menuItems: MenuItemData[] = [
+    {
+      title: t('viewHeader.readingView'),
+      icon: <BookOpen size={14} />,
+      checked: viewMode === 'reading',
+      action: () => onChangeViewMode?.('reading'),
+    },
+    {
+      title: t('viewHeader.livePreview'),
+      icon: <PenLine size={14} />,
+      checked: viewMode === 'live-preview',
+      action: () => onChangeViewMode?.('live-preview'),
+    },
+    {
+      title: t('viewHeader.sourceMode'),
+      icon: <Code2 size={14} />,
+      checked: viewMode === 'source',
+      action: () => onChangeViewMode?.('source'),
+    },
+    { type: 'separator' },
     {
       title: t('viewHeader.splitRight'),
       icon: <Columns size={14} />,
@@ -232,16 +254,18 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
           type="button"
           className="view-action"
           title={
-            isReading ? t('viewHeader.switchToLivePreview') : t('viewHeader.toggleReadingView')
+            isReading
+              ? t('viewHeader.currentReadingTooltip')
+              : t('viewHeader.currentEditingTooltip')
           }
           aria-label={
             isReading
-              ? t('viewHeader.switchToLivePreviewLabel')
-              : t('viewHeader.toggleReadingViewLabel')
+              ? t('viewHeader.currentReadingTooltip')
+              : t('viewHeader.currentEditingTooltip')
           }
           onClick={onToggleViewMode}
         >
-          {isReading ? <Pencil size={16} /> : <BookOpen size={16} />}
+          {isReading ? <PenLine size={16} /> : <BookOpen size={16} />}
         </button>
         <button
           ref={menuButtonRef}
@@ -256,7 +280,7 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
       </div>
 
       {menu && (
-        <ObsidianMenu
+        <UranoMenu
           x={menu.x}
           y={menu.y}
           align="right"
