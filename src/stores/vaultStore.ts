@@ -350,9 +350,22 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         const lastFile =
           localStorage.getItem(`urano_last_file_${normKey}`) ||
           localStorage.getItem(`urano_last_file_${vaultPath}`);
-        if (lastFile) {
+        if (lastFile && lastFile !== 'null') {
           const resolved = resolveFilePathInVault(lastFile, tree, vaultPath);
-          get().selectFile(resolved || lastFile).catch(() => {});
+          const existsInTree = (items: FileItem[], p: string): boolean => {
+            return items.some((item) => {
+              if (!item.isDir && isSamePath(item.path, p)) return true;
+              return item.children ? existsInTree(item.children, p) : false;
+            });
+          };
+          if (resolved && existsInTree(tree, resolved)) {
+            get().selectFile(resolved).catch(() => {});
+          } else {
+            try {
+              localStorage.removeItem(`urano_last_file_${normKey}`);
+              localStorage.removeItem(`urano_last_file_${vaultPath}`);
+            } catch {}
+          }
         }
       }
     } catch (err) {
@@ -445,6 +458,14 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       fileContent: '',
       isDirty: false,
     });
+    const { activeVault } = get();
+    if (activeVault) {
+      try {
+        const normVault = normalizePath(activeVault);
+        localStorage.removeItem(`urano_last_file_${normVault}`);
+        localStorage.removeItem(`urano_last_file_${activeVault}`);
+      } catch {}
+    }
   },
 
   updateContent: (content: string) => {
@@ -480,7 +501,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
   saveCurrentFile: async () => {
     const { activeFile, fileContent } = get();
-    if (!activeFile || isImagePath(activeFile)) return;
+    if (!activeFile || !activeFile.trim() || isImagePath(activeFile)) return;
     try {
       await invoke('write_file', { filePath: activeFile, content: fileContent });
       set({ isDirty: false });
@@ -836,6 +857,9 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     oldPath: string,
     newTitle: string
   ): Promise<{ success: boolean; error?: string; newPath?: string; pendingPrompt?: boolean }> => {
+    if (!oldPath || !oldPath.trim()) {
+      return { success: false, error: 'No active file' };
+    }
     const { activeVault, fileTree } = get();
 
     const validation = validateFileName(newTitle);
