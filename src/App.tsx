@@ -98,17 +98,29 @@ const MainApp: React.FC = () => {
   const lastEditingModeRef = useRef<Exclude<ViewMode, 'reading'>>(
     useSettingsStore.getState().settings.livePreview ? 'live-preview' : 'source'
   );
-  const toggleReadingView = () =>
+  const toggleReadingView = () => {
+    const activeView = getActiveEditorView();
+    if (activeView) {
+      const liveDoc = activeView.state.doc.toString();
+      useVaultStore.getState().updateContent(liveDoc);
+    }
     setViewMode((mode) => {
       if (mode === 'reading') return lastEditingModeRef.current;
       lastEditingModeRef.current = mode;
       return 'reading';
     });
+  };
+
   // Live Preview <-> Source Mode (raw Markdown)
   const toggleSourceMode = () =>
     setViewMode((mode) => (mode === 'source' ? 'live-preview' : 'source'));
 
   const handleChangeViewMode = (targetMode: ViewMode) => {
+    const activeView = getActiveEditorView();
+    if (activeView) {
+      const liveDoc = activeView.state.doc.toString();
+      useVaultStore.getState().updateContent(liveDoc);
+    }
     if (targetMode !== 'reading') {
       lastEditingModeRef.current = targetMode;
     }
