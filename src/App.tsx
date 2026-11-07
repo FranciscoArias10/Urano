@@ -79,16 +79,16 @@ const isSettingsWindow =
     window.location.hash.includes('window=settings'));
 
 const MainApp: React.FC = () => {
-  // Tabs State (Obsidian Workspace Leaf Tabs)
+  // Tabs State (Urano Workspace Leaf Tabs)
   const [tabs, setTabs] = useState<TabItem[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>('');
 
-  // Per tab navigation history (Obsidian leaf history: historyStack + currentIndex)
+  // Per tab navigation history (Urano leaf history: historyStack + currentIndex)
   const [navHistory, setNavHistory] = useState<
     Record<string, { stack: string[]; index: number }>
   >({});
 
-  // Live Preview / Reading View (Obsidian "Toggle reading view", Ctrl+E)
+  // Live Preview / Reading View (Urano "Toggle reading view", Ctrl+E)
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const s = useSettingsStore.getState().settings;
     if (s.defaultViewMode === 'preview') return 'reading';
@@ -108,8 +108,15 @@ const MainApp: React.FC = () => {
   const toggleSourceMode = () =>
     setViewMode((mode) => (mode === 'source' ? 'live-preview' : 'source'));
 
+  const handleChangeViewMode = (targetMode: ViewMode) => {
+    if (targetMode !== 'reading') {
+      lastEditingModeRef.current = targetMode;
+    }
+    setViewMode(targetMode);
+  };
+
   // When true the next activeFile change navigates the current tab instead of
-  // opening a new one (Obsidian navigates the leaf in place).
+  // opening a new one (Urano navigates the leaf in place).
   const reuseActiveTabRef = useRef(false);
 
   // Latest shortcut handlers (kept in a ref so the global listener never goes stale)
@@ -178,7 +185,7 @@ const MainApp: React.FC = () => {
   const { showNotice } = useNoticeStore();
   const t = useT();
 
-  // Settings (Obsidian-style modal, Ctrl+, / ⚙) — persisted in localStorage + .urano/settings.json
+  // Settings (Urano-style modal, Ctrl+, / ⚙) — persisted in localStorage + .urano/settings.json
   const settings = useSettingsStore((s) => s.settings);
   const openSettings = useSettingsStore((s) => s.openSettings);
   const toggleSettings = useSettingsStore((s) => s.toggleSettings);
@@ -268,7 +275,7 @@ const MainApp: React.FC = () => {
     applyBaseTheme(settings.theme);
   }, [settings]);
 
-  // Window title computed 1:1 with Obsidian: "<active_note> - <vault_name> - Urano"
+  // Window title computed 1:1 with Urano: "<active_note> - <vault_name> - Urano"
   const mainWindowTitle = useMemo(() => {
     const noteName = activeFileName ? activeFileName.replace(/\.(md|canvas|base)$/i, '') : '';
     const vaultPart = vaultName || (activeVault ? activeVault.split(/[\\/]/).pop() : '') || 'Urano';
@@ -356,14 +363,14 @@ const MainApp: React.FC = () => {
     return () => window.removeEventListener('urano:refresh-tree', onRefresh);
   }, [refreshTree]);
 
-  // Registers a file in the history of a leaf (Obsidian leaf history)
+  // Registers a file in the history of a leaf (Urano leaf history)
   const recordVisit = useCallback((tabId: string, filePath: string) => {
     setNavHistory((prev) => {
       const current = prev[tabId];
       if (!current) {
         return { ...prev, [tabId]: { stack: [filePath], index: 0 } };
       }
-      // Already visited: just move the cursor (Obsidian does not duplicate entries)
+      // Already visited: just move the cursor (Urano does not duplicate entries)
       const existingIndex = current.stack.indexOf(filePath);
       if (existingIndex !== -1) {
         if (existingIndex === current.index) return prev;
@@ -418,7 +425,7 @@ const MainApp: React.FC = () => {
         t.id === existing.id ? { ...t, title: fileName, type, isDirty } : t
       );
     } else if (reusable) {
-      // Obsidian navigates the leaf in place (wikilinks, quick switcher)
+      // Urano navigates the leaf in place (wikilinks, quick switcher)
       targetTabId = reusable.id;
       nextTabs = tabs.map((t) =>
         t.id === reusable.id
@@ -488,7 +495,7 @@ const MainApp: React.FC = () => {
     toggleSourceMode: toggleSourceMode,
   };
 
-  // Global Keyboard Shortcuts (Obsidian matching)
+  // Global Keyboard Shortcuts (Urano matching)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ctrl+P: Command Palette
@@ -532,7 +539,7 @@ const MainApp: React.FC = () => {
         e.preventDefault();
         shortcutsRef.current.forward();
       }
-      // Ctrl+, : Open settings (Obsidian `app:open-settings`, hotkey Mod+,)
+      // Ctrl+, : Open settings (Urano `app:open-settings`, hotkey Mod+,)
       else if ((e.ctrlKey || e.metaKey) && (e.key === ',' || e.code === 'Comma')) {
         e.preventDefault();
         toggleSettings();
@@ -682,7 +689,7 @@ const MainApp: React.FC = () => {
     }
   };
 
-  // Close all tabs (Obsidian keeps pinned tabs open)
+  // Close all tabs (Urano keeps pinned tabs open)
   const handleCloseAllTabs = () => {
     const remaining = tabs.filter((t) => t.pinned);
     setTabs(remaining);
@@ -708,7 +715,7 @@ const MainApp: React.FC = () => {
   };
 
   /* --------------------------------------------------------------- *
-   * View header actions (Obsidian "More options" menu)
+   * View header actions (Urano "More options" menu)
    * --------------------------------------------------------------- */
   const handleRenameFile = async (newTitle: string) => {
     if (!activeFile) return;
@@ -783,7 +790,7 @@ const MainApp: React.FC = () => {
     }
   };
 
-  // Wikilinks navigate the current leaf in place (Obsidian behaviour)
+  // Wikilinks navigate the current leaf in place (Urano behaviour)
   const handleWikilinkClick = (name: string) => {
     reuseActiveTabRef.current = true;
     openOrCreateWikilink(name);
@@ -925,7 +932,7 @@ const MainApp: React.FC = () => {
     return count;
   }, [activeFile, activeFileName, notesContentMap]);
 
-  // Registered commands for Command Palette (Ctrl+P) extracted from Obsidian
+  // Registered commands for Command Palette (Ctrl+P) extracted from Urano
   const paletteCommands: CommandItem[] = [
     {
       id: 'file-explorer:new-note',
@@ -1042,7 +1049,7 @@ const MainApp: React.FC = () => {
       action: () => openSettings('sync'),
     },
   ].filter((cmd) => {
-    // Commands owned by a disabled core plugin disappear (Obsidian behaviour)
+    // Commands owned by a disabled core plugin disappear (Urano behaviour)
     if (cmd.id.startsWith('canvas:')) return corePlugins.canvas;
     if (cmd.id.startsWith('daily-notes:')) return corePlugins['daily-notes'];
     if (cmd.id.startsWith('templates:')) return corePlugins.templates;
@@ -1143,8 +1150,8 @@ const MainApp: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-obsidian-bg text-obsidian-text overflow-hidden select-none">
-      {/* Obsidian Custom Frame Titlebar (rendered in 'custom' / 'Marco de Urano' mode) */}
+    <div className="flex flex-col h-screen w-screen bg-urano-bg text-urano-text overflow-hidden select-none">
+      {/* Urano Custom Frame Titlebar (rendered in 'custom' / 'Marco de Urano' mode) */}
       {settings.windowFrameStyle === 'custom' && (
         <div
           className="titlebar"
@@ -1170,7 +1177,7 @@ const MainApp: React.FC = () => {
       {/* Main Workspace Body */}
       <div className="flex flex-1 overflow-hidden">
         {/* ========================================================
-            Obsidian Left Ribbon (.side-dock-ribbon)
+            Urano Left Ribbon (.side-dock-ribbon)
             Configurable dynamic actions with dark tooltips
             ======================================================== */}
         {settings.showRibbon && (
@@ -1185,7 +1192,7 @@ const MainApp: React.FC = () => {
             <Tooltip content={t('app.ribbon.showSidebar')} shortcut="Ctrl+B" position="right">
               <button
                 onClick={() => setShowLeftSidebar(true)}
-                className="side-dock-ribbon-action text-obsidian-muted hover:text-obsidian-text"
+                className="side-dock-ribbon-action text-urano-muted hover:text-urano-text"
               >
                 <PanelLeft size={18} />
               </button>
@@ -1203,7 +1210,7 @@ const MainApp: React.FC = () => {
           <Tooltip content={t('app.ribbon.settings')} shortcut="Ctrl+," position="right">
             <button
               onClick={() => openSettings()}
-              className="side-dock-ribbon-action mb-1 text-obsidian-muted hover:text-obsidian-text"
+              className="side-dock-ribbon-action mb-1 text-urano-muted hover:text-urano-text"
             >
               <Settings size={18} />
             </button>
@@ -1212,13 +1219,13 @@ const MainApp: React.FC = () => {
         )}
 
         {/* ========================================================
-            Obsidian Left Collapsible Sidebar Dock
+            Urano Left Collapsible Sidebar Dock
             Section A: Fila Superior del Panel Izquierdo (4 botones)
             ======================================================== */}
         {showLeftSidebar && (
-          <aside className="w-64 bg-obsidian-sidebar border-r border-obsidian-border flex flex-col shrink-0">
+          <aside className="w-64 bg-urano-sidebar border-r border-urano-border flex flex-col shrink-0">
             {/* A. Fila Superior del Panel Izquierdo (4 botones) */}
-            <div className="h-10 px-2.5 border-b border-obsidian-border flex items-center justify-between bg-obsidian-sidebar shrink-0">
+            <div className="h-10 px-2.5 border-b border-urano-border flex items-center justify-between bg-urano-sidebar shrink-0">
               {/* 1. Botón "Toggle Left Sidebar" */}
               <Tooltip content={t('app.ribbon.hideSidebar')} shortcut="Ctrl+B" position="bottom">
                 <button
@@ -1292,22 +1299,22 @@ const MainApp: React.FC = () => {
               )}
             </div>
 
-            {/* Obsidian Bottom Vault Switcher (⌄ prueba) & Action Icons (? y ⚙) */}
-            <div className="p-2 border-t border-obsidian-border bg-obsidian-sidebar flex items-center justify-between text-xs text-obsidian-muted shrink-0">
+            {/* Urano Bottom Vault Switcher (⌄ prueba) & Action Icons (? y ⚙) */}
+            <div className="p-2 border-t border-urano-border bg-urano-sidebar flex items-center justify-between text-xs text-urano-muted shrink-0">
               <button
                 onClick={handleVaultSwitcherClick}
-                className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-obsidian-hover hover:text-obsidian-text text-obsidian-text font-medium max-w-[145px] truncate transition-colors text-left"
+                className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-urano-hover hover:text-urano-text text-urano-text font-medium max-w-[145px] truncate transition-colors text-left"
                 title={t('app.sidebar.vaultSwitcher')}
               >
                 <ChevronDown size={14} className="text-orange-500 shrink-0" />
                 <span className="truncate">{vaultName || t('app.vaultMenu.defaultVaultName')}</span>
               </button>
 
-              <div className="flex items-center gap-0.5 text-obsidian-muted">
+              <div className="flex items-center gap-0.5 text-urano-muted">
                 <button
                   onClick={handleHelpClick}
                   title={t('app.sidebar.help')}
-                  className="p-1.5 hover:text-obsidian-text hover:bg-obsidian-hover rounded transition-colors"
+                  className="p-1.5 hover:text-urano-text hover:bg-urano-hover rounded transition-colors"
                 >
                   <HelpCircle size={15} />
                 </button>
@@ -1315,7 +1322,7 @@ const MainApp: React.FC = () => {
                   onClick={() => openSettings()}
                   title={t('app.sidebar.settingsTitle')}
                   aria-label={t('app.ribbon.settings')}
-                  className="p-1.5 hover:text-obsidian-text hover:bg-obsidian-hover rounded transition-colors"
+                  className="p-1.5 hover:text-urano-text hover:bg-urano-hover rounded transition-colors"
                 >
                   <Settings size={15} />
                 </button>
@@ -1327,8 +1334,8 @@ const MainApp: React.FC = () => {
         {/* ========================================================
             Center Main Workspace (Tabs + Editor / Graph / Canvas / Base)
             ======================================================== */}
-        <main className="flex-1 flex flex-col overflow-hidden bg-obsidian-bg min-w-0">
-          {/* Obsidian TabBar */}
+        <main className="flex-1 flex flex-col overflow-hidden bg-urano-bg min-w-0">
+          {/* Urano TabBar */}
           <TabBar
             tabs={tabs}
             activeTabId={activeTabId}
@@ -1344,7 +1351,7 @@ const MainApp: React.FC = () => {
             onSplitDown={handleSplitUnavailable}
           />
 
-          {/* Obsidian View Header (second row) */}
+          {/* Urano View Header (second row) */}
           {settings.showTabTitleBar && (
             <ViewHeader
               title={activeFileTitle}
@@ -1355,6 +1362,7 @@ const MainApp: React.FC = () => {
               onNavigateForward={handleNavigateForward}
               viewMode={viewMode}
               onToggleViewMode={toggleReadingView}
+              onChangeViewMode={handleChangeViewMode}
               onRename={handleRenameFile}
               onMoveFile={handleMoveFile}
               onDuplicateFile={handleDuplicateFile}
@@ -1386,10 +1394,10 @@ const MainApp: React.FC = () => {
                 />
               </EditorErrorBoundary>
             ) : (
-              <div className="flex-1 h-full flex flex-col items-center justify-center text-obsidian-muted p-8 text-center bg-obsidian-bg">
+              <div className="flex-1 h-full flex flex-col items-center justify-center text-urano-muted p-8 text-center bg-urano-bg">
                 <UranoLogo size={56} className="mb-4 opacity-80" />
-                <h2 className="text-xl font-medium text-obsidian-text mb-2">{t('app.emptyState.title')}</h2>
-                <p className="text-sm max-w-sm text-obsidian-muted mb-6">
+                <h2 className="text-xl font-medium text-urano-text mb-2">{t('app.emptyState.title')}</h2>
+                <p className="text-sm max-w-sm text-urano-muted mb-6">
                   {t('app.emptyState.description')}
                 </p>
                 <div className="flex items-center gap-3">
@@ -1402,7 +1410,7 @@ const MainApp: React.FC = () => {
                   </button>
                   <button
                     onClick={handleOpenFolderDialog}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--interactive-normal)] hover:bg-[var(--interactive-hover)] text-obsidian-text text-xs font-medium transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--interactive-normal)] hover:bg-[var(--interactive-hover)] text-urano-text text-xs font-medium transition-colors"
                   >
                     <FolderOpen size={14} />
                     <span>{t('app.emptyState.openFolder')}</span>
@@ -1429,7 +1437,7 @@ const MainApp: React.FC = () => {
       </div>
 
       {/* ========================================================
-          Obsidian Bottom Status Bar
+          Urano Bottom Status Bar
           ======================================================== */}
       {settings.showStatusBar && (
         <StatusBar
@@ -1438,6 +1446,7 @@ const MainApp: React.FC = () => {
           onOpenLogs={() => setShowLogs(true)}
           viewMode={viewMode}
           onToggleViewMode={toggleReadingView}
+          onChangeViewMode={handleChangeViewMode}
         />
       )}
 
@@ -1465,7 +1474,7 @@ const MainApp: React.FC = () => {
         onInsert={handleInsertTemplate}
       />
 
-      {/* Settings modal (Obsidian .modal.mod-settings) — Ctrl+, / ⚙ */}
+      {/* Settings modal (Urano .modal.mod-settings) — Ctrl+, / ⚙ */}
       <SettingsModal
         commands={paletteCommands}
         onOpenHelp={handleHelpClick}
@@ -1514,8 +1523,8 @@ const MainApp: React.FC = () => {
                 }}
                 className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-[5px] text-[13px] transition-colors cursor-pointer text-left ${
                   isActive
-                    ? 'text-obsidian-text bg-[var(--interactive-normal)]'
-                    : 'text-obsidian-text hover:text-obsidian-text hover:bg-[var(--interactive-hover)]'
+                    ? 'text-urano-text bg-[var(--interactive-normal)]'
+                    : 'text-urano-text hover:text-urano-text hover:bg-[var(--interactive-hover)]'
                 }`}
               >
                 <span className="truncate max-w-[150px]" title={vault.path}>
@@ -1536,21 +1545,21 @@ const MainApp: React.FC = () => {
               setVaultSwitcherAnchor(null);
               setShowVaultManager(true);
             }}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[5px] text-[13px] text-obsidian-text hover:text-obsidian-text hover:bg-[var(--interactive-hover)] transition-colors cursor-pointer text-left"
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[5px] text-[13px] text-urano-text hover:text-urano-text hover:bg-[var(--interactive-hover)] transition-colors cursor-pointer text-left"
           >
-            <Vault size={16} className="text-obsidian-muted shrink-0" />
+            <Vault size={16} className="text-urano-muted shrink-0" />
             <span>{t('app.vaultMenu.manageVaults')}</span>
           </button>
         </div>
       )}
 
-      {/* Vault Manager Modal (Obsidian Starter 1:1) */}
+      {/* Vault Manager Modal (Urano Starter 1:1) */}
       <VaultManagerModal
         isOpen={showVaultManager}
         onClose={() => setShowVaultManager(false)}
       />
 
-      {/* Obsidian 1:1 "Update links" Modal */}
+      {/* Urano 1:1 "Update links" Modal */}
       {pendingRenamePrompt && (
         <UpdateLinksModal
           isOpen={true}
@@ -1562,7 +1571,7 @@ const MainApp: React.FC = () => {
         />
       )}
 
-      {/* Obsidian Floating Notices */}
+      {/* Urano Floating Notices */}
       <NoticeContainer />
     </div>
   );
