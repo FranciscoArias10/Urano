@@ -171,7 +171,7 @@ export const CssSnippetsModal: React.FC<CssSnippetsModalProps> = ({
                     {snippet.name}
                   </span>
                   <span className="text-[11px] text-[var(--text-muted)]">
-                    {snippet.source === 'obsidian' ? '.obsidian/snippets' : '.urano/snippets'}
+                    {snippet.source === 'urano' ? '.urano/snippets' : '.urano/snippets'}
                   </span>
                 </div>
                 <Toggle

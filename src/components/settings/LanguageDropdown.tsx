@@ -1,7 +1,7 @@
 /**
- * Desplegable de idioma de Ajustes → General y Administrador de Bóvedas, réplica de Obsidian.
+ * Desplegable de idioma de Ajustes → General y Administrador de Bóvedas, réplica de Urano.
  *
- * Evidencia (REA, `obsidian.asar`):
+ * Evidencia (REA, `urano.asar`):
  *   app.js  → `e.addDropdown(d => { for (code of Fy) d.addOption(code, Oy[code]); d.setValue(cur) })`
  *   app.css → `.dropdown { ... }`
  *

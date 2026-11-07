@@ -157,7 +157,7 @@ export const URANO_ACCENT = '#e06c1b';
 
 export const DEFAULT_SETTINGS: UranoSettings = {
   autoUpdate: true,
-  // Igual que Obsidian: idioma del sistema si está en el catálogo, si no inglés.
+  // Igual que Urano: idioma del sistema si está en el catálogo, si no inglés.
   language: detectSystemLanguage(),
   slowStartupCheck: false,
   cli: false,

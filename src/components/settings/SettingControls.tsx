@@ -2,10 +2,10 @@ import React, { useId, useState } from 'react';
 import { ChevronsUpDown, X } from 'lucide-react';
 
 /* ----------------------------------------------------------------------------
- * Primitive building blocks mirroring Obsidian's `Setting` component family
+ * Primitive building blocks mirroring Urano's `Setting` component family
  * (app.js: rT = Setting, oT = SettingGroup, pT = ToggleComponent,
  *  bT = DropdownComponent, ButtonComponent, ExtraButtonComponent, vT = Search).
- * Class names are the real Obsidian ones so the CSS reconstruction applies.
+ * Class names are the real Urano ones so the CSS reconstruction applies.
  * ------------------------------------------------------------------------- */
 
 export interface SettingGroupProps {
@@ -44,7 +44,7 @@ export interface SettingItemProps {
   icon?: React.ReactNode;
   disabled?: boolean;
   className?: string;
-  /** Stack controls vertically (Obsidian `.setting-item-control.mod-vertical`). */
+  /** Stack controls vertically (Urano `.setting-item-control.mod-vertical`). */
   vertical?: boolean;
   onClick?: () => void;
   children?: React.ReactNode;
@@ -137,7 +137,7 @@ export interface DropdownProps<T extends string> {
   ariaLabel?: string;
 }
 
-/** `select.dropdown` with Obsidian's double-chevron glyph (lucide ChevronsUpDown). */
+/** `select.dropdown` with Urano's double-chevron glyph (lucide ChevronsUpDown). */
 export function Dropdown<T extends string>({
   value,
   options,
@@ -177,7 +177,7 @@ export interface SettingButtonProps
   children: React.ReactNode;
 }
 
-/** Obsidian `button` / `button.mod-cta` / `button.mod-loading` */
+/** Urano `button` / `button.mod-cta` / `button.mod-loading` */
 export const SettingButton: React.FC<SettingButtonProps> = ({
   cta,
   warning,
@@ -204,7 +204,7 @@ export interface ExtraButtonProps {
   disabled?: boolean;
 }
 
-/** Icon-only button placed before the main control (Obsidian `addExtraButton`). */
+/** Icon-only button placed before the main control (Urano `addExtraButton`). */
 export const ExtraButton: React.FC<ExtraButtonProps> = ({ icon, tooltip, onClick, disabled }) => (
   <button
     type="button"
@@ -339,7 +339,7 @@ export interface SliderProps {
   ariaLabel?: string;
 }
 
-/** Range slider with a tabular value readout (Obsidian `SliderComponent` + tooltip). */
+/** Range slider with a tabular value readout (Urano `SliderComponent` + tooltip). */
 export const Slider: React.FC<SliderProps> = ({
   value,
   onChange,

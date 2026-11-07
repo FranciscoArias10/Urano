@@ -19,9 +19,9 @@ import { ExcludedFilesModal } from './ExcludedFilesModal';
 import './settingsStyles.css';
 
 /* ----------------------------------------------------------------------------
- * Obsidian 1.14.4 Settings modal (`.modal.mod-settings.mod-sidebar-layout`)
+ * Urano 1.14.4 Settings modal (`.modal.mod-settings.mod-sidebar-layout`)
  * rebuilt for Urano. DOM/class structure follows the REA extraction of
- * obsidian.asar/app.js (class `doe` = SettingsModal) — see settingsStyles.css.
+ * urano.asar/app.js (class `doe` = SettingsModal) — see settingsStyles.css.
  * ------------------------------------------------------------------------- */
 
 export interface SettingsModalProps {
@@ -189,7 +189,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     if ((isOpen || standalone) && activeTab && activeTab.id !== activeTabId) setActiveTab(activeTab.id);
   }, [isOpen, standalone, activeTab, activeTabId, setActiveTab]);
 
-  // Reset search + focus the search box when opening (Obsidian: hasInitialInputFocus on desktop).
+  // Reset search + focus the search box when opening (Urano: hasInitialInputFocus on desktop).
   useEffect(() => {
     if (!isOpen && !standalone) return;
     setQuery('');
@@ -197,7 +197,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     return () => window.clearTimeout(id);
   }, [isOpen, standalone]);
 
-  // Escape closes, Mod+F focuses search (Obsidian `modalEl` keydown handler).
+  // Escape closes, Mod+F focuses search (Urano `modalEl` keydown handler).
   useEffect(() => {
     if (!isOpen && !standalone) return;
     const onKeyDown = (e: KeyboardEvent) => {

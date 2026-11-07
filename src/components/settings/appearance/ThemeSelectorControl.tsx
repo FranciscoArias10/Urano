@@ -133,26 +133,26 @@ export const InstalledThemesList: React.FC<InstalledThemesListProps> = ({
       {themes.map((th) => (
         <div
           key={th.name}
-          className="flex items-center justify-between p-2.5 rounded-[6px] bg-obsidian-sidebar border border-obsidian-border"
+          className="flex items-center justify-between p-2.5 rounded-[6px] bg-urano-sidebar border border-urano-border"
         >
           <div className="flex flex-col gap-0.5">
-            <div className="text-[13px] font-medium text-obsidian-text flex items-center gap-2">
+            <div className="text-[13px] font-medium text-urano-text flex items-center gap-2">
               <span>{th.name}</span>
               {th.version && (
-                <span className="text-[11px] px-1.5 py-0.2 rounded bg-[var(--interactive-normal)] text-obsidian-muted">
+                <span className="text-[11px] px-1.5 py-0.2 rounded bg-[var(--interactive-normal)] text-urano-muted">
                   v{th.version}
                 </span>
               )}
             </div>
             {th.author && (
-              <div className="text-[12px] text-obsidian-muted">
+              <div className="text-[12px] text-urano-muted">
                 {t('appearance.byAuthor', { author: th.author })}
               </div>
             )}
           </div>
           <button
             type="button"
-            className="p-1.5 text-obsidian-muted hover:text-[#ef4444] transition-colors rounded hover:bg-[var(--interactive-hover)]"
+            className="p-1.5 text-urano-muted hover:text-[#ef4444] transition-colors rounded hover:bg-[var(--interactive-hover)]"
             title={t('appearance.uninstallTheme')}
             onClick={() => void handleUninstall(th.name)}
           >
@@ -210,32 +210,32 @@ export const InstalledThemesRow: React.FC<{ vaultPath: string; refreshTrigger?: 
 
   return (
     <div className="w-full flex flex-col gap-2">
-      <div className="text-[12px] text-obsidian-muted">{descText}</div>
+      <div className="text-[12px] text-urano-muted">{descText}</div>
       {themes.length > 0 && (
         <div className="flex flex-col gap-2 w-full mt-1">
           {themes.map((th) => (
             <div
               key={th.name}
-              className="flex items-center justify-between p-2.5 rounded-[6px] bg-[var(--interactive-normal)] border border-obsidian-border"
+              className="flex items-center justify-between p-2.5 rounded-[6px] bg-[var(--interactive-normal)] border border-urano-border"
             >
               <div className="flex flex-col gap-0.5">
-                <div className="text-[13px] font-medium text-obsidian-text flex items-center gap-2">
+                <div className="text-[13px] font-medium text-urano-text flex items-center gap-2">
                   <span>{th.name}</span>
                   {th.version && (
-                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-[var(--interactive-normal)] text-obsidian-muted">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-[var(--interactive-normal)] text-urano-muted">
                       v{th.version}
                     </span>
                   )}
                 </div>
                 {th.author && (
-                  <div className="text-[12px] text-obsidian-muted">
+                  <div className="text-[12px] text-urano-muted">
                     {t('appearance.byAuthor', { author: th.author })}
                   </div>
                 )}
               </div>
               <button
                 type="button"
-                className="p-1.5 text-obsidian-muted hover:text-[#ef4444] transition-colors rounded hover:bg-[var(--interactive-hover)] cursor-pointer"
+                className="p-1.5 text-urano-muted hover:text-[#ef4444] transition-colors rounded hover:bg-[var(--interactive-hover)] cursor-pointer"
                 title={t('appearance.uninstallTheme')}
                 onClick={() => void handleUninstall(th.name)}
               >

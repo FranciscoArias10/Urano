@@ -1,7 +1,7 @@
 /* ============================================================================
-   Urano Settings modal — Obsidian 1.14.4 `.modal.mod-settings` reconstruction
+   Urano Settings modal — Urano 1.14.4 `.modal.mod-settings` reconstruction
    ----------------------------------------------------------------------------
-   Evidence (REA extraction of /usr/lib/obsidian/obsidian.asar → app.css/app.js):
+   Evidence (REA extraction of /usr/lib/urano/urano.asar → app.css/app.js):
      DOM   .modal-container > .modal-bg + .modal.mod-settings.mod-sidebar-layout
              > .modal-header-button.clickable-icon (×)
              > .modal-content.vertical-tabs-container
@@ -20,7 +20,7 @@
      Tokens  --radius-l 12px · --setting-items-padding 20px · --font-ui-small 13px ·
              --font-ui-smaller 12px · --font-ui-medium 15px · divider 1px · --modal-width 90vw ·
              --modal-height 85vh · toggle transition 0.15s ease-in-out
-   Colors are Obsidian theme tokens (body.theme-dark / body.theme-light in src/index.css):
+   Colors are Urano theme tokens (body.theme-dark / body.theme-light in src/index.css):
    --background-primary / -secondary / --background-modifier-border / --text-* / --interactive-*.
    Accent stays Urano orange (#e06c1b) via --interactive-accent.
    ============================================================================ */
@@ -121,7 +121,7 @@
   }
 }
 
-/* × — Obsidian .modal-header-button.mod-raised.clickable-icon */
+/* × — Urano .modal-header-button.mod-raised.clickable-icon */
 .urano-settings-root .modal-header-button {
   position: absolute;
   top: 6px;
@@ -557,7 +557,7 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   opacity: 0.5;
 }
 
-/* --- Buttons (Obsidian `button`, `button.mod-cta`) ---------------------- */
+/* --- Buttons (Urano `button`, `button.mod-cta`) ---------------------- */
 .urano-settings-root .setting-item-control button:not(.clickable-icon):not(.setting-link),
 .urano-settings-root .setting-button {
   display: inline-flex;
@@ -624,7 +624,7 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   }
 }
 
-/* Icon-only extra button (Obsidian `.extra-setting-button.clickable-icon`) */
+/* Icon-only extra button (Urano `.extra-setting-button.clickable-icon`) */
 .urano-settings-root .extra-setting-button {
   display: flex;
   align-items: center;
@@ -646,7 +646,7 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   outline: none;
 }
 
-/* --- Dropdown (Obsidian `select.dropdown`) ------------------------------- */
+/* --- Dropdown (Urano `select.dropdown`) ------------------------------- */
 .urano-settings-root .dropdown-container {
   position: relative;
   display: inline-flex;
@@ -808,7 +808,7 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   background: var(--settings-accent);
 }
 
-/* --- Hotkeys (Obsidian `.setting-hotkey`, `.setting-command-hotkeys`) --- */
+/* --- Hotkeys (Urano `.setting-hotkey`, `.setting-command-hotkeys`) --- */
 .urano-settings-root .setting-command-hotkeys {
   display: flex;
   flex-wrap: wrap;
@@ -870,7 +870,7 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   padding: 16px 0;
 }
 
-/* Plugin list rows (Obsidian `.setting-group.mod-list`) */
+/* Plugin list rows (Urano `.setting-group.mod-list`) */
 .urano-settings-root .setting-group.mod-list .setting-items {
   padding: 4px 16px;
 }
@@ -885,7 +885,7 @@ body.theme-light .urano-settings-root .vertical-tab-header {
 }
 
 /* --- Language dropdown (Ajustes → General → Language) -------------------------
-   Evidencia Obsidian (`obsidian.asar/app.css`, REA):
+   Evidencia Urano (`urano.asar/app.css`, REA):
      .dropdown { height: var(--input-height); font-size: var(--font-ui-small);
                  border-radius: var(--input-radius); background: var(--dropdown-background);
                  padding: 0 2.4em 0 0.8em; background-image: url(chevrons ↕) }
@@ -997,7 +997,7 @@ body.theme-light .urano-settings-root .vertical-tab-header {
 }
 
 .language-dropdown-item {
-  /* Obsidian: todas las opciones en una sola columna compacta alineada a la izquierda,
+  /* Urano: todas las opciones en una sola columna compacta alineada a la izquierda,
      también las RTL (el texto interno lleva dir="auto" para dibujarse en su orden bidi pero
      permaneciendo pegado al margen izquierdo). */
   direction: ltr;

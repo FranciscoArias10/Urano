@@ -64,7 +64,7 @@ import {
 } from './SettingControls';
 
 /* ----------------------------------------------------------------------------
- * Declarative tab definitions (mirrors Obsidian's `SettingTab.getSettingDefinitions`)
+ * Declarative tab definitions (mirrors Urano's `SettingTab.getSettingDefinitions`)
  * ------------------------------------------------------------------------- */
 
 export interface SettingItemDef {
@@ -78,7 +78,7 @@ export interface SettingItemDef {
   vertical?: boolean;
   className?: string;
   onClick?: () => void;
-  /** Extra search terms (Obsidian `aliases`). */
+  /** Extra search terms (Urano `aliases`). */
   aliases?: string[];
 }
 
@@ -227,7 +227,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
               <>
                 {t('general.installerVersion', { version: URANO_INSTALLER_VERSION })}
                 <br />
-                <SettingLink href="https://obsidian.md/changelog/">{t('general.readChangelog')}</SettingLink>
+                <SettingLink href="https://github.com/FranciscoArias10/Urano/releases">{t('general.readChangelog')}</SettingLink>
               </>
             ),
             descText: `${t('general.installerVersion', { version: URANO_INSTALLER_VERSION })} ${t('general.readChangelog')}`,
@@ -303,7 +303,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             desc: (
               <>
                 {t('general.commercialLicenseDesc')}{' '}
-                <SettingLink href="https://obsidian.md/license">{t('general.learnMore')}</SettingLink>
+                <SettingLink href="https://github.com/FranciscoArias10/Urano/blob/master/LICENSE">{t('general.learnMore')}</SettingLink>
               </>
             ),
             descText: `${t('general.commercialLicenseDesc')} ${t('general.learnMore')}`,
@@ -312,7 +312,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 <SettingButton onClick={() => showNotice('Urano is free and open: no license needed.', 3000, 'info')}>
                   {t('general.activate')}
                 </SettingButton>
-                <SettingButton onClick={() => window.open('https://obsidian.md/pricing', '_blank', 'noopener')}>
+                <SettingButton onClick={() => window.open('https://github.com/FranciscoArias10/Urano', '_blank', 'noopener')}>
                   {t('general.purchase')}
                 </SettingButton>
               </>
@@ -421,7 +421,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 {settings.accentColor.toLowerCase() !== URANO_ACCENT.toLowerCase() && (
                   <button
                     type="button"
-                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-obsidian-muted hover:text-obsidian-text transition-colors"
+                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-urano-muted hover:text-urano-text transition-colors"
                     aria-label={t('appearance.restoreDefault')}
                     title={t('appearance.restoreDefault')}
                     onClick={() => {
@@ -481,7 +481,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             },
             control: (
               <div
-                className="flex items-center gap-1.5 text-xs text-obsidian-muted cursor-pointer"
+                className="flex items-center gap-1.5 text-xs text-urano-muted cursor-pointer"
                 onClick={() => {
                   window.dispatchEvent(new CustomEvent('urano:open-css-snippets'));
                 }}
@@ -517,7 +517,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             },
             control: (
               <div
-                className="flex items-center gap-1.5 text-xs text-obsidian-muted cursor-pointer"
+                className="flex items-center gap-1.5 text-xs text-urano-muted cursor-pointer"
                 onClick={() => {
                   window.dispatchEvent(
                     new CustomEvent('urano:open-font-picker', {
@@ -527,7 +527,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 }}
               >
                 {settings.interfaceFontFamily && (
-                  <span className="text-obsidian-text font-medium">
+                  <span className="text-urano-text font-medium">
                     {settings.interfaceFontFamily}
                   </span>
                 )}
@@ -549,7 +549,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             },
             control: (
               <div
-                className="flex items-center gap-1.5 text-xs text-obsidian-muted cursor-pointer"
+                className="flex items-center gap-1.5 text-xs text-urano-muted cursor-pointer"
                 onClick={() => {
                   window.dispatchEvent(
                     new CustomEvent('urano:open-font-picker', {
@@ -559,7 +559,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 }}
               >
                 {settings.textFontFamily && (
-                  <span className="text-obsidian-text font-medium">
+                  <span className="text-urano-text font-medium">
                     {settings.textFontFamily}
                   </span>
                 )}
@@ -581,7 +581,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             },
             control: (
               <div
-                className="flex items-center gap-1.5 text-xs text-obsidian-muted cursor-pointer"
+                className="flex items-center gap-1.5 text-xs text-urano-muted cursor-pointer"
                 onClick={() => {
                   window.dispatchEvent(
                     new CustomEvent('urano:open-font-picker', {
@@ -591,7 +591,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 }}
               >
                 {settings.monospaceFontFamily && (
-                  <span className="text-obsidian-text font-medium">
+                  <span className="text-urano-text font-medium">
                     {settings.monospaceFontFamily}
                   </span>
                 )}
@@ -609,7 +609,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 {settings.baseFontSize !== 16 && (
                   <button
                     type="button"
-                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-obsidian-muted hover:text-obsidian-text transition-colors"
+                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-urano-muted hover:text-urano-text transition-colors"
                     aria-label={t('appearance.restoreDefault')}
                     title={t('appearance.restoreDefault')}
                     onClick={() => {
@@ -684,7 +684,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             desc: (
               <div className="flex items-center gap-3">
                 {settings.customIcon && (
-                  <div className="w-8 h-8 rounded-md overflow-hidden bg-obsidian-sidebar border border-obsidian-border flex items-center justify-center p-0.5 shrink-0">
+                  <div className="w-8 h-8 rounded-md overflow-hidden bg-urano-sidebar border border-urano-border flex items-center justify-center p-0.5 shrink-0">
                     <img
                       src={
                         settings.customIcon.startsWith('http') ||
@@ -706,7 +706,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 {settings.customIcon && (
                   <button
                     type="button"
-                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-obsidian-muted hover:text-obsidian-text transition-colors"
+                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-urano-muted hover:text-urano-text transition-colors"
                     aria-label={t('appearance.resetIcon')}
                     title={t('appearance.resetIcon')}
                     onClick={async () => {
@@ -820,7 +820,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-obsidian-muted hover:text-obsidian-text transition-colors rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-urano-muted hover:text-urano-text transition-colors rounded disabled:opacity-30 disabled:cursor-not-allowed"
                   aria-label={t('interface.resetZoom')}
                   title={t('interface.resetZoom')}
                   disabled={settings.zoomLevel === 100}
@@ -1218,7 +1218,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
     icon: <Folder size={ICON} />,
     section: 'options',
     groups: [
-      // Tarjeta 1 — Opciones Generales de Archivos (Sin Encabezado Superior, 1:1 con Obsidian)
+      // Tarjeta 1 — Opciones Generales de Archivos (Sin Encabezado Superior, 1:1 con Urano)
       {
         id: 'files-general',
         items: [
@@ -1345,7 +1345,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
         ],
       },
 
-      // Sección "Enlaces" (Tarjeta 2 con Encabezado Enlaces, 1:1 con Obsidian)
+      // Sección "Enlaces" (Tarjeta 2 con Encabezado Enlaces, 1:1 con Urano)
       {
         id: 'files-links',
         heading: t('files.linksHeading'),
@@ -1413,7 +1413,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
         ],
       },
 
-      // Tarjeta 3 — Sección Papelera (Tarjeta con Encabezado Papelera, 1:1 con Obsidian)
+      // Tarjeta 3 — Sección Papelera (Tarjeta con Encabezado Papelera, 1:1 con Urano)
       {
         id: 'files-trash',
         heading: t('files.trashHeading'),
@@ -1473,7 +1473,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
         ],
       },
 
-      // Tarjeta 4 — Sección Avanzado (Tarjeta con Encabezado Avanzado, 1:1 con Obsidian)
+      // Tarjeta 4 — Sección Avanzado (Tarjeta con Encabezado Avanzado, 1:1 con Urano)
       {
         id: 'files-advanced',
         heading: t('files.advancedHeading'),
@@ -1490,7 +1490,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             },
             control: (
               <div
-                className="clickable-icon flex items-center justify-center p-1 text-obsidian-muted hover:text-obsidian-text transition-colors cursor-pointer"
+                className="clickable-icon flex items-center justify-center p-1 text-urano-muted hover:text-urano-text transition-colors cursor-pointer"
                 aria-label={t('files.excludedFiles')}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1539,7 +1539,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 <span>{t('files.uriCallbacksDesc')}&nbsp;</span>
                 <a
                   className="setting-link"
-                  href="https://help.obsidian.md/Extending+Obsidian/Obsidian+URI"
+                  href="https://github.com/FranciscoArias10/Urano#uri-callbacks"
                   target="_blank"
                   rel="noreferrer"
                   onClick={(e) => {
@@ -1571,7 +1571,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 <br />
                 <a
                   className="setting-link"
-                  href="https://help.obsidian.md/Files+and+folders/Data+storage"
+                  href="https://github.com/FranciscoArias10/Urano#almacenamiento-de-datos"
                   target="_blank"
                   rel="noreferrer"
                   onClick={(e) => {
@@ -1944,7 +1944,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
   ]);
 
   /* ---------------- Sync (Google Drive) ----------------
-     Mirrors Obsidian's Sync tab (obsidian.asar/app.js `mie.display`): account / remote vault
+     Mirrors Urano's Sync tab (urano.asar/app.js `mie.display`): account / remote vault
      first, then "Sync status" with its Pause/Resume-style action, then "Activity log" → View
      (`optionSyncLog` + `buttonView`). */
   const syncStatusKey = `sync.status.${sync.isSyncing ? 'syncing' : sync.status}` as Parameters<Translate>[0];
@@ -1978,7 +1978,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                   src={sync.userAvatar}
                   alt={sync.userName || 'Google'}
                   referrerPolicy="no-referrer"
-                  className="w-6 h-6 rounded-full border border-obsidian-border"
+                  className="w-6 h-6 rounded-full border border-urano-border"
                 />
               ) : null}
               <SettingButton onClick={() => sync.logout()}>{t('sync.disconnect')}</SettingButton>
@@ -2082,7 +2082,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
     },
   ]);
 
-  // Order: Options group (9) then Core plugins group (10), exactly like Obsidian's sidebar.
+  // Order: Options group (9) then Core plugins group (10), exactly like Urano's sidebar.
   return [
     general,
     appearance,

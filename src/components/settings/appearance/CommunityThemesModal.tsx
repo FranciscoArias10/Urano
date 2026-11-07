@@ -50,7 +50,7 @@ export const CommunityThemesModal: React.FC<CommunityThemesModalProps> = ({
       setInstalled(installedList);
     } catch (err: unknown) {
       console.error('Error al cargar temas de la comunidad:', err);
-      setError('No se pudo descargar el catálogo de temas de Obsidian. Verifique su conexión.');
+      setError('No se pudo descargar el catálogo de temas de la comunidad de Urano. Verifique su conexión.');
     } finally {
       setLoading(false);
     }
@@ -196,24 +196,24 @@ export const CommunityThemesModal: React.FC<CommunityThemesModalProps> = ({
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-6">
           {loading && themes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-3 text-obsidian-muted">
+            <div className="flex flex-col items-center justify-center h-64 gap-3 text-urano-muted">
               <Loader2 size={32} className="animate-spin text-[#e06c1b]" />
-              <p className="text-sm">Cargando temas oficiales de Obsidian...</p>
+              <p className="text-sm">Cargando temas oficiales de la comunidad de Urano...</p>
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-3 text-obsidian-muted text-center">
+            <div className="flex flex-col items-center justify-center h-64 gap-3 text-urano-muted text-center">
               <p className="text-sm text-[#e08a3c]">{error}</p>
               <button
                 type="button"
-                className="px-4 py-2 bg-[var(--interactive-normal)] text-obsidian-text text-xs rounded hover:bg-[var(--interactive-hover)]"
+                className="px-4 py-2 bg-[var(--interactive-normal)] text-urano-text text-xs rounded hover:bg-[var(--interactive-hover)]"
                 onClick={() => void loadData()}
               >
                 Reintentar
               </button>
             </div>
           ) : filteredThemes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-obsidian-muted text-center">
-              <Palette size={40} className="text-obsidian-faint mb-2" />
+            <div className="flex flex-col items-center justify-center h-64 text-urano-muted text-center">
+              <Palette size={40} className="text-urano-faint mb-2" />
               <p className="text-sm">No se encontraron temas coincidentes.</p>
             </div>
           ) : (
@@ -252,7 +252,7 @@ export const CommunityThemesModal: React.FC<CommunityThemesModalProps> = ({
                       ) : null}
                       <div className="absolute inset-0 bg-gradient-to-t from-[rgba(15,15,15,0.85)] to-transparent pointer-events-none" />
                       <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between pointer-events-none">
-                        <span className="text-xs font-semibold text-obsidian-text drop-shadow">
+                        <span className="text-xs font-semibold text-urano-text drop-shadow">
                           {th.name}
                         </span>
                         {isActive && (
