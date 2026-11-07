@@ -86,7 +86,7 @@ struct DriveItem {
 }
 
 /// Event emitted to the webview (`drive-sync:log`) for every file operation, so the
-/// Settings "Activity log" shows per-file entries like Obsidian's sync log.
+/// Settings "Activity log" shows per-file entries like Urano's sync log.
 /// `kind`: `upload` | `download` | `trash` | `local_trash` | `conflict`.
 #[derive(Debug, Serialize, Clone)]
 pub struct SyncLogEvent {

@@ -1,6 +1,6 @@
 //! Idiomas personalizados de la comunidad: `<bóveda>/.urano/locales/<code>.json`.
 //!
-//! Equivalente al "language pack" externo de Obsidian (en `app.js`, si la ruta del idioma
+//! Equivalente al "language pack" externo de Urano (en `app.js`, si la ruta del idioma
 //! contiene `/` se lee con `readFileSync` y se superpone al paquete embebido). Urano los
 //! lee todos de la carpeta y el frontend (`localeStore`) los superpone al idioma activo,
 //! de modo que se pueden corregir o añadir traducciones sin recompilar la app.

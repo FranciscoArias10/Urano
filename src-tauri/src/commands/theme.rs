@@ -1,10 +1,10 @@
-//! Manejo de temas y fragmentos (snippets) compatibles con Obsidian y Urano.
+//! Manejo de temas y fragmentos (snippets) compatibles con Urano y Urano.
 //!
 //! Soporta doble ruta en la bóveda:
 //! - `<vault>/.urano/themes/<name>/theme.css` + `manifest.json`
-//! - `<vault>/.obsidian/themes/<name>/theme.css` + `manifest.json`
+//! - `<vault>/.urano/themes/<name>/theme.css` + `manifest.json`
 //! - `<vault>/.urano/snippets/*.css`
-//! - `<vault>/.obsidian/snippets/*.css`
+//! - `<vault>/.urano/snippets/*.css`
 
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -40,18 +40,16 @@ struct RawManifest {
 fn get_theme_dirs(vault_path: &str) -> Vec<(PathBuf, &'static str)> {
     vec![
         (Path::new(vault_path).join(".urano").join("themes"), "urano"),
-        (Path::new(vault_path).join(".obsidian").join("themes"), "obsidian"),
     ]
 }
 
 fn get_snippet_dirs(vault_path: &str) -> Vec<(PathBuf, &'static str)> {
     vec![
         (Path::new(vault_path).join(".urano").join("snippets"), "urano"),
-        (Path::new(vault_path).join(".obsidian").join("snippets"), "obsidian"),
     ]
 }
 
-/// Lista todos los temas instalados en `.urano/themes` y `.obsidian/themes`.
+/// Lista todos los temas instalados en `.urano/themes`.
 #[tauri::command]
 pub fn list_installed_themes(vault_path: String) -> Result<Vec<InstalledTheme>, String> {
     let mut themes = Vec::new();
@@ -179,7 +177,7 @@ pub fn open_themes_folder(vault_path: String) -> Result<(), String> {
     open::that_detached(&dir).map_err(|e| format!("No se pudo abrir la carpeta de temas: {e}"))
 }
 
-/// Lista todos los archivos `.css` de snippets en `.urano/snippets` y `.obsidian/snippets`.
+/// Lista todos los archivos `.css` de snippets en `.urano/snippets`.
 #[tauri::command]
 pub fn list_css_snippets(vault_path: String) -> Result<Vec<SnippetInfo>, String> {
     let mut snippets = Vec::new();

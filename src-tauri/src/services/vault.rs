@@ -54,7 +54,7 @@ impl VaultService {
         for entry in entries.flatten() {
             let file_name = entry.file_name().to_string_lossy().to_string();
 
-            // Skip hidden files and directories (e.g. .git, .urano, .obsidian)
+            // Skip hidden files and directories (e.g. .git, .urano)
             if file_name.starts_with('.') {
                 continue;
             }
