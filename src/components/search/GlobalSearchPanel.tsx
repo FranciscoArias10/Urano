@@ -17,7 +17,11 @@ interface FileSearchResult {
   matches: MatchSnippet[];
 }
 
-export const GlobalSearchPanel: React.FC = () => {
+interface GlobalSearchPanelProps {
+  onOpenFile?: (filePath: string) => void;
+}
+
+export const GlobalSearchPanel: React.FC<GlobalSearchPanelProps> = ({ onOpenFile }) => {
   const t = useT();
   const { notesContentMap, selectFile } = useVaultStore();
   const [query, setQuery] = useState(() => (window as any).__uranoInitialSearchQuery || '');
@@ -161,7 +165,13 @@ export const GlobalSearchPanel: React.FC = () => {
                     {res.matches.map((m, idx) => (
                       <div
                         key={idx}
-                        onClick={() => selectFile(res.filePath)}
+                        onClick={() => {
+                          if (onOpenFile) {
+                            onOpenFile(res.filePath);
+                          } else {
+                            selectFile(res.filePath);
+                          }
+                        }}
                         className="px-3 py-1.5 hover:bg-orange-500/10 cursor-pointer text-[11px] text-urano-muted transition-colors"
                       >
                         <span className="text-urano-faint font-mono mr-1.5">

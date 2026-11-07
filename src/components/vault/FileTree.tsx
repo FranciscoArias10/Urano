@@ -54,6 +54,7 @@ interface FileTreeContextValue {
   renamingPath: string | null;
   setRenamingPath: (path: string | null) => void;
   onOpenInNewTab?: (filePath: string) => void;
+  onOpenFile?: (filePath: string) => void;
   requestFileRename: (oldPath: string, finalName: string, isDir: boolean) => Promise<void>;
 }
 
@@ -63,9 +64,10 @@ interface FileTreeProps {
   items: FileItem[];
   depth?: number;
   onOpenInNewTab?: (filePath: string) => void;
+  onOpenFile?: (filePath: string) => void;
 }
 
-export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNewTab }) => {
+export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNewTab, onOpenFile }) => {
   const {
     sortOrder,
     setSortOrder,
@@ -169,7 +171,9 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
   const handleCreateNewNote = async () => {
     const { path } = await createUntitledNote();
     if (path) {
-      if (onOpenInNewTab) {
+      if (onOpenFile) {
+        onOpenFile(path);
+      } else if (onOpenInNewTab) {
         onOpenInNewTab(path);
       } else {
         selectFile(path);
@@ -233,6 +237,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
         renamingPath,
         setRenamingPath,
         onOpenInNewTab,
+        onOpenFile,
         requestFileRename,
       }}
     >
@@ -420,7 +425,11 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
     if (item.isDir) {
       ctx?.setFolderOpen(item.path, !isOpen);
     } else {
-      selectFile(item.path);
+      if (ctx?.onOpenFile) {
+        ctx.onOpenFile(item.path);
+      } else {
+        selectFile(item.path);
+      }
     }
   };
 

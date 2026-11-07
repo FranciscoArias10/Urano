@@ -3,7 +3,11 @@ import { Bookmark, FileText, Folder, Search, X } from 'lucide-react';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useT } from '../../stores/localeStore';
 
-export const BookmarksPanel: React.FC = () => {
+interface BookmarksPanelProps {
+  onOpenFile?: (filePath: string) => void;
+}
+
+export const BookmarksPanel: React.FC<BookmarksPanelProps> = ({ onOpenFile }) => {
   const t = useT();
   const { bookmarks, removeBookmark, selectFile } = useVaultStore();
 
@@ -38,7 +42,11 @@ export const BookmarksPanel: React.FC = () => {
               key={b.id}
               onClick={() => {
                 if (b.type === 'file') {
-                  selectFile(b.path);
+                  if (onOpenFile) {
+                    onOpenFile(b.path);
+                  } else {
+                    selectFile(b.path);
+                  }
                 }
               }}
               className="group flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-[var(--interactive-hover)] cursor-pointer text-xs text-urano-text transition-colors"
