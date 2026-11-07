@@ -2893,6 +2893,11 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   z-index: 100;
 }
 
+.mod-rtl .status-bar .status-bar-menu {
+  right: auto;
+  left: 4px;
+}
+
 /* ---------------------------------------------------------------------------
    Sync status icon (status bar, bottom-right). Evidence: urano.asar/app.css
      .sync-status-icon { display: flex; align-items: center; cursor: var(--cursor); }
