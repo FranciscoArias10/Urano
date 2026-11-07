@@ -1,7 +1,7 @@
 /**
- * Catálogo de idiomas de Urano — réplica del de Obsidian 1.14.4.
+ * Catálogo de idiomas de Urano — réplica del de Urano 1.14.4.
  *
- * Evidencia (REA sobre `/usr/lib/obsidian/obsidian.asar` → `app.js`):
+ * Evidencia (REA sobre `/usr/lib/urano/urano.asar` → `app.js`):
  *   var Oy = { am:"አማርኛ", ar:"اَلْعَرَبِيَّةُ", be:"беларуская мова", … zh:"简体中文", "zh-TW":"繁體中文" },
  *       Fy = Object.keys(Oy).sort();          // el desplegable se rellena en orden de código
  *   Ajustes → General → Language: `for (code of Fy) dropdown.addOption(code, Oy[code])`
@@ -9,10 +9,10 @@
  *   Detección inicial (lb): navigator.language exacto → base → "en".
  *   RTL: `.mod-rtl .menu, .mod-rtl .modal, … { direction: rtl }` en app.css.
  *
- * Diferencias deliberadas respecto a Obsidian:
+ * Diferencias deliberadas respecto a Urano:
  *   - Códigos en minúsculas (`en-gb`, `pt-br`, `zh-cn`, `zh-tw`); `normalizeLanguageCode`
- *     acepta las variantes de Obsidian (`zh`, `zh-TW`, `pt-BR`, `en-GB`).
- *   - `ru` corrige la errata de Obsidian ("Pусский" con P latina) → "Русский".
+ *     acepta las variantes de Urano (`zh`, `zh-TW`, `pt-BR`, `en-GB`).
+ *   - `ru` corrige la errata de Urano ("Pусский" con P latina) → "Русский".
  *   - `ar` usa el autónimo sin diacríticos ("العربية"), como pide la especificación.
  */
 
@@ -35,7 +35,7 @@ const L = (code: string, name: string, nativeName: string, dir: TextDirection = 
   dir,
 });
 
-/** Mismo orden que `Object.keys(Oy).sort()` en Obsidian (orden de código). */
+/** Mismo orden que `Object.keys(Oy).sort()` en Urano (orden de código). */
 export const LANGUAGES: readonly LanguageInfo[] = [
   L('am', 'Amharic', 'አማርኛ'),
   L('ar', 'Arabic', 'العربية', 'rtl'),
@@ -94,7 +94,7 @@ export const DEFAULT_LANGUAGE = 'en';
 
 const BY_CODE: ReadonlyMap<string, LanguageInfo> = new Map(LANGUAGES.map((l) => [l.code, l]));
 
-/** Alias de códigos que Obsidian / el sistema usan y Urano normaliza. */
+/** Alias de códigos que Urano / el sistema usan y Urano normaliza. */
 const CODE_ALIASES: Record<string, string> = {
   zh: 'zh-cn',
   'zh-hans': 'zh-cn',
@@ -128,7 +128,7 @@ export function getTextDirection(code: string): TextDirection {
 }
 
 /**
- * Resolución estilo Obsidian (`Ny`): código exacto → código base → `en`.
+ * Resolución estilo Urano (`Ny`): código exacto → código base → `en`.
  * `available` es el conjunto de códigos para los que existe un diccionario.
  */
 export function resolveLanguage(code: string, available: Iterable<string>): string {
@@ -140,7 +140,7 @@ export function resolveLanguage(code: string, available: Iterable<string>): stri
   return DEFAULT_LANGUAGE;
 }
 
-/** Detección inicial estilo Obsidian (`lb`): navigator.language exacto → base → `en`. */
+/** Detección inicial estilo Urano (`lb`): navigator.language exacto → base → `en`. */
 export function detectSystemLanguage(): string {
   if (typeof navigator === 'undefined') return DEFAULT_LANGUAGE;
   const candidates = navigator.languages?.length ? navigator.languages : [navigator.language];

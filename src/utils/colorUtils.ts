@@ -1,5 +1,5 @@
 /**
- * Utility functions for color conversion and dynamic Obsidian accent variable application.
+ * Utility functions for color conversion and dynamic Urano accent variable application.
  */
 
 export const DEFAULT_ACCENT_COLOR = '#e06c1b';
@@ -57,7 +57,7 @@ export function hexToHsl(hex: string): HSL {
 }
 
 /**
- * Injects dynamic Obsidian CSS variables for accent color into document.documentElement:
+ * Injects dynamic Urano CSS variables for accent color into document.documentElement:
  * --accent-h, --accent-s, --accent-l, --color-accent, --interactive-accent
  */
 export function applyAccentColor(hex: string): void {

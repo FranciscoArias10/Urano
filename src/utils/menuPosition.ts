@@ -1,7 +1,7 @@
 import { useState, useLayoutEffect, RefObject } from 'react';
 
 /**
- * Utilidad global de Viewport Clamping (1:1 con Obsidian).
+ * Utilidad global de Viewport Clamping (1:1 con Urano).
  * Garantiza que cualquier menú contextual o popover posicionado por coordenadas (x, y)
  * jamás se salga por el borde derecho, izquierdo, superior o inferior de la ventana.
  */

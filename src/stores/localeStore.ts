@@ -41,7 +41,7 @@ interface LocaleStoreState {
   language: string;
   locale: string;
   dir: TextDirection;
-  /** Catálogo de Obsidian + idiomas añadidos por la comunidad en la bóveda. */
+  /** Catálogo de Urano + idiomas añadidos por la comunidad en la bóveda. */
   languages: LanguageOption[];
   /** `true` mientras se descarga un diccionario embebido. */
   loading: boolean;

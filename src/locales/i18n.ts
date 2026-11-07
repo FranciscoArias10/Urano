@@ -1,8 +1,8 @@
 /**
  * Motor i18n ultraligero de Urano.
  *
- * Diseño calcado del de Obsidian (evidencia REA sobre `obsidian.asar/app.js`):
- *   - El inglés embebido (`window.OBSIDIAN_DEFAULT_I18N`) es el diccionario base y el
+ * Diseño calcado del de Urano (evidencia REA sobre `urano.asar/app.js`):
+ *   - El inglés embebido (`window.URANO_DEFAULT_I18N`) es el diccionario base y el
  *     fallback de cualquier clave no traducida. Aquí: `en.json`, importado de forma síncrona.
  *   - Los demás paquetes se cargan bajo demanda (`fetch("/i18n/<code>.txt")`). Aquí:
  *     `import.meta.glob('./*.json')` → un chunk por idioma, importado solo al seleccionarlo.
@@ -153,7 +153,7 @@ function rebuild(): void {
 }
 
 /**
- * `<html lang>` + `body.mod-rtl`. Igual que Obsidian, NO se pone `dir="rtl"` en todo el
+ * `<html lang>` + `body.mod-rtl`. Igual que Urano, NO se pone `dir="rtl"` en todo el
  * documento: `app.css` solo voltea superficies concretas
  * (`.mod-rtl .menu, .mod-rtl .modal, .mod-rtl .notice, .mod-rtl .tooltip … { direction: rtl }`);
  * Urano replica esa lista en `index.css`. El contenido de las notas sigue la dirección propia

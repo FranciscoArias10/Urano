@@ -83,7 +83,7 @@ export function splitPath(path: string): { dir: string; fileName: string; baseNa
 /**
  * Given a link target (e.g. `folder/oldName.png`, `oldName`), returns the
  * replacement target when it points to `oldPath`, or null if unrelated.
- * Mirrors Obsidian: a target written without extension stays without it for
+ * Mirrors Urano: a target written without extension stays without it for
  * markdown notes, while non-markdown targets always carry the extension.
  */
 function resolveReplacementTarget(rawTarget: string, oldPath: string, newPath: string): string | null {

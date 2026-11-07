@@ -55,7 +55,7 @@ export function getCleanFileName(filePath: string): string {
 
 /**
  * Determina si una ruta de archivo coincide con alguna de las reglas de exclusión
- * de Obsidian/Urano (rutas de carpeta, prefijos, sufijos wildcard o expresiones regulares).
+ * de Urano/Urano (rutas de carpeta, prefijos, sufijos wildcard o expresiones regulares).
  */
 export function isPathExcluded(filePath: string, filters: string[]): boolean {
   if (!filePath || !filters || filters.length === 0) return false;

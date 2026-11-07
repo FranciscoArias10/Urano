@@ -74,7 +74,7 @@ export class ThemeService {
   }
 
   /**
-   * Updates the accent color across all Obsidian variables.
+   * Updates the accent color across all Urano variables.
    */
   public applyAccent(hex: string): void {
     applyAccentColor(hex || DEFAULT_ACCENT_COLOR);
@@ -130,7 +130,7 @@ export class ThemeService {
   }
 
   /**
-   * Scans both .urano/themes and .obsidian/themes for installed themes.
+   * Scans both .urano/themes and .urano/themes for installed themes.
    */
   public async listThemes(vaultPath: string): Promise<import('../types/theme').InstalledTheme[]> {
     if (!vaultPath) return [];
@@ -165,7 +165,7 @@ export class ThemeService {
     }
   }
   /**
-   * Scans .urano/snippets and .obsidian/snippets for *.css snippets.
+   * Scans .urano/snippets and .urano/snippets for *.css snippets.
    */
   public async listSnippets(
     vaultPath: string,
@@ -174,7 +174,7 @@ export class ThemeService {
     if (!vaultPath) return [];
     try {
       const { invoke } = await import('@tauri-apps/api/core');
-      const all = await invoke<Array<{ name: string; source: 'urano' | 'obsidian'; path: string }>>(
+      const all = await invoke<Array<{ name: string; source: 'urano' | 'urano'; path: string }>>(
         'list_css_snippets',
         { vaultPath }
       );

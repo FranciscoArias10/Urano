@@ -34,7 +34,7 @@ const notifyLinksUpdated = (plan: LinkScanResult) => {
     .showNotice(t(key, { links: plan.totalLinks, files: plan.totalFiles }), 3000, 'success');
 };
 
-// Prohibited characters matching Obsidian specification: \ / : * ? " < > | # ^ [ ]
+// Prohibited characters matching Urano specification: \ / : * ? " < > | # ^ [ ]
 export const ILLEGAL_FILENAME_CHARS = /[\\/:*?"<>|#^[\]]/;
 
 export const validateFileName = (name: string): { valid: boolean; error?: string } => {
@@ -486,7 +486,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     return fullPath;
   },
 
-  // Obsidian native prompt-free creation with auto-increment resolution
+  // Urano native prompt-free creation with auto-increment resolution
   createUntitledNote: async (parentPath?: string): Promise<{ path: string; name: string }> => {
     const { activeVault, fileTree, refreshTree, selectFile, activeFile } = get();
     if (!activeVault) return { path: '', name: '' };
@@ -538,7 +538,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     return { path: fullPath, name: candidateName.replace(/\.md$/, '') };
   },
 
-  // Obsidian Canvas creation (.canvas JSON format)
+  // Urano Canvas creation (.canvas JSON format)
   createUntitledCanvas: async (parentPath?: string): Promise<{ path: string; name: string }> => {
     const { activeVault, fileTree, refreshTree, selectFile } = get();
     const targetDir = parentPath || activeVault;
@@ -583,7 +583,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     return { path: fullPath, name: candidateName.replace(/\.canvas$/, '') };
   },
 
-  // Obsidian Base creation (.base format)
+  // Urano Base creation (.base format)
   createUntitledBase: async (parentPath?: string): Promise<{ path: string; name: string }> => {
     const { activeVault, fileTree, refreshTree, selectFile } = get();
     const targetDir = parentPath || activeVault;
@@ -739,7 +739,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     await get().refreshTree();
   },
 
-  // Obsidian prompt-free folder creation
+  // Urano prompt-free folder creation
   createUntitledFolder: async (parentPath?: string): Promise<string> => {
     const { activeVault, fileTree, refreshTree } = get();
     const targetDir = parentPath || activeVault;

@@ -1,5 +1,5 @@
 /**
- * Type definitions for Obsidian-compatible themes, snippets, and fonts in Urano.
+ * Type definitions for Urano-compatible themes, snippets, and fonts in Urano.
  */
 
 export interface CommunityTheme {
@@ -29,13 +29,13 @@ export interface InstalledTheme {
   author?: string;
   authorUrl?: string;
   dir: string;
-  source: 'urano' | 'obsidian';
+  source: 'urano' | 'urano';
   cssPath: string;
 }
 
 export interface CssSnippet {
   name: string;
   enabled: boolean;
-  source: 'urano' | 'obsidian';
+  source: 'urano' | 'urano';
   path: string;
 }
