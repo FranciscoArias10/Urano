@@ -434,22 +434,6 @@ const MainApp: React.FC = () => {
     } catch {}
   }, [tabs, activeVault]);
 
-  // Ensure activeTabId points to a valid tab when tabs exist
-  useEffect(() => {
-    if (tabs.length > 0 && (!activeTabId || !tabs.some((t) => t.id === activeTabId))) {
-      setActiveTabId(tabs[tabs.length - 1].id);
-    }
-  }, [tabs, activeTabId]);
-
-  // Bidirectional sync: keep activeFile and activeTab in sync
-  useEffect(() => {
-    if (!activeTab || !activeTab.filePath || activeTab.type === 'graph' || activeTab.type === 'empty') return;
-    if (!activeFile || !isSamePath(activeFile, activeTab.filePath)) {
-      const resolved = resolveFilePathInVault(activeTab.filePath, fileTree, activeVault);
-      selectFile(resolved || activeTab.filePath);
-    }
-  }, [activeTab, activeFile, fileTree, activeVault, selectFile]);
-
   // Listen for refresh tree events (e.g. toggling detectAllFileExtensions)
   useEffect(() => {
     const onRefresh = () => {
@@ -478,12 +462,80 @@ const MainApp: React.FC = () => {
     });
   }, []);
 
-  // Synchronize tabs when activeFile changes
+  // Unidirectional direct file open & tab focus (event-driven, zero ping-pong)
+  const handleOpenFile = useCallback(
+    (filePath: string) => {
+      if (!filePath) return;
+      const resolved = resolveFilePathInVault(filePath, fileTree, activeVault) || filePath;
+
+      // 1. If already open in an existing tab, focus it and open immediately
+      const existing = tabs.find((t) => isSamePath(t.filePath, resolved));
+      if (existing) {
+        setActiveTabId(existing.id);
+        if (!activeFile || !isSamePath(activeFile, resolved)) {
+          selectFile(resolved);
+        }
+        recordVisit(existing.id, resolved);
+        return;
+      }
+
+      // 2. Check if active tab is empty or marked for reuse
+      const shouldReuse =
+        reuseActiveTabRef.current ||
+        (activeTab && (!activeTab.filePath || activeTab.type === 'empty'));
+      reuseActiveTabRef.current = false;
+
+      let type: TabItem['type'] = 'note';
+      let ext = '.md';
+      if (resolved.endsWith('.canvas')) {
+        type = 'canvas';
+        ext = '.canvas';
+      } else if (resolved.endsWith('.base')) {
+        type = 'base';
+        ext = '.base';
+      } else if (isImagePath(resolved)) {
+        type = 'image';
+        ext = '';
+      }
+
+      const rel = getRelativeVaultPath(resolved, activeVault || '');
+      const parts = rel.split('/').filter(Boolean);
+      const rawName = parts.pop() || '';
+      const fileName = (ext ? rawName.replace(new RegExp(`\\${ext}$`, 'i'), '') : rawName) || t('common.untitled');
+
+      if (shouldReuse && activeTab) {
+        setTabs((prev) =>
+          prev.map((t) =>
+            t.id === activeTab.id
+              ? { ...t, filePath: resolved, title: fileName, type, isDirty: false }
+              : t
+          )
+        );
+        setActiveTabId(activeTab.id);
+        recordVisit(activeTab.id, resolved);
+      } else {
+        const newTabId = makeTabId();
+        const newTab: TabItem = {
+          id: newTabId,
+          type,
+          filePath: resolved,
+          title: fileName,
+          isDirty: false,
+        };
+        setTabs((prev) => [...prev, newTab]);
+        setActiveTabId(newTabId);
+        recordVisit(newTabId, resolved);
+      }
+
+      // 3. Immediately select/open file synchronously
+      selectFile(resolved);
+    },
+    [tabs, activeTab, activeFile, fileTree, activeVault, t, recordVisit, selectFile]
+  );
+
+  // Synchronize tabs when activeFile changes externally (e.g. daily notes, external triggers)
   useEffect(() => {
     if (!activeFile) return;
-
-    const reuseActiveTab = reuseActiveTabRef.current;
-    reuseActiveTabRef.current = false;
 
     let type: TabItem['type'] = 'note';
     let ext = '.md';
@@ -509,6 +561,15 @@ const MainApp: React.FC = () => {
 
     // Which leaf hosts this file?
     const existing = tabs.find((t) => isSamePath(t.filePath, activeFile));
+    if (existing && existing.id === activeTabId) {
+      if (existing.title === fileName && existing.isDirty === isDirty && existing.type === type) {
+        return;
+      }
+    }
+
+    const reuseActiveTab = reuseActiveTabRef.current;
+    reuseActiveTabRef.current = false;
+
     const reusable =
       !existing && (reuseActiveTab || (activeTab && (!activeTab.filePath || activeTab.type === 'empty')))
         ? tabs.find((t) => t.id === activeTabId)
@@ -554,9 +615,9 @@ const MainApp: React.FC = () => {
   const navigateLeafTo = useCallback(
     (filePath: string) => {
       reuseActiveTabRef.current = true;
-      selectFile(filePath);
+      handleOpenFile(filePath);
     },
-    [selectFile]
+    [handleOpenFile]
   );
 
   // Back / forward navigation (Alt+Left / Alt+Right)
@@ -1000,12 +1061,14 @@ const MainApp: React.FC = () => {
     closeActiveFile();
   }, [t, closeActiveFile]);
 
-  // Tab Selection
+  // Tab Selection (event-driven, 1:1 with Obsidian)
   const handleSelectTab = (tabId: string) => {
     setActiveTabId(tabId);
     const tab = tabs.find((t) => t.id === tabId);
     if (tab && tab.filePath && tab.type !== 'empty') {
-      selectFile(tab.filePath);
+      if (!activeFile || !isSamePath(activeFile, tab.filePath)) {
+        selectFile(tab.filePath);
+      }
     } else {
       closeActiveFile();
     }
@@ -1433,17 +1496,17 @@ const MainApp: React.FC = () => {
             <div className="flex-1 overflow-hidden flex flex-col min-h-0">
               {sidebarTab === 'files' && (
                 <div className="flex-1 overflow-y-auto">
-                  <FileTree items={fileTree} onOpenInNewTab={handleOpenInNewTab} />
+                  <FileTree items={fileTree} onOpenInNewTab={handleOpenInNewTab} onOpenFile={handleOpenFile} />
                 </div>
               )}
               {sidebarTab === 'search' && (
                 <div className="flex-1 overflow-hidden">
-                  <GlobalSearchPanel />
+                  <GlobalSearchPanel onOpenFile={handleOpenFile} />
                 </div>
               )}
               {sidebarTab === 'bookmarks' && (
                 <div className="flex-1 overflow-hidden">
-                  <BookmarksPanel />
+                  <BookmarksPanel onOpenFile={handleOpenFile} />
                 </div>
               )}
             </div>
@@ -1527,7 +1590,7 @@ const MainApp: React.FC = () => {
           {/* Tab Content Canvas */}
           <div className="flex-1 overflow-hidden relative">
             {activeTabId === 'workspace-graph-view' || activeTab?.type === 'graph' ? (
-              <GraphView onSelectNote={(path: string) => selectFile(path)} />
+              <GraphView onSelectNote={handleOpenFile} />
             ) : activeFile?.endsWith('.canvas') || activeTab?.type === 'canvas' ? (
               <CanvasView filePath={activeFile || activeTab?.filePath || ''} />
             ) : activeFile?.endsWith('.base') || activeTab?.type === 'base' ? (
@@ -1664,10 +1727,7 @@ const MainApp: React.FC = () => {
         fileTree={fileTree}
         commands={paletteCommands}
         onClose={() => setPaletteOpen(false)}
-        onSelectFile={(path) => {
-          reuseActiveTabRef.current = true;
-          selectFile(path);
-        }}
+        onSelectFile={handleOpenFile}
         onOpenInNewTab={handleOpenInNewTab}
       />
 
