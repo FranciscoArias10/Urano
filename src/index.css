@@ -17,7 +17,7 @@ html, body, #root, button, input, select, textarea, .view-header, .workspace-tab
 }
 
 :root {
-  /* Obsidian Core Architecture with Neutral Dark Grays and Urano Orange Accent */
+  /* Urano Core Architecture with Neutral Dark Grays and Urano Orange Accent */
   --accent-h: 24;
   --accent-s: 88%;
   --accent-l: 49%;
@@ -62,8 +62,8 @@ html, body, #root, button, input, select, textarea, .view-header, .workspace-tab
   --view-header-height: 40px;
 
   /* ========================================================
-     Obsidian 1.14.4 tab variables
-     Evidence: REA extraction of /usr/lib/obsidian/obsidian.asar/app.css
+     Urano 1.14.4 tab variables
+     Evidence: REA extraction of /usr/lib/urano/urano.asar/app.css
      ======================================================== */
   --header-height: 40px;
   --tab-background-hover: transparent;
@@ -120,7 +120,7 @@ html, body, #root, button, input, select, textarea, .view-header, .workspace-tab
    A custom property that contains var(--x) is resolved on the element
    where it is declared. Declaring these on :root would freeze them to
    :root's values and ignore body.theme-light / body.theme-dark.
-   (Obsidian app.css declares the same aliases inside `body { }`.)
+   (Urano app.css declares the same aliases inside `body { }`.)
    ======================================================== */
 body {
   --divider-color: var(--background-modifier-border);
@@ -144,8 +144,8 @@ body {
 
 
 /* ========================================================
-   Obsidian Official Theme Variables (.theme-dark)
-   Evidence: REA inspection of /usr/lib/obsidian/obsidian.asar/app.css
+   Urano Official Theme Variables (.theme-dark)
+   Evidence: REA inspection of /usr/lib/urano/urano.asar/app.css
    ======================================================== */
 body,
 .theme-dark,
@@ -226,8 +226,8 @@ body.theme-dark {
 }
 
 /* ========================================================
-   Obsidian Official Theme Variables (.theme-light)
-   Evidence: REA inspection of /usr/lib/obsidian/obsidian.asar/app.css
+   Urano Official Theme Variables (.theme-light)
+   Evidence: REA inspection of /usr/lib/urano/urano.asar/app.css
    ======================================================== */
 .theme-light,
 body.theme-light {
@@ -349,7 +349,7 @@ body.theme-light {
 }
 
 /* ========================================================
-   Obsidian Left Ribbon (side-dock-ribbon)
+   Urano Left Ribbon (side-dock-ribbon)
    ======================================================== */
 .side-dock-ribbon {
   width: var(--ribbon-width);
@@ -393,8 +393,8 @@ body.theme-dark .side-dock-ribbon-action.is-active,
 }
 
 /* ========================================================
-   Obsidian Tab Bar (.workspace-tab-header-container)
-   Evidence: REA extraction of Obsidian 1.14.4 obsidian.asar/app.css
+   Urano Tab Bar (.workspace-tab-header-container)
+   Evidence: REA extraction of Urano 1.14.4 urano.asar/app.css
    (rules for .workspace-tab-header-container, .workspace-tab-header,
     .workspace-tab-header-inner, ::before/::after decorative curves,
     .workspace-tab-header-new-tab, .workspace-tab-header-tab-list)
@@ -457,7 +457,7 @@ body.theme-dark .side-dock-ribbon-action.is-active,
   cursor: var(--cursor);
 }
 
-/* Decorative concave curves (Obsidian technique) */
+/* Decorative concave curves (Urano technique) */
 .workspace-tab-header-container .workspace-tab-header::before,
 .workspace-tab-header-container .workspace-tab-header::after {
   position: absolute;
@@ -577,7 +577,7 @@ body.theme-dark .side-dock-ribbon-action.is-active,
   color: var(--tab-text-color-focused);
 }
 
-/* Tab icon (hidden for markdown notes, like Obsidian) ----------------- */
+/* Tab icon (hidden for markdown notes, like Urano) ----------------- */
 .workspace-tab-header-inner-icon {
   flex: 0 0 auto;
   display: flex;
@@ -699,7 +699,7 @@ body.theme-dark .side-dock-ribbon-action.is-active,
 
 /* ========================================================
    Native window controls & Custom Titlebar (Tauri)
-   Evidence: REA inspection of /usr/lib/obsidian/obsidian.asar/app.css
+   Evidence: REA inspection of /usr/lib/urano/urano.asar/app.css
    (.titlebar, .titlebar-inner, .titlebar-text)
    ======================================================== */
 .titlebar {
@@ -788,8 +788,8 @@ body.theme-dark .side-dock-ribbon-action.is-active,
 }
 
 /* ========================================================
-   Obsidian View Header (second row)
-   Evidence: REA extraction of Obsidian 1.14.4 obsidian.asar/app.css
+   Urano View Header (second row)
+   Evidence: REA extraction of Urano 1.14.4 urano.asar/app.css
    (.view-header, .view-header-nav-buttons, .view-header-title-container,
     .view-header-title, .view-actions, .clickable-icon)
    ======================================================== */
@@ -932,7 +932,7 @@ body.theme-dark .side-dock-ribbon-action.is-active,
 }
 
 /* ========================================================
-   Obsidian Navigation Action Buttons & Clickable Icons
+   Urano Navigation Action Buttons & Clickable Icons
    (.nav-action-button / .clickable-icon)
    ======================================================== */
 .clickable-icon,
@@ -972,7 +972,7 @@ body .clickable-icon:hover {
   border: none;
 }
 
-/* Active state (.is-active) - Obsidian neutral look with no borders */
+/* Active state (.is-active) - Urano neutral look with no borders */
 .theme-light .nav-action-button.is-active,
 body.theme-light .nav-action-button.is-active,
 .theme-light .clickable-icon.is-active,
@@ -1022,7 +1022,7 @@ body .clickable-icon.is-active:hover {
   border: none !important;
 }
 
-/* FileTree Toolbar action container - centered like Obsidian */
+/* FileTree Toolbar action container - centered like Urano */
 .nav-buttons-container {
   display: flex !important;
   align-items: center !important;
@@ -1041,7 +1041,7 @@ body .clickable-icon.is-active:hover {
 }
 
 /* ========================================================
-   Obsidian HyperMD Code Blocks (.cm-hypermd-codeblock)
+   Urano HyperMD Code Blocks (.cm-hypermd-codeblock)
    Continuous unified dark box with 14px 18px padding & indent guides
    ======================================================== */
 .cm-hypermd-codeblock {
@@ -1137,7 +1137,7 @@ body .clickable-icon.is-active:hover {
 }
 
 /* ========================================================
-   KaTeX Rendered Math Equations (Obsidian Clean Design)
+   KaTeX Rendered Math Equations (Urano Clean Design)
    ======================================================== */
 .cm-katex-block-widget {
   display: flex !important;
@@ -1346,7 +1346,7 @@ body .clickable-icon.is-active:hover {
   border: 1px solid rgba(234, 88, 12, 0.2) !important;
 }
 
-/* 6 Obsidian Highlight Colors: flat clean rectangle */
+/* 6 Urano Highlight Colors: flat clean rectangle */
 .cm-highlight-text,
 .hl-default,
 mark.hl-default {
@@ -1441,7 +1441,7 @@ mark.hl-purple {
 }
 
 /* ========================================================
-   Canvas Color Picker (Obsidian identical)
+   Canvas Color Picker (Urano identical)
    ======================================================== */
 
 .canvas-color-picker {
@@ -1518,7 +1518,7 @@ mark.hl-purple {
 }
 
 /* ========================================================
-   RTL (árabe, persa, hebreo) — réplica de Obsidian app.css:
+   RTL (árabe, persa, hebreo) — réplica de Urano app.css:
    `.mod-rtl .modal, .mod-rtl .notice-container, .mod-rtl .notice, .mod-rtl .prompt,
     .mod-rtl .tooltip, .mod-rtl .menu, .mod-rtl .popover … { direction: rtl; }`
    Solo se voltean las superficies de interfaz; el documento no lleva dir="rtl".
@@ -1536,7 +1536,7 @@ mark.hl-purple {
 }
 
 /* ========================================================
-   Obsidian Context Menus (.menu, .menu-item, etc.)
+   Urano Context Menus (.menu, .menu-item, etc.)
    ======================================================== */
 .menu {
   position: fixed;
@@ -1553,7 +1553,7 @@ mark.hl-purple {
   backdrop-filter: blur(12px);
 }
 
-/* Popover de controles del Canvas (anclados hacia la izquierda, 1:1 con Obsidian) */
+/* Popover de controles del Canvas (anclados hacia la izquierda, 1:1 con Urano) */
 .canvas-control-popover {
   position: absolute;
   top: 0;
@@ -1666,7 +1666,7 @@ mark.hl-purple {
 }
 
 /* ========================================================
-   Obsidian Inline Title (.inline-title)
+   Urano Inline Title (.inline-title)
    ======================================================== */
 .inline-title {
   border: none;
@@ -1698,7 +1698,7 @@ mark.hl-purple {
 }
 
 /* ========================================================
-   Obsidian Floating Notices (.notice)
+   Urano Floating Notices (.notice)
    ======================================================== */
 .notice-container {
   position: fixed;
@@ -1749,7 +1749,7 @@ mark.hl-purple {
 }
 
 /* ========================================================
-   Obsidian Live Preview Callouts (.callout)
+   Urano Live Preview Callouts (.callout)
    ======================================================== */
 .callout {
   border-radius: 8px;
@@ -1791,7 +1791,7 @@ mark.hl-purple {
   margin-left: 1.6rem;
 }
 
-/* Callout Themes by type matching Obsidian */
+/* Callout Themes by type matching Urano */
 .callout[data-callout="note"],
 .callout[data-callout="info"] {
   border-left-color: #38bdf8;
@@ -1866,7 +1866,7 @@ mark.hl-purple {
 }
 
 /* ========================================================
-   Obsidian Live Preview Table Editor (.urano-table-editor)
+   Urano Live Preview Table Editor (.urano-table-editor)
    ======================================================== */
 .cm-table-widget {
   margin: 1.25rem 0;
@@ -1937,7 +1937,7 @@ mark.hl-purple {
   z-index: 2;
 }
 
-/* Add Row & Column buttons matching Obsidian */
+/* Add Row & Column buttons matching Urano */
 .urano-table-col-btn {
   position: absolute;
   top: 0;
@@ -1994,8 +1994,8 @@ mark.hl-purple {
 }
 
 /* ========================================================
-   Obsidian Tooltip System (.tooltip / [role="tooltip"] / .urano-tooltip)
-   Evidence: REA extraction of app.css from Obsidian
+   Urano Tooltip System (.tooltip / [role="tooltip"] / .urano-tooltip)
+   Evidence: REA extraction of app.css from Urano
    Always dark high-contrast bubble with --font-interface in both light & dark themes
    ======================================================== */
 .tooltip,
@@ -2091,7 +2091,7 @@ mark.hl-purple {
 }
 
 /* ========================================================
-   Obsidian File Explorer Tags & Indentation Guide
+   Urano File Explorer Tags & Indentation Guide
    ======================================================== */
 .nav-file-tag {
   background-color: var(--background-modifier-hover);
@@ -2113,7 +2113,7 @@ mark.hl-purple {
 }
 
 /* ========================================================
-   Obsidian 1:1 Image Embeds & Live Preview Resizing
+   Urano 1:1 Image Embeds & Live Preview Resizing
    ======================================================== */
 .image-embed {
   display: inline-block;
@@ -2152,7 +2152,7 @@ mark.hl-purple {
   height: 26px;
 }
 
-/* Obsidian `.image-resize-corner::after` — bottom-right `┘` glyph */
+/* Urano `.image-resize-corner::after` — bottom-right `┘` glyph */
 .image-embed .image-resize-corner::after,
 .image-embed .cm-image-resize-handle::after {
   position: absolute;
@@ -2203,7 +2203,7 @@ mark.hl-purple {
 }
 
 /* ----------------------------------------------------------------
-   Hover action bar (top-right) — Obsidian `.embed-actions`
+   Hover action bar (top-right) — Urano `.embed-actions`
    Zoom (lucide-zoom-in) + Edit block (lucide-code-2)
    ---------------------------------------------------------------- */
 .image-embed .embed-actions {
@@ -2309,7 +2309,7 @@ mark.hl-purple {
 }
 
 /* ========================================================
-   Full-screen Image Lightbox (Obsidian `.lightbox`)
+   Full-screen Image Lightbox (Urano `.lightbox`)
    ======================================================== */
 .image-lightbox {
   position: fixed;
@@ -2458,7 +2458,7 @@ mark.hl-purple {
 
 
 /* ========================================================
-   Obsidian Spellcheck Error Underline (.cm-spell-error)
+   Urano Spellcheck Error Underline (.cm-spell-error)
    ======================================================== */
 .cm-content .cm-spell-error,
 .cm-line .cm-spell-error,
@@ -2474,7 +2474,7 @@ mark.hl-purple {
 }
 
 /* ========================================================
-   Language Dropdown (Obsidian Native Select Replica)
+   Language Dropdown (Urano Native Select Replica)
    ======================================================== */
 .language-dropdown-container {
   flex: 1;
@@ -2572,8 +2572,8 @@ mark.hl-purple {
 }
 
 /* ========================================================
-   Obsidian Appearance Controls (Sliders, Color Swatches & Rows)
-   Evidence: REA inspection of /usr/lib/obsidian/obsidian.asar/app.css
+   Urano Appearance Controls (Sliders, Color Swatches & Rows)
+   Evidence: REA inspection of /usr/lib/urano/urano.asar/app.css
    ======================================================== */
 .setting-item-color-swatch-container {
   display: inline-flex;
@@ -2603,14 +2603,14 @@ mark.hl-purple {
   cursor: pointer;
 }
 
-/* Obsidian Slider with dynamic filled accent track */
-.obsidian-slider-wrapper {
+/* Urano Slider with dynamic filled accent track */
+.urano-slider-wrapper {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.obsidian-slider-number {
+.urano-slider-number {
   font-size: 13px;
   font-variant-numeric: tabular-nums;
   color: var(--text-normal);
@@ -2619,7 +2619,7 @@ mark.hl-purple {
   user-select: none;
 }
 
-.obsidian-slider {
+.urano-slider {
   -webkit-appearance: none;
   appearance: none;
   height: 4px;
@@ -2631,7 +2631,7 @@ mark.hl-purple {
   transition: background 0.1s;
 }
 
-.obsidian-slider::-webkit-slider-thumb {
+.urano-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 16px;
@@ -2644,14 +2644,14 @@ mark.hl-purple {
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
-.obsidian-slider::-webkit-slider-thumb:hover {
+.urano-slider::-webkit-slider-thumb:hover {
   transform: scale(1.15);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 /* ========================================================
    Quick Switcher & Command Palette (.prompt, .suggestion-item, .prompt-instructions)
-   1:1 Obsidian contrast & single-line instruction bar
+   1:1 Urano contrast & single-line instruction bar
    ======================================================== */
 .theme-light .suggestion-item.is-selected,
 body.theme-light .suggestion-item.is-selected {
@@ -2733,7 +2733,7 @@ body.theme-dark .canvas-node.is-themed .canvas-node-container,
 }
 
 /* ============================================================================
-   Translucent window support (.is-translucent) — Obsidian 1:1
+   Translucent window support (.is-translucent) — Urano 1:1
    ============================================================================ */
 body.is-translucent {
   background-color: transparent;
@@ -2745,14 +2745,14 @@ body.is-translucent .side-dock-ribbon {
   background-color: color-mix(in srgb, var(--background-secondary) 80%, transparent);
 }
 
-body.is-translucent aside.bg-obsidian-sidebar {
+body.is-translucent aside.bg-urano-sidebar {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   background-color: color-mix(in srgb, var(--background-secondary) 85%, transparent);
 }
 
 /* ============================================================================
-   Settings Modal Sidebar Navigation & Layout — Obsidian 1:1
+   Settings Modal Sidebar Navigation & Layout — Urano 1:1
    ============================================================================ */
 .modal.mod-settings .vertical-tab-header,
 .urano-settings-root .vertical-tab-header {
@@ -2787,7 +2787,7 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   color: var(--text-normal);
 }
 
-/* Setting Rows Layout 1:1 Obsidian */
+/* Setting Rows Layout 1:1 Urano */
 .setting-item-info {
   flex: 1 1 auto;
   min-width: 0;
@@ -2822,8 +2822,79 @@ body.theme-light .urano-settings-root .vertical-tab-header {
 
 
 
+/* ========================================================
+   Urano Status Bar (.status-bar) — 1:1 con Obsidian
+   ======================================================== */
+.status-bar {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  z-index: 15;
+  background-color: var(--background-secondary);
+  border-top-left-radius: 6px;
+  border-top: 1px solid var(--background-modifier-border);
+  border-left: 1px solid var(--background-modifier-border);
+  border-bottom: none;
+  border-right: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 3px 10px;
+  font-family: var(--font-interface);
+  font-size: 12px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.mod-rtl .status-bar {
+  right: auto;
+  left: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 6px;
+  border-left: none;
+  border-right: 1px solid var(--background-modifier-border);
+}
+
+.status-bar-item {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  font-family: var(--font-interface);
+  font-size: 12px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.status-bar-item.mod-clickable {
+  cursor: pointer;
+  transition: color 0.1s ease;
+}
+
+.status-bar-item.mod-clickable:hover {
+  color: var(--text-normal);
+}
+
+.status-bar-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-bar-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 4px;
+  top: auto;
+  left: auto;
+  min-width: 170px;
+  z-index: 100;
+}
+
 /* ---------------------------------------------------------------------------
-   Sync status icon (status bar, bottom-right). Evidence: obsidian.asar/app.css
+   Sync status icon (status bar, bottom-right). Evidence: urano.asar/app.css
      .sync-status-icon { display: flex; align-items: center; cursor: var(--cursor); }
      .sync-status-icon.mod-success { color: var(--text-success); }   (--text-success: var(--color-green))
      .sync-status-icon.mod-working { color: var(--interactive-accent); }
