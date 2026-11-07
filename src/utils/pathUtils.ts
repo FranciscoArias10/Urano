@@ -1,3 +1,5 @@
+import { FileItem } from '../types';
+
 /**
  * Utilidades para normalización y manejo multiplataforma (Windows / Linux / macOS)
  * de rutas de archivos dentro de la bóveda de Urano.
@@ -95,4 +97,58 @@ export function isPathExcluded(filePath: string, filters: string[]): boolean {
 
     return norm.includes(clean) || fileName === clean;
   });
+}
+
+/**
+ * Compara dos rutas de archivo para determinar si representan el mismo archivo,
+ * independientemente de separadores de ruta (\ vs /), mayúsculas/minúsculas en Windows,
+ * si una ruta es relativa y la otra absoluta, o si una incluye extensión y la otra no.
+ */
+export function isSamePath(a?: string | null, b?: string | null): boolean {
+  if (!a || !b) return false;
+  const normA = a.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/\/$/, '').toLowerCase();
+  const normB = b.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/\/$/, '').toLowerCase();
+  if (normA === normB || normA.endsWith('/' + normB) || normB.endsWith('/' + normA)) return true;
+  const noExtA = normA.replace(/\.(md|markdown|canvas|base)$/i, '');
+  const noExtB = normB.replace(/\.(md|markdown|canvas|base)$/i, '');
+  return noExtA === noExtB || noExtA.endsWith('/' + noExtB) || noExtB.endsWith('/' + noExtA);
+}
+
+/**
+ * Resuelve una ruta de archivo dentro de la bóveda buscando primero en el árbol de archivos
+ * (usando isSamePath) o uniéndola con activeVault si es una ruta relativa.
+ */
+export function resolveFilePathInVault(
+  filePath: string,
+  fileTree: FileItem[],
+  activeVault?: string | null
+): string {
+  if (!filePath) return '';
+
+  const findInTree = (items: FileItem[]): string | null => {
+    for (const item of items) {
+      if (!item.isDir && isSamePath(item.path, filePath)) {
+        return item.path;
+      }
+      if (item.children) {
+        const found = findInTree(item.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const found = findInTree(fileTree || []);
+  if (found) return found;
+
+  const normPath = normalizePath(filePath);
+  if (activeVault) {
+    const normVault = normalizePath(activeVault);
+    if (normPath.toLowerCase().startsWith(normVault.toLowerCase())) {
+      return normPath;
+    }
+    return `${normVault}/${normPath.replace(/^\/+/, '')}`;
+  }
+
+  return normPath;
 }
