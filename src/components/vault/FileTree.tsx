@@ -27,6 +27,7 @@ import { copyImageBlobToClipboard } from '../../editor/imageExtension';
 import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { useNoticeStore } from '../common/Notice';
 import { Tooltip } from '../common/Tooltip';
+import { isSamePath, normalizePath } from '../../utils/pathUtils';
 
 /**
  * Extracts the base name (without extension) and extension for any file.
@@ -371,7 +372,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
   const isClosed = ctx ? Boolean(ctx.collapsedMap[item.path]) : false;
   const isOpen = !isClosed;
 
-  const isRenaming = ctx?.renamingPath === item.path;
+  const isRenaming = ctx?.renamingPath ? isSamePath(ctx.renamingPath, item.path) : false;
   const { baseName: initialBaseName } = getBaseNameAndExt(item.name, item.isDir);
   const [renameValue, setRenameValue] = useState(initialBaseName);
 
@@ -382,14 +383,18 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
     items: MenuItemData[];
   } | null>(null);
 
-  const isSelected = activeFile === item.path;
+  const isSelected = isSamePath(activeFile, item.path);
 
   // Auto-reveal: expand parents and scroll into view when active
   useEffect(() => {
     if (!autoReveal || !activeFile) return;
 
-    if (item.isDir && activeFile.startsWith(`${item.path}/`)) {
-      ctx?.setFolderOpen(item.path, true);
+    if (item.isDir) {
+      const normItem = normalizePath(item.path).toLowerCase();
+      const normActive = normalizePath(activeFile).toLowerCase();
+      if (normActive.startsWith(`${normItem}/`)) {
+        ctx?.setFolderOpen(item.path, true);
+      }
     }
 
     if (isSelected && itemRef.current) {
