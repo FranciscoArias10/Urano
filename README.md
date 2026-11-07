@@ -1,7 +1,7 @@
 # 🪐 Urano
 
 <p align="center">
-  <strong>A high-performance, local-first knowledge base & note-taking application inspired by Obsidian.</strong><br>
+  <strong>A high-performance, local-first knowledge base & note-taking application.</strong><br>
   Built with <strong>Tauri 2.0 (Rust)</strong> and <strong>CodeMirror 6</strong> with zero-lock-in plaintext Markdown, infinite canvas, structured bases, and direct Google Drive cloud sync.
 </p>
 
@@ -19,18 +19,18 @@
 
 Most modern knowledge management tools either force your thoughts into proprietary cloud databases or wrap web technologies in bloated Electron containers that consume hundreds of megabytes of RAM before writing a single word.
 
-**Urano** delivers the gold standard Obsidian-like user experience with native desktop efficiency:
+**Urano** delivers the gold standard user experience with native desktop efficiency:
 - **Ultra-lightweight:** Consumes only **~40–80 MB of RAM**, keeping your computer fast, cool, and responsive.
 - **True Local-First:** Your notes belong to you. Every file is stored locally as human-readable standard Markdown (`.md`), Infinite Canvas (`.canvas`), or Structured Databases (`.base`).
 - **Free Multi-Device Sync:** Built-in direct Google Drive synchronization with zero third-party intermediaries, MD5 differential checksums, and non-destructive conflict handling.
-- **Signature Aesthetics:** Polished Obsidian dark neutral interface (`#1e1e1e`) complemented by Urano's signature vibrant atomic-orange accent (`#e06c1b`).
+- **Signature Aesthetics:** Polished dark neutral interface (`#1e1e1e`) complemented by Urano's signature vibrant atomic-orange accent (`#e06c1b`).
 
 ---
 
 ## 🚀 Key Features
 
 ### 📝 1:1 Live Preview Editor (CodeMirror 6)
-Powered by the same modular next-generation editor architecture as Obsidian:
+Powered by a modular next-generation editor architecture in Urano:
 - **Visual Table Editor:** Insert clean 2x2 tables without raw pipe characters cluttering the document. Interactive contextual menu for adding/removing rows & columns, adjusting column alignments (left, center, right), and full keyboard navigation (`Tab`, `Shift+Tab`, `Enter`).
 - **Interactive Callouts:** Native support for `> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`, `> [!BUG]`, `> [!DANGER]`, and more with curated icons and styling.
 - **LaTeX Math Formulas:** Instant KaTeX rendering for both inline `$E = mc^2$` and multiline equation blocks `$$\n...\n$$`. Cursor-aware transitions let you edit raw LaTeX fluidly upon focus.
@@ -56,7 +56,7 @@ Powered by the same modular next-generation editor architecture as Obsidian:
 - **3-Way Differential Sync:** Tracks MD5 file hashes in a local SQLite database (`.urano/sync.db`).
 - **Conflict Prevention:** Never overwrites work silently. In case of simultaneous edits across devices, Urano keeps your local file intact and preserves the remote version as `Note (Conflict YYYY-MM-DD).md`.
 
-### 🎛️ Complete Obsidian-Crafted Workspace
+### 🎛️ Complete Urano Workspace
 - **Left Ribbon:** Quick Switcher, Daily Notes, Graph View, Canvas, Bases, Templates, and Settings.
 - **Dock Header:** Left sidebar toggle, Vault Explorer, Global Search, and Bookmarks panel.
 - **Explorer Toolbar:** Sort files (A-Z, Z-A, Newest, Oldest), expand/collapse all folders, and create new notes or folders with one click.
@@ -88,7 +88,7 @@ Powered by the same modular next-generation editor architecture as Obsidian:
 | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> | Toggle Strikethrough |
 | <kbd>Tab</kbd> / <kbd>Shift</kbd> + <kbd>Tab</kbd> | Navigate Table Cells / Indent |
 | <kbd>Enter</kbd> | Insert Table Row (in table cell) |
-| <kbd>Right Click</kbd> | Open Obsidian Context Menu (formatting, tables, callouts, code blocks) |
+| <kbd>Right Click</kbd> | Open Urano Context Menu (formatting, tables, callouts, code blocks) |
 
 ---
 
@@ -154,7 +154,7 @@ Urano connects securely to your personal Google Drive account using OAuth 2.0 PK
 
 Urano habla el idioma que elijas en **Ajustes → General → Idioma**. El cambio se aplica al instante en toda la interfaz (barra superior, pestañas, explorador, menús contextuales, Canvas y la propia ventana de Ajustes), sin reiniciar. El idioma se guarda en `localStorage` (`urano_language`) y en `.urano/settings.json` de la bóveda.
 
-El catálogo replica el de Obsidian (51 idiomas con su autónimo: *Español*, *Deutsch*, *日本語*, *العربية*…). Urano incluye diccionarios completos para `en` y `es`; cualquier otro idioma muestra en inglés los textos que aún no tienen traducción.
+El catálogo de Urano incluye 51 idiomas con su autónimo (*Español*, *Deutsch*, *日本語*, *العربية*…). Urano incluye diccionarios completos para `en` y `es`; cualquier otro idioma muestra en inglés los textos que aún no tienen traducción.
 
 ### Añadir o corregir un idioma sin recompilar
 
@@ -169,7 +169,7 @@ El catálogo replica el de Obsidian (51 idiomas con su autónimo: *Español*, *D
 }
 ```
 
-4. Vuelve a abrir la bóveda (o reinicia Urano): el idioma aparece en el desplegable y tus textos se superponen a los embebidos. `dir: "rtl"` activa la disposición de derecha a izquierda de menús y modales, como en Obsidian.
+4. Vuelve a abrir la bóveda (o reinicia Urano): el idioma aparece en el desplegable y tus textos se superponen a los embebidos. `dir: "rtl"` activa la disposición de derecha a izquierda de menús y modales en Urano.
 
 Para contribuir un idioma al repositorio, copia tu archivo a `src/locales/<código>.json` y ejecuta `npm run i18n:check`, que lista las claves que faltan respecto a `en.json`.
 

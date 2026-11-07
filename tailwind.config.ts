@@ -6,7 +6,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        obsidian: {
+        urano: {
           bg: 'var(--background-primary)',
           sidebar: 'var(--background-secondary)',
           active: 'var(--interactive-hover, var(--background-modifier-hover))',
