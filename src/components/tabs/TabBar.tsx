@@ -21,7 +21,7 @@ import { invoke } from '@tauri-apps/api/core';
 
 export interface TabItem {
   id: string;
-  type: 'note' | 'graph' | 'canvas' | 'base' | 'image';
+  type: 'note' | 'graph' | 'canvas' | 'base' | 'image' | 'empty';
   filePath?: string;
   title: string;
   isDirty?: boolean;
@@ -50,6 +50,7 @@ const TAB_VIEW_TYPE: Record<TabItem['type'], string> = {
   base: 'bases',
   graph: 'graph',
   image: 'image',
+  empty: 'empty',
 };
 
 /**
@@ -97,6 +98,7 @@ export const TabBar: React.FC<TabBarProps> = ({
   /** Graph tabs resolve their label at render time so it follows the active language. */
   const tabLabel = (tab: TabItem) => {
     if (tab.type === 'graph') return t('tabs.graphView');
+    if (tab.type === 'empty' || !tab.filePath) return t('tabs.newTabLabel') || 'Nueva pestaña';
     const raw = tab.title || '';
     return raw.replace(/\\/g, '/').split('/').filter(Boolean).pop()?.replace(/\.(md|canvas|base)$/i, '') || raw;
   };
