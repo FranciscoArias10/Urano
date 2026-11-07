@@ -36,7 +36,7 @@ import { getStorageAdapter, toUint8Array } from '../../services/storageAdapter';
 import { themeService } from '../../services/themeService';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
-import { getRelativeVaultPath, isPathExcluded } from '../../utils/pathUtils';
+import { getRelativeVaultPath, isPathExcluded, isSamePath, normalizePath } from '../../utils/pathUtils';
 import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { useNoticeStore } from '../common/Notice';
 import { useT } from '../../stores/localeStore';
@@ -453,6 +453,7 @@ export const Editor: React.FC<EditorProps> = ({
     if (
       viewRef.current &&
       currentPathRef.current &&
+      isSamePath(currentPathRef.current, activeFile) &&
       viewRef.current.state.doc.toString() === fileContent
     ) {
       currentPathRef.current = activeFile;
@@ -1552,8 +1553,9 @@ export const Editor: React.FC<EditorProps> = ({
 
     try {
       const { createBaseFile, activeVault } = useVaultStore.getState();
-      const parentDir = activeFile
-        ? activeFile.substring(0, activeFile.lastIndexOf('/'))
+      const normActive = activeFile ? normalizePath(activeFile) : '';
+      const parentDir = normActive
+        ? normActive.substring(0, normActive.lastIndexOf('/'))
         : activeVault || undefined;
 
       const res = await createBaseFile(parentDir);
@@ -1775,8 +1777,9 @@ export const Editor: React.FC<EditorProps> = ({
       return;
     }
 
-    const parentDir = activeFile
-      ? activeFile.substring(0, activeFile.lastIndexOf('/'))
+    const normActive = activeFile ? normalizePath(activeFile) : '';
+    const parentDir = normActive
+      ? normActive.substring(0, normActive.lastIndexOf('/'))
       : activeVault;
 
     if (!parentDir) return;
@@ -2446,6 +2449,14 @@ export const Editor: React.FC<EditorProps> = ({
   };
 
   if (!activeFile) {
+    if (isLoading) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center text-urano-muted p-8 text-center bg-urano-bg">
+          <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-sm text-urano-muted">{t('common.loading') || 'Cargando...'}</p>
+        </div>
+      );
+    }
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-urano-muted p-8 text-center bg-urano-bg">
         <FileText className="w-16 h-16 mb-4 text-urano-border stroke-1" />
