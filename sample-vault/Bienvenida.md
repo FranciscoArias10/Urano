@@ -30,13 +30,13 @@ function sincronizarBoveda(boveda) {
 ```
 - **Listas de Tareas:**
   - [x] Crear repositorio Urano con Tauri 2.0 y Rust
-  - [x] Configurar tipografía estilo Obsidian y menú de formato
+  - [x] Configurar tipografía estilo Urano y menú de formato
   - [ ] Conectar cuenta personal de Google Drive en configuración
 
 ---
 
 ## 🔗 Explora tus notas conectadas
-Urano soporta enlaces bidireccionales automáticos estilo Obsidian:
+Urano soporta enlaces bidireccionales automáticos estilo Urano:
 - Consulta la [[Arquitectura]] del sistema.
 - Aprende sobre la [[Sincronizacion Google Drive]] y la resolución de conflictos.
 - Descubre los [[Atajos y Trucos]] para escribir más rápido.

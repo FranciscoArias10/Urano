@@ -24,7 +24,7 @@ import {
   getImageFormatTag,
 } from '../../services/storageAdapter';
 import { copyImageBlobToClipboard } from '../../editor/imageExtension';
-import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
+import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { useNoticeStore } from '../common/Notice';
 import { Tooltip } from '../common/Tooltip';
 
@@ -96,7 +96,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
     }
 
     if (isDir) {
-      // Sibling collision (case-insensitive, like Obsidian on case-insensitive filesystems)
+      // Sibling collision (case-insensitive, like Urano on case-insensitive filesystems)
       const target = newPath.toLowerCase();
       const collides = (items: FileItem[]): boolean =>
         items.some((f) => {
@@ -238,7 +238,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
       <div className="flex flex-col select-none h-full">
         {/* Only top level renders the 5-button File Explorer Toolbar */}
         {depth === 0 && (
-          <div className="nav-buttons-container flex items-center justify-center px-3 py-1.5 border-b border-obsidian-border text-obsidian-muted gap-[4px] bg-obsidian-sidebar">
+          <div className="nav-buttons-container flex items-center justify-center px-3 py-1.5 border-b border-urano-border text-urano-muted gap-[4px] bg-urano-sidebar">
             {/* 1. New note */}
             <Tooltip content={t('fileTree.newNote')} position="bottom">
               <button
@@ -319,7 +319,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
 
         {/* Root Context Menu Modal */}
         {rootContextMenu && (
-          <ObsidianMenu
+          <UranoMenu
             x={rootContextMenu.x}
             y={rootContextMenu.y}
             items={rootMenuItems}
@@ -329,7 +329,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
 
         {/* Sort Menu Modal */}
         {sortMenu && (
-          <ObsidianMenu
+          <UranoMenu
             x={sortMenu.x}
             y={sortMenu.y}
             items={sortMenuItems}
@@ -660,8 +660,8 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           isDragTarget ? 'bg-orange-500/20 ring-1 ring-orange-500' : ''
         } ${
           isSelected
-            ? 'bg-obsidian-active text-obsidian-text font-medium rounded-md'
-            : 'text-obsidian-text hover:bg-obsidian-hover rounded-md'
+            ? 'bg-urano-active text-urano-text font-medium rounded-md'
+            : 'text-urano-text hover:bg-urano-hover rounded-md'
         }`}
       >
         <div className="flex items-center gap-1.5 flex-1 min-w-0 mr-1">
@@ -671,7 +671,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
                 e.stopPropagation();
                 ctx?.setFolderOpen(item.path, !isOpen);
               }}
-              className="text-obsidian-muted group-hover:text-obsidian-text w-3.5 flex justify-center shrink-0"
+              className="text-urano-muted group-hover:text-urano-text w-3.5 flex justify-center shrink-0"
             >
               {isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
             </span>
@@ -701,17 +701,17 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
                     ctx?.setRenamingPath(null);
                   }
                 }}
-                className="w-full bg-obsidian-bg text-obsidian-text px-1.5 py-0.5 rounded outline-none border border-orange-500"
+                className="w-full bg-urano-bg text-urano-text px-1.5 py-0.5 rounded outline-none border border-orange-500"
               />
             </form>
           ) : (
-            <span className="truncate text-obsidian-text">
+            <span className="truncate text-urano-text">
               {displayName}
             </span>
           )}
         </div>
 
-        {/* Badges for CANVAS, BASE, and IMAGES (stay visible while renaming, like Obsidian) */}
+        {/* Badges for CANVAS, BASE, and IMAGES (stay visible while renaming, like Urano) */}
         {(isCanvas || isBase || imageTag) && (
           <div className="flex items-center shrink-0">
             {isCanvas && <span className="nav-file-tag">CANVAS</span>}
@@ -721,7 +721,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
         )}
       </div>
 
-      {/* Children files & folders with Obsidian vertical indentation line */}
+      {/* Children files & folders with Urano vertical indentation line */}
       {item.isDir && isOpen && item.children && item.children.length > 0 && (
         <div className="nav-folder-children">
           {item.children.map((child) => (
@@ -732,7 +732,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
 
       {/* Item Context Menu */}
       {contextMenu && (
-        <ObsidianMenu
+        <UranoMenu
           x={contextMenu.x}
           y={contextMenu.y}
           items={contextMenu.items}

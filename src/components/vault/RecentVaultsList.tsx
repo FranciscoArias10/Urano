@@ -38,10 +38,10 @@ export const RecentVaultsList: React.FC<RecentVaultsListProps> = ({
   const activeVaultItem = vaults.find((v) => v.path === activeMenuPath);
 
   return (
-    <aside className="w-[260px] bg-obsidian-sidebar border-r border-obsidian-border p-3 flex flex-col shrink-0">
+    <aside className="w-[260px] bg-urano-sidebar border-r border-urano-border p-3 flex flex-col shrink-0">
       <div className="flex-1 overflow-y-auto flex flex-col gap-1 pr-0.5 custom-scrollbar">
         {vaults.length === 0 ? (
-          <div className="text-[12px] text-obsidian-faint italic px-2 py-4">
+          <div className="text-[12px] text-urano-faint italic px-2 py-4">
             {t('vaultManager.noRecentVaults')}
           </div>
         ) : (
@@ -56,11 +56,11 @@ export const RecentVaultsList: React.FC<RecentVaultsListProps> = ({
                 }`}
               >
                 <div className="flex flex-col min-w-0 pr-2">
-                  <span className="text-[14px] font-medium text-obsidian-text truncate group-hover:text-obsidian-text">
+                  <span className="text-[14px] font-medium text-urano-text truncate group-hover:text-urano-text">
                     {vault.name}
                   </span>
                   <span
-                    className="text-[11.5px] text-obsidian-muted truncate max-w-[185px]"
+                    className="text-[11.5px] text-urano-muted truncate max-w-[185px]"
                     title={vault.path}
                   >
                     {vault.path}
@@ -70,7 +70,7 @@ export const RecentVaultsList: React.FC<RecentVaultsListProps> = ({
                 <button
                   type="button"
                   onClick={(e) => handleOpenMenu(e, vault.path)}
-                  className="p-1 rounded text-obsidian-muted hover:text-obsidian-text hover:bg-[var(--interactive-hover)] transition-colors shrink-0"
+                  className="p-1 rounded text-urano-muted hover:text-urano-text hover:bg-[var(--interactive-hover)] transition-colors shrink-0"
                   title={t('common.more')}
                 >
                   <MoreVertical size={16} />

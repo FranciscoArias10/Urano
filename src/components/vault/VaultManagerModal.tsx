@@ -162,7 +162,7 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="w-[800px] h-[580px] flex rounded-[10px] overflow-hidden border border-obsidian-border bg-obsidian-sidebar shadow-2xl relative"
+        className="w-[800px] h-[580px] flex rounded-[10px] overflow-hidden border border-urano-border bg-urano-sidebar shadow-2xl relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top titlebar drag region */}
@@ -191,7 +191,7 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
         />
 
         {/* Right Column: Brand Header + Actions */}
-        <main className="flex-1 bg-obsidian-sidebar flex flex-col items-center justify-center p-8 px-11 relative">
+        <main className="flex-1 bg-urano-sidebar flex flex-col items-center justify-center p-8 px-11 relative">
           {/* Window controls in top right */}
           <div className="absolute top-3 right-3.5 flex items-center gap-1.5 z-10">
             <button
@@ -204,7 +204,7 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
                   await invoke('minimize_window').catch(() => {});
                 }
               }}
-              className="p-1.5 text-obsidian-muted hover:text-obsidian-text hover:bg-[var(--interactive-hover)] rounded transition-colors cursor-pointer"
+              className="p-1.5 text-urano-muted hover:text-urano-text hover:bg-[var(--interactive-hover)] rounded transition-colors cursor-pointer"
               title={t('window.minimize')}
             >
               <Minus size={14} strokeWidth={1.6} />
@@ -221,7 +221,7 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
                   setIsMaximized((prev) => !prev);
                 }
               }}
-              className="p-1.5 text-obsidian-muted hover:text-obsidian-text hover:bg-[var(--interactive-hover)] rounded transition-colors cursor-pointer"
+              className="p-1.5 text-urano-muted hover:text-urano-text hover:bg-[var(--interactive-hover)] rounded transition-colors cursor-pointer"
               title={isMaximized ? t('window.restore') : t('window.maximize')}
             >
               {isMaximized ? (
@@ -240,7 +240,7 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
                   await invoke('close_window').catch(() => {});
                 }
               }}
-              className="p-1.5 text-obsidian-muted hover:text-obsidian-text hover:bg-[#e81123] rounded transition-colors cursor-pointer"
+              className="p-1.5 text-urano-muted hover:text-urano-text hover:bg-[#e81123] rounded transition-colors cursor-pointer"
               title={t('common.close')}
             >
               <X size={15} strokeWidth={1.6} />
@@ -252,10 +252,10 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
             <div className="w-[84px] h-[84px] mb-3 flex items-center justify-center">
               <UranoLogo size={84} />
             </div>
-            <h1 className="text-[28px] font-bold text-obsidian-text tracking-tight leading-none">
+            <h1 className="text-[28px] font-bold text-urano-text tracking-tight leading-none">
               {t('vaultManager.title')}
             </h1>
-            <p className="text-[13px] text-obsidian-muted mt-1.5">
+            <p className="text-[13px] text-urano-muted mt-1.5">
               {t('vaultManager.version')}
             </p>
           </div>
@@ -268,33 +268,33 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
               onSyncClick={handleSyncClick}
             />
           ) : view === 'create' ? (
-            <div className="w-full max-w-[460px] bg-obsidian-bg border border-obsidian-border rounded-[10px] px-5 py-1">
+            <div className="w-full max-w-[460px] bg-urano-bg border border-urano-border rounded-[10px] px-5 py-1">
               <CreateVaultForm
                 onBack={() => setView('main')}
                 onSubmit={handleCreateVaultSubmit}
               />
             </div>
           ) : (
-            <div className="w-full max-w-[480px] bg-obsidian-bg border border-obsidian-border rounded-[10px] p-5 flex flex-col">
+            <div className="w-full max-w-[480px] bg-urano-bg border border-urano-border rounded-[10px] p-5 flex flex-col">
               {/* Header with Back button and user info */}
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-obsidian-border">
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-urano-border">
                 <button
                   type="button"
                   onClick={() => setView('main')}
-                  className="flex items-center gap-1.5 text-xs text-obsidian-muted hover:text-obsidian-text transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 text-xs text-urano-muted hover:text-urano-text transition-colors cursor-pointer"
                 >
                   <ArrowLeft size={14} />
                   <span>{t('vaultManager.createForm.back')}</span>
                 </button>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-obsidian-muted truncate max-w-[200px]">
+                  <span className="text-[11px] text-urano-muted truncate max-w-[200px]">
                     {userEmail || user?.email}
                   </span>
                   <button
                     type="button"
                     onClick={() => fetchRemoteVaults()}
                     disabled={isLoadingVaults}
-                    className="p-1 text-obsidian-muted hover:text-obsidian-text transition-colors cursor-pointer disabled:opacity-50"
+                    className="p-1 text-urano-muted hover:text-urano-text transition-colors cursor-pointer disabled:opacity-50"
                     title={t('common.refresh')}
                   >
                     <RefreshCw size={13} className={isLoadingVaults ? 'animate-spin text-orange-400' : ''} />
@@ -303,7 +303,7 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
               </div>
 
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-[14px] font-semibold text-obsidian-text">
+                <h2 className="text-[14px] font-semibold text-urano-text">
                   {t('vaultManager.remote.title')}
                 </h2>
               </div>
@@ -311,15 +311,15 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
               {/* Vaults List */}
               <div className="max-h-[240px] overflow-y-auto flex flex-col gap-2 pr-1">
                 {isLoadingVaults ? (
-                  <div className="py-10 flex flex-col items-center justify-center gap-2 text-obsidian-muted">
+                  <div className="py-10 flex flex-col items-center justify-center gap-2 text-urano-muted">
                     <Loader2 size={24} className="animate-spin text-orange-400" />
                     <span className="text-xs">
                       {t('vaultManager.remote.loading')}
                     </span>
                   </div>
                 ) : remoteVaults.length === 0 ? (
-                  <div className="py-8 text-center text-xs text-obsidian-muted flex flex-col items-center gap-2">
-                    <Cloud size={28} className="text-obsidian-faint" />
+                  <div className="py-8 text-center text-xs text-urano-muted flex flex-col items-center gap-2">
+                    <Cloud size={28} className="text-urano-faint" />
                     <p>
                       {t('vaultManager.remote.empty')}
                     </p>
@@ -335,18 +335,18 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
                   remoteVaults.map((rv) => (
                     <div
                       key={rv.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-obsidian-border bg-obsidian-sidebar hover:border-orange-500/40 transition-colors"
+                      className="flex items-center justify-between p-3 rounded-lg border border-urano-border bg-urano-sidebar hover:border-orange-500/40 transition-colors"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="p-2 rounded bg-obsidian-bg text-orange-400 shrink-0">
+                        <div className="p-2 rounded bg-urano-bg text-orange-400 shrink-0">
                           <Folder size={18} />
                         </div>
                         <div className="flex flex-col min-w-0">
-                          <span className="text-[13px] font-medium text-obsidian-text truncate">
+                          <span className="text-[13px] font-medium text-urano-text truncate">
                             {rv.name}
                           </span>
                           {rv.modified_time && (
-                            <span className="text-[11px] text-obsidian-muted">
+                            <span className="text-[11px] text-urano-muted">
                               {t('vaultManager.remote.modified', {
                                 time: new Date(rv.modified_time).toLocaleString([], {
                                   dateStyle: 'medium',
@@ -361,7 +361,7 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
                         type="button"
                         disabled={downloadingVaultId === rv.id}
                         onClick={() => handleDownloadRemoteVault(rv)}
-                        className="bg-[var(--interactive-normal)] hover:bg-[var(--interactive-hover)] border border-obsidian-border text-obsidian-text font-medium text-xs rounded px-3 py-1.5 transition-colors cursor-pointer shrink-0 inline-flex items-center gap-1.5 disabled:opacity-50"
+                        className="bg-[var(--interactive-normal)] hover:bg-[var(--interactive-hover)] border border-urano-border text-urano-text font-medium text-xs rounded px-3 py-1.5 transition-colors cursor-pointer shrink-0 inline-flex items-center gap-1.5 disabled:opacity-50"
                       >
                         {downloadingVaultId === rv.id ? (
                           <>
