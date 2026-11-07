@@ -137,6 +137,7 @@ interface VaultState {
   setVault: (vaultPath: string) => Promise<void>;
   refreshTree: () => Promise<void>;
   selectFile: (filePath: string) => Promise<void>;
+  openFile: (filePath: string) => Promise<void>;
   updateContent: (content: string) => void;
   updateNoteContent: (filePath: string, content: string) => Promise<void>;
   saveCurrentFile: () => Promise<void>;
@@ -424,31 +425,40 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       await saveCurrentFile();
     }
 
+    const parts = targetPath.replace(/\\/g, '/').split('/');
+    const activeFileName = parts[parts.length - 1] || t('vault.defaultNoteName');
+
+    // Update activeFile immediately and synchronously to prevent any tab/editor ping-pong or mismatch
+    set({
+      activeFile: targetPath,
+      activeFileName,
+      isLoading: true,
+    });
+
+    if (activeVault) {
+      try {
+        const normVault = normalizePath(activeVault);
+        localStorage.setItem(`urano_last_file_${normVault}`, targetPath);
+      } catch {}
+    }
+
     try {
-      set({ isLoading: true });
       const isImg = isImagePath(targetPath);
       const content = isImg ? '' : await invoke<string>('read_file', { filePath: targetPath });
-      const parts = targetPath.replace(/\\/g, '/').split('/');
-      const activeFileName = parts[parts.length - 1] || t('vault.defaultNoteName');
 
       set({
-        activeFile: targetPath,
-        activeFileName,
         fileContent: content,
         isDirty: false,
         isLoading: false,
       });
-
-      if (activeVault) {
-        try {
-          const normVault = normalizePath(activeVault);
-          localStorage.setItem(`urano_last_file_${normVault}`, targetPath);
-        } catch {}
-      }
     } catch (err) {
       set({ isLoading: false });
       console.error('Error al leer archivo:', err);
     }
+  },
+
+  openFile: async (filePath: string) => {
+    return get().selectFile(filePath);
   },
 
   closeActiveFile: () => {
