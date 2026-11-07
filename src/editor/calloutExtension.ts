@@ -32,7 +32,7 @@ class CalloutWidget extends WidgetType {
     const iconEl = document.createElement('div');
     iconEl.className = 'callout-icon';
 
-    // Type-based SVG icons matching Obsidian
+    // Type-based SVG icons matching Urano
     const type = this.data.type.toLowerCase();
     let svgIcon = '';
     if (type === 'tip' || type === 'hint' || type === 'important') {

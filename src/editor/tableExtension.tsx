@@ -1,6 +1,6 @@
 import { StateField, RangeSetBuilder, Text } from '@codemirror/state';
 import { EditorView, Decoration, DecorationSet, WidgetType } from '@codemirror/view';
-import { MenuItemData } from '../components/common/ObsidianMenu';
+import { MenuItemData } from '../components/common/UranoMenu';
 import { useNoticeStore } from '../components/common/Notice';
 import { t } from '../locales/i18n';
 import {
@@ -378,7 +378,7 @@ export class TableWidget extends WidgetType {
       const totalRows = currentRows.length + 1; // 1 header + body rows
 
       const items: MenuItemData[] = [
-        // Fila Submenu (1:1 with Obsidian)
+        // Fila Submenu (1:1 with Urano)
         {
           title: t('table.row'),
           icon: <Rows size={14} />,
@@ -474,7 +474,7 @@ export class TableWidget extends WidgetType {
             },
           ],
         },
-        // Columna Submenu (1:1 with Obsidian)
+        // Columna Submenu (1:1 with Urano)
         {
           title: t('table.column'),
           icon: <Columns size={14} />,
@@ -751,7 +751,7 @@ export class TableWidget extends WidgetType {
         openTableMenu(e, row, col);
       });
 
-      // Keyboard Navigation (Exact 1:1 with Obsidian)
+      // Keyboard Navigation (Exact 1:1 with Urano)
       cellContent.addEventListener('keydown', (e: KeyboardEvent) => {
         const totalRows = currentRows.length + 1;
         const totalCols = currentHeaders.length;
@@ -861,7 +861,7 @@ export class TableWidget extends WidgetType {
 
       const content = document.createElement('div');
       content.className =
-        'urano-table-cell-content outline-none w-full h-full min-h-[32px] px-3 py-1.5 text-obsidian-text font-semibold';
+        'urano-table-cell-content outline-none w-full h-full min-h-[32px] px-3 py-1.5 text-urano-text font-semibold';
       content.contentEditable = 'true';
       content.spellcheck = false;
       content.setAttribute('data-row', '0');
@@ -895,7 +895,7 @@ export class TableWidget extends WidgetType {
 
         const content = document.createElement('div');
         content.className =
-          'urano-table-cell-content outline-none w-full h-full min-h-[32px] px-3 py-1.5 text-obsidian-text';
+          'urano-table-cell-content outline-none w-full h-full min-h-[32px] px-3 py-1.5 text-urano-text';
         content.contentEditable = 'true';
         content.spellcheck = false;
         content.setAttribute('data-row', String(rowIdx + 1));

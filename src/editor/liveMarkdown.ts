@@ -9,7 +9,7 @@ import {
 import { Range } from '@codemirror/state';
 import { t } from '../locales/i18n';
 
-// Line decorations for Obsidian-style typography
+// Line decorations for Urano-style typography
 const h1Line = Decoration.line({ class: 'cm-h1-line' });
 const h2Line = Decoration.line({ class: 'cm-h2-line' });
 const h3Line = Decoration.line({ class: 'cm-h3-line' });
@@ -91,7 +91,7 @@ const emMark = Decoration.mark({ class: 'cm-em' });
 const strikeMark = Decoration.mark({ class: 'cm-strikethrough' });
 const codeInlineMark = Decoration.mark({ class: 'cm-inline-code' });
 
-// 6 Obsidian Highlight color marks
+// 6 Urano Highlight color marks
 const highlightMarks: Record<string, Decoration> = {
   default: Decoration.mark({ class: 'cm-highlight-text' }),
   red: Decoration.mark({ class: 'cm-highlight-red' }),

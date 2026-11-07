@@ -65,7 +65,7 @@ class CodeCopyWidget extends WidgetType {
   }
 }
 
-// Line decorations matching Obsidian's .HyperMD-codeblock specifications
+// Line decorations matching Urano's .HyperMD-codeblock specifications
 const codeblockBegin = Decoration.line({ class: 'cm-hypermd-codeblock cm-hypermd-codeblock-begin' });
 const codeblockMid = Decoration.line({ class: 'cm-hypermd-codeblock' });
 const codeblockEnd = Decoration.line({ class: 'cm-hypermd-codeblock cm-hypermd-codeblock-end' });

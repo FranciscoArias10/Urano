@@ -2,7 +2,7 @@ import { EditorView } from '@codemirror/view';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags as t } from '@lezer/highlight';
 
-export const obsidianTheme = EditorView.theme(
+export const uranoTheme = EditorView.theme(
   {
     '&': {
       color: 'var(--text-normal, #dcddde)',
@@ -56,7 +56,7 @@ export const obsidianTheme = EditorView.theme(
   }
 );
 
-export const obsidianHighlightStyle = HighlightStyle.define([
+export const uranoHighlightStyle = HighlightStyle.define([
   // Markdown structures
   { tag: t.strong, fontWeight: '700', color: 'var(--text-normal)' },
   { tag: t.emphasis, fontStyle: 'italic', color: 'var(--text-normal)' },
@@ -68,7 +68,7 @@ export const obsidianHighlightStyle = HighlightStyle.define([
   { tag: t.quote, color: 'var(--text-muted, #888888)', fontStyle: 'italic' },
   { tag: t.heading, fontWeight: '700', color: 'var(--text-normal)' },
 
-  // Programming Languages Syntax Highlighting (Obsidian style with Urano orange accent)
+  // Programming Languages Syntax Highlighting (Urano style with orange accent)
   { tag: [t.keyword, t.operatorKeyword, t.modifier], color: '#f97316', fontWeight: '600' },
   { tag: [t.string, t.special(t.string)], color: '#16a34a' },
   { tag: [t.number, t.integer, t.float], color: '#0284c7' },
@@ -83,4 +83,4 @@ export const obsidianHighlightStyle = HighlightStyle.define([
   { tag: t.meta, color: '#e11d48' },
 ]);
 
-export const obsidianSyntax = syntaxHighlighting(obsidianHighlightStyle);
+export const uranoSyntax = syntaxHighlighting(uranoHighlightStyle);

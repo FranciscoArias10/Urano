@@ -194,15 +194,15 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
     <div
       ref={menuRef}
       style={{ top: `${adjustedY}px`, left: `${adjustedX}px` }}
-      className="fixed z-50 bg-obsidian-sidebar border border-obsidian-border rounded-xl shadow-2xl p-1.5 w-64 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 text-xs select-none"
+      className="fixed z-50 bg-urano-sidebar border border-urano-border rounded-xl shadow-2xl p-1.5 w-64 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 text-xs select-none"
     >
-      <div className="px-2 py-1 text-[10px] uppercase font-bold tracking-wider text-obsidian-muted border-b border-obsidian-border/50 mb-1 flex items-center justify-between">
+      <div className="px-2 py-1 text-[10px] uppercase font-bold tracking-wider text-urano-muted border-b border-urano-border/50 mb-1 flex items-center justify-between">
         <span>{t('formattingMenu.title')}</span>
         <span className="text-orange-500 font-semibold">Urano</span>
       </div>
 
       {/* Inline styles group */}
-      <div className="grid grid-cols-4 gap-1 p-1 bg-obsidian-bg rounded-lg mb-1.5 border border-obsidian-border/40">
+      <div className="grid grid-cols-4 gap-1 p-1 bg-urano-bg rounded-lg mb-1.5 border border-urano-border/40">
         <button
           onClick={() => applyInlineWrap('==', '==', t('formattingMenu.placeholder.highlight'))}
           className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-orange-500/20 text-orange-400 hover:text-orange-300 transition-colors"
@@ -213,7 +213,7 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
         </button>
         <button
           onClick={() => applyInlineWrap('**', '**', t('formattingMenu.placeholder.bold'))}
-          className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors"
+          className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-urano-hover text-urano-text hover:text-urano-text transition-colors"
           title={t('formattingMenu.boldTooltip')}
         >
           <Bold className="w-4 h-4" />
@@ -221,7 +221,7 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
         </button>
         <button
           onClick={() => applyInlineWrap('*', '*', t('formattingMenu.placeholder.italic'))}
-          className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors"
+          className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-urano-hover text-urano-text hover:text-urano-text transition-colors"
           title={t('formattingMenu.italicTooltip')}
         >
           <Italic className="w-4 h-4" />
@@ -231,7 +231,7 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
           onClick={() =>
             applyInlineWrap('~~', '~~', t('formattingMenu.placeholder.strikethrough'))
           }
-          className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors"
+          className="flex flex-col items-center justify-center p-1.5 rounded hover:bg-urano-hover text-urano-text hover:text-urano-text transition-colors"
           title={t('formattingMenu.strikethroughTooltip')}
         >
           <Strikethrough className="w-4 h-4" />
@@ -241,26 +241,26 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
 
       {/* Headings */}
       <div className="space-y-0.5 mb-1.5">
-        <div className="px-2 py-0.5 text-[10px] text-obsidian-muted font-medium">
+        <div className="px-2 py-0.5 text-[10px] text-urano-muted font-medium">
           {t('formattingMenu.sectionHeadings')}
         </div>
         <button
           onClick={() => applyLinePrefix('# ')}
-          className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-orange-500/10 hover:text-orange-300 text-obsidian-text transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-orange-500/10 hover:text-orange-300 text-urano-text transition-colors text-left"
         >
           <Heading1 className="w-4 h-4 text-orange-400 shrink-0" />
           <span className="font-bold text-sm">{t('formattingMenu.heading1')}</span>
         </button>
         <button
           onClick={() => applyLinePrefix('## ')}
-          className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-orange-500/10 hover:text-orange-300 text-obsidian-text transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-orange-500/10 hover:text-orange-300 text-urano-text transition-colors text-left"
         >
           <Heading2 className="w-4 h-4 text-orange-400 shrink-0" />
           <span className="font-semibold text-xs">{t('formattingMenu.heading2')}</span>
         </button>
         <button
           onClick={() => applyLinePrefix('### ')}
-          className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-orange-500/10 hover:text-orange-300 text-obsidian-text transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-orange-500/10 hover:text-orange-300 text-urano-text transition-colors text-left"
         >
           <Heading3 className="w-4 h-4 text-orange-400 shrink-0" />
           <span className="font-medium text-xs">{t('formattingMenu.heading3')}</span>
@@ -268,27 +268,27 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
       </div>
 
       {/* Lists & Bullets */}
-      <div className="space-y-0.5 mb-1.5 border-t border-obsidian-border/50 pt-1">
-        <div className="px-2 py-0.5 text-[10px] text-obsidian-muted font-medium">
+      <div className="space-y-0.5 mb-1.5 border-t border-urano-border/50 pt-1">
+        <div className="px-2 py-0.5 text-[10px] text-urano-muted font-medium">
           {t('formattingMenu.sectionLists')}
         </div>
         <button
           onClick={() => applyLinePrefix('- ')}
-          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-urano-hover text-urano-text hover:text-urano-text transition-colors text-left"
         >
           <List className="w-3.5 h-3.5 text-amber-400 shrink-0" />
           <span>{t('formattingMenu.bulletList')}</span>
         </button>
         <button
           onClick={() => applyLinePrefix('1. ')}
-          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-urano-hover text-urano-text hover:text-urano-text transition-colors text-left"
         >
           <ListOrdered className="w-3.5 h-3.5 text-amber-400 shrink-0" />
           <span>{t('formattingMenu.numberedList')}</span>
         </button>
         <button
           onClick={() => applyLinePrefix('- [ ] ')}
-          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-urano-hover text-urano-text hover:text-urano-text transition-colors text-left"
         >
           <CheckSquare className="w-3.5 h-3.5 text-orange-400 shrink-0" />
           <span>{t('formattingMenu.taskList')}</span>
@@ -296,20 +296,20 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
       </div>
 
       {/* Math, Code & Advanced */}
-      <div className="space-y-0.5 border-t border-obsidian-border/50 pt-1">
-        <div className="px-2 py-0.5 text-[10px] text-obsidian-muted font-medium">
+      <div className="space-y-0.5 border-t border-urano-border/50 pt-1">
+        <div className="px-2 py-0.5 text-[10px] text-urano-muted font-medium">
           {t('formattingMenu.sectionAdvanced')}
         </div>
         <button
           onClick={applyMathBlock}
-          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-urano-hover text-urano-text hover:text-urano-text transition-colors text-left"
         >
           <Sigma className="w-3.5 h-3.5 text-amber-300 shrink-0" />
           <span>{t('formattingMenu.mathBlock')}</span>
         </button>
         <button
           onClick={applyCodeBlock}
-          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-urano-hover text-urano-text hover:text-urano-text transition-colors text-left"
         >
           <Code className="w-3.5 h-3.5 text-orange-400 shrink-0" />
           <span>{t('formattingMenu.codeBlock')}</span>
@@ -323,9 +323,9 @@ export const EditorFormattingMenu: React.FC<FormattingMenuProps> = ({
         </button>
         <button
           onClick={() => applyLinePrefix('> ')}
-          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-obsidian-hover text-obsidian-text hover:text-obsidian-text transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-2 py-1 rounded-lg hover:bg-urano-hover text-urano-text hover:text-urano-text transition-colors text-left"
         >
-          <Quote className="w-3.5 h-3.5 text-obsidian-muted shrink-0" />
+          <Quote className="w-3.5 h-3.5 text-urano-muted shrink-0" />
           <span>{t('formattingMenu.quote')}</span>
         </button>
       </div>

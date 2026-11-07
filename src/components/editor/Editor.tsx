@@ -15,7 +15,7 @@ import { indentUnit, codeFolding, foldGutter, foldService } from '@codemirror/la
 import { closeBrackets } from '@codemirror/autocomplete';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { languages } from '@codemirror/language-data';
-import { obsidianTheme, obsidianSyntax } from '../../editor/theme';
+import { uranoTheme, uranoSyntax } from '../../editor/theme';
 import { liveMarkdownExtension } from '../../editor/liveMarkdown';
 import { mathExtension } from '../../editor/mathExtension';
 import { codeBlockExtension } from '../../editor/codeBlockExtension';
@@ -37,7 +37,7 @@ import { themeService } from '../../services/themeService';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
 import { getRelativeVaultPath, isPathExcluded } from '../../utils/pathUtils';
-import { ObsidianMenu, MenuItemData } from '../common/ObsidianMenu';
+import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { useNoticeStore } from '../common/Notice';
 import { useT } from '../../stores/localeStore';
 import { ImageLightbox } from '../common/ImageLightbox';
@@ -254,7 +254,7 @@ export const Editor: React.FC<EditorProps> = ({
     items: MenuItemData[];
   } | null>(null);
 
-  // Full-screen image lightbox state (Obsidian `showImage`)
+  // Full-screen image lightbox state (Urano `showImage`)
   const [lightbox, setLightbox] = useState<{
     images: { src: string; alt?: string; filePath?: string }[];
     activeIndex: number;
@@ -296,7 +296,7 @@ export const Editor: React.FC<EditorProps> = ({
   }, []);
 
   // Every Live Preview decoration. Source Mode swaps this for `[]` so the raw
-  // Markdown is shown (Obsidian "Source mode"). Paste/drop handling is NOT part
+  // Markdown is shown (Urano "Source mode"). Paste/drop handling is NOT part
   // of this list: pasting an image must keep working in Source Mode.
   const buildLivePreviewExtensions = (mode: typeof editorMode) =>
     mode === 'source'
@@ -305,8 +305,8 @@ export const Editor: React.FC<EditorProps> = ({
           liveMarkdownExtension,
           mathExtension, // KaTeX LaTeX math equations
           codeBlockExtension, // Code blocks with syntax highlighting & copy button
-          calloutExtension, // Obsidian Callout boxes in Live Preview
-          tableExtension, // Obsidian Markdown Tables in Live Preview
+          calloutExtension, // Urano Callout boxes in Live Preview
+          tableExtension, // Urano Markdown Tables in Live Preview
           createImageExtension({
             onOpenInNewTab,
             onZoomImage: (info, src) => zoomHandlerRef.current(info, src),
@@ -391,7 +391,7 @@ export const Editor: React.FC<EditorProps> = ({
     onStatsChange?.({ words, chars });
   }, [fileContent, onStatsChange]);
 
-  // Silent automatic save with 1.2s debounce (Obsidian 1:1)
+  // Silent automatic save with 1.2s debounce (Urano 1:1)
   useEffect(() => {
     if (!isDirty || !activeFile) return;
     const timer = setTimeout(() => {
@@ -484,8 +484,8 @@ export const Editor: React.FC<EditorProps> = ({
           },
         ]),
         markdown({ codeLanguages: languages }),
-        obsidianTheme,
-        obsidianSyntax,
+        uranoTheme,
+        uranoSyntax,
         // Dynamic Compartments for Live Preview, Line Numbers, Folding, Line Length, Indent Guides, RTL & Settings
         livePreviewCompartment.current.of(buildLivePreviewExtensions(editorMode)),
         lineNumbersCompartment.current.of(showLineNumbers ? [lineNumbers()] : []),
@@ -704,7 +704,7 @@ export const Editor: React.FC<EditorProps> = ({
   }, [showSuggest, availableNotes, suggestIndex]);
 
   // Collect every image embed in the document and open the clicked one at its
-  // index (1:1 with Obsidian's `showImage`).
+  // index (1:1 with Urano's `showImage`).
   useEffect(() => {
     zoomHandlerRef.current = (_info: ImageEmbedInfo, src: string) => {
       const root = editorRef.current;
@@ -741,7 +741,7 @@ export const Editor: React.FC<EditorProps> = ({
     };
   }, []);
 
-  // Listen for table-specific context menu events (1:1 with Obsidian)
+  // Listen for table-specific context menu events (1:1 with Urano)
   useEffect(() => {
     const handleTableContextMenu = (e: Event) => {
       const customEvent = e as CustomEvent<{
@@ -764,7 +764,7 @@ export const Editor: React.FC<EditorProps> = ({
     };
   }, []);
 
-  // Listen for image-specific context menu events (1:1 with Obsidian)
+  // Listen for image-specific context menu events (1:1 with Urano)
   useEffect(() => {
     const handleImageContextMenu = (e: Event) => {
       const customEvent = e as CustomEvent<{
@@ -897,7 +897,7 @@ export const Editor: React.FC<EditorProps> = ({
     }
   };
 
-  // Intelligent Obsidian-like toggle formatting
+  // Intelligent Urano-like toggle formatting
   const toggleInlineFormatting = (delimiter: string, altDelimiter?: string) => {
     console.log('[Urano Menu] Ejecutando comando: Formato', delimiter);
     const view = viewRef.current || getActiveEditorView();
@@ -1938,7 +1938,7 @@ export const Editor: React.FC<EditorProps> = ({
     view.focus();
   };
 
-  // Right-click context menu handler matching Obsidian specification
+  // Right-click context menu handler matching Urano specification
   const handleContextMenu = async (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest('.urano-table-editor') || target.closest('.cm-table-widget')) {
@@ -2412,12 +2412,12 @@ export const Editor: React.FC<EditorProps> = ({
 
   if (!activeFile) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-obsidian-muted p-8 text-center bg-obsidian-bg">
-        <FileText className="w-16 h-16 mb-4 text-obsidian-border stroke-1" />
-        <h2 className="text-xl font-medium text-obsidian-text mb-2">
+      <div className="flex-1 flex flex-col items-center justify-center text-urano-muted p-8 text-center bg-urano-bg">
+        <FileText className="w-16 h-16 mb-4 text-urano-border stroke-1" />
+        <h2 className="text-xl font-medium text-urano-text mb-2">
           {t('editor.emptyState.noFileOpen')}
         </h2>
-        <p className="text-sm max-w-sm text-obsidian-muted">{t('editor.emptyState.hint')}</p>
+        <p className="text-sm max-w-sm text-urano-muted">{t('editor.emptyState.hint')}</p>
       </div>
     );
   }
@@ -2428,14 +2428,14 @@ export const Editor: React.FC<EditorProps> = ({
       dir={rightToLeft ? 'rtl' : 'ltr'}
       style={{ direction: rightToLeft ? 'rtl' : 'ltr' }}
       data-properties-mode={propertiesInDocument}
-      className={`flex-1 flex flex-col h-full bg-obsidian-bg overflow-hidden relative ${
+      className={`flex-1 flex flex-col h-full bg-urano-bg overflow-hidden relative ${
         rightToLeft ? 'is-rtl' : ''
       } properties-${propertiesInDocument}`}
     >
       {/* Clean Document Canvas */}
       <div className="flex-1 overflow-hidden relative flex flex-col">
         {isLoading && (
-          <div className="absolute inset-0 bg-obsidian-bg/50 backdrop-blur-[1px] flex items-center justify-center z-20">
+          <div className="absolute inset-0 bg-urano-bg/50 backdrop-blur-[1px] flex items-center justify-center z-20">
             <div className="animate-spin rounded-full h-6 w-6 border-2 border-orange-500 border-t-transparent" />
           </div>
         )}
@@ -2445,10 +2445,10 @@ export const Editor: React.FC<EditorProps> = ({
           <div
             className={`h-full overflow-y-auto px-12 py-10 ${
               readableLineLength ? 'max-w-[var(--file-line-width,700px)] mx-auto' : 'w-full max-w-none'
-            } text-obsidian-text leading-relaxed font-sans`}
+            } text-urano-text leading-relaxed font-sans`}
           >
             {showInlineTitle && (
-              <h1 className="text-3xl font-bold text-obsidian-text mb-6 border-b border-obsidian-border pb-3">
+              <h1 className="text-3xl font-bold text-urano-text mb-6 border-b border-urano-border pb-3">
                 {cleanTitle}
               </h1>
             )}
@@ -2495,13 +2495,13 @@ export const Editor: React.FC<EditorProps> = ({
         )}
       </div>
 
-      {/* Floating Obsidian [[ Wikilink Suggestion Dropdown */}
+      {/* Floating Urano [[ Wikilink Suggestion Dropdown */}
       {showSuggest && availableNotes.length > 0 && (
         <div
-          className="fixed z-50 w-64 bg-obsidian-sidebar border border-orange-500/30 rounded-lg shadow-2xl shadow-black/80 overflow-hidden text-xs select-none animate-fadeIn"
+          className="fixed z-50 w-64 bg-urano-sidebar border border-orange-500/30 rounded-lg shadow-2xl shadow-black/80 overflow-hidden text-xs select-none animate-fadeIn"
           style={{ top: `${suggestCoords.top}px`, left: `${suggestCoords.left}px` }}
         >
-          <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-orange-400/80 border-b border-obsidian-border font-semibold bg-obsidian-sidebar">
+          <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-orange-400/80 border-b border-urano-border font-semibold bg-urano-sidebar">
             {t('editor.suggest.linkToNote')}
           </div>
           <div className="max-h-48 overflow-y-auto p-1 flex flex-col gap-0.5">
@@ -2513,12 +2513,12 @@ export const Editor: React.FC<EditorProps> = ({
                 className={`flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer transition-colors ${
                   idx === suggestIndex
                     ? 'bg-orange-600/25 text-white font-medium'
-                    : 'text-obsidian-text hover:bg-[var(--interactive-hover)]'
+                    : 'text-urano-text hover:bg-[var(--interactive-hover)]'
                 }`}
               >
                 <FileText
                   size={12}
-                  className={idx === suggestIndex ? 'text-orange-400' : 'text-obsidian-faint'}
+                  className={idx === suggestIndex ? 'text-orange-400' : 'text-urano-faint'}
                 />
                 <span className="truncate">{name}</span>
               </div>
@@ -2527,9 +2527,9 @@ export const Editor: React.FC<EditorProps> = ({
         </div>
       )}
 
-      {/* Obsidian Right-click Context Menu */}
+      {/* Urano Right-click Context Menu */}
       {contextMenu && (
-        <ObsidianMenu
+        <UranoMenu
           x={contextMenu.x}
           y={contextMenu.y}
           items={contextMenu.items}

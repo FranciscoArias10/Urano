@@ -75,7 +75,7 @@ export function parseImageEmbed(altOrDimensions: string): {
   return { width, height, alt };
 }
 
-// Regex matching Obsidian Wikilink embed: ![[filename.png]] or ![[filename.png|300]]
+// Regex matching Urano Wikilink embed: ![[filename.png]] or ![[filename.png|300]]
 const WIKILINK_IMAGE_REGEX = /!\[\[([^\]]+)\]\]/g;
 
 // Regex matching standard Markdown image: ![alt|300](https://... or path)
@@ -509,7 +509,7 @@ export class ImageWidget extends WidgetType {
     wrapper.appendChild(img);
 
     /* --------------------------------------------------------------- *
-     * Hover action bar (top-right corner) — Obsidian `.embed-actions`
+     * Hover action bar (top-right corner) — Urano `.embed-actions`
      * Two buttons: `lucide-zoom-in` (lightbox) and `lucide-code-2`
      * (edit the `![[image.png]]` markdown source line).
      * --------------------------------------------------------------- */
@@ -525,7 +525,7 @@ export class ImageWidget extends WidgetType {
     zoomBtn.innerHTML =
       '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zoom-in"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="11" x2="11" y1="8" y2="14"/><line x1="8" x2="14" y1="11" y2="11"/></svg>';
     zoomBtn.addEventListener('mousedown', (e) => {
-      // Ctrl/Cmd + click opens the file in a new leaf (Obsidian behaviour)
+      // Ctrl/Cmd + click opens the file in a new leaf (Urano behaviour)
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
         e.stopPropagation();
@@ -679,7 +679,7 @@ export class ImageWidget extends WidgetType {
 
 export interface ImageExtensionOptions {
   onOpenInNewTab?: (filePath: string) => void;
-  /** Opens the full-screen lightbox for the embed (Obsidian `showImage`). */
+  /** Opens the full-screen lightbox for the embed (Urano `showImage`). */
   onZoomImage?: (info: ImageEmbedInfo, src: string) => void;
 }
 
@@ -900,7 +900,7 @@ export function createImageExtension(options?: ImageExtensionOptions) {
 let lastPastedTimestamp = 0;
 
 /**
- * Saves a clipboard image into the root of the active vault using Obsidian's
+ * Saves a clipboard image into the root of the active vault using Urano's
  * naming convention (`Pasted Image YYYYMMDDHHmmss.png`).
  *
  * Returns the created file name, or null when it could not be stored.
@@ -908,7 +908,7 @@ let lastPastedTimestamp = 0;
  */
 export async function saveClipboardImageToVault(file: File): Promise<string | null> {
   try {
-    // Exact Obsidian naming convention: Pasted Image YYYYMMDDHHmmss.png
+    // Exact Urano naming convention: Pasted Image YYYYMMDDHHmmss.png
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
     const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(
