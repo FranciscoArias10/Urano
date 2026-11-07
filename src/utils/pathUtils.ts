@@ -102,16 +102,40 @@ export function isPathExcluded(filePath: string, filters: string[]): boolean {
 /**
  * Compara dos rutas de archivo para determinar si representan el mismo archivo,
  * independientemente de separadores de ruta (\ vs /), mayúsculas/minúsculas en Windows,
- * si una ruta es relativa y la otra absoluta, o si una incluye extensión y la otra no.
+ * o si una ruta es relativa y la otra absoluta.
+ * Garantiza que archivos con diferentes extensiones (como .md vs .canvas) nunca colisionen.
  */
 export function isSamePath(a?: string | null, b?: string | null): boolean {
   if (!a || !b) return false;
   const normA = a.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/\/$/, '').toLowerCase();
   const normB = b.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/\/$/, '').toLowerCase();
-  if (normA === normB || normA.endsWith('/' + normB) || normB.endsWith('/' + normA)) return true;
+
+  if (normA === normB) return true;
+
+  // Extract extensions if present
+  const matchA = normA.match(/\.([a-z0-9_-]+)$/i);
+  const matchB = normB.match(/\.([a-z0-9_-]+)$/i);
+  const extA = matchA ? matchA[1] : null;
+  const extB = matchB ? matchB[1] : null;
+
+  // If BOTH paths have an explicit extension and they differ, they CANNOT be the same file
+  if (extA && extB && extA !== extB) {
+    return false;
+  }
+
+  // If one has an extension other than markdown (e.g. canvas, base, images) and the other has no extension,
+  // they cannot match (bare names only resolve to markdown)
+  if (extA && !['md', 'markdown'].includes(extA) && !extB) return false;
+  if (extB && !['md', 'markdown'].includes(extB) && !extA) return false;
+
+  // Suffix matching for relative vs absolute paths (e.g. "subfolder/note.md" vs "C:/vault/subfolder/note.md")
+  if (normA.endsWith('/' + normB) || normB.endsWith('/' + normA)) return true;
+
   const noExtA = normA.replace(/\.(md|markdown|canvas|base)$/i, '');
   const noExtB = normB.replace(/\.(md|markdown|canvas|base)$/i, '');
-  return noExtA === noExtB || noExtA.endsWith('/' + noExtB) || noExtB.endsWith('/' + noExtA);
+
+  if (noExtA === noExtB) return true;
+  return noExtA.endsWith('/' + noExtB) || noExtB.endsWith('/' + noExtA);
 }
 
 /**
