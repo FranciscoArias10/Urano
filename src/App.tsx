@@ -13,7 +13,13 @@ import { CanvasView } from './components/canvas/CanvasView';
 import { BaseView } from './components/base/BaseView';
 import { ImageView } from './components/image/ImageView';
 import { isImagePath } from './services/storageAdapter';
-import { getRelativeVaultPath, getRelativeVaultFolderSegments } from './utils/pathUtils';
+import {
+  getRelativeVaultPath,
+  getRelativeVaultFolderSegments,
+  isSamePath,
+  resolveFilePathInVault,
+  normalizePath,
+} from './utils/pathUtils';
 import { FILE_RENAMED_EVENT, FileRenamedDetail } from './services/linkRefactorService';
 import { TemplateModal } from './components/templates/TemplateModal';
 import { UpdateLinksModal } from './components/common/UpdateLinksModal';
@@ -82,6 +88,10 @@ const MainApp: React.FC = () => {
   // Tabs State (Urano Workspace Leaf Tabs)
   const [tabs, setTabs] = useState<TabItem[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>('');
+  const activeTab = useMemo(
+    () => tabs.find((t) => t.id === activeTabId),
+    [tabs, activeTabId]
+  );
 
   // Per tab navigation history (Urano leaf history: historyStack + currentIndex)
   const [navHistory, setNavHistory] = useState<
@@ -188,6 +198,7 @@ const MainApp: React.FC = () => {
     deleteItem,
     pendingRenamePrompt,
     resolvePendingRename,
+    isLoading,
   } = useVaultStore();
 
   const { checkAuthStatus, triggerSync, isSyncing, notifyVaultChanged } = useSyncStore();
@@ -359,12 +370,68 @@ const MainApp: React.FC = () => {
       const { oldPath, newPath, newFileName, newBaseName } = detail;
       const title = isImagePath(newPath) ? newFileName : newBaseName;
       setTabs((prev) =>
-        prev.map((t) => (t.filePath === oldPath ? { ...t, filePath: newPath, title } : t))
+        prev.map((t) => (isSamePath(t.filePath, oldPath) ? { ...t, filePath: newPath, title } : t))
       );
     };
     window.addEventListener(FILE_RENAMED_EVENT, onRenamed);
     return () => window.removeEventListener(FILE_RENAMED_EVENT, onRenamed);
   }, []);
+
+  // Restore tabs from localStorage when vault is loaded
+  useEffect(() => {
+    if (!activeVault) return;
+    try {
+      const normKey = normalizePath(activeVault);
+      const raw =
+        localStorage.getItem(`urano_tabs_${normKey}`) ||
+        localStorage.getItem(`urano_tabs_${activeVault}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setTabs(parsed);
+          const matchingTab = activeFile
+            ? parsed.find((t: TabItem) => isSamePath(t.filePath, activeFile))
+            : undefined;
+          if (matchingTab) {
+            setActiveTabId(matchingTab.id);
+          } else {
+            setActiveTabId(parsed[parsed.length - 1].id);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error al restaurar pestañas desde localStorage:', e);
+    }
+  }, [activeVault]);
+
+  // Save tabs to localStorage per vault with normalized key
+  useEffect(() => {
+    if (!activeVault) return;
+    try {
+      const normKey = normalizePath(activeVault);
+      if (tabs.length > 0) {
+        localStorage.setItem(`urano_tabs_${normKey}`, JSON.stringify(tabs));
+      } else {
+        localStorage.removeItem(`urano_tabs_${normKey}`);
+      }
+    } catch {}
+  }, [tabs, activeVault]);
+
+  // Ensure activeTabId points to a valid tab when tabs exist
+  useEffect(() => {
+    if (tabs.length > 0 && (!activeTabId || !tabs.some((t) => t.id === activeTabId))) {
+      setActiveTabId(tabs[tabs.length - 1].id);
+    }
+  }, [tabs, activeTabId]);
+
+  // Bidirectional sync: keep activeFile and activeTab in sync
+  useEffect(() => {
+    if (!activeTab || !activeTab.filePath || activeTab.type === 'graph') return;
+    if (!activeFile || !isSamePath(activeFile, activeTab.filePath)) {
+      const resolved = resolveFilePathInVault(activeTab.filePath, fileTree, activeVault);
+      selectFile(resolved || activeTab.filePath);
+    }
+  }, [activeTab, activeFile, fileTree, activeVault, selectFile]);
 
   // Listen for refresh tree events (e.g. toggling detectAllFileExtensions)
   useEffect(() => {
@@ -424,7 +491,7 @@ const MainApp: React.FC = () => {
         : t('common.untitled'));
 
     // Which leaf hosts this file?
-    const existing = tabs.find((t) => t.filePath === activeFile);
+    const existing = tabs.find((t) => isSamePath(t.filePath, activeFile));
     const reusable =
       !existing && reuseActiveTab ? tabs.find((t) => t.id === activeTabId) : undefined;
 
@@ -911,27 +978,30 @@ const MainApp: React.FC = () => {
 
   // Clean title of the active note (file name without extension)
   const activeFileTitle = useMemo(() => {
-    if (!activeFile) return '';
-    const rel = getRelativeVaultPath(activeFile, activeVault || '');
+    const target = activeFile || activeTab?.filePath;
+    if (!target) return activeTab?.title || '';
+    const rel = getRelativeVaultPath(target, activeVault || '');
     const parts = rel.split('/').filter(Boolean);
     const fileName = parts.pop() || '';
-    return fileName.replace(/\.(md|canvas|base)$/i, '') || fileName;
-  }, [activeFile, activeVault]);
+    return fileName.replace(/\.(md|canvas|base)$/i, '') || fileName || activeTab?.title || '';
+  }, [activeFile, activeTab, activeVault]);
 
   // Folder breadcrumb of the active note (relative to the vault root)
   const activeParentPath = useMemo(() => {
-    if (!activeFile) return [];
-    return getRelativeVaultFolderSegments(activeFile, activeVault || '');
-  }, [activeFile, activeVault]);
+    const target = activeFile || activeTab?.filePath;
+    if (!target) return [];
+    return getRelativeVaultFolderSegments(target, activeVault || '');
+  }, [activeFile, activeTab, activeVault]);
 
   // Compute backlinks count for the active file
   const backlinksCount = useMemo(() => {
-    if (!activeFileName) return 0;
-    const base = activeFileName.replace(/\.(md|canvas|base)$/i, '').toLowerCase();
+    const targetName = activeFileName || (activeTab?.title ? `${activeTab.title}.md` : '');
+    if (!targetName) return 0;
+    const base = targetName.replace(/\.(md|canvas|base)$/i, '').toLowerCase();
     let count = 0;
 
     for (const [path, content] of Object.entries(notesContentMap)) {
-      if (path === activeFile) continue;
+      if (isSamePath(path, activeFile || activeTab?.filePath)) continue;
       const regex = /\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g;
       let m;
       while ((m = regex.exec(content)) !== null) {
@@ -942,7 +1012,7 @@ const MainApp: React.FC = () => {
       }
     }
     return count;
-  }, [activeFile, activeFileName, notesContentMap]);
+  }, [activeFile, activeFileName, activeTab, notesContentMap]);
 
   // Registered commands for Command Palette (Ctrl+P) extracted from Urano
   const paletteCommands: CommandItem[] = [
@@ -1388,23 +1458,30 @@ const MainApp: React.FC = () => {
 
           {/* Tab Content Canvas */}
           <div className="flex-1 overflow-hidden relative">
-            {activeTabId === 'workspace-graph-view' ? (
+            {activeTabId === 'workspace-graph-view' || activeTab?.type === 'graph' ? (
               <GraphView onSelectNote={(path: string) => selectFile(path)} />
-            ) : activeFile?.endsWith('.canvas') ? (
-              <CanvasView filePath={activeFile} />
-            ) : activeFile?.endsWith('.base') ? (
-              <BaseView filePath={activeFile} />
-            ) : activeFile && isImagePath(activeFile) ? (
-              <ImageView filePath={activeFile} />
-            ) : activeFile ? (
-              <EditorErrorBoundary noteName={activeFileName || t('common.untitled')}>
-                <Editor
-                  onWikilinkClick={handleWikilinkClick}
-                  onOpenInNewTab={handleOpenInNewTab}
-                  onOpenToRight={handleOpenInNewTab}
-                  viewMode={viewMode}
-                />
-              </EditorErrorBoundary>
+            ) : activeFile?.endsWith('.canvas') || activeTab?.type === 'canvas' ? (
+              <CanvasView filePath={activeFile || activeTab?.filePath || ''} />
+            ) : activeFile?.endsWith('.base') || activeTab?.type === 'base' ? (
+              <BaseView filePath={activeFile || activeTab?.filePath || ''} />
+            ) : (activeFile && isImagePath(activeFile)) || activeTab?.type === 'image' ? (
+              <ImageView filePath={activeFile || activeTab?.filePath || ''} />
+            ) : activeFile || (activeTab && activeTab.type === 'note') ? (
+              isLoading && !activeFile ? (
+                <div className="flex-1 h-full flex flex-col items-center justify-center text-urano-muted p-8 text-center bg-urano-bg">
+                  <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-4" />
+                  <p className="text-sm text-urano-muted">{t('common.loading') || 'Cargando...'}</p>
+                </div>
+              ) : (
+                <EditorErrorBoundary noteName={activeFileName || activeTab?.title || t('common.untitled')}>
+                  <Editor
+                    onWikilinkClick={handleWikilinkClick}
+                    onOpenInNewTab={handleOpenInNewTab}
+                    onOpenToRight={handleOpenInNewTab}
+                    viewMode={viewMode}
+                  />
+                </EditorErrorBoundary>
+              )
             ) : (
               <div className="flex-1 h-full flex flex-col items-center justify-center text-urano-muted p-8 text-center bg-urano-bg">
                 <UranoLogo size={56} className="mb-4 opacity-80" />
