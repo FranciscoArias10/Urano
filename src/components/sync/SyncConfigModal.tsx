@@ -50,7 +50,7 @@ function richText(template: string, parts: Record<string, React.ReactNode>): Rea
 
 type VaultSyncState = 'syncing' | 'synced' | 'pending' | 'conflict' | 'offline' | 'error';
 
-/** Obsidian-style switch (40×22 track, 18 px thumb); the settings `Toggle` CSS is scoped to the
+/** Urano-style switch (40×22 track, 18 px thumb); the settings `Toggle` CSS is scoped to the
  *  settings modal, so the Drive panel carries its own. */
 const Switch: React.FC<{ value: boolean; onChange: (value: boolean) => void; ariaLabel: string }> = ({
   value,
@@ -236,18 +236,18 @@ export const SyncConfigModal: React.FC = () => {
         role="dialog"
         aria-modal="true"
         aria-label={t('sync.config.title')}
-        className="bg-obsidian-sidebar border border-obsidian-border rounded-xl w-full max-w-lg max-h-[85vh] shadow-2xl overflow-hidden flex flex-col"
+        className="bg-urano-sidebar border border-urano-border rounded-xl w-full max-w-lg max-h-[85vh] shadow-2xl overflow-hidden flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-obsidian-border bg-obsidian-bg/50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-urano-border bg-urano-bg/50">
           <div className="flex items-center gap-2">
             <FolderSync className="w-5 h-5 text-orange-400" />
-            <h2 className="text-base font-semibold text-obsidian-text">{t('sync.config.title')}</h2>
+            <h2 className="text-base font-semibold text-urano-text">{t('sync.config.title')}</h2>
           </div>
           <button
             type="button"
             onClick={close}
-            className="text-obsidian-muted hover:text-obsidian-text p-1 rounded-md transition-colors cursor-pointer"
+            className="text-urano-muted hover:text-urano-text p-1 rounded-md transition-colors cursor-pointer"
             aria-label={t('common.close')}
           >
             <X className="w-4 h-4" />
@@ -272,7 +272,7 @@ export const SyncConfigModal: React.FC = () => {
                   </div>
                 )}
                 <div className="min-w-0">
-                  <div className="text-obsidian-text font-medium text-[13px] truncate">{user.name}</div>
+                  <div className="text-urano-text font-medium text-[13px] truncate">{user.name}</div>
                   <div className="text-emerald-400 text-[11px] truncate">{user.email}</div>
                 </div>
               </div>
@@ -286,11 +286,11 @@ export const SyncConfigModal: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg text-obsidian-text flex items-start gap-2.5">
+              <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg text-urano-text flex items-start gap-2.5">
                 <ShieldCheck className="w-5 h-5 text-orange-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-medium text-obsidian-text">{t('sync.config.privacyTitle')}</span>
-                  <p className="text-[11px] text-obsidian-muted mt-0.5">
+                  <span className="font-medium text-urano-text">{t('sync.config.privacyTitle')}</span>
+                  <p className="text-[11px] text-urano-muted mt-0.5">
                     {richText(t('sync.config.privacyBody'), {
                       scope: (
                         <code className="text-orange-300 bg-orange-950/40 px-1 py-0.5 rounded">drive.file</code>
@@ -315,20 +315,20 @@ export const SyncConfigModal: React.FC = () => {
             <>
               {/* Section 1 — current local vault */}
               <section>
-                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-obsidian-muted mb-2">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-urano-muted mb-2">
                   {t('sync.config.localVault.title')}
                 </h3>
-                <div className="rounded-lg border border-obsidian-border bg-obsidian-bg p-3.5 space-y-3">
+                <div className="rounded-lg border border-urano-border bg-urano-bg p-3.5 space-y-3">
                   {activeVault ? (
                     <>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="p-2 rounded bg-obsidian-sidebar text-orange-400 shrink-0">
+                          <div className="p-2 rounded bg-urano-sidebar text-orange-400 shrink-0">
                             <Vault size={18} />
                           </div>
                           <div className="min-w-0">
-                            <div className="text-[13px] font-medium text-obsidian-text truncate">{vaultName}</div>
-                            <div className="text-[11px] text-obsidian-muted truncate" title={activeVault}>
+                            <div className="text-[13px] font-medium text-urano-text truncate">{vaultName}</div>
+                            <div className="text-[11px] text-urano-muted truncate" title={activeVault}>
                               {activeVault}
                             </div>
                           </div>
@@ -343,11 +343,11 @@ export const SyncConfigModal: React.FC = () => {
 
                       {isSyncing ? (
                         <div className="space-y-1.5">
-                          <div className="flex items-center justify-between text-[11px] text-obsidian-muted">
+                          <div className="flex items-center justify-between text-[11px] text-urano-muted">
                             <span className="truncate">{describeProgress(t, progress)}</span>
                             {percent !== null && <span className="font-mono shrink-0 ml-2">{percent}%</span>}
                           </div>
-                          <div className="h-1.5 rounded-full bg-obsidian-sidebar overflow-hidden">
+                          <div className="h-1.5 rounded-full bg-urano-sidebar overflow-hidden">
                             <div
                               className={`h-full rounded-full bg-[var(--interactive-accent)] transition-[width] duration-200 ${
                                 percent === null ? 'w-1/3 animate-pulse' : ''
@@ -356,12 +356,12 @@ export const SyncConfigModal: React.FC = () => {
                             />
                           </div>
                           {progress?.file && (
-                            <div className="text-[11px] text-obsidian-faint truncate font-mono">{progress.file}</div>
+                            <div className="text-[11px] text-urano-faint truncate font-mono">{progress.file}</div>
                           )}
                         </div>
                       ) : (
                         <div className="space-y-1">
-                          <div className="text-[11px] text-obsidian-muted">
+                          <div className="text-[11px] text-urano-muted">
                             {lastSynced
                               ? t('sync.config.lastSynced', { time: lastSynced })
                               : t('sync.config.neverSynced')}
@@ -378,14 +378,14 @@ export const SyncConfigModal: React.FC = () => {
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between gap-3 pt-3 border-t border-obsidian-border">
+                      <div className="flex items-center justify-between gap-3 pt-3 border-t border-urano-border">
                         <div className="flex items-center gap-2.5">
                           <Switch
                             value={autoSyncEnabled}
                             onChange={setAutoSyncEnabled}
                             ariaLabel={t('sync.config.autoSync')}
                           />
-                          <span className="text-obsidian-text">{t('sync.config.autoSync')}</span>
+                          <span className="text-urano-text">{t('sync.config.autoSync')}</span>
                         </div>
                         <button
                           type="button"
@@ -399,7 +399,7 @@ export const SyncConfigModal: React.FC = () => {
                       </div>
                     </>
                   ) : (
-                    <div className="py-4 text-center text-obsidian-muted">{t('sync.config.localVault.none')}</div>
+                    <div className="py-4 text-center text-urano-muted">{t('sync.config.localVault.none')}</div>
                   )}
                 </div>
               </section>
@@ -407,29 +407,29 @@ export const SyncConfigModal: React.FC = () => {
               {/* Section 2 — vaults in Google Drive */}
               <section>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-[11px] font-semibold uppercase tracking-wide text-obsidian-muted">
+                  <h3 className="text-[11px] font-semibold uppercase tracking-wide text-urano-muted">
                     {t('sync.config.remote.title')}
                   </h3>
                   <button
                     type="button"
                     onClick={() => void fetchRemoteVaults()}
                     disabled={isLoadingVaults}
-                    className="p-1 rounded text-obsidian-muted hover:text-obsidian-text hover:bg-obsidian-hover transition-colors cursor-pointer disabled:opacity-50"
+                    className="p-1 rounded text-urano-muted hover:text-urano-text hover:bg-urano-hover transition-colors cursor-pointer disabled:opacity-50"
                     title={t('common.refresh')}
                     aria-label={t('common.refresh')}
                   >
                     <RefreshCw size={13} className={isLoadingVaults ? 'animate-spin text-orange-400' : ''} />
                   </button>
                 </div>
-                <div className="rounded-lg border border-obsidian-border bg-obsidian-bg p-2 max-h-[220px] overflow-y-auto flex flex-col gap-1.5">
+                <div className="rounded-lg border border-urano-border bg-urano-bg p-2 max-h-[220px] overflow-y-auto flex flex-col gap-1.5">
                   {isLoadingVaults && remoteVaults.length === 0 ? (
-                    <div className="py-8 flex flex-col items-center justify-center gap-2 text-obsidian-muted">
+                    <div className="py-8 flex flex-col items-center justify-center gap-2 text-urano-muted">
                       <Loader2 size={22} className="animate-spin text-orange-400" />
                       <span>{t('vaultManager.remote.loading')}</span>
                     </div>
                   ) : remoteVaults.length === 0 ? (
-                    <div className="py-6 text-center text-obsidian-muted flex flex-col items-center gap-2">
-                      <Cloud size={26} className="text-obsidian-faint" />
+                    <div className="py-6 text-center text-urano-muted flex flex-col items-center gap-2">
+                      <Cloud size={26} className="text-urano-faint" />
                       <p>{t('sync.config.remote.empty')}</p>
                     </div>
                   ) : (
@@ -442,15 +442,15 @@ export const SyncConfigModal: React.FC = () => {
                           className={`flex items-center justify-between gap-3 px-3 py-2.5 rounded-md border transition-colors ${
                             connected
                               ? 'border-[var(--color-green)]/30 bg-[var(--color-green)]/5'
-                              : 'border-obsidian-border bg-obsidian-sidebar hover:border-orange-500/40'
+                              : 'border-urano-border bg-urano-sidebar hover:border-orange-500/40'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <Folder size={16} className="text-orange-400 shrink-0" />
                             <div className="min-w-0">
-                              <div className="text-[13px] font-medium text-obsidian-text truncate">{rv.name}</div>
+                              <div className="text-[13px] font-medium text-urano-text truncate">{rv.name}</div>
                               {rv.modified_time && (
-                                <div className="text-[11px] text-obsidian-muted">
+                                <div className="text-[11px] text-urano-muted">
                                   {t('vaultManager.remote.modified', {
                                     time: new Date(rv.modified_time).toLocaleString([], {
                                       dateStyle: 'medium',
@@ -471,7 +471,7 @@ export const SyncConfigModal: React.FC = () => {
                               type="button"
                               disabled={Boolean(downloadingId) || isSyncing}
                               onClick={() => void handleDownload(rv)}
-                              className="inline-flex items-center gap-1.5 bg-[var(--interactive-normal)] hover:bg-[var(--interactive-hover)] border border-obsidian-border text-obsidian-text font-medium rounded px-2.5 py-1.5 transition-colors cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="inline-flex items-center gap-1.5 bg-[var(--interactive-normal)] hover:bg-[var(--interactive-hover)] border border-urano-border text-urano-text font-medium rounded px-2.5 py-1.5 transition-colors cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {downloading ? (
                                 <>
@@ -491,7 +491,7 @@ export const SyncConfigModal: React.FC = () => {
                     })
                   )}
                 </div>
-                <p className="mt-2 text-[11px] text-obsidian-faint">
+                <p className="mt-2 text-[11px] text-urano-faint">
                   {t('sync.config.remote.hint', { folder: 'Urano Vaults' })}
                 </p>
               </section>

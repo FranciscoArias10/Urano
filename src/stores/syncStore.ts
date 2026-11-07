@@ -13,7 +13,7 @@ import {
 import { t, hasTranslation } from '../locales/i18n';
 
 /**
- * Google Drive sync state (Obsidian-like "Sync" core plugin backed by Drive API v3).
+ * Google Drive sync state (Urano-like "Sync" core plugin backed by Drive API v3).
  *
  * - Credentials: the OAuth client lives only in the Rust backend (`.env` or the built-in
  *   client); the UI never asks the user for a client id / secret.
