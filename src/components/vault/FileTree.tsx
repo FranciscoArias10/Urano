@@ -319,7 +319,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
           }}
         >
           {items.map((item) => (
-            <FileTreeItem key={item.path} item={item} depth={depth} />
+            <FileTreeItem key={normalizePath(item.path)} item={item} depth={depth} />
           ))}
         </div>
 
@@ -388,7 +388,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
     items: MenuItemData[];
   } | null>(null);
 
-  const isSelected = isSamePath(activeFile, item.path);
+  const isSelected = !item.isDir && Boolean(activeFile) && isSamePath(item.path, activeFile);
 
   // Auto-reveal: expand parents and scroll into view when active
   useEffect(() => {
@@ -674,9 +674,10 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           isDragTarget ? 'bg-orange-500/20 ring-1 ring-orange-500' : ''
         } ${
           isSelected
-            ? 'bg-urano-active text-urano-text font-medium rounded-md'
+            ? 'is-active bg-urano-active text-urano-text font-medium rounded-md'
             : 'text-urano-text hover:bg-urano-hover rounded-md'
         }`}
+        aria-selected={isSelected ? 'true' : 'false'}
       >
         <div className="flex items-center gap-1.5 flex-1 min-w-0 mr-1">
           {item.isDir ? (
@@ -739,7 +740,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
       {item.isDir && isOpen && item.children && item.children.length > 0 && (
         <div className="nav-folder-children">
           {item.children.map((child) => (
-            <FileTreeItem key={child.path} item={child} depth={depth + 1} />
+            <FileTreeItem key={normalizePath(child.path)} item={child} depth={depth + 1} />
           ))}
         </div>
       )}
