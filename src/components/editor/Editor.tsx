@@ -428,7 +428,7 @@ export const Editor: React.FC<EditorProps> = ({
 
   // Silent automatic save with 1.2s debounce (Urano 1:1)
   useEffect(() => {
-    if (!isDirty || !activeFile) return;
+    if (!isDirty || !activeFile || !activeFile.trim()) return;
     const timer = setTimeout(() => {
       saveCurrentFile();
     }, 1200);
@@ -886,11 +886,12 @@ export const Editor: React.FC<EditorProps> = ({
 
   // Handle .inline-title keyboard events (Enter / Tab / ArrowDown / Escape)
   const handleTitleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!activeFile || !activeFile.trim()) return;
     if (e.key === 'Enter' || e.key === 'Tab' || e.key === 'ArrowDown') {
       e.preventDefault();
       const newTitle = draftTitle.trim();
 
-      if (newTitle && newTitle !== cleanTitle && activeFile) {
+      if (newTitle && newTitle !== cleanTitle) {
         const result = await renameNoteWithLinkRefactor(activeFile, newTitle);
         if (!result.success) {
           showNotice(result.error || t('editor.notices.invalidFileName'), 4000, 'error');
@@ -918,13 +919,14 @@ export const Editor: React.FC<EditorProps> = ({
 
   // Handle .inline-title onBlur (auto-commit rename)
   const handleTitleBlur = async () => {
+    if (!activeFile || !activeFile.trim()) return;
     const newTitle = draftTitle.trim();
     if (!newTitle) {
       setDraftTitle(cleanTitle);
       return;
     }
 
-    if (newTitle !== cleanTitle && activeFile) {
+    if (newTitle !== cleanTitle) {
       const result = await renameNoteWithLinkRefactor(activeFile, newTitle);
       if (!result.success) {
         showNotice(result.error || t('editor.notices.invalidFileName'), 4000, 'error');
