@@ -46,6 +46,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 }) => {
   const t = useT();
   const fileContent = useVaultStore((s) => s.fileContent);
+  const activeFile = useVaultStore((s) => s.activeFile);
   const activeVault = useVaultStore((s) => s.activeVault);
   const vaultName = useVaultStore((s) => s.vaultName);
   const status = useSyncStore((s) => s.status);
@@ -274,25 +275,31 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 
   return (
     <div className="status-bar" role="status" aria-label="Status Bar">
-      {/* 1. Backlinks item */}
-      <button
-        type="button"
-        onClick={onToggleBacklinks}
-        className="status-bar-item mod-clickable"
-        title={t('statusBar.toggleBacklinks')}
-      >
-        {t('statusBar.backlinks', { count: backlinksCount })}
-      </button>
+      {/* 1. Backlinks item (only when file is open) */}
+      {activeFile && (
+        <button
+          type="button"
+          onClick={onToggleBacklinks}
+          className="status-bar-item mod-clickable"
+          title={t('statusBar.toggleBacklinks')}
+        >
+          {t('statusBar.backlinks', { count: backlinksCount })}
+        </button>
+      )}
 
-      {/* 2. Word count */}
-      <div className="status-bar-item" title={t('statusBar.words', { count: words })}>
-        {t('statusBar.words', { count: words })}
-      </div>
+      {/* 2. Word count (only when file is open) */}
+      {activeFile && (
+        <div className="status-bar-item" title={t('statusBar.words', { count: words })}>
+          {t('statusBar.words', { count: words })}
+        </div>
+      )}
 
-      {/* 3. Character count */}
-      <div className="status-bar-item" title={t('statusBar.characters', { count: chars })}>
-        {t('statusBar.characters', { count: chars })}
-      </div>
+      {/* 3. Character count (only when file is open) */}
+      {activeFile && (
+        <div className="status-bar-item" title={t('statusBar.characters', { count: chars })}>
+          {t('statusBar.characters', { count: chars })}
+        </div>
+      )}
 
       {/* 4. Live sync progress (if any) */}
       {syncMessage && (
@@ -322,8 +329,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         </span>
       </button>
 
-      {/* 6. Editor status icon (far right) */}
-      {showEditorStatus && (
+      {/* 6. Editor status icon (far right, only when file is open) */}
+      {activeFile && showEditorStatus && (
         <button
           ref={editorButtonRef}
           type="button"
