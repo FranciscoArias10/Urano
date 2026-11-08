@@ -31,6 +31,13 @@ html, body, #root, button, input, select, textarea, .view-header, .workspace-tab
   --font-text-size: 16px;
   --file-line-width: 700px;
   --editor-tab-size: 4;
+  --indentation-guide-width: var(--border-width, 1px);
+  --indentation-guide-width-active: var(--border-width, 1px);
+  --indentation-guide-color: rgba(255, 255, 255, 0.12);
+  --indentation-guide-color-active: rgba(255, 255, 255, 0.3);
+  --indentation-guide-editing-indent: 0.85em;
+  --indentation-guide-reading-indent: -0.85em;
+  --indentation-guide-source-indent: 0.25em;
 
 
   --font-default: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -232,6 +239,8 @@ body.theme-dark {
 .theme-light,
 body.theme-light {
   color-scheme: light;
+  --indentation-guide-color: rgba(0, 0, 0, 0.08);
+  --indentation-guide-color-active: rgba(0, 0, 0, 0.2);
   --highlight-mix-blend-mode: darken;
   --mono-0: white;
   --mono-100: black;
@@ -2822,7 +2831,9 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   justify-content: flex-end;
 }
 
-/* CodeMirror 6 Indentation Guides */
+/* ========================================================
+   Indentation Guides — 1:1 con Obsidian
+   ======================================================== */
 .cm-indent-guide {
   background-image: linear-gradient(
     to right,
@@ -2831,6 +2842,53 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   );
   background-size: calc(var(--editor-tab-size, 4) * 1ch) 100%;
   background-repeat: repeat-x;
+}
+
+/* Reading View indentation guides for nested lists */
+.show-indentation-guides .markdown-preview-view ul ul,
+.show-indentation-guides .markdown-preview-view ol ol,
+.show-indentation-guides .markdown-preview-view ul ol,
+.show-indentation-guides .markdown-preview-view ol ul,
+.show-indentation-guides .markdown-rendered ul ul,
+.show-indentation-guides .markdown-rendered ol ol,
+.show-indentation-guides .markdown-rendered ul ol,
+.show-indentation-guides .markdown-rendered ol ul,
+.show-indentation-guide .markdown-rendered ul ul,
+.show-indentation-guide .markdown-rendered ol ol,
+.show-indentation-guide .markdown-rendered ul ol,
+.show-indentation-guide .markdown-rendered ol ul,
+.markdown-rendered.show-indentation-guide li > ul,
+.markdown-rendered.show-indentation-guide li > ol {
+  position: relative;
+  border-left: var(--indentation-guide-width, 1px) solid var(--indentation-guide-color);
+  margin-left: 1.2em;
+  padding-left: 0.8em;
+}
+
+.markdown-rendered.show-indentation-guide li > ul::before,
+.markdown-rendered.show-indentation-guide li > ol::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: var(--indentation-guide-reading-indent, -0.85em);
+  top: 0;
+  bottom: 0;
+  border-inline-end: var(--indentation-guide-width, 1px) solid var(--indentation-guide-color);
+}
+
+.show-indentation-guides .markdown-rendered-li.is-nested-list-item,
+.show-indentation-guide .markdown-rendered-li.is-nested-list-item {
+  position: relative;
+}
+
+.show-indentation-guides .markdown-rendered-li.is-nested-list-item::before,
+.show-indentation-guide .markdown-rendered-li.is-nested-list-item::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--nest-level, 1) * 20px - 10px);
+  top: 0;
+  bottom: 0;
+  width: var(--indentation-guide-width, 1px);
+  background-color: var(--indentation-guide-color);
 }
 
 
