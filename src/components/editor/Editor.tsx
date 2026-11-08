@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { EditorState, Compartment, RangeSetBuilder } from '@codemirror/state';
+import { EditorState, Compartment, RangeSetBuilder, Prec } from '@codemirror/state';
 import {
   EditorView,
   keymap,
@@ -9,7 +9,7 @@ import {
   DecorationSet,
   ViewUpdate,
 } from '@codemirror/view';
-import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
+import { defaultKeymap, history, historyKeymap, indentMore, indentLess } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
 import { indentUnit, codeFolding, foldGutter, foldService } from '@codemirror/language';
 import { closeBrackets } from '@codemirror/autocomplete';
@@ -130,11 +130,17 @@ export const Editor: React.FC<EditorProps> = ({
   const foldHeading = useSettingsStore((st) => st.settings.foldHeading);
   const foldIndent = useSettingsStore((st) => st.settings.foldIndent);
   const readableLineLength = useSettingsStore((st) => st.settings.readableLineLength);
-  const indentGuides = useSettingsStore((st) => st.settings.indentGuides);
+  const showIndentationGuides = useSettingsStore(
+    (st) => st.settings.showIndentationGuides ?? st.settings.indentGuides
+  );
   const rightToLeft = useSettingsStore((st) => st.settings.rightToLeft);
   const tabSize = useSettingsStore((st) => st.settings.tabSize);
-  const useTabs = useSettingsStore((st) => st.settings.useTabs);
-  const smartIndent = useSettingsStore((st) => st.settings.smartIndent);
+  const indentUsingTabs = useSettingsStore(
+    (st) => st.settings.indentUsingTabs ?? st.settings.useTabs
+  );
+  const smartIndentLists = useSettingsStore(
+    (st) => st.settings.smartIndentLists ?? st.settings.smartIndent
+  );
   const spellcheck = useSettingsStore((st) => st.settings.spellcheck);
   const language = useSettingsStore((st) => st.settings.language);
   const customDictionary = useSettingsStore((st) => st.settings.customDictionary);
@@ -229,15 +235,110 @@ export const Editor: React.FC<EditorProps> = ({
 
   const buildEditorSettingsExtensions = (s: {
     tabSize: number;
-    useTabs: boolean;
+    indentUsingTabs: boolean;
     spellcheck: boolean;
     language: string;
     autoPairBrackets: boolean;
     autoPairMarkdown: boolean;
-    smartIndent: boolean;
+    smartIndentLists: boolean;
   }) => [
     EditorState.tabSize.of(s.tabSize),
-    indentUnit.of(s.useTabs ? '\t' : ' '.repeat(s.tabSize)),
+    indentUnit.of(s.indentUsingTabs ? '\t' : ' '.repeat(s.tabSize)),
+    Prec.highest(
+      keymap.of([
+        {
+          key: 'Tab',
+          run: (view) => {
+            if (view.state.readOnly) return false;
+            if (view.state.selection.ranges.some((r) => !r.empty)) {
+              return indentMore(view);
+            }
+            const text = s.indentUsingTabs ? '\t' : ' '.repeat(s.tabSize);
+            view.dispatch(view.state.replaceSelection(text));
+            return true;
+          },
+        },
+        {
+          key: 'Shift-Tab',
+          run: (view) => {
+            if (view.state.readOnly) return false;
+            return indentLess(view);
+          },
+        },
+        {
+          key: 'Enter',
+          run: (view) => {
+            if (view.state.readOnly) return false;
+            const sel = view.state.selection.main;
+            if (sel.empty) {
+              const line = view.state.doc.lineAt(sel.head);
+              if (line.text.startsWith('```') && sel.head === line.to) {
+                if (line.number < view.state.doc.lines) {
+                  const nextLine = view.state.doc.line(line.number + 1);
+                  if (nextLine.text === '') {
+                    view.dispatch({
+                      selection: { anchor: nextLine.from, head: nextLine.from },
+                      scrollIntoView: true,
+                    });
+                    return true;
+                  }
+                }
+              }
+
+              if (s.smartIndentLists) {
+                const listMatch = line.text.match(
+                  /^(\s*)(?:([-*+]\s+\[[ xX]\]\s+)|([-*+]\s+)|((\d+)\.\s+))(.*)$/
+                );
+                if (listMatch) {
+                  const indent = listMatch[1];
+                  const taskMarker = listMatch[2];
+                  const bulletMarker = listMatch[3];
+                  const numMarker = listMatch[4];
+                  const numDigits = listMatch[5];
+                  const marker = taskMarker || bulletMarker || numMarker;
+                  const markerEnd = line.from + indent.length + marker.length;
+
+                  if (sel.head >= markerEnd) {
+                    const rest = listMatch[6];
+                    if (rest.trim() === '') {
+                      // Empty item: erase marker and break out of list
+                      view.dispatch({
+                        changes: { from: line.from, to: line.to, insert: '' },
+                        selection: { anchor: line.from },
+                        scrollIntoView: true,
+                      });
+                      return true;
+                    }
+
+                    let nextMarker = '';
+                    if (taskMarker) {
+                      const bulletChar = taskMarker.trim().charAt(0);
+                      nextMarker = `${bulletChar} [ ] `;
+                    } else if (bulletMarker) {
+                      nextMarker = bulletMarker;
+                    } else if (numMarker && numDigits) {
+                      const nextNum = parseInt(numDigits, 10) + 1;
+                      nextMarker = `${nextNum}. `;
+                    }
+
+                    if (nextMarker) {
+                      const insertText = '\n' + indent + nextMarker;
+                      view.dispatch({
+                        changes: { from: sel.from, to: sel.to, insert: insertText },
+                        selection: { anchor: sel.from + insertText.length },
+                        scrollIntoView: true,
+                      });
+                      return true;
+                    }
+                  }
+                }
+              }
+            }
+            return false;
+          },
+        },
+      ])
+    ),
     EditorView.contentAttributes.of({
       spellcheck: s.spellcheck ? 'true' : 'false',
       autocorrect: 'on',
@@ -494,7 +595,6 @@ export const Editor: React.FC<EditorProps> = ({
               return false;
             },
           },
-          indentWithTab,
           ...defaultKeymap,
           ...historyKeymap,
           {
@@ -529,19 +629,21 @@ export const Editor: React.FC<EditorProps> = ({
         readableLineLengthCompartment.current.of(
           buildReadableLineLengthExtension(readableLineLength)
         ),
-        indentGuidesCompartment.current.of(indentGuides ? [indentGuidesExtension] : []),
+        indentGuidesCompartment.current.of(
+          showIndentationGuides ? [indentGuidesExtension] : []
+        ),
         rtlCompartment.current.of(
           rightToLeft ? [EditorView.theme({ '&': { direction: 'rtl' } })] : []
         ),
         editorSettingsCompartment.current.of(
           buildEditorSettingsExtensions({
             tabSize,
-            useTabs,
+            indentUsingTabs,
             spellcheck,
             language,
             autoPairBrackets,
             autoPairMarkdown,
-            smartIndent,
+            smartIndentLists,
           })
         ),
         createImageDropPasteHandler(),
@@ -628,19 +730,21 @@ export const Editor: React.FC<EditorProps> = ({
         readableLineLengthCompartment.current.reconfigure(
           buildReadableLineLengthExtension(readableLineLength)
         ),
-        indentGuidesCompartment.current.reconfigure(indentGuides ? [indentGuidesExtension] : []),
+        indentGuidesCompartment.current.reconfigure(
+          showIndentationGuides ? [indentGuidesExtension] : []
+        ),
         rtlCompartment.current.reconfigure(
           rightToLeft ? [EditorView.theme({ '&': { direction: 'rtl' } })] : []
         ),
         editorSettingsCompartment.current.reconfigure(
           buildEditorSettingsExtensions({
             tabSize,
-            useTabs,
+            indentUsingTabs,
             spellcheck,
             language,
             autoPairBrackets,
             autoPairMarkdown,
-            smartIndent,
+            smartIndentLists,
           })
         ),
         triggerSpellCheckEffect.of(true),
@@ -652,11 +756,11 @@ export const Editor: React.FC<EditorProps> = ({
     foldHeading,
     foldIndent,
     readableLineLength,
-    indentGuides,
+    showIndentationGuides,
     rightToLeft,
     tabSize,
-    useTabs,
-    smartIndent,
+    indentUsingTabs,
+    smartIndentLists,
     spellcheck,
     language,
     autoPairBrackets,
@@ -2470,7 +2574,9 @@ export const Editor: React.FC<EditorProps> = ({
       data-properties-mode={propertiesInDocument}
       className={`flex-1 flex flex-col h-full bg-urano-bg overflow-hidden relative ${
         rightToLeft ? 'is-rtl' : ''
-      } properties-${propertiesInDocument}`}
+      } properties-${propertiesInDocument} ${
+        showIndentationGuides ? 'show-indentation-guides' : ''
+      }`}
     >
       {/* Clean Document Canvas */}
       <div className="flex-1 overflow-hidden relative flex flex-col">
@@ -2493,6 +2599,7 @@ export const Editor: React.FC<EditorProps> = ({
             showInlineTitle={showInlineTitle}
             readableLineLength={readableLineLength}
             strictLineBreaks={strictLineBreaks}
+            showIndentationGuides={showIndentationGuides}
             onWikilinkClick={onWikilinkClick}
             onTaskToggle={handleTaskToggle}
           />

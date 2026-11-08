@@ -580,6 +580,7 @@ export interface ReadingViewProps {
   showInlineTitle: boolean;
   readableLineLength: boolean;
   strictLineBreaks: boolean;
+  showIndentationGuides?: boolean;
   onWikilinkClick?: (noteName: string) => void;
   onTaskToggle?: (rawLineIndex: number, newChecked: boolean) => void;
 }
@@ -590,6 +591,7 @@ export const ReadingView: React.FC<ReadingViewProps> = ({
   showInlineTitle,
   readableLineLength,
   strictLineBreaks,
+  showIndentationGuides = true,
   onWikilinkClick,
   onTaskToggle,
 }) => {
@@ -678,7 +680,7 @@ export const ReadingView: React.FC<ReadingViewProps> = ({
       <div
         className={`markdown-preview-view markdown-rendered node-insert-event h-full w-full overflow-y-auto px-12 py-10 ${
           readableLineLength ? 'is-readable-line-width' : ''
-        }`}
+        } ${showIndentationGuides ? 'show-indentation-guide show-indentation-guides' : ''}`}
       >
         <div
           className={`markdown-preview-sizer markdown-preview-section ${
@@ -802,8 +804,16 @@ export const ReadingView: React.FC<ReadingViewProps> = ({
                     {block.items.map((item, ii) => (
                       <li
                         key={`${key}-l${ii}`}
-                        className="markdown-rendered-li flex items-start"
-                        style={{ paddingLeft: `${item.level * 20}px` }}
+                        className={`markdown-rendered-li flex items-start ${
+                          item.level > 0 ? 'is-nested-list-item' : ''
+                        }`}
+                        data-level={item.level}
+                        style={
+                          {
+                            paddingLeft: `${item.level * 20}px`,
+                            '--nest-level': item.level,
+                          } as React.CSSProperties
+                        }
                       >
                         {item.checked !== undefined ? (
                           <input
