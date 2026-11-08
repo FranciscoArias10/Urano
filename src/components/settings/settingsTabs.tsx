@@ -1066,11 +1066,11 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             id: 'indent-guides',
             name: t('editor.indentGuides'),
             desc: t('editor.indentGuidesDesc'),
-            aliases: ['guías', 'indentation guides'],
+            aliases: ['guías', 'indentation guides', 'show-indentation-guides'],
             control: (
               <Toggle
-                value={settings.indentGuides}
-                onChange={set('indentGuides')}
+                value={settings.showIndentationGuides}
+                onChange={set('showIndentationGuides')}
                 ariaLabel={t('editor.indentGuides')}
               />
             ),
@@ -1090,53 +1090,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
           },
         ],
       },
-      /* Tarjeta 3 — Sangría */
-      {
-        id: 'editor-indent',
-        heading: t('editor.indentation'),
-        items: [
-          {
-            id: 'use-tabs',
-            name: t('editor.useTabs'),
-            desc: t('editor.useTabsDesc'),
-            control: (
-              <Toggle
-                value={settings.useTabs}
-                onChange={set('useTabs')}
-                ariaLabel={t('editor.useTabs')}
-              />
-            ),
-          },
-          {
-            id: 'tab-size',
-            name: t('editor.tabSize'),
-            desc: t('editor.tabSizeDesc'),
-            aliases: ['tabulación', 'indent'],
-            control: (
-              <Dropdown
-                value={String(settings.tabSize)}
-                ariaLabel={t('editor.tabSize')}
-                options={['2', '3', '4', '6', '8'].map((v) => ({ value: v, label: v }))}
-                onChange={(v) => setSetting('tabSize', Number(v))}
-              />
-            ),
-          },
-          {
-            id: 'smart-indent',
-            name: t('editor.smartIndent'),
-            desc: t('editor.smartIndentDesc'),
-            aliases: ['sangrado inteligente', 'smart lists'],
-            control: (
-              <Toggle
-                value={settings.smartIndent}
-                onChange={set('smartIndent')}
-                ariaLabel={t('editor.smartIndent')}
-              />
-            ),
-          },
-        ],
-      },
-      /* Tarjeta 4 — Comportamiento */
+      /* Tarjeta 3 — Comportamiento */
       {
         id: 'editor-behavior',
         heading: t('editor.behavior'),
@@ -1178,6 +1132,62 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
                 onChange={set('autoPairMarkdown')}
                 ariaLabel={t('editor.autoPairMarkdown')}
               />
+            ),
+          },
+          {
+            id: 'smart-indent-lists',
+            name: t('editor.smartIndentLists'),
+            desc: t('editor.smartIndentListsDesc'),
+            aliases: ['sangrado inteligente', 'smart lists', 'smart-indent'],
+            control: (
+              <Toggle
+                value={settings.smartIndentLists}
+                onChange={set('smartIndentLists')}
+                ariaLabel={t('editor.smartIndentLists')}
+              />
+            ),
+          },
+          {
+            id: 'indent-using-tabs',
+            name: t('editor.useTabs'),
+            desc: t('editor.useTabsDesc', { tabSize: settings.tabSize }),
+            aliases: ['tabulaciones', 'tabs', 'use-tabs', 'tab'],
+            control: (
+              <Toggle
+                value={settings.indentUsingTabs}
+                onChange={set('indentUsingTabs')}
+                ariaLabel={t('editor.useTabs')}
+              />
+            ),
+          },
+          {
+            id: 'tab-size',
+            name: t('editor.tabSize'),
+            desc: t('editor.tabSizeDesc'),
+            aliases: ['tabulación', 'indent', 'tamaño'],
+            control: (
+              <div className="flex items-center gap-2">
+                {settings.tabSize !== 4 && (
+                  <button
+                    type="button"
+                    className="extra-setting-button clickable-icon flex items-center justify-center p-1 text-urano-muted hover:text-urano-text transition-colors"
+                    aria-label={t('editor.restoreDefaultTabSize')}
+                    title={t('editor.restoreDefaultTabSize')}
+                    onClick={() => setSetting('tabSize', 4)}
+                  >
+                    <RotateCcw size={15} />
+                  </button>
+                )}
+                <Slider
+                  value={settings.tabSize}
+                  min={2}
+                  max={8}
+                  step={1}
+                  format={(v) => `${v}`}
+                  onChange={(v) => setSetting('tabSize', v)}
+                  ariaLabel={t('editor.tabSize')}
+                />
+              </div>
             ),
           },
           {
