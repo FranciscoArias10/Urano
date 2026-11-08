@@ -97,10 +97,13 @@ export interface UranoSettings {
   foldIndent: boolean;
   showLineNumbers: boolean;
   indentGuides: boolean;
+  showIndentationGuides: boolean;
   rightToLeft: boolean;
   useTabs: boolean;
+  indentUsingTabs: boolean;
   tabSize: number;
   smartIndent: boolean;
+  smartIndentLists: boolean;
   autoPairBrackets: boolean;
   autoPairMarkdown: boolean;
   autoConvertHtml: boolean;
@@ -198,10 +201,13 @@ export const DEFAULT_SETTINGS: UranoSettings = {
   foldIndent: true,
   showLineNumbers: false,
   indentGuides: true,
+  showIndentationGuides: true,
   rightToLeft: false,
   useTabs: true,
+  indentUsingTabs: true,
   tabSize: 4,
   smartIndent: true,
+  smartIndentLists: true,
   autoPairBrackets: true,
   autoPairMarkdown: true,
   autoConvertHtml: true,
@@ -382,7 +388,11 @@ function mergeSettings(raw: unknown): UranoSettings {
   } else {
     out.zoomLevel = 100;
   }
-  out.tabSize = [2, 3, 4, 6, 8].includes(out.tabSize) ? out.tabSize : 4;
+  if (typeof src?.tabSize === 'number') {
+    out.tabSize = Math.min(8, Math.max(2, Math.round(src.tabSize)));
+  } else {
+    out.tabSize = 4;
+  }
   out.defaultViewMode = src?.defaultViewMode === 'preview' ? 'preview' : 'source';
   out.livePreview = src?.livePreview !== undefined ? Boolean(src.livePreview) : true;
   out.showEditorStatus = src?.showEditorStatus !== undefined ? Boolean(src.showEditorStatus) : true;
@@ -392,10 +402,20 @@ function mergeSettings(raw: unknown): UranoSettings {
   out.foldHeading = src?.foldHeading !== undefined ? Boolean(src.foldHeading) : true;
   out.foldIndent = src?.foldIndent !== undefined ? Boolean(src.foldIndent) : true;
   out.showLineNumbers = src?.showLineNumbers !== undefined ? Boolean(src.showLineNumbers) : false;
-  out.indentGuides = src?.indentGuides !== undefined ? Boolean(src.indentGuides) : true;
+
+  const rawGuides = src?.showIndentationGuides ?? src?.indentGuides;
+  out.showIndentationGuides = rawGuides !== undefined ? Boolean(rawGuides) : true;
+  out.indentGuides = out.showIndentationGuides;
+
   out.rightToLeft = Boolean(src?.rightToLeft);
-  out.useTabs = src?.useTabs !== undefined ? Boolean(src.useTabs) : true;
-  out.smartIndent = src?.smartIndent !== undefined ? Boolean(src.smartIndent) : true;
+
+  const rawTabs = src?.indentUsingTabs ?? src?.useTabs;
+  out.indentUsingTabs = rawTabs !== undefined ? Boolean(rawTabs) : true;
+  out.useTabs = out.indentUsingTabs;
+
+  const rawSmartIndent = src?.smartIndentLists ?? src?.smartIndent;
+  out.smartIndentLists = rawSmartIndent !== undefined ? Boolean(rawSmartIndent) : true;
+  out.smartIndent = out.smartIndentLists;
   out.autoPairBrackets = src?.autoPairBrackets !== undefined ? Boolean(src.autoPairBrackets) : true;
   out.autoPairMarkdown = src?.autoPairMarkdown !== undefined ? Boolean(src.autoPairMarkdown) : true;
   out.autoConvertHtml = src?.autoConvertHtml !== undefined ? Boolean(src.autoConvertHtml) : true;
@@ -505,6 +525,7 @@ if (typeof window !== 'undefined') {
   if (initialSettings.zoomLevel !== 100) {
     document.body.style.zoom = String(zoomFactor);
   }
+  document.documentElement.style.setProperty('--editor-tab-size', String(initialSettings.tabSize || 4));
 }
 
 export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
@@ -574,6 +595,27 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     }
     if (key === 'deletedFilesDestination') {
       next.trashOption = value === 'trash' ? 'local' : value === 'permanent' ? 'none' : 'system';
+    }
+    if (key === 'showIndentationGuides') {
+      next.indentGuides = Boolean(value);
+    } else if (key === 'indentGuides') {
+      next.showIndentationGuides = Boolean(value);
+    }
+    if (key === 'smartIndentLists') {
+      next.smartIndent = Boolean(value);
+    } else if (key === 'smartIndent') {
+      next.smartIndentLists = Boolean(value);
+    }
+    if (key === 'indentUsingTabs') {
+      next.useTabs = Boolean(value);
+    } else if (key === 'useTabs') {
+      next.indentUsingTabs = Boolean(value);
+    }
+    if (key === 'tabSize') {
+      next.tabSize = Math.min(8, Math.max(2, Math.round(Number(value) || 4)));
+      if (typeof document !== 'undefined') {
+        document.documentElement.style.setProperty('--editor-tab-size', String(next.tabSize));
+      }
     }
 
     writeLocalSettings(next);
