@@ -345,3 +345,79 @@ export const HOTKEY_CATALOG: HotkeyCommand[] = [
 export const DEFAULT_HOTKEYS: Record<string, string[]> = Object.fromEntries(
   HOTKEY_CATALOG.map((cmd) => [cmd.id, cmd.defaultHotkeys])
 );
+
+export function parseHotkeyStr(str: string) {
+  const parts = str.split('+').map((s) => s.trim().toLowerCase());
+  const hasCtrl = parts.includes('ctrl') || parts.includes('mod');
+  const hasAlt = parts.includes('alt');
+  const hasShift = parts.includes('shift');
+  const hasMeta = parts.includes('meta') || parts.includes('cmd');
+  const keyPart = parts.find((p) => !['ctrl', 'mod', 'alt', 'shift', 'meta', 'cmd'].includes(p)) || '';
+  return { hasCtrl, hasAlt, hasShift, hasMeta, keyPart };
+}
+
+export function matchesHotkey(e: KeyboardEvent, hotkeyStr: string): boolean {
+  if (!hotkeyStr) return false;
+  const target = parseHotkeyStr(hotkeyStr);
+  const eCtrl = Boolean(e.ctrlKey || e.metaKey);
+  const eAlt = Boolean(e.altKey);
+  const eShift = Boolean(e.shiftKey);
+  if (target.hasCtrl !== eCtrl) return false;
+  if (target.hasAlt !== eAlt) return false;
+  if (target.hasShift !== eShift) return false;
+
+  let key = (e.key || '').toLowerCase();
+  if (e.code === 'Comma' || key === ',') key = ',';
+  else if (e.code === 'Period' || key === '.') key = '.';
+  else if (key === 'arrowleft') key = '←';
+  else if (key === 'arrowright') key = '→';
+  else if (key === 'arrowup') key = '↑';
+  else if (key === 'arrowdown') key = '↓';
+  else if (key === 'escape') key = 'esc';
+  else if (key === ' ') key = 'space';
+
+  return key === target.keyPart;
+}
+
+export function formatHotkeyFromEvent(e: KeyboardEvent): string | null {
+  const isModifierKey = ['Control', 'Shift', 'Alt', 'Meta'].includes(e.key);
+  if (isModifierKey) return null;
+
+  const parts: string[] = [];
+  if (e.ctrlKey || e.metaKey) parts.push('Ctrl');
+  if (e.altKey) parts.push('Alt');
+  if (e.shiftKey) parts.push('Shift');
+
+  let key = e.key;
+  if (e.code === 'Comma') key = ',';
+  else if (e.code === 'Period') key = '.';
+  else if (e.code === 'Space' || key === ' ') key = 'Space';
+  else if (key === 'ArrowUp') key = '↑';
+  else if (key === 'ArrowDown') key = '↓';
+  else if (key === 'ArrowLeft') key = '←';
+  else if (key === 'ArrowRight') key = '→';
+  else if (key === 'Escape') key = 'Esc';
+  else if (key.length === 1) key = key.toUpperCase();
+
+  parts.push(key);
+  return parts.join(' + ');
+}
+
+export function getActiveHotkeys(
+  commandId: string,
+  customHotkeys?: Record<string, string[]>
+): string[] {
+  if (customHotkeys && commandId in customHotkeys) {
+    return customHotkeys[commandId];
+  }
+  return DEFAULT_HOTKEYS[commandId] ?? [];
+}
+
+export function isCommandTriggered(
+  e: KeyboardEvent,
+  commandId: string,
+  customHotkeys?: Record<string, string[]>
+): boolean {
+  const hotkeys = getActiveHotkeys(commandId, customHotkeys);
+  return hotkeys.some((hk) => matchesHotkey(e, hk));
+}
