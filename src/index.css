@@ -3426,3 +3426,73 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   color: var(--text-on-accent, #ffffff);
 }
 
+.setting-item.mod-hotkey {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  transition: background-color 0.1s ease;
+}
+
+.setting-item.mod-hotkey:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.setting-item.mod-hotkey .setting-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.setting-item.mod-hotkey .setting-item-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.setting-hotkey {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-family: var(--font-interface);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.setting-hotkey.mod-empty {
+  color: var(--text-muted);
+  border-style: dashed;
+}
+
+.setting-hotkey.mod-active {
+  background-color: var(--interactive-accent);
+  border-color: transparent;
+  color: var(--text-on-accent, #ffffff);
+}
+
+.setting-add-hotkey-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: var(--radius-s, 4px);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.setting-add-hotkey-button:hover {
+  color: var(--text-normal);
+  background-color: var(--background-modifier-hover);
+}
+
