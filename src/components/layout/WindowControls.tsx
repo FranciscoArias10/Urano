@@ -78,8 +78,24 @@ export const WindowControls: React.FC = () => {
   const handleClose = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await getCurrentWindow().close();
+      const current = getCurrentWindow();
+      if (current.label === 'main') {
+        try {
+          const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+          const settingsWin = await WebviewWindow.getByLabel('settings');
+          if (settingsWin) {
+            await settingsWin.close().catch(() => {});
+          }
+        } catch {
+          /* ignore */
+        }
+        await invoke('close_main_and_exit').catch(() => {});
+        await current.close().catch(() => {});
+      } else {
+        await current.close();
+      }
     } catch {
+      await invoke('close_main_and_exit').catch(() => {});
       await invoke('close_window').catch(() => {});
     }
   };
