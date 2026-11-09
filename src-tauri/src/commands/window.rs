@@ -20,6 +20,11 @@ pub fn close_window(window: tauri::Window) {
 }
 
 #[tauri::command]
+pub fn close_main_and_exit(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
+#[tauri::command]
 pub fn set_window_decorations(
     app: tauri::AppHandle,
     window: tauri::Window,
