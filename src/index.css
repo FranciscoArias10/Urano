@@ -3346,3 +3346,83 @@ body.theme-light .urano-settings-root .vertical-tab-header {
   color: var(--text-muted);
 }
 
+/* ========================================================
+   Hotkeys Settings Tab (Obsidian 1:1 with Urano Accent)
+   ======================================================== */
+.hotkeys-settings-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.hotkey-search-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.hotkey-search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background-color: var(--background-modifier-form-field, var(--background-secondary));
+  border-radius: var(--radius-m, 6px);
+  border: 1px solid var(--background-modifier-border);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hotkey-search-input-wrapper:focus-within {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.hotkey-search-input-wrapper input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 8px 90px 8px 34px;
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-small, 13px);
+  color: var(--text-normal);
+}
+
+.hotkey-search-input-wrapper input::placeholder {
+  color: var(--text-muted);
+}
+
+.hotkey-filter-pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hotkey-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-family: var(--font-interface);
+  background-color: transparent;
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  user-select: none;
+}
+
+.hotkey-filter-pill:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.hotkey-filter-pill.is-active {
+  background-color: var(--interactive-accent);
+  border-color: transparent;
+  color: var(--text-on-accent, #ffffff);
+}
+
