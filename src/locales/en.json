@@ -360,9 +360,22 @@
     },
     "hotkeys": {
       "search": "Search hotkeys",
-      "showing": "Showing {{count}} hotkeys.",
+      "filterPlaceholder": "Filter...",
+      "filterAll": "All",
+      "filterAssigned": "Assigned",
+      "filterCustom": "Custom",
+      "filterUnassigned": "Unassigned",
+      "filterByHotkey": "Filter by hotkey",
+      "clearFilter": "Clear filter",
+      "pressKey": "Press hotkey...",
       "blank": "Blank",
-      "readOnly": "Hotkeys are fixed in this version of Urano."
+      "showing": "Showing {{count}} hotkeys.",
+      "readOnly": "Customize hotkeys assigned to each command.",
+      "customize": "Customize hotkey",
+      "removeHotkey": "Remove hotkey",
+      "restoreDefault": "Restore default hotkey",
+      "restoreAllDefaults": "Restore all default hotkeys",
+      "noMatchingCommands": "No matching commands found."
     },
     "keychain": {
       "desc": "Secrets such as API keys and tokens are stored securely on this device.",
