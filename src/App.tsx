@@ -41,6 +41,7 @@ import { UranoLogo } from './components/common/UranoLogo';
 import { WindowControls } from './components/layout/WindowControls';
 import { NoticeContainer, useNoticeStore } from './components/common/Notice';
 import { VaultManagerModal } from './components/vault/VaultManagerModal';
+import { isCommandTriggered } from './services/hotkeyRegistry';
 import {
   FolderOpen,
   FilePlus,
@@ -149,15 +150,40 @@ const MainApp: React.FC = () => {
     back: () => void;
     forward: () => void;
     newTab: () => void;
+    closeTab: () => void;
     toggleViewMode: () => void;
     toggleSourceMode: () => void;
+    openCommandPalette: () => void;
+    openQuickSwitcher: () => void;
+    openGraph: () => void;
+    newNote: () => void;
+    toggleSettings: () => void;
+    toggleLeftSidebar: () => void;
+    toggleBacklinks: () => void;
+    openHelp: () => void;
+    openSearch: () => void;
+    openTemplates: () => void;
+    reload: () => void;
   }>({
     back: () => {},
     forward: () => {},
     newTab: () => {},
+    closeTab: () => {},
     toggleViewMode: () => {},
     toggleSourceMode: () => {},
+    openCommandPalette: () => {},
+    openQuickSwitcher: () => {},
+    openGraph: () => {},
+    newNote: () => {},
+    toggleSettings: () => {},
+    toggleLeftSidebar: () => {},
+    toggleBacklinks: () => {},
+    openHelp: () => {},
+    openSearch: () => {},
+    openTemplates: () => {},
+    reload: () => {},
   });
+  const paletteCommandsRef = useRef<CommandItem[]>([]);
 
   // Left Sidebar State (Toggle + 3 Tabs: files, search, bookmarks)
   const [showLeftSidebar, setShowLeftSidebar] = useState(true);
@@ -645,78 +671,120 @@ const MainApp: React.FC = () => {
       return history.index < history.stack.length - 1;
     })();
 
-  // Keep the global shortcut listener up to date
-  shortcutsRef.current = {
-    back: handleNavigateBack,
-    forward: handleNavigateForward,
-    newTab: () => handleCreateNewTab(),
-    toggleViewMode: toggleReadingView,
-    toggleSourceMode: toggleSourceMode,
-  };
-
   // Global Keyboard Shortcuts (Urano matching)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+P: Command Palette
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
-        e.preventDefault();
-        setPaletteMode('commands');
-        setPaletteOpen(true);
+      const target = e.target as HTMLElement | null;
+      const isInput =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable);
+
+      // If user is typing in an input/textarea and no modifiers are pressed (except function keys like F1-F12),
+      // don't intercept normal typing keystrokes
+      const hasModifiers = e.ctrlKey || e.metaKey || e.altKey;
+      const isFunctionKey = /^F\d{1,2}$/.test(e.key);
+      if (isInput && !hasModifiers && !isFunctionKey) {
+        return;
       }
-      // Ctrl+O: Quick Switcher (File Finder)
-      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
+
+      const customHotkeys = useSettingsStore.getState().settings.hotkeys || {};
+
+      if (isCommandTriggered(e, 'command-palette:open', customHotkeys)) {
         e.preventDefault();
-        setPaletteMode('files');
-        setPaletteOpen(true);
+        shortcutsRef.current.openCommandPalette();
+        return;
       }
-      // Ctrl+G: Open Graph View
-      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') {
+      if (isCommandTriggered(e, 'quick-switcher:open', customHotkeys)) {
         e.preventDefault();
-        handleOpenGraphTab();
+        shortcutsRef.current.openQuickSwitcher();
+        return;
       }
-      // Ctrl+N: New Untitled Note immediately
-      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+      if (isCommandTriggered(e, 'graph:open', customHotkeys)) {
         e.preventDefault();
-        handleCreateUntitledNote();
+        shortcutsRef.current.openGraph();
+        return;
       }
-      // Ctrl+T: New tab
-      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 't') {
+      if (isCommandTriggered(e, 'file-explorer:new-note', customHotkeys)) {
+        e.preventDefault();
+        shortcutsRef.current.newNote();
+        return;
+      }
+      if (isCommandTriggered(e, 'workspace:new-tab', customHotkeys)) {
         e.preventDefault();
         shortcutsRef.current.newTab();
+        return;
       }
-      // Ctrl+E: Toggle reading view / live preview
-      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'e') {
+      if (isCommandTriggered(e, 'workspace:close-tab', customHotkeys)) {
+        e.preventDefault();
+        shortcutsRef.current.closeTab();
+        return;
+      }
+      if (isCommandTriggered(e, 'markdown:toggle-preview', customHotkeys)) {
         e.preventDefault();
         shortcutsRef.current.toggleViewMode();
+        return;
       }
-      // Alt+Left / Alt+Right: leaf navigation history
-      else if (e.altKey && e.key === 'ArrowLeft') {
+      if (isCommandTriggered(e, 'editor:toggle-source', customHotkeys)) {
+        e.preventDefault();
+        shortcutsRef.current.toggleSourceMode();
+        return;
+      }
+      if (isCommandTriggered(e, 'app:go-back', customHotkeys)) {
         e.preventDefault();
         shortcutsRef.current.back();
+        return;
       }
-      else if (e.altKey && e.key === 'ArrowRight') {
+      if (isCommandTriggered(e, 'app:go-forward', customHotkeys)) {
         e.preventDefault();
         shortcutsRef.current.forward();
+        return;
       }
-      // Ctrl+, : Open settings (Urano `app:open-settings`, hotkey Mod+,)
-      else if ((e.ctrlKey || e.metaKey) && (e.key === ',' || e.code === 'Comma')) {
+      if (isCommandTriggered(e, 'app:open-settings', customHotkeys)) {
         e.preventDefault();
-        toggleSettings();
+        shortcutsRef.current.toggleSettings();
+        return;
       }
-      // Ctrl+B: Toggle Left Sidebar
-      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b' && !e.shiftKey) {
+      if (isCommandTriggered(e, 'app:open-help', customHotkeys)) {
         e.preventDefault();
-        setShowLeftSidebar((prev) => !prev);
+        shortcutsRef.current.openHelp();
+        return;
       }
-      // Ctrl+Shift+B: Toggle Backlinks Panel
-      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b' && e.shiftKey) {
+      if (isCommandTriggered(e, 'workspace:toggle-left-sidebar', customHotkeys)) {
         e.preventDefault();
-        setShowBacklinks((prev) => !prev);
+        shortcutsRef.current.toggleLeftSidebar();
+        return;
       }
-      // F5 or Ctrl+R: Reload window in Tauri
-      else if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r')) {
+      if (isCommandTriggered(e, 'workspace:toggle-backlinks', customHotkeys)) {
         e.preventDefault();
-        window.location.reload();
+        shortcutsRef.current.toggleBacklinks();
+        return;
+      }
+      if (isCommandTriggered(e, 'global-search:open', customHotkeys)) {
+        e.preventDefault();
+        shortcutsRef.current.openSearch();
+        return;
+      }
+      if (isCommandTriggered(e, 'templates:insert', customHotkeys)) {
+        e.preventDefault();
+        shortcutsRef.current.openTemplates();
+        return;
+      }
+      if (isCommandTriggered(e, 'app:reload', customHotkeys)) {
+        e.preventDefault();
+        shortcutsRef.current.reload();
+        return;
+      }
+
+      // Check remaining palette commands dynamically
+      const matched = paletteCommandsRef.current.find((cmd) =>
+        isCommandTriggered(e, cmd.id, customHotkeys)
+      );
+      if (matched && matched.action) {
+        e.preventDefault();
+        matched.action();
+        return;
       }
     };
 
@@ -1269,6 +1337,37 @@ const MainApp: React.FC = () => {
     if (cmd.id.startsWith('sync:')) return corePlugins.sync;
     return true;
   });
+
+  // Keep the global shortcut listener and palette commands up to date
+  shortcutsRef.current = {
+    back: handleNavigateBack,
+    forward: handleNavigateForward,
+    newTab: () => handleCreateNewTab(),
+    closeTab: () => handleCloseTab(activeTabId),
+    toggleViewMode: toggleReadingView,
+    toggleSourceMode: toggleSourceMode,
+    openCommandPalette: () => {
+      setPaletteMode('commands');
+      setPaletteOpen(true);
+    },
+    openQuickSwitcher: () => {
+      setPaletteMode('files');
+      setPaletteOpen(true);
+    },
+    openGraph: handleOpenGraphTab,
+    newNote: handleCreateUntitledNote,
+    toggleSettings: toggleSettings,
+    toggleLeftSidebar: () => setShowLeftSidebar((prev) => !prev),
+    toggleBacklinks: () => setShowBacklinks((prev) => !prev),
+    openHelp: handleHelpClick,
+    openSearch: () => {
+      setShowLeftSidebar(true);
+      setSidebarTab('search');
+    },
+    openTemplates: () => setShowTemplateModal(true),
+    reload: () => window.location.reload(),
+  };
+  paletteCommandsRef.current = paletteCommands;
 
   const renderRibbonAction = (itemId: string) => {
     switch (itemId) {
