@@ -360,9 +360,22 @@
     },
     "hotkeys": {
       "search": "Buscar atajos",
+      "filterPlaceholder": "Filtrar...",
+      "filterAll": "Todos",
+      "filterAssigned": "Asignados",
+      "filterCustom": "Asignados por mí",
+      "filterUnassigned": "No asignados",
+      "filterByHotkey": "Filtrar por tecla",
+      "clearFilter": "Limpiar filtro",
+      "pressKey": "Presione las teclas...",
+      "blank": "Vacío",
       "showing": "Mostrando {{count}} atajos.",
-      "blank": "Sin asignar",
-      "readOnly": "Los atajos son fijos en esta versión de Urano."
+      "readOnly": "Personalice los atajos asignados a cada comando.",
+      "customize": "Personalizar atajo de teclado",
+      "removeHotkey": "Eliminar atajo",
+      "restoreDefault": "Restablecer al atajo original",
+      "restoreAllDefaults": "Restablecer todos los atajos",
+      "noMatchingCommands": "No se encontraron comandos coincidentes."
     },
     "keychain": {
       "desc": "Los secretos como claves de API y tokens se guardan de forma segura en este dispositivo.",
