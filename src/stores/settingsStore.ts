@@ -154,6 +154,7 @@ export interface UranoSettings {
   templatesDateFormat: string;
   templatesTimeFormat: string;
   communityRestrictedMode: boolean;
+  hotkeys: Record<string, string[]>;
 }
 
 export const URANO_ACCENT = '#e06c1b';
@@ -265,6 +266,7 @@ export const DEFAULT_SETTINGS: UranoSettings = {
   templatesDateFormat: 'YYYY-MM-DD',
   templatesTimeFormat: 'HH:mm',
   communityRestrictedMode: true,
+  hotkeys: {},
 };
 
 const LOCAL_STORAGE_KEY = 'urano_settings';
@@ -303,6 +305,18 @@ function mergeSettings(raw: unknown): UranoSettings {
               .map((w) => w.trim())
           )
         );
+      }
+      continue;
+    }
+    if (key === 'hotkeys') {
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const clean: Record<string, string[]> = {};
+        for (const [k, v] of Object.entries(value)) {
+          if (Array.isArray(v)) {
+            clean[k] = v.filter((item): item is string => typeof item === 'string');
+          }
+        }
+        out.hotkeys = clean;
       }
       continue;
     }
@@ -507,6 +521,11 @@ export interface SettingsStoreState {
 
   addWordToDictionary: (word: string) => Promise<void>;
   removeWordFromDictionary: (word: string) => Promise<void>;
+
+  setHotkey: (commandId: string, hotkeys: string[]) => void;
+  removeHotkey: (commandId: string, hotkey?: string) => void;
+  resetHotkey: (commandId: string) => void;
+  restoreAllHotkeys: () => void;
 
   loadFromVault: (vaultPath: string) => Promise<void>;
   markStartupComplete: () => void;
@@ -713,6 +732,56 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
       const dictFilePath = `${folderPath}/dictionary.txt`;
       invoke('create_folder', { folderPath }).catch(() => {});
       invoke('write_file', { filePath: dictFilePath, content: words.join('\n') + (words.length ? '\n' : '') }).catch(() => {});
+    }
+  },
+
+  setHotkey: (commandId, hotkeys) => {
+    const current = get().settings;
+    const nextHotkeys = { ...(current.hotkeys || {}), [commandId]: hotkeys };
+    const next = { ...current, hotkeys: nextHotkeys };
+    writeLocalSettings(next);
+    scheduleVaultWrite(get().vaultPath, next);
+    set({ settings: next });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('urano:hotkeys-updated', { detail: nextHotkeys }));
+    }
+  },
+
+  removeHotkey: (commandId, hotkey) => {
+    const current = get().settings;
+    const existing = current.hotkeys?.[commandId] ?? [];
+    const updated = hotkey ? existing.filter((h) => h !== hotkey) : [];
+    const nextHotkeys = { ...(current.hotkeys || {}), [commandId]: updated };
+    const next = { ...current, hotkeys: nextHotkeys };
+    writeLocalSettings(next);
+    scheduleVaultWrite(get().vaultPath, next);
+    set({ settings: next });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('urano:hotkeys-updated', { detail: nextHotkeys }));
+    }
+  },
+
+  resetHotkey: (commandId) => {
+    const current = get().settings;
+    const nextHotkeys = { ...(current.hotkeys || {}) };
+    delete nextHotkeys[commandId];
+    const next = { ...current, hotkeys: nextHotkeys };
+    writeLocalSettings(next);
+    scheduleVaultWrite(get().vaultPath, next);
+    set({ settings: next });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('urano:hotkeys-updated', { detail: nextHotkeys }));
+    }
+  },
+
+  restoreAllHotkeys: () => {
+    const current = get().settings;
+    const next = { ...current, hotkeys: {} };
+    writeLocalSettings(next);
+    scheduleVaultWrite(get().vaultPath, next);
+    set({ settings: next });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('urano:hotkeys-updated', { detail: {} }));
     }
   },
 
