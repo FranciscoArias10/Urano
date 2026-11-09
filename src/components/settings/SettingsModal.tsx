@@ -16,6 +16,7 @@ import { CommunityThemesModal } from './appearance/CommunityThemesModal';
 import { FontPickerModal, FontTarget } from './appearance/FontPickerModal';
 import { RibbonConfigModal } from './interface/RibbonConfigModal';
 import { ExcludedFilesModal } from './ExcludedFilesModal';
+import { HotkeysSettingsTab } from './hotkeys/HotkeysSettingsTab';
 import './settingsStyles.css';
 
 /* ----------------------------------------------------------------------------
@@ -442,6 +443,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                     ))
                   )
+                ) : activeTab.id === 'hotkeys' ? (
+                  <HotkeysSettingsTab commands={commands} />
                 ) : (
                   activeTab.groups.map((g) => renderGroup(g))
                 )}
