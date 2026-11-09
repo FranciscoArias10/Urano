@@ -18,6 +18,23 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
+        .on_window_event(|window, event| {
+            use tauri::Manager;
+            if window.label() == "main" {
+                match event {
+                    tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed => {
+                        let app_handle = window.app_handle();
+                        for (label, w) in app_handle.webview_windows() {
+                            if label != "main" {
+                                let _ = w.close();
+                            }
+                        }
+                        app_handle.exit(0);
+                    }
+                    _ => {}
+                }
+            }
+        })
         .setup(|app| {
             use tauri::Manager;
 
@@ -93,6 +110,7 @@ pub fn run() {
             commands::window::toggle_maximize_window,
             commands::window::minimize_window,
             commands::window::close_window,
+            commands::window::close_main_and_exit,
             commands::window::set_window_decorations,
             commands::window::open_settings_window,
             commands::window::set_custom_window_icon,
