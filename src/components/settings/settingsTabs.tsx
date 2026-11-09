@@ -62,6 +62,10 @@ import {
   StatusPill,
   HotkeyPill,
 } from './SettingControls';
+import {
+  HOTKEY_CATALOG,
+  getActiveHotkeys,
+} from '../../services/hotkeyRegistry';
 
 /* ----------------------------------------------------------------------------
  * Declarative tab definitions (mirrors Urano's `SettingTab.getSettingDefinitions`)
@@ -1601,23 +1605,25 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
   };
 
   /* ---------------- Hotkeys ---------------- */
-  const fixedHotkeys: { id: string; name: string; hotkey: string }[] = [
-    { id: 'app:open-settings', name: 'Open settings', hotkey: 'Ctrl+,' },
-    { id: 'workspace:new-tab', name: 'New tab', hotkey: 'Ctrl+T' },
-    { id: 'markdown:toggle-preview', name: 'Toggle reading view', hotkey: 'Ctrl+E' },
-    { id: 'app:go-back', name: 'Navigate back', hotkey: 'Alt+←' },
-    { id: 'app:go-forward', name: 'Navigate forward', hotkey: 'Alt+→' },
-    { id: 'editor:save-file', name: 'Save current file', hotkey: 'Ctrl+S' },
-    { id: 'editor:toggle-bold', name: 'Toggle bold', hotkey: 'Ctrl+B (editor)' },
-    { id: 'editor:toggle-italics', name: 'Toggle italics', hotkey: 'Ctrl+I' },
-    { id: 'app:reload', name: 'Reload app', hotkey: 'Ctrl+R' },
-  ];
   const commandHotkeys = (ctx.commands ?? []).map((c) => ({
     id: c.id,
     name: c.name,
     hotkey: c.shortcut,
   }));
-  const allHotkeys = [...commandHotkeys, ...fixedHotkeys.filter((f) => !commandHotkeys.some((c) => c.id === f.id))];
+  const hotkeysSetting = useSettingsStore.getState().settings.hotkeys;
+  const isEs = (language || 'es').toLowerCase().startsWith('es');
+  const catalogHotkeys = HOTKEY_CATALOG.map((c) => {
+    const assigned = getActiveHotkeys(c.id, hotkeysSetting);
+    return {
+      id: c.id,
+      name: isEs ? c.nameEs : c.nameEn,
+      hotkey: assigned.join(', '),
+    };
+  });
+  const allHotkeys = [
+    ...catalogHotkeys,
+    ...commandHotkeys.filter((c) => !catalogHotkeys.some((k) => k.id === c.id)),
+  ];
 
   const hotkeys: SettingTabDef = {
     id: 'hotkeys',
@@ -1629,7 +1635,6 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
         id: 'hotkeys-list',
         className: 'mod-hotkeys',
         heading: t('hotkeys.showing', { count: allHotkeys.length }),
-        headingControl: <span className="setting-item-value">{t('hotkeys.readOnly')}</span>,
         items: allHotkeys.map((h) => ({
           id: `hotkey-${h.id}`,
           name: h.name,
