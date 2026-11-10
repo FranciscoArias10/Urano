@@ -1707,6 +1707,12 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
   };
 
   /* ---------------- Core plugins ---------------- */
+  const sortedCorePluginIds = [...CORE_PLUGIN_IDS].sort((a, b) =>
+    t(CORE_PLUGIN_META[a].nameKey).localeCompare(t(CORE_PLUGIN_META[b].nameKey), undefined, {
+      sensitivity: 'base',
+    })
+  );
+
   const corePlugins: SettingTabDef = {
     id: 'core-plugins',
     name: t('tab.corePlugins'),
@@ -1718,7 +1724,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
         className: 'mod-list',
         heading: t('tab.corePlugins'),
         headingControl: <span className="setting-item-value">{t('corePlugins.desc')}</span>,
-        items: CORE_PLUGIN_IDS.map((id) => {
+        items: sortedCorePluginIds.map((id) => {
           const meta = CORE_PLUGIN_META[id];
           const enabled = settings.corePlugins[id];
           return {
