@@ -482,7 +482,9 @@
       "folderPlaceholder": "templates/",
       "noFoldersFound": "No folders found in the vault.",
       "dateFormat": "Date format",
-      "timeFormat": "Time format"
+      "dateFormatDesc": "{{date}} in the template will be replaced with this value.",
+      "timeFormat": "Time format",
+      "timeFormatDesc": "{{time}} in the template will be replaced with this value."
     },
     "sync": {
       "storage": "Storage",
