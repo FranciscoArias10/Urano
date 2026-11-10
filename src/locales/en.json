@@ -479,6 +479,8 @@
     "templates": {
       "folder": "Template folder location",
       "folderDesc": "Files in this folder will be available as templates.",
+      "folderPlaceholder": "templates/",
+      "noFoldersFound": "No folders found in the vault.",
       "dateFormat": "Date format",
       "timeFormat": "Time format"
     },
