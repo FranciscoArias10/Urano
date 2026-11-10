@@ -2101,24 +2101,44 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
           id: 'templates-folder',
           name: t('templates.folder'),
           desc: t('templates.folderDesc'),
+          aliases: ['templates', 'folder', 'plantillas', 'carpeta'],
           control: (
-            <TextInput
+            <VaultFolderInput
               value={settings.templatesFolder}
-              placeholder={t('files.folderPlaceholder')}
+              placeholder={t('templates.folderPlaceholder')}
               onChange={set('templatesFolder')}
               ariaLabel={t('templates.folder')}
+              emptyText={t('templates.noFoldersFound')}
             />
           ),
         },
         {
           id: 'templates-date',
           name: t('templates.dateFormat'),
-          control: <TextInput value={settings.templatesDateFormat} onChange={set('templatesDateFormat')} ariaLabel={t('templates.dateFormat')} />,
+          desc: t('templates.dateFormatDesc'),
+          aliases: ['date', 'fecha', 'YYYY-MM-DD'],
+          control: (
+            <TextInput
+              value={settings.templatesDateFormat}
+              placeholder="YYYY-MM-DD"
+              onChange={set('templatesDateFormat')}
+              ariaLabel={t('templates.dateFormat')}
+            />
+          ),
         },
         {
           id: 'templates-time',
           name: t('templates.timeFormat'),
-          control: <TextInput value={settings.templatesTimeFormat} onChange={set('templatesTimeFormat')} ariaLabel={t('templates.timeFormat')} />,
+          desc: t('templates.timeFormatDesc'),
+          aliases: ['time', 'hora', 'HH:mm'],
+          control: (
+            <TextInput
+              value={settings.templatesTimeFormat}
+              placeholder="HH:mm"
+              onChange={set('templatesTimeFormat')}
+              ariaLabel={t('templates.timeFormat')}
+            />
+          ),
         },
       ],
     },
