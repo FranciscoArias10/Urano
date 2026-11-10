@@ -2144,7 +2144,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
     },
   ]);
 
-  // Order: Options group (9) then Core plugins group (10), exactly like Urano's sidebar.
+  // Orden exacto: Grupo 1 "Opciones" (9) y Grupo 2 "Complementos principales" (10, orden alfabético).
   return [
     general,
     appearance,
@@ -2155,15 +2155,15 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
     keychain,
     corePlugins,
     communityPlugins,
-    backlinks,
     canvas,
-    commandPalette,
-    dailyNotes,
-    fileRecovery,
     noteComposer,
-    pagePreview,
+    backlinks,
+    dailyNotes,
+    commandPalette,
+    templates,
+    fileRecovery,
     quickSwitcher,
     syncTab,
-    templates,
+    pagePreview,
   ];
 }
