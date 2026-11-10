@@ -155,19 +155,16 @@
 
 /* --- Sidebar: .vertical-tab-header -------------------------------------- */
 .urano-settings-root .vertical-tab-header {
-  flex: 0 0 240px;
-  width: 240px;
-  min-width: 240px;
-  background: var(--settings-sidebar-bg);
-  border-right: 1px solid var(--settings-sidebar-border);
+  flex: 0 0 220px;
+  width: 220px;
+  min-width: 220px;
   padding: 12px 10px;
+  background-color: var(--background-secondary);
+  border-right: 1px solid var(--settings-sidebar-border);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  --background-modifier-active-hover: rgba(255, 255, 255, 0.08);
-}
-body.theme-light .urano-settings-root .vertical-tab-header {
-  --background-modifier-active-hover: rgba(0, 0, 0, 0.06);
+  overflow-y: auto;
+  user-select: none;
 }
 
 .urano-settings-root .setting-search-container {
