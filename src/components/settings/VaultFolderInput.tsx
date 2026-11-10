@@ -115,5 +115,106 @@ export const VaultFolderInput: React.FC<VaultFolderInputProps> = ({
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [open]);
 
-  return null;
+  const commitValue = (next: string) => {
+    const cleaned = next.trim().replace(/^\/+/, '');
+    setDraft(cleaned);
+    if (cleaned !== value) onChange(cleaned);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={containerRef} className="vault-folder-input-container">
+      <span className="vault-folder-input-icon" aria-hidden="true">
+        <Search size={13} strokeWidth={2} />
+      </span>
+      <input
+        ref={inputRef}
+        type="text"
+        role="combobox"
+        aria-expanded={open}
+        aria-autocomplete="list"
+        aria-label={ariaLabel}
+        spellCheck={false}
+        disabled={disabled}
+        value={draft}
+        placeholder={placeholder}
+        onFocus={() => setOpen(true)}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          setOpen(true);
+        }}
+        onBlur={() => {
+          if (draft !== value) onChange(draft.trim().replace(/^\/+/, ''));
+          setOpen(false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!open) setOpen(true);
+            else if (filteredFolders.length > 0) {
+              setActiveIndex((idx) => (idx + 1) % filteredFolders.length);
+            }
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (filteredFolders.length > 0) {
+              setActiveIndex((idx) => (idx - 1 + filteredFolders.length) % filteredFolders.length);
+            }
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (open && filteredFolders[activeIndex]) {
+              commitValue(filteredFolders[activeIndex]);
+            } else {
+              commitValue(draft);
+            }
+            inputRef.current?.blur();
+          } else if (e.key === 'Escape') {
+            e.stopPropagation();
+            setDraft(value);
+            setOpen(false);
+            inputRef.current?.blur();
+          }
+        }}
+      />
+      {draft && !disabled && (
+        <button
+          type="button"
+          className="vault-folder-input-clear"
+          aria-label="Clear"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            setDraft('');
+            onChange('');
+            inputRef.current?.focus();
+          }}
+        >
+          <X size={11} strokeWidth={2.25} />
+        </button>
+      )}
+      {open && (
+        <div className="vault-folder-suggestions" role="listbox">
+          {filteredFolders.length === 0 ? (
+            <div className="vault-folder-suggestion-empty">{emptyText}</div>
+          ) : (
+            filteredFolders.map((folder, idx) => (
+              <button
+                type="button"
+                key={folder}
+                role="option"
+                aria-selected={idx === activeIndex}
+                className={`vault-folder-suggestion-item${idx === activeIndex ? ' is-selected' : ''}`}
+                onMouseEnter={() => setActiveIndex(idx)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  commitValue(folder);
+                }}
+              >
+                <Folder size={13} strokeWidth={1.75} />
+                <span>{folder}/</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
 };
