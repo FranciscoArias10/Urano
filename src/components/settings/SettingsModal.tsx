@@ -408,6 +408,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {sections.map((section) => {
                   const sectionTabs = visibleTabs.filter((tab) => tab.section === section.id);
                   if (!sectionTabs.length) return null;
+                  const orderedTabs =
+                    section.id === 'core-plugins'
+                      ? [...sectionTabs].sort((a, b) =>
+                          a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+                        )
+                      : sectionTabs;
                   return (
                     <div className="vertical-tab-header-group" key={section.id}>
                       <div className="vertical-tab-header-group-title">{section.title}</div>
@@ -416,7 +422,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         data-section={section.id}
                         role="tablist"
                       >
-                        {sectionTabs.map((tab) => renderNavItem(tab))}
+                        {orderedTabs.map((tab) => renderNavItem(tab))}
                       </div>
                     </div>
                   );
