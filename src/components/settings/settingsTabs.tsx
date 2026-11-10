@@ -239,7 +239,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
   const general: SettingTabDef = {
     id: 'general',
     name: t('tab.general'),
-    icon: <CircleUserRound size={ICON} />,
+    icon: <CircleUser size={ICON} />,
     section: 'options',
     groups: [
       {
@@ -787,7 +787,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
   const interfaceTab: SettingTabDef = {
     id: 'interface',
     name: t('tab.interface'),
-    icon: <AppWindow size={ICON} />,
+    icon: <Monitor size={ICON} />,
     section: 'options',
     groups: [
       /* Tarjeta 1 — Opciones Superiores (Sin Título de Sección Encima) */
@@ -1250,7 +1250,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
   const files: SettingTabDef = {
     id: 'file',
     name: t('tab.files'),
-    icon: <Folder size={ICON} />,
+    icon: <FolderCog size={ICON} />,
     section: 'options',
     groups: [
       // Tarjeta 1 — Opciones Generales de Archivos (Sin Encabezado Superior, 1:1 con Urano)
@@ -1710,7 +1710,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
   const corePlugins: SettingTabDef = {
     id: 'core-plugins',
     name: t('tab.corePlugins'),
-    icon: <Blocks size={ICON} />,
+    icon: <ToyBrick size={ICON} />,
     section: 'options',
     groups: [
       {
