@@ -482,7 +482,9 @@
       "folderPlaceholder": "templates/",
       "noFoldersFound": "No se encontraron carpetas en la bóveda.",
       "dateFormat": "Formato de fecha",
-      "timeFormat": "Formato de hora"
+      "dateFormatDesc": "{{date}} en la plantilla se reemplazará con este valor.",
+      "timeFormat": "Formato de hora",
+      "timeFormatDesc": "{{time}} en la plantilla se reemplazará con este valor."
     },
     "sync": {
       "storage": "Almacenamiento",
