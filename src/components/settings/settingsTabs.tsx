@@ -1,21 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import {
-  CircleUserRound,
+  CircleUser,
   Palette,
-  AppWindow,
+  Monitor,
   PenLine,
-  Folder,
+  FolderCog,
   Command,
   KeyRound,
-  Blocks,
+  ToyBrick,
   Puzzle,
-  Link,
   LayoutGrid,
   Terminal,
   Calendar,
   History,
-  GitMerge,
-  Eye,
+  Merge,
+  ScanEye,
   FileSearch,
   RefreshCw,
   Files,
@@ -62,6 +61,7 @@ import {
   StatusPill,
   HotkeyPill,
 } from './SettingControls';
+import { VaultFolderInput } from './VaultFolderInput';
 import {
   HOTKEY_CATALOG,
   getActiveHotkeys,
