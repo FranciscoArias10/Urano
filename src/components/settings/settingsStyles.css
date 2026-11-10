@@ -571,7 +571,7 @@ body.theme-light .urano-settings-root .vertical-tab-nav-item.is-active {
 }
 
 /* --- Buttons (Urano `button`, `button.mod-cta`) ---------------------- */
-.urano-settings-root .setting-item-control button:not(.clickable-icon):not(.setting-link),
+.urano-settings-root .setting-item-control button:not(.clickable-icon):not(.setting-link):not(.vault-folder-input-clear):not(.vault-folder-suggestion-item),
 .urano-settings-root .setting-button {
   display: inline-flex;
   align-items: center;
@@ -1131,4 +1131,95 @@ body.theme-light .urano-settings-root .vertical-tab-nav-item.is-active {
   width: 90vw;
   max-width: 580px;
   max-height: 80vh;
+}
+
+/* --- Vault folder autocomplete input (Plantillas / Ubicación de carpeta) --- */
+.urano-settings-root .vault-folder-input-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.urano-settings-root .vault-folder-input-icon {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--settings-text-muted);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+.urano-settings-root .vault-folder-input-container input[type='text'] {
+  padding-left: 28px;
+  padding-right: 26px;
+}
+.urano-settings-root .vault-folder-input-clear {
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  color: var(--settings-text-muted);
+  background: var(--background-modifier-hover);
+  cursor: pointer;
+}
+.urano-settings-root .vault-folder-input-clear:hover {
+  color: var(--settings-text);
+  background: var(--interactive-hover);
+}
+.urano-settings-root .vault-folder-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 240px;
+  max-height: 210px;
+  overflow-y: auto;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 4px;
+  z-index: 50;
+  text-align: left;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+.urano-settings-root .vault-folder-suggestion-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--settings-text);
+  font-size: 12px;
+  font-family: var(--font-interface);
+  text-align: left;
+  cursor: pointer;
+}
+.urano-settings-root .vault-folder-suggestion-item svg {
+  color: var(--settings-text-muted);
+  flex-shrink: 0;
+}
+.urano-settings-root .vault-folder-suggestion-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.urano-settings-root .vault-folder-suggestion-item.is-selected,
+.urano-settings-root .vault-folder-suggestion-item:hover {
+  background: var(--background-modifier-hover);
+}
+.urano-settings-root .vault-folder-suggestion-empty {
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--settings-text-muted);
+  text-align: center;
 }
