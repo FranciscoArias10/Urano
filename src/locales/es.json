@@ -49,8 +49,8 @@
       "files": "Archivos y enlaces",
       "hotkeys": "Atajos de teclado",
       "keychain": "Llavero",
-      "corePlugins": "Plugins principales",
-      "communityPlugins": "Plugins de la comunidad",
+      "corePlugins": "Complementos principales",
+      "communityPlugins": "Complementos comunitarios",
       "backlinks": "Backlinks",
       "canvas": "Lienzo",
       "commandPalette": "Paleta de comandos",
@@ -64,7 +64,7 @@
     },
     "sidebar": {
       "options": "Opciones",
-      "corePlugins": "Plugins principales",
+      "corePlugins": "Complementos principales",
       "searchPlaceholder": "Buscar ajustes..."
     },
     "search": {
