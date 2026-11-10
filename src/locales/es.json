@@ -477,7 +477,7 @@
       "showExistingDesc": "Muestra solo archivos que existen en la bóveda."
     },
     "templates": {
-      "folder": "Carpeta de plantillas",
+      "folder": "Ubicación de la carpeta de plantillas",
       "folderDesc": "Los archivos de esta carpeta estarán disponibles como plantillas.",
       "dateFormat": "Formato de fecha",
       "timeFormat": "Formato de hora"
