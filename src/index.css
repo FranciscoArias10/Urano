@@ -2775,41 +2775,8 @@ body.is-translucent aside.bg-urano-sidebar {
 }
 
 /* ============================================================================
-   Settings Modal Sidebar Navigation & Layout — Urano 1:1
+   Settings Modal Row Layout — Urano 1:1
    ============================================================================ */
-.modal.mod-settings .vertical-tab-header,
-.urano-settings-root .vertical-tab-header {
-  --background-modifier-active-hover: rgba(255, 255, 255, 0.08);
-}
-body.theme-light .modal.mod-settings .vertical-tab-header,
-body.theme-light .urano-settings-root .vertical-tab-header {
-  --background-modifier-active-hover: rgba(0, 0, 0, 0.06);
-}
-
-.vertical-tab-nav-item {
-  background: transparent;
-  color: var(--text-muted);
-  border-radius: 5px;
-  padding: 6px 12px;
-  border: none;
-}
-
-.vertical-tab-nav-item:hover {
-  background-color: var(--background-modifier-hover);
-  color: var(--text-normal);
-}
-
-.vertical-tab-nav-item.is-active {
-  background-color: var(--background-modifier-active-hover, rgba(255, 255, 255, 0.08));
-  color: var(--text-normal);
-  border: none;
-  font-weight: 500;
-}
-
-.vertical-tab-nav-item.is-active .vertical-tab-nav-item-icon {
-  color: var(--text-normal);
-}
-
 /* Setting Rows Layout 1:1 Urano */
 .setting-item-info {
   flex: 1 1 auto;
