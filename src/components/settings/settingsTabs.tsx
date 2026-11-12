@@ -159,20 +159,187 @@ const LinksComingInIcon: React.FC<{ size?: number }> = ({ size = ICON }) => (
   </svg>
 );
 
-export const CORE_PLUGIN_META: Record<
-  CorePluginId,
-  { tabId: string; nameKey: Parameters<Translate>[0]; descKey: Parameters<Translate>[0]; icon: React.ReactNode }
-> = {
-  backlinks: { tabId: 'backlinks', nameKey: 'tab.backlinks', descKey: 'plugin.backlinks.desc', icon: <LinksComingInIcon size={ICON} /> },
-  canvas: { tabId: 'canvas', nameKey: 'tab.canvas', descKey: 'plugin.canvas.desc', icon: <LayoutGrid size={ICON} /> },
-  'command-palette': { tabId: 'command-palette', nameKey: 'tab.commandPalette', descKey: 'plugin.commandPalette.desc', icon: <Terminal size={ICON} /> },
-  'daily-notes': { tabId: 'daily-notes', nameKey: 'tab.dailyNotes', descKey: 'plugin.dailyNotes.desc', icon: <Calendar size={ICON} /> },
-  'file-recovery': { tabId: 'file-recovery', nameKey: 'tab.fileRecovery', descKey: 'plugin.fileRecovery.desc', icon: <History size={ICON} /> },
-  'note-composer': { tabId: 'note-composer', nameKey: 'tab.noteComposer', descKey: 'plugin.noteComposer.desc', icon: <Merge size={ICON} /> },
-  'page-preview': { tabId: 'page-preview', nameKey: 'tab.pagePreview', descKey: 'plugin.pagePreview.desc', icon: <ScanEye size={ICON} /> },
-  switcher: { tabId: 'switcher', nameKey: 'tab.quickSwitcher', descKey: 'plugin.quickSwitcher.desc', icon: <FileSearch size={ICON} /> },
-  sync: { tabId: 'sync', nameKey: 'tab.sync', descKey: 'plugin.sync.desc', icon: <RefreshCw size={ICON} /> },
-  templates: { tabId: 'templates', nameKey: 'tab.templates', descKey: 'plugin.templates.desc', icon: <Files size={ICON} /> },
+export interface CorePluginMeta {
+  tabId?: string;
+  nameKey: Parameters<Translate>[0];
+  descKey: Parameters<Translate>[0];
+  icon: React.ReactNode;
+  hasSettings?: boolean;
+  hasHotkeys?: boolean;
+}
+
+export const CORE_PLUGIN_META: Record<CorePluginId, CorePluginMeta> = {
+  bases: {
+    nameKey: 'tab.bases',
+    descKey: 'plugin.bases.desc',
+    icon: <LayoutList size={ICON} />,
+  },
+  'global-search': {
+    nameKey: 'tab.globalSearch',
+    descKey: 'plugin.globalSearch.desc',
+    icon: <Search size={ICON} />,
+  },
+  canvas: {
+    tabId: 'canvas',
+    nameKey: 'tab.canvas',
+    descKey: 'plugin.canvas.desc',
+    icon: <LayoutGrid size={ICON} />,
+    hasSettings: true,
+    hasHotkeys: true,
+  },
+  'note-composer': {
+    tabId: 'note-composer',
+    nameKey: 'tab.noteComposer',
+    descKey: 'plugin.noteComposer.desc',
+    icon: <Merge size={ICON} />,
+    hasSettings: true,
+    hasHotkeys: true,
+  },
+  'zk-prefixer': {
+    nameKey: 'tab.zkPrefixer',
+    descKey: 'plugin.zkPrefixer.desc',
+    icon: <FilePlus2 size={ICON} />,
+    hasHotkeys: true,
+  },
+  slides: {
+    nameKey: 'tab.slides',
+    descKey: 'plugin.slides.desc',
+    icon: <Presentation size={ICON} />,
+    hasHotkeys: true,
+  },
+  backlink: {
+    tabId: 'backlinks',
+    nameKey: 'tab.backlinks',
+    descKey: 'plugin.backlinks.desc',
+    icon: <LinksComingInIcon size={ICON} />,
+    hasSettings: true,
+    hasHotkeys: true,
+  },
+  'outgoing-link': {
+    nameKey: 'tab.outgoingLink',
+    descKey: 'plugin.outgoingLink.desc',
+    icon: <ArrowUpRight size={ICON} />,
+    hasHotkeys: true,
+  },
+  workspaces: {
+    nameKey: 'tab.workspaces',
+    descKey: 'plugin.workspaces.desc',
+    icon: <AppWindow size={ICON} />,
+    hasHotkeys: true,
+  },
+  'file-explorer': {
+    nameKey: 'tab.fileExplorer',
+    descKey: 'plugin.fileExplorer.desc',
+    icon: <FolderTree size={ICON} />,
+    hasHotkeys: true,
+  },
+  'markdown-importer': {
+    nameKey: 'tab.markdownImporter',
+    descKey: 'plugin.markdownImporter.desc',
+    icon: <FileInput size={ICON} />,
+    hasHotkeys: true,
+  },
+  'audio-recorder': {
+    nameKey: 'tab.audioRecorder',
+    descKey: 'plugin.audioRecorder.desc',
+    icon: <Mic size={ICON} />,
+    hasHotkeys: true,
+  },
+  bookmarks: {
+    nameKey: 'tab.bookmarks',
+    descKey: 'plugin.bookmarks.desc',
+    icon: <Bookmark size={ICON} />,
+    hasHotkeys: true,
+  },
+  'random-note': {
+    nameKey: 'tab.randomNote',
+    descKey: 'plugin.randomNote.desc',
+    icon: <Dices size={ICON} />,
+    hasHotkeys: true,
+  },
+  'daily-notes': {
+    tabId: 'daily-notes',
+    nameKey: 'tab.dailyNotes',
+    descKey: 'plugin.dailyNotes.desc',
+    icon: <Calendar size={ICON} />,
+    hasSettings: true,
+    hasHotkeys: true,
+  },
+  'command-palette': {
+    tabId: 'command-palette',
+    nameKey: 'tab.commandPalette',
+    descKey: 'plugin.commandPalette.desc',
+    icon: <Terminal size={ICON} />,
+    hasSettings: true,
+    hasHotkeys: true,
+  },
+  templates: {
+    tabId: 'templates',
+    nameKey: 'tab.templates',
+    descKey: 'plugin.templates.desc',
+    icon: <Files size={ICON} />,
+    hasSettings: true,
+    hasHotkeys: true,
+  },
+  properties: {
+    nameKey: 'tab.properties',
+    descKey: 'plugin.properties.desc',
+    icon: <SlidersHorizontal size={ICON} />,
+    hasHotkeys: true,
+  },
+  'file-recovery': {
+    tabId: 'file-recovery',
+    nameKey: 'tab.fileRecovery',
+    descKey: 'plugin.fileRecovery.desc',
+    icon: <History size={ICON} />,
+    hasSettings: true,
+    hasHotkeys: true,
+  },
+  'word-count': {
+    nameKey: 'tab.wordCount',
+    descKey: 'plugin.wordCount.desc',
+    icon: <Type size={ICON} />,
+  },
+  switcher: {
+    tabId: 'switcher',
+    nameKey: 'tab.quickSwitcher',
+    descKey: 'plugin.quickSwitcher.desc',
+    icon: <FileSearch size={ICON} />,
+    hasSettings: true,
+    hasHotkeys: true,
+  },
+  sync: {
+    tabId: 'sync',
+    nameKey: 'tab.sync',
+    descKey: 'plugin.sync.desc',
+    icon: <RefreshCw size={ICON} />,
+    hasSettings: true,
+    hasHotkeys: true,
+  },
+  'tag-pane': {
+    nameKey: 'tab.tagPane',
+    descKey: 'plugin.tagPane.desc',
+    icon: <Tags size={ICON} />,
+    hasHotkeys: true,
+  },
+  graph: {
+    nameKey: 'tab.graph',
+    descKey: 'plugin.graph.desc',
+    icon: <GitFork size={ICON} />,
+    hasHotkeys: true,
+  },
+  'page-preview': {
+    tabId: 'page-preview',
+    nameKey: 'tab.pagePreview',
+    descKey: 'plugin.pagePreview.desc',
+    icon: <ScanEye size={ICON} />,
+    hasSettings: true,
+  },
+  webviewer: {
+    nameKey: 'tab.webviewer',
+    descKey: 'plugin.webviewer.desc',
+    icon: <Globe size={ICON} />,
+  },
 };
 
 /* --- Small stateful controls ------------------------------------------------ */
@@ -1797,7 +1964,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
 
   /* ---------------- Core plugin tabs ---------------- */
   const pluginTab = (id: CorePluginId, groups: SettingGroupDef[]): SettingTabDef => ({
-    id: CORE_PLUGIN_META[id].tabId,
+    id: CORE_PLUGIN_META[id].tabId ?? id,
     name: t(CORE_PLUGIN_META[id].nameKey),
     icon: CORE_PLUGIN_META[id].icon,
     section: 'core-plugins',
@@ -1805,7 +1972,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
     groups,
   });
 
-  const backlinks = pluginTab('backlinks', [
+  const backlinks = pluginTab('backlink', [
     {
       id: 'backlinks-options',
       items: [
