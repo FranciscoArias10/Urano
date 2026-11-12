@@ -2796,6 +2796,30 @@ body.is-translucent aside.bg-urano-sidebar {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 8px;
+}
+
+.setting-item.mod-toggle .setting-item-control {
+  padding-top: 0;
+}
+
+.extra-setting-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.extra-setting-button:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
 }
 
 /* ========================================================
