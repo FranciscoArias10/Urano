@@ -412,35 +412,83 @@
       "noResults": "No se encontraron complementos."
     },
     "plugin": {
-      "backlinks": {
-        "desc": "Muestra las notas que enlazan a la nota actual."
+      "bases": {
+        "desc": "Cree vistas personalizadas, tablas y bases de datos a partir de las propiedades de sus notas."
+      },
+      "globalSearch": {
+        "desc": "Busque palabras clave en todos los archivos de su bóveda."
       },
       "canvas": {
-        "desc": "Crea lienzos infinitos con notas, imágenes y tarjetas."
-      },
-      "commandPalette": {
-        "desc": "Abre la paleta de comandos con Ctrl+P."
-      },
-      "dailyNotes": {
-        "desc": "Crea o abre la nota de hoy."
-      },
-      "fileRecovery": {
-        "desc": "Guarda instantáneas de tus notas para recuperarlas ante accidentes."
+        "desc": "Un espacio visual infinito para investigar, hacer lluvias de ideas y diagramar con sus notas."
       },
       "noteComposer": {
-        "desc": "Fusiona, divide y refactoriza notas."
+        "desc": "Combine dos notas o extraiga parte de una nota en una nueva."
       },
-      "pagePreview": {
-        "desc": "Pasa el cursor sobre un enlace para previsualizar la nota."
+      "zkPrefixer": {
+        "desc": "Cree notas Zettelkasten con un prefijo basado en marca de tiempo."
       },
-      "quickSwitcher": {
-        "desc": "Cambia de archivo rápidamente con Ctrl+O."
+      "slides": {
+        "desc": "Cree presentaciones sencillas basadas en Markdown."
       },
-      "sync": {
-        "desc": "Sincroniza tu bóveda con Google Drive."
+      "backlinks": {
+        "desc": "Muestra el número de enlaces entrantes y menciones no vinculadas de la nota activa."
+      },
+      "outgoingLink": {
+        "desc": "Muestra los enlaces de la nota activa y posibles enlaces por crear."
+      },
+      "workspaces": {
+        "desc": "Guarde y cargue diferentes diseños de paneles y pestañas."
+      },
+      "fileExplorer": {
+        "desc": "Explore y gestione los archivos y carpetas de su bóveda."
+      },
+      "markdownImporter": {
+        "desc": "Convierta Markdown de otras aplicaciones al formato de Urano."
+      },
+      "audioRecorder": {
+        "desc": "Grabe y guarde notas de voz directamente en una nota."
+      },
+      "bookmarks": {
+        "desc": "Guarde enlaces directos a notas, búsquedas, gráficos y encabezados."
+      },
+      "randomNote": {
+        "desc": "Abre una nota al azar de su bóveda para redescubrir ideas."
+      },
+      "dailyNotes": {
+        "desc": "Cree o abra una nota basada en la fecha actual."
+      },
+      "commandPalette": {
+        "desc": "Ejecute cualquier comando rápidamente desde el teclado."
       },
       "templates": {
-        "desc": "Inserta plantillas en la nota actual."
+        "desc": "Inserte fragmentos predefinidos de texto en su nota activa."
+      },
+      "properties": {
+        "desc": "Gestione y visualice todas las propiedades YAML de las notas de su bóveda."
+      },
+      "fileRecovery": {
+        "desc": "Recupere versiones recientes de sus notas mediante instantáneas periódicas."
+      },
+      "wordCount": {
+        "desc": "Muestra el número de palabras y caracteres en la barra de estado."
+      },
+      "quickSwitcher": {
+        "desc": "Busque y abra notas rápidamente desde el teclado."
+      },
+      "sync": {
+        "desc": "Sincronice sus bóvedas y notas con Google Drive de forma segura."
+      },
+      "tagPane": {
+        "desc": "Muestra todas las etiquetas de su bóveda y cuántas notas las contienen."
+      },
+      "graph": {
+        "desc": "Visualice las relaciones y conexiones entre todas las notas de su bóveda."
+      },
+      "pagePreview": {
+        "desc": "Pase el cursor sobre un enlace interno para previsualizar su contenido sin abrirlo."
+      },
+      "webviewer": {
+        "desc": "Abra enlaces externos dentro de una pestaña integrada en Urano."
       }
     },
     "community": {
