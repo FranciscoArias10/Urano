@@ -884,12 +884,35 @@ body.theme-light .urano-settings-root .vertical-tab-nav-item.is-active {
   padding: 16px 0;
 }
 
-/* Plugin list rows (Urano `.setting-group.mod-list`) */
+/* Plugin list rows & top filter bar (Urano `.setting-group-search` + `.setting-group.mod-list`) */
+.urano-settings-root .core-plugins-settings-tab {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.urano-settings-root .core-plugins-search-row,
+.urano-settings-root .setting-group-search {
+  width: 100%;
+  margin-bottom: 18px;
+}
+.urano-settings-root .setting-group-search .search-input-container {
+  width: 100%;
+}
+.urano-settings-root .setting-group-search .search-input-container input {
+  height: 34px;
+  padding: 6px 32px;
+}
 .urano-settings-root .setting-group.mod-list .setting-items {
   padding: 4px 16px;
 }
 .urano-settings-root .setting-group.mod-list .setting-item {
   padding: 12px 0;
+}
+.urano-settings-root .setting-item.mod-toggle .setting-item-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 0;
 }
 .urano-settings-root .setting-item-icon {
   display: flex;
