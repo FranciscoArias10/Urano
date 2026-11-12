@@ -1335,6 +1335,11 @@ const MainApp: React.FC = () => {
     if (cmd.id.startsWith('templates:')) return corePlugins.templates;
     if (cmd.id.startsWith('quick-switcher:')) return corePlugins.switcher;
     if (cmd.id.startsWith('sync:')) return corePlugins.sync;
+    if (cmd.id.startsWith('graph:')) return corePlugins.graph;
+    if (cmd.id.startsWith('bases:')) return corePlugins.bases;
+    if (cmd.id.startsWith('command-palette:')) return corePlugins['command-palette'];
+    if (cmd.id.startsWith('file-explorer:')) return corePlugins['file-explorer'];
+    if (cmd.id === 'workspace:toggle-backlinks') return corePlugins.backlink;
     return true;
   });
 
@@ -1386,7 +1391,7 @@ const MainApp: React.FC = () => {
           </Tooltip>
         ) : null;
       case 'graph':
-        return (
+        return corePlugins.graph ? (
           <Tooltip key="graph" content={t('app.ribbon.openGraphView')} shortcut="Ctrl+G" position="right">
             <button
               onClick={handleOpenGraphTab}
@@ -1395,7 +1400,7 @@ const MainApp: React.FC = () => {
               <GitFork size={18} />
             </button>
           </Tooltip>
-        );
+        ) : null;
       case 'canvas':
         return corePlugins.canvas ? (
           <Tooltip key="canvas" content={t('app.ribbon.createNewCanvas')} position="right">
@@ -1435,13 +1440,13 @@ const MainApp: React.FC = () => {
           </Tooltip>
         ) : null;
       case 'bases':
-        return (
+        return corePlugins.bases ? (
           <Tooltip key="bases" content={t('app.ribbon.createNewBase')} position="right">
             <button onClick={handleCreateBase} className="side-dock-ribbon-action">
               <LayoutList size={18} />
             </button>
           </Tooltip>
-        );
+        ) : null;
       case 'sync':
         return corePlugins.sync ? (
           <Tooltip key="sync" content={t('app.ribbon.syncNow')} position="right">
@@ -1790,7 +1795,7 @@ const MainApp: React.FC = () => {
         {/* ========================================================
             Right Sidebar: Backlinks & Outgoing Links Panel
             ======================================================== */}
-        {showBacklinks && (
+        {showBacklinks && corePlugins.backlink && (
           <BacklinksPanel
             activeFile={activeFile}
             activeFileName={activeFileName}
