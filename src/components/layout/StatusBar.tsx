@@ -61,6 +61,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   const openSettings = useSettingsStore((s) => s.openSettings);
   const showStatusBar = useSettingsStore((s) => s.settings.showStatusBar);
   const showEditorStatus = useSettingsStore((s) => s.settings.showEditorStatus);
+  const corePlugins = useSettingsStore((s) => s.settings.corePlugins);
 
   const [syncMenu, setSyncMenu] = useState<{ x: number; y: number } | null>(null);
   const [showEditorMenu, setShowEditorMenu] = useState(false);
@@ -275,8 +276,8 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 
   return (
     <div className="status-bar" role="status" aria-label="Status Bar">
-      {/* 1. Backlinks item (only when file is open) */}
-      {activeFile && (
+      {/* 1. Backlinks item (only when file is open and backlink core plugin is active) */}
+      {activeFile && corePlugins.backlink && (
         <button
           type="button"
           onClick={onToggleBacklinks}
@@ -287,15 +288,15 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         </button>
       )}
 
-      {/* 2. Word count (only when file is open) */}
-      {activeFile && (
+      {/* 2. Word count (only when file is open and word-count core plugin is active) */}
+      {activeFile && corePlugins['word-count'] && (
         <div className="status-bar-item" title={t('statusBar.words', { count: words })}>
           {t('statusBar.words', { count: words })}
         </div>
       )}
 
-      {/* 3. Character count (only when file is open) */}
-      {activeFile && (
+      {/* 3. Character count (only when file is open and word-count core plugin is active) */}
+      {activeFile && corePlugins['word-count'] && (
         <div className="status-bar-item" title={t('statusBar.characters', { count: chars })}>
           {t('statusBar.characters', { count: chars })}
         </div>
