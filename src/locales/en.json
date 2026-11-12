@@ -406,7 +406,10 @@
     },
     "corePlugins": {
       "desc": "Core plugins are built into Urano. Turn them on or off here.",
-      "options": "Options"
+      "options": "Options",
+      "hotkeys": "Hotkeys",
+      "filterPlaceholder": "Filter...",
+      "noResults": "No plugins found."
     },
     "plugin": {
       "backlinks": {
