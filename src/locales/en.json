@@ -412,35 +412,83 @@
       "noResults": "No plugins found."
     },
     "plugin": {
-      "backlinks": {
-        "desc": "Show the notes that link to the current note."
+      "bases": {
+        "desc": "Create custom views, tables and databases using your notes' properties."
+      },
+      "globalSearch": {
+        "desc": "Search for a keyword in all files of your vault."
       },
       "canvas": {
-        "desc": "Create infinite canvases of notes, images and cards."
-      },
-      "commandPalette": {
-        "desc": "Open the command palette with Ctrl+P."
-      },
-      "dailyNotes": {
-        "desc": "Create or open a note for today."
-      },
-      "fileRecovery": {
-        "desc": "Keep snapshots of your notes to recover from accidents."
+        "desc": "An infinite visual space to research, brainstorm and diagram with your notes."
       },
       "noteComposer": {
-        "desc": "Merge, split and refactor notes."
+        "desc": "Merge two notes or extract part of a note into a new one."
       },
-      "pagePreview": {
-        "desc": "Hover over a link to preview the note."
+      "zkPrefixer": {
+        "desc": "Create Zettelkasten notes with a timestamp-based prefix."
       },
-      "quickSwitcher": {
-        "desc": "Switch between files quickly with Ctrl+O."
+      "slides": {
+        "desc": "Create simple Markdown-based presentations."
       },
-      "sync": {
-        "desc": "Sync your vault with Google Drive."
+      "backlinks": {
+        "desc": "Show the number of incoming links and unlinked mentions for the active note."
+      },
+      "outgoingLink": {
+        "desc": "Show links from the active note and possible links to create."
+      },
+      "workspaces": {
+        "desc": "Save and load different layouts of panes and tabs."
+      },
+      "fileExplorer": {
+        "desc": "Browse and manage the files and folders in your vault."
+      },
+      "markdownImporter": {
+        "desc": "Convert Markdown from other apps into Urano's format."
+      },
+      "audioRecorder": {
+        "desc": "Record and save voice notes directly into a note."
+      },
+      "bookmarks": {
+        "desc": "Save direct links to notes, searches, graphs and headings."
+      },
+      "randomNote": {
+        "desc": "Open a random note from your vault to rediscover ideas."
+      },
+      "dailyNotes": {
+        "desc": "Create or open a note based on the current date."
+      },
+      "commandPalette": {
+        "desc": "Run any command quickly from your keyboard."
       },
       "templates": {
-        "desc": "Insert templates into the current note."
+        "desc": "Insert predefined text snippets into your active note."
+      },
+      "properties": {
+        "desc": "Manage and view all YAML properties across notes in your vault."
+      },
+      "fileRecovery": {
+        "desc": "Recover recent versions of your notes from periodic snapshots."
+      },
+      "wordCount": {
+        "desc": "Show word and character count in the status bar."
+      },
+      "quickSwitcher": {
+        "desc": "Find and open notes quickly from your keyboard."
+      },
+      "sync": {
+        "desc": "Sync your vaults and notes securely with Google Drive."
+      },
+      "tagPane": {
+        "desc": "Show all tags in your vault and how many notes contain them."
+      },
+      "graph": {
+        "desc": "Visualize the relationships and connections between all notes in your vault."
+      },
+      "pagePreview": {
+        "desc": "Hover over an internal link to preview its content without opening it."
+      },
+      "webviewer": {
+        "desc": "Open external links inside an integrated tab in Urano."
       }
     },
     "community": {
