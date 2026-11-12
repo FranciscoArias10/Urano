@@ -405,8 +405,11 @@
       "signIn": "Iniciar sesión"
     },
     "corePlugins": {
-      "desc": "Los plugins principales vienen integrados en Urano. Actívalos o desactívalos aquí.",
-      "options": "Opciones"
+      "desc": "Los complementos principales vienen integrados en Urano. Actívalos o desactívalos aquí.",
+      "options": "Opciones",
+      "hotkeys": "Atajos de teclado",
+      "filterPlaceholder": "Filtrar...",
+      "noResults": "No se encontraron complementos."
     },
     "plugin": {
       "backlinks": {
