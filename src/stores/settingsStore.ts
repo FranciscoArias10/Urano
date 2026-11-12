@@ -19,16 +19,32 @@ export type DeletedFilesDestination = 'system' | 'trash' | 'permanent';
 export type StorageBackend = 'local' | 'gdrive';
 
 export const CORE_PLUGIN_IDS = [
-  'backlinks',
+  'bases',
+  'global-search',
   'canvas',
-  'command-palette',
-  'daily-notes',
-  'file-recovery',
   'note-composer',
-  'page-preview',
+  'zk-prefixer',
+  'slides',
+  'backlink',
+  'outgoing-link',
+  'workspaces',
+  'file-explorer',
+  'markdown-importer',
+  'audio-recorder',
+  'bookmarks',
+  'random-note',
+  'daily-notes',
+  'command-palette',
+  'templates',
+  'properties',
+  'file-recovery',
+  'word-count',
   'switcher',
   'sync',
-  'templates',
+  'tag-pane',
+  'graph',
+  'page-preview',
+  'webviewer',
 ] as const;
 export type CorePluginId = (typeof CORE_PLUGIN_IDS)[number];
 
