@@ -639,20 +639,21 @@ body.theme-light .urano-settings-root .vertical-tab-nav-item.is-active {
 
 /* Icon-only extra button (Urano `.extra-setting-button.clickable-icon`) */
 .urano-settings-root .extra-setting-button {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  width: 28px;
+  height: 28px;
   border-radius: 4px;
-  border: 0;
+  border: none;
   background: transparent;
-  color: var(--settings-text-muted);
+  color: var(--text-muted);
   cursor: pointer;
-  transition: color 0.1s ease, background-color 0.1s ease;
+  transition: background-color 0.12s ease, color 0.12s ease;
 }
 .urano-settings-root .extra-setting-button:hover {
-  color: var(--settings-text);
   background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
 }
 .urano-settings-root .extra-setting-button:focus-visible {
   box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
