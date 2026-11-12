@@ -403,9 +403,10 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
   );
   const settings = useSettingsStore((s) => s.settings);
   const setSetting = useSettingsStore((s) => s.setSetting);
-  const setCorePluginEnabled = useSettingsStore((s) => s.setCorePluginEnabled);
+  const toggleCorePlugin = useSettingsStore((s) => s.toggleCorePlugin);
+  const setActiveTab = useSettingsStore((s) => s.setActiveTab);
+  const openHotkeysForPlugin = useSettingsStore((s) => s.openHotkeysForPlugin);
   const startupMs = useSettingsStore((s) => s.startupMs);
-  const openSettings = useSettingsStore((s) => s.openSettings);
   const { showNotice } = useNoticeStore();
 
   const sync = useSyncStore();
@@ -1892,7 +1893,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
 
   /* ---------------- Core plugins ---------------- */
   const sortedCorePluginIds = [...CORE_PLUGIN_IDS].sort((a, b) =>
-    t(CORE_PLUGIN_META[a].nameKey).localeCompare(t(CORE_PLUGIN_META[b].nameKey), undefined, {
+    t(CORE_PLUGIN_META[a].nameKey).localeCompare(t(CORE_PLUGIN_META[b].nameKey), language, {
       sensitivity: 'base',
     })
   );
@@ -1910,22 +1911,30 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
         headingControl: <span className="setting-item-value">{t('corePlugins.desc')}</span>,
         items: sortedCorePluginIds.map((id) => {
           const meta = CORE_PLUGIN_META[id];
+          const name = t(meta.nameKey);
           const enabled = settings.corePlugins[id];
           return {
             id: `plugin-${id}`,
-            name: t(meta.nameKey),
+            name,
             desc: t(meta.descKey),
-            icon: meta.icon,
+            className: 'mod-toggle',
             control: (
               <>
-                {enabled && (
+                {enabled && meta.hasHotkeys && (
+                  <ExtraButton
+                    icon={<PlusCircle size={ICON} />}
+                    tooltip={t('corePlugins.hotkeys')}
+                    onClick={() => openHotkeysForPlugin(`${name}:`)}
+                  />
+                )}
+                {enabled && meta.hasSettings && meta.tabId && (
                   <ExtraButton
                     icon={<SettingsIcon size={ICON} />}
                     tooltip={t('corePlugins.options')}
-                    onClick={() => openSettings(meta.tabId)}
+                    onClick={() => setActiveTab(meta.tabId!)}
                   />
                 )}
-                <Toggle value={enabled} onChange={(v) => setCorePluginEnabled(id, v)} ariaLabel={t(meta.nameKey)} />
+                <Toggle value={enabled} onChange={() => toggleCorePlugin(id)} ariaLabel={name} />
               </>
             ),
           };
