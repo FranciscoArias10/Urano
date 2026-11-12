@@ -551,9 +551,13 @@ export interface SettingsStoreState {
   closeSettings: () => void;
   toggleSettings: () => void;
   setActiveTab: (tabId: string) => void;
+  hotkeySearchQuery: string;
+  setHotkeySearchQuery: (query: string) => void;
+  openHotkeysForPlugin: (query: string) => void;
 
   setSetting: <K extends keyof UranoSettings>(key: K, value: UranoSettings[K]) => void;
   setCorePluginEnabled: (id: CorePluginId, enabled: boolean) => void;
+  toggleCorePlugin: (id: CorePluginId) => void;
   resetSetting: <K extends keyof UranoSettings>(key: K) => void;
 
   addWordToDictionary: (word: string) => Promise<void>;
@@ -596,6 +600,7 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   isOpen: false,
   activeTabId: 'general',
   startupMs: null,
+  hotkeySearchQuery: '',
 
   openSettings: (tabId) => {
     const { settings } = get();
@@ -634,7 +639,18 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
       openSettings();
     }
   },
-  setActiveTab: (tabId) => set({ activeTabId: tabId }),
+  setActiveTab: (tabId) =>
+    set((state) => ({
+      activeTabId: tabId,
+      hotkeySearchQuery: tabId === 'hotkeys' ? state.hotkeySearchQuery : '',
+    })),
+  setHotkeySearchQuery: (query) => set({ hotkeySearchQuery: query }),
+  openHotkeysForPlugin: (query) =>
+    set({
+      isOpen: true,
+      activeTabId: 'hotkeys',
+      hotkeySearchQuery: query,
+    }),
 
   setSetting: (key, value) => {
     const next = { ...get().settings, [key]: value };
@@ -719,6 +735,15 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   setCorePluginEnabled: (id, enabled) => {
     const current = get().settings;
     const next = { ...current, corePlugins: { ...current.corePlugins, [id]: enabled } };
+    writeLocalSettings(next);
+    scheduleVaultWrite(get().vaultPath, next);
+    set({ settings: next });
+  },
+
+  toggleCorePlugin: (id) => {
+    const current = get().settings;
+    const nextEnabled = !current.corePlugins[id];
+    const next = { ...current, corePlugins: { ...current.corePlugins, [id]: nextEnabled } };
     writeLocalSettings(next);
     scheduleVaultWrite(get().vaultPath, next);
     set({ settings: next });
