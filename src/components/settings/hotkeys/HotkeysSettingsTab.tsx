@@ -22,17 +22,27 @@ export const HotkeysSettingsTab: React.FC<HotkeysSettingsTabProps> = ({ commands
   const isEs = currentLang.toLowerCase().startsWith('es');
 
   const customHotkeys = useSettingsStore((s) => s.settings.hotkeys || {});
+  const hotkeySearchQuery = useSettingsStore((s) => s.hotkeySearchQuery);
+  const setHotkeySearchQuery = useSettingsStore((s) => s.setHotkeySearchQuery);
   const setHotkey = useSettingsStore((s) => s.setHotkey);
   const removeHotkey = useSettingsStore((s) => s.removeHotkey);
   const resetHotkey = useSettingsStore((s) => s.resetHotkey);
 
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState(hotkeySearchQuery);
   const [activeFilterPill, setActiveFilterPill] = useState<FilterPillType>('all');
   const [activeHotkeyFilter, setActiveHotkeyFilter] = useState<string | null>(null);
   const [isRecordingFilterKey, setIsRecordingFilterKey] = useState(false);
   const [recordingCmdId, setRecordingCmdId] = useState<string | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync external prefilled search query (e.g. clicking Hotkeys button in Core Plugins)
+  useEffect(() => {
+    if (hotkeySearchQuery) {
+      setSearchText(hotkeySearchQuery);
+      searchInputRef.current?.focus();
+    }
+  }, [hotkeySearchQuery]);
 
   // Combine static catalog with any dynamic commands passed from App
   const allCommands = useMemo(() => {
@@ -113,8 +123,13 @@ export const HotkeysSettingsTab: React.FC<HotkeysSettingsTabProps> = ({ commands
 
         // 3. Text search check
         if (searchText.trim()) {
-          const query = searchText.trim().toLowerCase();
-          const name = (isEs ? cmd.nameEs : cmd.nameEn).toLowerCase();
+          const norm = (s: string) =>
+            s
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '');
+          const query = norm(searchText.trim());
+          const name = norm(isEs ? cmd.nameEs : cmd.nameEn);
           const id = cmd.id.toLowerCase();
           const hotkeysStr = assigned.join(' ').toLowerCase();
           if (!name.includes(query) && !id.includes(query) && !hotkeysStr.includes(query)) {
@@ -143,7 +158,11 @@ export const HotkeysSettingsTab: React.FC<HotkeysSettingsTabProps> = ({ commands
             className="w-full bg-transparent py-2 pl-9 pr-24 text-sm text-urano-text placeholder:text-urano-muted focus:outline-none"
             placeholder={t('hotkeys.filterPlaceholder') || 'Filtrar...'}
             value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setSearchText(v);
+              if (hotkeySearchQuery) setHotkeySearchQuery('');
+            }}
           />
 
           <div className="absolute right-2 flex items-center gap-1.5">
@@ -185,7 +204,10 @@ export const HotkeysSettingsTab: React.FC<HotkeysSettingsTabProps> = ({ commands
                 type="button"
                 className="clickable-icon p-1 text-urano-muted hover:text-urano-text transition-colors rounded"
                 title={t('hotkeys.clearFilter') || 'Limpiar filtro'}
-                onClick={() => setSearchText('')}
+                onClick={() => {
+                  setSearchText('');
+                  if (hotkeySearchQuery) setHotkeySearchQuery('');
+                }}
               >
                 <X size={14} />
               </button>
