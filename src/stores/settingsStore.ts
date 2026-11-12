@@ -321,9 +321,14 @@ function mergeSettings(raw: unknown): UranoSettings {
     if (value === undefined) continue;
     if (key === 'corePlugins') {
       if (value && typeof value === 'object') {
+        const obj = value as Record<string, unknown>;
         for (const id of CORE_PLUGIN_IDS) {
-          const v = (value as Record<string, unknown>)[id];
+          const v = obj[id];
           if (typeof v === 'boolean') out.corePlugins[id] = v;
+        }
+        // Migrate legacy key `backlinks` -> `backlink`
+        if (typeof obj.backlink !== 'boolean' && typeof obj.backlinks === 'boolean') {
+          out.corePlugins.backlink = obj.backlinks;
         }
       }
       continue;
