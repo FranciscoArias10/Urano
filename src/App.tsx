@@ -689,24 +689,25 @@ const MainApp: React.FC = () => {
         return;
       }
 
-      const customHotkeys = useSettingsStore.getState().settings.hotkeys || {};
+      const { hotkeys: rawHotkeys, corePlugins: activePlugins } = useSettingsStore.getState().settings;
+      const customHotkeys = rawHotkeys || {};
 
-      if (isCommandTriggered(e, 'command-palette:open', customHotkeys)) {
+      if (activePlugins['command-palette'] && isCommandTriggered(e, 'command-palette:open', customHotkeys)) {
         e.preventDefault();
         shortcutsRef.current.openCommandPalette();
         return;
       }
-      if (isCommandTriggered(e, 'quick-switcher:open', customHotkeys)) {
+      if (activePlugins.switcher && isCommandTriggered(e, 'quick-switcher:open', customHotkeys)) {
         e.preventDefault();
         shortcutsRef.current.openQuickSwitcher();
         return;
       }
-      if (isCommandTriggered(e, 'graph:open', customHotkeys)) {
+      if (activePlugins.graph && isCommandTriggered(e, 'graph:open', customHotkeys)) {
         e.preventDefault();
         shortcutsRef.current.openGraph();
         return;
       }
-      if (isCommandTriggered(e, 'file-explorer:new-note', customHotkeys)) {
+      if (activePlugins['file-explorer'] && isCommandTriggered(e, 'file-explorer:new-note', customHotkeys)) {
         e.preventDefault();
         shortcutsRef.current.newNote();
         return;
@@ -756,17 +757,17 @@ const MainApp: React.FC = () => {
         shortcutsRef.current.toggleLeftSidebar();
         return;
       }
-      if (isCommandTriggered(e, 'workspace:toggle-backlinks', customHotkeys)) {
+      if (activePlugins.backlink && isCommandTriggered(e, 'workspace:toggle-backlinks', customHotkeys)) {
         e.preventDefault();
         shortcutsRef.current.toggleBacklinks();
         return;
       }
-      if (isCommandTriggered(e, 'global-search:open', customHotkeys)) {
+      if (activePlugins['global-search'] && isCommandTriggered(e, 'global-search:open', customHotkeys)) {
         e.preventDefault();
         shortcutsRef.current.openSearch();
         return;
       }
-      if (isCommandTriggered(e, 'templates:insert', customHotkeys)) {
+      if (activePlugins.templates && isCommandTriggered(e, 'templates:insert', customHotkeys)) {
         e.preventDefault();
         shortcutsRef.current.openTemplates();
         return;
