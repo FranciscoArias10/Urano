@@ -18,6 +18,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { useVaultStore } from '../../stores/vaultStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { useNoticeStore } from '../common/Notice';
 import { useT } from '../../stores/localeStore';
 import {
@@ -100,6 +101,148 @@ const DEFAULT_FILE_NODE_SIZE = { width: 400, height: 300 };
 const DEFAULT_IMAGE_NODE_SIZE = { width: 400, height: 300 };
 
 const snap = (value: number): number => Math.round(value / GRID_SIZE) * GRID_SIZE;
+
+const OBJECT_SNAP_THRESHOLD = 8;
+
+interface SnapGuideLines {
+  x: number | null;
+  y: number | null;
+}
+
+function findObjectSnapOffset(
+  target: { x: number; y: number; width: number; height: number },
+  others: CanvasNode[],
+): { dx: number; dy: number; guideX: number | null; guideY: number | null } {
+  const tx = [target.x, target.x + target.width / 2, target.x + target.width];
+  const ty = [target.y, target.y + target.height / 2, target.y + target.height];
+
+  let bestAbsDx = OBJECT_SNAP_THRESHOLD + 1;
+  let bestDx = 0;
+  let guideX: number | null = null;
+
+  let bestAbsDy = OBJECT_SNAP_THRESHOLD + 1;
+  let bestDy = 0;
+  let guideY: number | null = null;
+
+  for (const other of others) {
+    const ox = [other.x, other.x + other.width / 2, other.x + other.width];
+    const oy = [other.y, other.y + other.height / 2, other.y + other.height];
+
+    for (const tVal of tx) {
+      for (const oVal of ox) {
+        const diff = oVal - tVal;
+        const abs = Math.abs(diff);
+        if (abs < bestAbsDx) {
+          bestAbsDx = abs;
+          bestDx = diff;
+          guideX = oVal;
+        }
+      }
+    }
+
+    for (const tVal of ty) {
+      for (const oVal of oy) {
+        const diff = oVal - tVal;
+        const abs = Math.abs(diff);
+        if (abs < bestAbsDy) {
+          bestAbsDy = abs;
+          bestDy = diff;
+          guideY = oVal;
+        }
+      }
+    }
+  }
+
+  return {
+    dx: bestAbsDx <= OBJECT_SNAP_THRESHOLD ? bestDx : 0,
+    dy: bestAbsDy <= OBJECT_SNAP_THRESHOLD ? bestDy : 0,
+    guideX: bestAbsDx <= OBJECT_SNAP_THRESHOLD ? guideX : null,
+    guideY: bestAbsDy <= OBJECT_SNAP_THRESHOLD ? guideY : null,
+  };
+}
+
+function snapResizeToObjects(
+  rect: { x: number; y: number; width: number; height: number },
+  handle: string,
+  others: CanvasNode[],
+  minDim: number,
+): { x: number; y: number; width: number; height: number; guideX: number | null; guideY: number | null } {
+  let { x, y, width, height } = rect;
+  let bestAbsDx = OBJECT_SNAP_THRESHOLD + 1;
+  let guideX: number | null = null;
+  let snapXTarget: number | null = null;
+
+  let bestAbsDy = OBJECT_SNAP_THRESHOLD + 1;
+  let guideY: number | null = null;
+  let snapYTarget: number | null = null;
+
+  for (const other of others) {
+    const ox = [other.x, other.x + other.width / 2, other.x + other.width];
+    const oy = [other.y, other.y + other.height / 2, other.y + other.height];
+
+    if (handle.includes('e')) {
+      const right = x + width;
+      for (const oVal of ox) {
+        const abs = Math.abs(oVal - right);
+        if (abs < bestAbsDx && oVal - x >= minDim) {
+          bestAbsDx = abs;
+          snapXTarget = oVal;
+          guideX = oVal;
+        }
+      }
+    } else if (handle.includes('w')) {
+      for (const oVal of ox) {
+        const abs = Math.abs(oVal - x);
+        if (abs < bestAbsDx && x + width - oVal >= minDim) {
+          bestAbsDx = abs;
+          snapXTarget = oVal;
+          guideX = oVal;
+        }
+      }
+    }
+
+    if (handle.includes('s')) {
+      const bottom = y + height;
+      for (const oVal of oy) {
+        const abs = Math.abs(oVal - bottom);
+        if (abs < bestAbsDy && oVal - y >= minDim) {
+          bestAbsDy = abs;
+          snapYTarget = oVal;
+          guideY = oVal;
+        }
+      }
+    } else if (handle.includes('n')) {
+      for (const oVal of oy) {
+        const abs = Math.abs(oVal - y);
+        if (abs < bestAbsDy && y + height - oVal >= minDim) {
+          bestAbsDy = abs;
+          snapYTarget = oVal;
+          guideY = oVal;
+        }
+      }
+    }
+  }
+
+  if (snapXTarget !== null) {
+    if (handle.includes('e')) {
+      width = snapXTarget - x;
+    } else if (handle.includes('w')) {
+      width = x + width - snapXTarget;
+      x = snapXTarget;
+    }
+  }
+
+  if (snapYTarget !== null) {
+    if (handle.includes('s')) {
+      height = snapYTarget - y;
+    } else if (handle.includes('n')) {
+      height = y + height - snapYTarget;
+      y = snapYTarget;
+    }
+  }
+
+  return { x, y, width, height, guideX, guideY };
+}
 
 /** Obtiene el tamaño natural de una imagen a partir de su URL. */
 function getImageNaturalSize(url: string): Promise<{ width: number; height: number } | null> {
