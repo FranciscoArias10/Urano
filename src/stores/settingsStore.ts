@@ -158,6 +158,11 @@ export interface UranoSettings {
 
   // Core plugin options
   backlinksInDocument: boolean;
+  canvasNewFileLocation: CanvasNewFileLocation;
+  canvasDefaultFolder: string;
+  canvasWheelBehavior: CanvasWheelBehavior;
+  canvasCtrlDragBehavior: CanvasCtrlDragBehavior;
+  canvasCardLabel: CanvasCardLabel;
   canvasSnapToGrid: boolean;
   canvasSnapToObjects: boolean;
   canvasZoomThreshold: number;
@@ -286,9 +291,14 @@ export const DEFAULT_SETTINGS: UranoSettings = {
   },
 
   backlinksInDocument: false,
+  canvasNewFileLocation: 'root',
+  canvasDefaultFolder: '',
+  canvasWheelBehavior: 'zoom',
+  canvasCtrlDragBehavior: 'menu',
+  canvasCardLabel: 'always',
   canvasSnapToGrid: true,
   canvasSnapToObjects: true,
-  canvasZoomThreshold: 0.5,
+  canvasZoomThreshold: 100,
   dailyNotesFolder: '',
   dailyNotesOpenOnStartup: false,
   fileRecoveryIntervalMinutes: 5,
