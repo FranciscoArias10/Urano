@@ -2002,31 +2002,130 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
       id: 'canvas-options',
       items: [
         {
+          id: 'canvas-new-file-location',
+          name: t('canvas.newFileLocation'),
+          control: (
+            <Dropdown<CanvasNewFileLocation>
+              value={settings.canvasNewFileLocation}
+              onChange={set('canvasNewFileLocation')}
+              ariaLabel={t('canvas.newFileLocation')}
+              options={[
+                { value: 'root', label: t('canvas.newFileLocationOptions.root') },
+                { value: 'current', label: t('canvas.newFileLocationOptions.current') },
+                { value: 'folder', label: t('canvas.newFileLocationOptions.folder') },
+              ]}
+            />
+          ),
+        },
+        ...(settings.canvasNewFileLocation === 'folder'
+          ? [
+              {
+                id: 'canvas-default-folder',
+                name: t('canvas.defaultFolder'),
+                desc: t('canvas.defaultFolderDesc'),
+                control: (
+                  <VaultFolderInput
+                    value={settings.canvasDefaultFolder}
+                    placeholder={t('canvas.defaultFolderPlaceholder')}
+                    onChange={set('canvasDefaultFolder')}
+                    ariaLabel={t('canvas.defaultFolder')}
+                    emptyText={t('templates.noFoldersFound')}
+                  />
+                ),
+              },
+            ]
+          : []),
+        {
+          id: 'canvas-wheel-behavior',
+          name: t('canvas.wheelBehavior'),
+          control: (
+            <Dropdown<CanvasWheelBehavior>
+              value={settings.canvasWheelBehavior}
+              onChange={set('canvasWheelBehavior')}
+              ariaLabel={t('canvas.wheelBehavior')}
+              options={[
+                { value: 'pan', label: t('canvas.wheelBehaviorOptions.pan') },
+                { value: 'zoom', label: t('canvas.wheelBehaviorOptions.zoom') },
+              ]}
+            />
+          ),
+        },
+        {
+          id: 'canvas-ctrl-drag-behavior',
+          name: t('canvas.ctrlDragBehavior'),
+          control: (
+            <Dropdown<CanvasCtrlDragBehavior>
+              value={settings.canvasCtrlDragBehavior}
+              onChange={set('canvasCtrlDragBehavior')}
+              ariaLabel={t('canvas.ctrlDragBehavior')}
+              options={[
+                { value: 'menu', label: t('canvas.ctrlDragBehaviorOptions.menu') },
+                { value: 'select', label: t('canvas.ctrlDragBehaviorOptions.select') },
+              ]}
+            />
+          ),
+        },
+        {
+          id: 'canvas-card-label',
+          name: t('canvas.cardLabel'),
+          control: (
+            <Dropdown<CanvasCardLabel>
+              value={settings.canvasCardLabel}
+              onChange={set('canvasCardLabel')}
+              ariaLabel={t('canvas.cardLabel')}
+              options={[
+                { value: 'always', label: t('canvas.cardLabelOptions.always') },
+                { value: 'hover', label: t('canvas.cardLabelOptions.hover') },
+                { value: 'never', label: t('canvas.cardLabelOptions.never') },
+              ]}
+            />
+          ),
+        },
+        {
           id: 'canvas-snap-grid',
           name: t('canvas.snapToGrid'),
           desc: t('canvas.snapToGridDesc'),
-          control: <Toggle value={settings.canvasSnapToGrid} onChange={set('canvasSnapToGrid')} ariaLabel={t('canvas.snapToGrid')} />,
+          control: (
+            <Toggle
+              value={settings.canvasSnapToGrid}
+              onChange={set('canvasSnapToGrid')}
+              ariaLabel={t('canvas.snapToGrid')}
+            />
+          ),
         },
         {
           id: 'canvas-snap-objects',
           name: t('canvas.snapToObjects'),
           desc: t('canvas.snapToObjectsDesc'),
-          control: <Toggle value={settings.canvasSnapToObjects} onChange={set('canvasSnapToObjects')} ariaLabel={t('canvas.snapToObjects')} />,
+          control: (
+            <Toggle
+              value={settings.canvasSnapToObjects}
+              onChange={set('canvasSnapToObjects')}
+              ariaLabel={t('canvas.snapToObjects')}
+            />
+          ),
         },
         {
           id: 'canvas-zoom-threshold',
           name: t('canvas.zoomThreshold'),
           desc: t('canvas.zoomThresholdDesc'),
           control: (
-            <Slider
-              value={settings.canvasZoomThreshold}
-              min={0.1}
-              max={1}
-              step={0.05}
-              format={(v) => `${Math.round(v * 100)}%`}
-              onChange={(v) => setSetting('canvasZoomThreshold', Math.round(v * 100) / 100)}
-              ariaLabel={t('canvas.zoomThreshold')}
-            />
+            <>
+              <ExtraButton
+                icon={<RotateCcw size={ICON} />}
+                tooltip={t('appearance.restoreDefault')}
+                onClick={() => setSetting('canvasZoomThreshold', 100)}
+              />
+              <Slider
+                value={settings.canvasZoomThreshold}
+                min={10}
+                max={100}
+                step={5}
+                format={(v) => `${v}%`}
+                onChange={(v) => setSetting('canvasZoomThreshold', v)}
+                ariaLabel={t('canvas.zoomThreshold')}
+              />
+            </>
           ),
         },
       ],
