@@ -56,6 +56,10 @@ import {
   DeleteAttachmentsWithFile,
   TrashOption,
   WindowFrameStyle,
+  CanvasNewFileLocation,
+  CanvasWheelBehavior,
+  CanvasCtrlDragBehavior,
+  CanvasCardLabel,
 } from '../../stores/settingsStore';
 import { useSyncStore } from '../../stores/syncStore';
 import { useLocaleStore } from '../../stores/localeStore';
@@ -1907,8 +1911,6 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
       {
         id: 'core-plugins-list',
         className: 'mod-list',
-        heading: t('tab.corePlugins'),
-        headingControl: <span className="setting-item-value">{t('corePlugins.desc')}</span>,
         items: sortedCorePluginIds.map((id) => {
           const meta = CORE_PLUGIN_META[id];
           const name = t(meta.nameKey);
