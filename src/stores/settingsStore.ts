@@ -500,6 +500,32 @@ function mergeSettings(raw: unknown): UranoSettings {
   out.configFolderOverride = rawConfig ? (rawConfig.startsWith('.') ? rawConfig : `.${rawConfig}`) : '';
   out.allowUriCallbacks = Boolean(src?.allowUriCallbacks);
 
+  if (!['root', 'current', 'folder'].includes(out.canvasNewFileLocation)) {
+    out.canvasNewFileLocation = 'root';
+  }
+  out.canvasDefaultFolder = typeof src?.canvasDefaultFolder === 'string' ? src.canvasDefaultFolder : '';
+  if (!['pan', 'zoom'].includes(out.canvasWheelBehavior)) {
+    out.canvasWheelBehavior = 'zoom';
+  }
+  if (!['menu', 'select'].includes(out.canvasCtrlDragBehavior)) {
+    out.canvasCtrlDragBehavior = 'menu';
+  }
+  if (!['always', 'hover', 'never'].includes(out.canvasCardLabel)) {
+    out.canvasCardLabel = 'always';
+  }
+  out.canvasSnapToGrid = src?.canvasSnapToGrid !== undefined ? Boolean(src.canvasSnapToGrid) : true;
+  out.canvasSnapToObjects = src?.canvasSnapToObjects !== undefined ? Boolean(src.canvasSnapToObjects) : true;
+  if (typeof src?.canvasZoomThreshold === 'number' && Number.isFinite(src.canvasZoomThreshold)) {
+    // Migrar valores decimales antiguos (<= 1, ej. 0.5) al porcentaje por defecto 100%
+    if (src.canvasZoomThreshold <= 1) {
+      out.canvasZoomThreshold = 100;
+    } else {
+      out.canvasZoomThreshold = Math.min(100, Math.max(10, Math.round(src.canvasZoomThreshold)));
+    }
+  } else {
+    out.canvasZoomThreshold = 100;
+  }
+
   return out;
 }
 
