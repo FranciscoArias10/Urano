@@ -1003,6 +1003,27 @@ export function resolveNewFileDir(vaultPath: string, activeFile: string | null):
 }
 
 /**
+ * Resolves the directory where newly created canvas files should be placed,
+ * following Settings → Canvas → "Default location for new canvas files".
+ */
+export function resolveNewCanvasDir(vaultPath: string, activeFile: string | null): string {
+  const sep = vaultPath.includes('\\') ? '\\' : '/';
+  const cleanVault = vaultPath.replace(/[\\/]+$/, '');
+  const { canvasNewFileLocation, canvasDefaultFolder } = getSettings();
+
+  if (canvasNewFileLocation === 'current' && activeFile) {
+    const normalized = activeFile.replace(/\\/g, '/');
+    const idx = normalized.lastIndexOf('/');
+    return idx > 0 ? normalized.slice(0, idx).replace(/\//g, sep) : cleanVault;
+  }
+  if (canvasNewFileLocation === 'folder') {
+    const folder = (canvasDefaultFolder || '').trim().replace(/^[\\/]+|[\\/]+$/g, '');
+    return folder ? `${cleanVault}${sep}${folder.replace(/[\\/]/g, sep)}` : cleanVault;
+  }
+  return cleanVault;
+}
+
+/**
  * Directory where a new attachment (pasted/dropped image) should be written,
  * following the "Default location for new attachments" setting.
  */
