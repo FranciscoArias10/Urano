@@ -501,12 +501,37 @@
       "showInDocumentDesc": "Show backlinks at the bottom of notes."
     },
     "canvas": {
+      "newFileLocation": "Default location for new canvas files",
+      "newFileLocationOptions": {
+        "root": "Vault folder",
+        "current": "Same folder as current file",
+        "folder": "In the folder specified below"
+      },
+      "defaultFolder": "Folder to create new canvas files in",
+      "defaultFolderDesc": "Newly created canvas files will appear under this folder.",
+      "defaultFolderPlaceholder": "Example: folder 1/folder",
+      "wheelBehavior": "Default wheel behavior",
+      "wheelBehaviorOptions": {
+        "pan": "Pan",
+        "zoom": "Zoom"
+      },
+      "ctrlDragBehavior": "Default Ctrl + Drag behavior",
+      "ctrlDragBehaviorOptions": {
+        "menu": "Show menu",
+        "select": "Select"
+      },
+      "cardLabel": "Show card label",
+      "cardLabelOptions": {
+        "always": "Always",
+        "hover": "On hover",
+        "never": "Never"
+      },
       "snapToGrid": "Snap to grid",
-      "snapToGridDesc": "Align cards to the canvas grid while dragging.",
+      "snapToGridDesc": "Snap cards to background grid when moving and resizing.",
       "snapToObjects": "Snap to objects",
-      "snapToObjectsDesc": "Align cards to nearby cards while dragging.",
-      "zoomThreshold": "Zoom threshold",
-      "zoomThresholdDesc": "Hide card content when zoomed out past this level."
+      "snapToObjectsDesc": "Snap cards to nearby objects when moving and resizing.",
+      "zoomThreshold": "Zoom threshold to hide card content",
+      "zoomThresholdDesc": "Lower values will increase performance, but hide card content when zoomed out."
     },
     "commandPalette": {
       "pinned": "Pinned commands",
