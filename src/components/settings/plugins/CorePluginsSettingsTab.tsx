@@ -78,8 +78,6 @@ export const CorePluginsSettingsTab: React.FC = () => {
       <SettingGroup
         id="core-plugins-list"
         className="mod-list"
-        heading={t('tab.corePlugins')}
-        headingControl={<span className="setting-item-value">{t('corePlugins.desc')}</span>}
       >
         {filteredPlugins.length === 0 ? (
           <div className="setting-empty-state">{t('corePlugins.noResults')}</div>
