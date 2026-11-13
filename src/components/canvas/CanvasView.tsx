@@ -876,32 +876,26 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         dy *= 800;
       }
 
-      // Pellizco de trackpad en Linux/Wayland/X11: `wheel` con ctrlKey=true y
-      // deltaY fraccionario (deltaY<0 al separar dedos, >0 al juntarlos).
+      // Pellizco de trackpad o Ctrl + rueda siempre hace zoom
       const isPinch = e.ctrlKey || e.metaKey;
 
-      // Rueda discreta de ratón: deltas enteros múltiplos de 120 sin componente X
-      // (Urano: `Math.abs(wheelDeltaY) === 240 && wheelDeltaX === 0`).
-      const legacy = e as WheelEvent & { wheelDeltaY?: number; wheelDeltaX?: number };
-      const isDiscreteMouseWheel =
-        !isPinch &&
-        dx === 0 &&
-        ((typeof legacy.wheelDeltaY === 'number' &&
-          legacy.wheelDeltaY !== 0 &&
-          Math.abs(legacy.wheelDeltaY) % 120 === 0 &&
-          (legacy.wheelDeltaX ?? 0) === 0) ||
-          e.deltaMode !== WheelEvent.DOM_DELTA_PIXEL ||
-          (Number.isInteger(dy) && Math.abs(dy) >= 100));
-
-      if (isPinch || isDiscreteMouseWheel) {
-        const sensitivity = isPinch ? WHEEL_ZOOM_SENSITIVITY_PINCH : WHEEL_ZOOM_SENSITIVITY_MOUSE;
-        const zoomFactor = Math.exp(-dy * sensitivity);
+      if (isPinch) {
+        const zoomFactor = Math.exp(-dy * WHEEL_ZOOM_SENSITIVITY_PINCH);
         zoomAtPoint(viewportRef.current.zoom * zoomFactor, e.clientX, e.clientY);
         return;
       }
 
-      // Dos dedos en paralelo sobre el trackpad: desplazar la cámara.
-      // Shift + rueda vertical → desplazamiento horizontal (Urano).
+      if (canvasWheelBehavior === 'zoom') {
+        if (dx === 0 || Math.abs(dy) >= Math.abs(dx)) {
+          const zoomFactor = Math.exp(-dy * WHEEL_ZOOM_SENSITIVITY_MOUSE);
+          zoomAtPoint(viewportRef.current.zoom * zoomFactor, e.clientX, e.clientY);
+          return;
+        }
+        panBy(dx, 0);
+        return;
+      }
+
+      // canvasWheelBehavior === 'pan': desplazar la cámara (Shift + rueda → horizontal)
       if (e.shiftKey && dx === 0) {
         panBy(dy, 0);
       } else {
@@ -995,7 +989,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       el.removeEventListener('gesturechange', onGestureChange);
       el.removeEventListener('gestureend', onGestureEnd);
     };
-  }, [zoomAtPoint, panBy]);
+  }, [zoomAtPoint, panBy, canvasWheelBehavior]);
 
   /* ------------------------------------------------------------------ */
   /* Pellizco de touchpad en Linux / WebKitGTK (puente desde Rust)        */
