@@ -2153,6 +2153,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     [canvasData.nodes]
   );
 
+  // Umbral de zoom para ocultar contenido de tarjeta (100% -> zoom < 0.20; valores menores ocultan antes)
+  const lodZoomCutoff = 0.2 + ((100 - canvasZoomThreshold) / 90) * 0.65;
+  const hideCardContentByZoom = zoom < lodZoomCutoff;
+
   /* ------------------------------------------------------------------ */
   /* Render                                                              */
   /* ------------------------------------------------------------------ */
@@ -2170,7 +2174,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       onDrop={handleDrop}
       className={`canvas-wrapper ${isPanning || isHoldingSpace ? 'is-dragging-canvas' : ''} ${
         readonly ? 'mod-readonly' : ''
-      } ${snapToGrid ? 'mod-snap-to-grid' : ''}`}
+      } ${snapToGrid ? 'mod-snap-to-grid' : ''} mod-card-label-${canvasCardLabel}`}
       style={
         {
           '--canvas-zoom': zoom,
@@ -2205,7 +2209,11 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         onZoomToFit={handleZoomToFit}
         onResetZoom={handleResetZoom}
         onToggleReadonly={() => setReadonly(!readonly)}
-        onToggleSnapToGrid={() => setSnapToGrid((v) => !v)}
+        onToggleSnapToGrid={() => {
+          const next = !snapToGrid;
+          setSnapToGrid(next);
+          useSettingsStore.getState().setSetting('canvasSnapToGrid', next);
+        }}
         onUndo={handleUndo}
         onRedo={handleRedo}
       />
@@ -2357,6 +2365,26 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
               />
             );
           })()}
+
+          {/* Guías de alineación al ajustar a objetos */}
+          {snapGuides?.x !== null && snapGuides?.x !== undefined && (
+            <line
+              x1={snapGuides.x}
+              y1={-100000}
+              x2={snapGuides.x}
+              y2={100000}
+              className="canvas-snap-guide"
+            />
+          )}
+          {snapGuides?.y !== null && snapGuides?.y !== undefined && (
+            <line
+              x1={-100000}
+              y1={snapGuides.y}
+              x2={100000}
+              y2={snapGuides.y}
+              className="canvas-snap-guide"
+            />
+          )}
         </svg>
 
         {/* Nodes Layer (Groups are sorted behind regular cards) */}
@@ -2409,6 +2437,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
             onDeleteNode={handleDeleteNode}
             onSetNodeColor={handleSetNodeColor}
             onZoomToNode={handleZoomToNode}
+            cardLabelMode={canvasCardLabel}
+            hideContent={hideCardContentByZoom && editingNodeId !== node.id}
           />
         ))}
       </div>
