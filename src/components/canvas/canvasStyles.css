@@ -1106,3 +1106,21 @@ body.theme-dark .canvas-node-group .canvas-node-content,
 .canvas-md-table tr:nth-child(even) td {
   background-color: var(--background-modifier-hover);
 }
+
+/* ------------------------------------------------------------------ */
+/* Ajustes visuales de etiquetas, umbral de zoom (LOD) y guías objeto */
+/* ------------------------------------------------------------------ */
+.canvas-wrapper.mod-card-label-hover .canvas-node:not(.canvas-node-group) > .canvas-node-label {
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.canvas-wrapper.mod-card-label-hover .canvas-node:not(.canvas-node-group):hover > .canvas-node-label,
+.canvas-wrapper.mod-card-label-hover .canvas-node:not(.canvas-node-group).is-selected > .canvas-node-label,
+.canvas-wrapper.mod-card-label-hover .canvas-node:not(.canvas-node-group).is-dragging > .canvas-node-label {
+  opacity: 1;
+}
+
+.canvas-wrapper.mod-card-label-never .canvas-node > .canvas-node-label {
+  display: none;
+}
