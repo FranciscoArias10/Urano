@@ -17,6 +17,10 @@ export type DeleteAttachmentsWithFile = 'ask' | 'always' | 'never';
 export type TrashOption = 'system' | 'local' | 'none';
 export type DeletedFilesDestination = 'system' | 'trash' | 'permanent';
 export type StorageBackend = 'local' | 'gdrive';
+export type CanvasNewFileLocation = 'root' | 'current' | 'folder';
+export type CanvasWheelBehavior = 'pan' | 'zoom';
+export type CanvasCtrlDragBehavior = 'menu' | 'select';
+export type CanvasCardLabel = 'always' | 'hover' | 'never';
 
 export const CORE_PLUGIN_IDS = [
   'bases',
