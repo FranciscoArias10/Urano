@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { FileItem, SortOrder, BookmarkItem } from '../types';
 import { isImagePath } from '../services/storageAdapter';
-import { useSettingsStore, resolveNewFileDir } from './settingsStore';
+import { useSettingsStore, resolveNewFileDir, resolveNewCanvasDir } from './settingsStore';
 import { useSyncStore } from './syncStore';
 import { useNoticeStore } from '../components/common/Notice';
 import { t } from '../locales/i18n';
@@ -596,14 +596,26 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
   // Urano Canvas creation (.canvas JSON format)
   createUntitledCanvas: async (parentPath?: string): Promise<{ path: string; name: string }> => {
-    const { activeVault, fileTree, refreshTree, selectFile } = get();
-    const targetDir = parentPath || activeVault;
+    const { activeVault, fileTree, refreshTree, selectFile, activeFile } = get();
+    if (!activeVault) return { path: '', name: '' };
+
+    let targetDir = parentPath;
+    if (!targetDir || targetDir === activeVault) {
+      targetDir = resolveNewCanvasDir(activeVault, activeFile);
+    }
     if (!targetDir) return { path: '', name: '' };
 
+    if (targetDir !== activeVault) {
+      try {
+        await invoke('create_folder', { folderPath: targetDir });
+      } catch {}
+    }
+
+    const normTargetDir = normalizePath(targetDir);
     const existingNames = new Set<string>();
     const collectInDir = (items: FileItem[]) => {
       for (const item of items) {
-        if (item.path.startsWith(targetDir)) {
+        if (normalizePath(item.path).startsWith(normTargetDir)) {
           existingNames.add(item.name.toLowerCase());
         }
         if (item.children) collectInDir(item.children);
