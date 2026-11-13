@@ -501,12 +501,37 @@
       "showInDocumentDesc": "Muestra los backlinks al final de las notas."
     },
     "canvas": {
+      "newFileLocation": "Ubicación por defecto para nuevos archivos de canvas",
+      "newFileLocationOptions": {
+        "root": "Carpeta de la bóveda",
+        "current": "Misma carpeta que el archivo actual",
+        "folder": "En la carpeta especificada abajo"
+      },
+      "defaultFolder": "Carpeta para nuevos archivos de canvas",
+      "defaultFolderDesc": "Los archivos de canvas nuevos se colocarán aquí.",
+      "defaultFolderPlaceholder": "Ejemplo: carpeta 1/carpeta",
+      "wheelBehavior": "Comportamiento por defecto de la rueda del mouse",
+      "wheelBehaviorOptions": {
+        "pan": "Panear",
+        "zoom": "Zoom"
+      },
+      "ctrlDragBehavior": "Comportamiento por defecto de la tecla Ctrl + Drag",
+      "ctrlDragBehaviorOptions": {
+        "menu": "Mostrar menú",
+        "select": "Seleccionar"
+      },
+      "cardLabel": "Mostrar etiqueta de tarjeta",
+      "cardLabelOptions": {
+        "always": "Siempre",
+        "hover": "Al pasar el cursor",
+        "never": "Nunca"
+      },
       "snapToGrid": "Ajustar a la cuadrícula",
-      "snapToGridDesc": "Alinea las tarjetas a la cuadrícula al arrastrarlas.",
+      "snapToGridDesc": "Ajustar tarjetas a la cuadrícula del fondo al mover y redimensionar.",
       "snapToObjects": "Ajustar a objetos",
-      "snapToObjectsDesc": "Alinea las tarjetas con las tarjetas cercanas al arrastrarlas.",
-      "zoomThreshold": "Umbral de zoom",
-      "zoomThresholdDesc": "Oculta el contenido de las tarjetas al alejar más de este nivel."
+      "snapToObjectsDesc": "Ajustar tarjetas a los objetos cercanos al mover y redimensionar.",
+      "zoomThreshold": "Umbral de zoom para ocultar el contenido de una tarjeta",
+      "zoomThresholdDesc": "Los valores más bajos incrementarán el rendimiento, pero ocultarán el contenido de una tarjeta al alejarse."
     },
     "commandPalette": {
       "pinned": "Comandos fijados",
