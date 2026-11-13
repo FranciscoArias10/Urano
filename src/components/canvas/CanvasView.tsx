@@ -271,11 +271,24 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   const { showNotice } = useNoticeStore();
   const t = useT();
 
+  const canvasWheelBehavior = useSettingsStore((s) => s.settings.canvasWheelBehavior);
+  const canvasCtrlDragBehavior = useSettingsStore((s) => s.settings.canvasCtrlDragBehavior);
+  const canvasCardLabel = useSettingsStore((s) => s.settings.canvasCardLabel);
+  const canvasSnapToGrid = useSettingsStore((s) => s.settings.canvasSnapToGrid);
+  const canvasSnapToObjects = useSettingsStore((s) => s.settings.canvasSnapToObjects);
+  const canvasZoomThreshold = useSettingsStore((s) => s.settings.canvasZoomThreshold);
+
   const [canvasData, setCanvasData] = useState<CanvasData>({ nodes: [], edges: [] });
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState<CanvasPoint>({ x: 0, y: 0 });
   const [readonly, setReadonly] = useState(false);
-  const [snapToGrid, setSnapToGrid] = useState(false);
+  const [snapToGrid, setSnapToGrid] = useState(canvasSnapToGrid);
+  const [snapGuides, setSnapGuides] = useState<SnapGuideLines | null>(null);
+  const ctrlDragMenuRef = useRef<{ startX: number; startY: number } | null>(null);
+
+  useEffect(() => {
+    setSnapToGrid(canvasSnapToGrid);
+  }, [canvasSnapToGrid]);
 
   // Selection
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
