@@ -34,6 +34,10 @@ interface CanvasNodeViewProps {
   onSetNodeColor?: (nodeId: string, colorKey?: string) => void;
   /** Centra la cámara y ajusta el zoom para encuadrar el nodo. */
   onZoomToNode?: (nodeId: string) => void;
+  /** Cuándo mostrar la etiqueta de la tarjeta (`always` | `hover` | `never`). */
+  cardLabelMode?: 'always' | 'hover' | 'never';
+  /** Si es `true`, oculta el contenido pesado de la tarjeta (por umbral de zoom). */
+  hideContent?: boolean;
 }
 
 /** Extrae el nombre del archivo (con extensión) a partir de la ruta absoluta. */
@@ -79,6 +83,8 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
   onDeleteNode,
   onSetNodeColor,
   onZoomToNode,
+  cardLabelMode = 'always',
+  hideContent = false,
 }) => {
   const t = useT();
   const [localIsEditing, setLocalIsEditing] = useState(false);
@@ -173,6 +179,17 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
   };
 
   const isGroup = node.type === 'group';
+  const isLodHidden = hideContent && !isGroup && !isEditing;
+
+  const getLodSummary = (): string => {
+    if (isFileNode) return noteTitle(filePath) || baseName(filePath);
+    if (node.type === 'link') return node.url;
+    if (isTextNode) {
+      const firstLine = (textContent || '').trim().split('\n')[0] || '';
+      return firstLine.replace(/^#+\s*/, '').slice(0, 60);
+    }
+    return '';
+  };
 
   /* ---------------------------------------------------------------- */
   /* Punto de conexión único                                           */
