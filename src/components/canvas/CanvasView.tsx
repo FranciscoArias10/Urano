@@ -1391,9 +1391,14 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       return;
     }
 
-    // 2. Left click on background -> selection rectangle or clear selection
+    // 2. Left click on background -> Ctrl+Drag menu, selection rectangle, or clear selection
     if (e.button === 0 && isTargetCanvasBg) {
-      if (!e.shiftKey) {
+      if ((e.ctrlKey || e.metaKey) && canvasCtrlDragBehavior === 'menu' && !readonly) {
+        ctrlDragMenuRef.current = { startX: e.clientX, startY: e.clientY };
+        return;
+      }
+
+      if (!e.shiftKey && !(e.ctrlKey || e.metaKey)) {
         setSelectedNodeIds(new Set());
         setSelectedEdgeId(null);
       }
@@ -1455,18 +1460,49 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         dragMovedRef.current = true;
       }
 
+      const primaryInit = initialNodesStateRef.current.get(draggingNodeId);
+      const currentNodes = canvasDataRef.current.nodes;
+      const primaryNode = currentNodes.find((n) => n.id === draggingNodeId);
+
+      let adjDx = deltaX;
+      let adjDy = deltaY;
+      let nextGuides: SnapGuideLines | null = null;
+
+      if (primaryInit && primaryNode) {
+        const rawX = primaryInit.x + deltaX;
+        const rawY = primaryInit.y + deltaY;
+        let finalX = snapToGrid ? snap(rawX) : Math.round(rawX);
+        let finalY = snapToGrid ? snap(rawY) : Math.round(rawY);
+
+        if (canvasSnapToObjects) {
+          const others = currentNodes.filter((n) => !initialNodesStateRef.current.has(n.id));
+          const objSnap = findObjectSnapOffset(
+            { x: finalX, y: finalY, width: primaryNode.width, height: primaryNode.height },
+            others,
+          );
+          finalX = Math.round(finalX + objSnap.dx);
+          finalY = Math.round(finalY + objSnap.dy);
+          if (objSnap.guideX !== null || objSnap.guideY !== null) {
+            nextGuides = { x: objSnap.guideX, y: objSnap.guideY };
+          }
+        }
+
+        adjDx = finalX - primaryInit.x;
+        adjDy = finalY - primaryInit.y;
+      }
+
+      setSnapGuides(nextGuides);
+
       setCanvasData((prev) => {
         const next: CanvasData = {
           ...prev,
           nodes: prev.nodes.map((n) => {
             const init = initialNodesStateRef.current.get(n.id);
             if (init) {
-              const nx = init.x + deltaX;
-              const ny = init.y + deltaY;
               return {
                 ...n,
-                x: snapToGrid ? snap(nx) : Math.round(nx),
-                y: snapToGrid ? snap(ny) : Math.round(ny),
+                x: Math.round(init.x + adjDx),
+                y: Math.round(init.y + adjDy),
               };
             }
             return n;
@@ -1515,9 +1551,30 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       }
 
       if (snapToGrid) {
+        newX = snap(newX);
+        newY = snap(newY);
         newW = snap(newW);
         newH = snap(newH);
       }
+
+      let nextGuides: SnapGuideLines | null = null;
+      if (canvasSnapToObjects) {
+        const others = canvasDataRef.current.nodes.filter((n) => !selectedNodeIds.has(n.id));
+        const objResize = snapResizeToObjects(
+          { x: newX, y: newY, width: newW, height: newH },
+          resizingHandle,
+          others,
+          minDim,
+        );
+        newX = objResize.x;
+        newY = objResize.y;
+        newW = objResize.width;
+        newH = objResize.height;
+        if (objResize.guideX !== null || objResize.guideY !== null) {
+          nextGuides = { x: objResize.guideX, y: objResize.guideY };
+        }
+      }
+      setSnapGuides(nextGuides);
 
       setCanvasData((prev) => {
         const next: CanvasData = {
@@ -1526,8 +1583,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
             selectedNodeIds.has(n.id)
               ? {
                   ...n,
-                  x: snapToGrid ? snap(newX) : Math.round(newX),
-                  y: snapToGrid ? snap(newY) : Math.round(newY),
+                  x: Math.round(newX),
+                  y: Math.round(newY),
                   width: Math.round(newW),
                   height: Math.round(newH),
                 }
@@ -1548,6 +1605,23 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
   // Pointer Up on Canvas
   const handlePointerUp = (e: React.MouseEvent) => {
+    setSnapGuides(null);
+
+    if (ctrlDragMenuRef.current) {
+      const start = ctrlDragMenuRef.current;
+      ctrlDragMenuRef.current = null;
+      const dist = Math.hypot(e.clientX - start.startX, e.clientY - start.startY);
+      if (dist >= 12) {
+        const worldPos = screenToWorld(e.clientX, e.clientY);
+        setContextMenu({
+          x: e.clientX,
+          y: e.clientY,
+          items: buildBackgroundContextMenuItems(worldPos),
+        });
+      }
+      return;
+    }
+
     if (isPanning) {
       setIsPanning(false);
     }
@@ -1627,14 +1701,19 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         applyChange((prev) => ({ ...prev, edges: [...prev.edges, newEdge] }));
         setSelectedEdgeId(newEdge.id);
       } else if (sourceNode) {
-        // Soltado sobre el lienzo vacío: congelar la punta de la flecha y
-        // preguntar qué nodo crear (Urano no crea nada sin elección).
-        updatePendingEdgeDrop({
-          sourceNodeId: sourceNode.id,
-          sourceSide: connectingFrom.side,
-          world: dropWorld,
-        });
-        setEdgeDropMenu({ x: e.clientX, y: e.clientY });
+        if ((e.ctrlKey || e.metaKey) && canvasCtrlDragBehavior === 'select') {
+          // Ctrl+Drag en modo selección: limpiar flecha temporal
+          cancelPendingEdgeDrop();
+        } else {
+          // Soltado sobre el lienzo vacío: congelar la punta de la flecha y
+          // preguntar qué nodo crear (Urano no crea nada sin elección).
+          updatePendingEdgeDrop({
+            sourceNodeId: sourceNode.id,
+            sourceSide: connectingFrom.side,
+            world: dropWorld,
+          });
+          setEdgeDropMenu({ x: e.clientX, y: e.clientY });
+        }
       }
 
       setConnectingFrom(null);
@@ -1880,6 +1959,47 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   /* Menú contextual                                                      */
   /* ------------------------------------------------------------------ */
 
+  const buildBackgroundContextMenuItems = (worldPos: CanvasPoint): MenuItemData[] => [
+    {
+      title: t('canvas.menu.newCard'),
+      icon: <StickyNote size={14} />,
+      action: () => handleAddTextCard(worldPos),
+    },
+    {
+      title: t('canvas.menu.newNote'),
+      icon: <FileText size={14} />,
+      action: () => handleAddNoteCard(worldPos),
+    },
+    {
+      title: t('canvas.menu.newMedia'),
+      icon: <FileImage size={14} />,
+      action: () => handleAddMediaCard(worldPos),
+    },
+    {
+      title: t('canvas.menu.newGroup'),
+      icon: <FolderPlus size={14} />,
+      action: () => handleAddGroup(worldPos),
+    },
+    {
+      title: t('canvas.menu.newWebPage'),
+      icon: <Link2 size={14} />,
+      action: () => handleAddLinkCard(worldPos),
+    },
+    { type: 'separator' },
+    {
+      title: t('canvas.menu.selectAll'),
+      shortcut: 'Ctrl+A',
+      icon: <CheckSquare size={14} />,
+      action: () => setSelectedNodeIds(new Set(canvasData.nodes.map((n) => n.id))),
+    },
+    {
+      title: t('canvas.menu.zoomToFit'),
+      shortcut: 'Shift+1',
+      icon: <Maximize size={14} />,
+      action: handleZoomToFit,
+    },
+  ];
+
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1970,46 +2090,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       );
     } else {
       // Background Context Menu
-      items.push(
-        {
-          title: t('canvas.menu.newCard'),
-          icon: <StickyNote size={14} />,
-          action: () => handleAddTextCard(worldPos),
-        },
-        {
-          title: t('canvas.menu.newNote'),
-          icon: <FileText size={14} />,
-          action: () => handleAddNoteCard(worldPos),
-        },
-        {
-          title: t('canvas.menu.newMedia'),
-          icon: <FileImage size={14} />,
-          action: () => handleAddMediaCard(worldPos),
-        },
-        {
-          title: t('canvas.menu.newGroup'),
-          icon: <FolderPlus size={14} />,
-          action: () => handleAddGroup(worldPos),
-        },
-        {
-          title: t('canvas.menu.newWebPage'),
-          icon: <Link2 size={14} />,
-          action: () => handleAddLinkCard(worldPos),
-        },
-        { type: 'separator' },
-        {
-          title: t('canvas.menu.selectAll'),
-          shortcut: 'Ctrl+A',
-          icon: <CheckSquare size={14} />,
-          action: () => setSelectedNodeIds(new Set(canvasData.nodes.map((n) => n.id))),
-        },
-        {
-          title: t('canvas.menu.zoomToFit'),
-          shortcut: 'Shift+1',
-          icon: <Maximize size={14} />,
-          action: handleZoomToFit,
-        }
-      );
+      items.push(...buildBackgroundContextMenuItems(worldPos));
     }
 
     setContextMenu({ x: e.clientX, y: e.clientY, items });
