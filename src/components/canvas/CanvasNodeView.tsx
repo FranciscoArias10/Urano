@@ -349,7 +349,7 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
         isSelected ? 'is-selected' : ''
       } ${isDragging ? 'is-dragging' : ''} ${isEditing ? 'is-editing' : ''} ${
         hasTheme ? 'is-themed' : ''
-      }`}
+      } ${isLodHidden ? 'is-lod-hidden' : ''}`}
       style={{
         transform: `translate(${node.x}px, ${node.y}px)`,
         width: `${node.width}px`,
@@ -376,7 +376,7 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
       onMouseLeave={() => setHoverSide(null)}
     >
       {/* Etiqueta del archivo FUERA de la tarjeta, sobre la esquina superior izquierda */}
-      {isFileNode && (
+      {isFileNode && cardLabelMode !== 'never' && (
         <div className="canvas-node-label" onDoubleClick={(e) => e.stopPropagation()}>
           {baseName(filePath)}
         </div>
@@ -425,39 +425,54 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
       >
         {/* Node Content based on type */}
         <div className="canvas-node-content">
-          {node.type === 'text' && renderTextNode()}
-
-          {isFileNode && (isImageFile ? renderImageNode() : renderNoteNode())}
-
-          {/* TYPE: LINK */}
-          {node.type === 'link' && (
-            <div className="w-full h-full flex flex-col items-center justify-center text-center p-2">
-              {node.url.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) ? (
-                <img
-                  src={node.url}
-                  alt={t('canvas.node.linkMedia')}
-                  className="max-w-full max-h-full object-contain rounded select-none"
-                />
+          {isLodHidden ? (
+            <div className="canvas-node-lod-placeholder">
+              {getLodSummary() ? (
+                <span className="canvas-node-lod-title">{getLodSummary()}</span>
               ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <Globe size={32} className="text-orange-400 opacity-80" />
-                  <a
-                    href={node.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-xs text-orange-400 hover:underline break-all max-w-[200px]"
-                  >
-                    {node.url}
-                  </a>
-                </div>
+                <>
+                  <span className="canvas-node-lod-bar" />
+                  <span className="canvas-node-lod-bar is-short" />
+                </>
               )}
             </div>
-          )}
+          ) : (
+            <>
+              {node.type === 'text' && renderTextNode()}
 
-          {/* TYPE: GROUP */}
-          {node.type === 'group' && (
-            <div className="w-full h-full pointer-events-none" />
+              {isFileNode && (isImageFile ? renderImageNode() : renderNoteNode())}
+
+              {/* TYPE: LINK */}
+              {node.type === 'link' && (
+                <div className="w-full h-full flex flex-col items-center justify-center text-center p-2">
+                  {node.url.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) ? (
+                    <img
+                      src={node.url}
+                      alt={t('canvas.node.linkMedia')}
+                      className="max-w-full max-h-full object-contain rounded select-none"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <Globe size={32} className="text-orange-400 opacity-80" />
+                      <a
+                        href={node.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs text-orange-400 hover:underline break-all max-w-[200px]"
+                      >
+                        {node.url}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TYPE: GROUP */}
+              {node.type === 'group' && (
+                <div className="w-full h-full pointer-events-none" />
+              )}
+            </>
           )}
         </div>
       </div>
