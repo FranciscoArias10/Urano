@@ -531,6 +531,14 @@ function mergeSettings(raw: unknown): UranoSettings {
     out.canvasZoomThreshold = 100;
   }
 
+  if (!['link', 'embed', 'nothing'].includes(out.noteComposerAfterExtract)) {
+    out.noteComposerAfterExtract = 'link';
+  }
+  out.noteComposerTemplatePath =
+    typeof src?.noteComposerTemplatePath === 'string' ? src.noteComposerTemplatePath.trim() : '';
+  out.noteComposerConfirmMerge =
+    src?.noteComposerConfirmMerge !== undefined ? Boolean(src.noteComposerConfirmMerge) : true;
+
   return out;
 }
 
