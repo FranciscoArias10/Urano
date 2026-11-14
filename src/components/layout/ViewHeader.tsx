@@ -14,6 +14,7 @@ import {
   TextCursorInput,
   Link,
   FileText,
+  Merge,
 } from 'lucide-react';
 import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { useT } from '../../stores/localeStore';
@@ -37,6 +38,7 @@ interface ViewHeaderProps {
   onRename?: (newTitle: string) => void | Promise<void>;
   onMoveFile?: () => void;
   onDuplicateFile?: () => void;
+  onMergeFile?: () => void;
   onDeleteFile?: () => void;
   onCopyLink?: () => void;
   onCopyPath?: () => void;
@@ -58,6 +60,7 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
   onRename,
   onMoveFile,
   onDuplicateFile,
+  onMergeFile,
   onDeleteFile,
   onCopyLink,
   onCopyPath,
@@ -155,6 +158,15 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
           icon: <Copy size={14} />,
           action: () => onDuplicateFile?.(),
         },
+        ...(onMergeFile
+          ? [
+              {
+                title: t('viewHeader.mergeFile'),
+                icon: <Merge size={14} />,
+                action: () => onMergeFile(),
+              },
+            ]
+          : []),
         { type: 'separator' },
         {
           title: t('viewHeader.copyUranoUrl'),
