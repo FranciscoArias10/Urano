@@ -35,7 +35,8 @@ import { spellcheckExtension, triggerSpellCheckEffect } from '../../editor/spell
 import { getStorageAdapter, toUint8Array } from '../../services/storageAdapter';
 import { themeService } from '../../services/themeService';
 import { invoke } from '@tauri-apps/api/core';
-import { useVaultStore, ILLEGAL_FILENAME_CHARS } from '../../stores/vaultStore';
+import { useVaultStore } from '../../stores/vaultStore';
+import { getHeadingSectionAtPos } from '../../services/noteComposerService';
 import { getRelativeVaultPath, isPathExcluded, isSamePath, normalizePath } from '../../utils/pathUtils';
 import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { useNoticeStore } from '../common/Notice';
@@ -442,7 +443,6 @@ export const Editor: React.FC<EditorProps> = ({
     shouldSelectTitleOnOpen,
     setShouldSelectTitleOnOpen,
     isLoading,
-    refreshTree,
   } = useVaultStore();
 
   const { showNotice } = useNoticeStore();
@@ -1866,52 +1866,89 @@ export const Editor: React.FC<EditorProps> = ({
     window.dispatchEvent(new CustomEvent('urano-search', { detail: { query: text } }));
   };
 
-  const handleExtractSelection = async (
+  const handleExtractSelection = (
     selectedText: string,
     selFrom: number,
-    selTo: number
+    selTo: number,
+    initialQuery?: string
   ) => {
     const view = viewRef.current || getActiveEditorView();
-    if (!view || !selectedText) return;
+    if (!view || !selectedText || !activeFile) return;
 
-    const noteTitle = window.prompt(t('editor.prompt.newNoteTitle'));
-    if (!noteTitle || !noteTitle.trim()) return;
+    const currentNotePath = activeFile;
+    window.dispatchEvent(
+      new CustomEvent('urano-note-composer-open', {
+        detail: {
+          mode: 'extract',
+          fromPath: currentNotePath,
+          extractedText: selectedText,
+          initialQuery,
+          onExtracted: (replacementText: string) => {
+            const activeView = viewRef.current || getActiveEditorView();
+            const currentVaultFile = useVaultStore.getState().activeFile;
+            if (!activeView || !isSamePath(currentVaultFile, currentNotePath)) return;
+            const docLen = activeView.state.doc.length;
+            const clampedFrom = Math.max(0, Math.min(selFrom, docLen));
+            const clampedTo = Math.max(clampedFrom, Math.min(selTo, docLen));
+            activeView.dispatch({
+              changes: { from: clampedFrom, to: clampedTo, insert: replacementText },
+              selection: { anchor: clampedFrom + replacementText.length },
+            });
+            const newDoc = activeView.state.doc.toString();
+            lastDispatchedDocRef.current = newDoc;
+            updateContent(newDoc);
+            activeView.focus();
+          },
+        },
+      })
+    );
+  };
 
-    const cleanName = noteTitle.trim().replace(ILLEGAL_FILENAME_CHARS, '');
-    if (!cleanName) {
-      showNotice(t('editor.notices.invalidNoteName'), 2500, 'warning');
+  const handleExtractHeading = (pos?: number) => {
+    const view = viewRef.current || getActiveEditorView();
+    if (!view || !activeFile) return;
+    const targetPos = pos !== undefined ? pos : view.state.selection.main.head;
+    const section = getHeadingSectionAtPos(view.state.doc.toString(), targetPos);
+    if (!section || !section.content.trim()) {
+      showNotice(t('noteComposer.noHeadingNotice'), 2500, 'warning');
       return;
     }
-
-    const normActive = activeFile ? normalizePath(activeFile) : '';
-    const parentDir = normActive
-      ? normActive.substring(0, normActive.lastIndexOf('/'))
-      : activeVault;
-
-    if (!parentDir) return;
-
-    const fullPath = `${parentDir}/${cleanName}.md`.replace(/\/+/g, '/');
-
-    try {
-      await invoke('create_file', { filePath: fullPath });
-      await invoke('write_file', { filePath: fullPath, content: selectedText });
-      await refreshTree();
-
-      const replacement = `[[${cleanName}]]`;
-      view.dispatch({
-        changes: { from: selFrom, to: selTo, insert: replacement },
-        selection: { anchor: selFrom + 2, head: selFrom + 2 + cleanName.length },
-      });
-      const newDoc = view.state.doc.toString();
-      lastDispatchedDocRef.current = newDoc;
-      updateContent(newDoc);
-      view.focus();
-      showNotice(t('editor.notices.noteExtracted', { name: cleanName }), 2500, 'success');
-    } catch (err) {
-      console.error('Error al extraer selección:', err);
-      showNotice(t('editor.notices.noteExtractFailed'), 3000, 'error');
-    }
+    handleExtractSelection(section.content, section.from, section.to, section.headingTitle);
   };
+
+  const noteComposerHandlersRef = useRef({
+    extractSelection: handleExtractSelection,
+    extractHeading: handleExtractHeading,
+  });
+  noteComposerHandlersRef.current = {
+    extractSelection: handleExtractSelection,
+    extractHeading: handleExtractHeading,
+  };
+
+  useEffect(() => {
+    const onExtractSelectionCommand = () => {
+      const view = viewRef.current || getActiveEditorView();
+      if (!view) return;
+      const sel = view.state.selection.main;
+      const selected = !sel.empty ? view.state.sliceDoc(sel.from, sel.to) : '';
+      if (!selected.trim()) {
+        showNotice(t('noteComposer.noSelectionNotice'), 2500, 'warning');
+        return;
+      }
+      noteComposerHandlersRef.current.extractSelection(selected, sel.from, sel.to);
+    };
+
+    const onExtractHeadingCommand = () => {
+      noteComposerHandlersRef.current.extractHeading();
+    };
+
+    window.addEventListener('urano-note-composer-extract-selection', onExtractSelectionCommand);
+    window.addEventListener('urano-note-composer-extract-heading', onExtractHeadingCommand);
+    return () => {
+      window.removeEventListener('urano-note-composer-extract-selection', onExtractSelectionCommand);
+      window.removeEventListener('urano-note-composer-extract-heading', onExtractHeadingCommand);
+    };
+  }, [showNotice, t]);
 
   const handleClearFormatting = () => {
     const view = viewRef.current || getActiveEditorView();
@@ -2251,6 +2288,15 @@ export const Editor: React.FC<EditorProps> = ({
       }
     );
 
+    const noteComposerEnabled = Boolean(
+      useSettingsStore.getState().settings.corePlugins['note-composer']
+    );
+    const cursorHead = activeSel?.head ?? 0;
+    const headingSection =
+      noteComposerEnabled && currentView
+        ? getHeadingSectionAtPos(currentView.state.doc.toString(), cursorHead)
+        : null;
+
     if (hasSelection && selectedText.trim()) {
       const querySnippet =
         selectedText.trim().length > 25
@@ -2258,13 +2304,14 @@ export const Editor: React.FC<EditorProps> = ({
           : selectedText.trim();
       const safeTitle = querySnippet.replace(/\n+/g, ' ');
 
-      items.push(
-        {
-          title: t('editor.contextMenu.search', { query: safeTitle }),
-          icon: <Search size={14} />,
-          action: () => handleSearchSelection(selectedText.trim()),
-        },
-        {
+      items.push({
+        title: t('editor.contextMenu.search', { query: safeTitle }),
+        icon: <Search size={14} />,
+        action: () => handleSearchSelection(selectedText.trim()),
+      });
+
+      if (noteComposerEnabled) {
+        items.push({
           title: t('editor.contextMenu.extractSelection'),
           icon: <FolderInput size={14} />,
           action: () =>
@@ -2273,8 +2320,16 @@ export const Editor: React.FC<EditorProps> = ({
               activeSel!.from,
               activeSel!.to
             ),
-        }
-      );
+        });
+      }
+    }
+
+    if (noteComposerEnabled && headingSection?.isHeadingLine) {
+      items.push({
+        title: t('editor.contextMenu.extractHeading'),
+        icon: <FolderInput size={14} />,
+        action: () => handleExtractHeading(cursorHead),
+      });
     }
 
     items.push({ type: 'separator' });
