@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { FileItem } from '../types';
-import { normalizePath, getCleanFileName } from '../utils/pathUtils';
+import type { NoteComposerAfterExtract } from '../stores/settingsStore';
+import { normalizePath, getCleanFileName, getRelativeVaultPath } from '../utils/pathUtils';
 
 /**
  * Formats a Date according to Obsidian/Moment-style tokens commonly used in
@@ -167,3 +168,146 @@ export async function applyNoteComposerTemplate(
 
   return result;
 }
+
+export interface HeadingSectionRange {
+  from: number;
+  to: number;
+  headingTitle: string;
+  content: string;
+  level: number;
+  isHeadingLine: boolean;
+}
+
+/**
+ * Finds the Markdown heading section containing `pos` (from the heading line
+ * up to the start of the next heading of equal or higher level `<= level`,
+ * skipping fenced code blocks).
+ */
+export function getHeadingSectionAtPos(
+  docText: string,
+  pos: number
+): HeadingSectionRange | null {
+  if (!docText) return null;
+
+  const lines = docText.split('\n');
+  const lineStarts: number[] = [];
+  let offset = 0;
+  for (const line of lines) {
+    lineStarts.push(offset);
+    offset += line.length + 1;
+  }
+
+  // Locate the 0-based line index for `pos`
+  const clampedPos = Math.max(0, Math.min(pos, docText.length));
+  let cursorLineIdx = lines.length - 1;
+  for (let i = 0; i < lineStarts.length; i++) {
+    const endOfLine = lineStarts[i] + lines[i].length;
+    if (clampedPos <= endOfLine) {
+      cursorLineIdx = i;
+      break;
+    }
+  }
+
+  // Scan headings outside fenced code blocks
+  const headings: { lineIdx: number; level: number; title: string }[] = [];
+  let inFence = false;
+  let fenceMarker = '';
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trimStart();
+    const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      const marker = fenceMatch[1][0];
+      if (!inFence) {
+        inFence = true;
+        fenceMarker = marker;
+      } else if (marker === fenceMarker) {
+        inFence = false;
+        fenceMarker = '';
+      }
+      continue;
+    }
+    if (inFence) continue;
+
+    const hMatch = lines[i].match(/^(#{1,6})\s+(.+?)\s*#*\s*$/);
+    if (hMatch) {
+      headings.push({
+        lineIdx: i,
+        level: hMatch[1].length,
+        title: hMatch[2].trim(),
+      });
+    }
+  }
+
+  if (headings.length === 0) return null;
+
+  // Find the last heading at or before `cursorLineIdx`
+  let activeIdx = -1;
+  for (let i = headings.length - 1; i >= 0; i--) {
+    if (headings[i].lineIdx <= cursorLineIdx) {
+      activeIdx = i;
+      break;
+    }
+  }
+  if (activeIdx === -1) return null;
+
+  const currentHeading = headings[activeIdx];
+  const isHeadingLine = currentHeading.lineIdx === cursorLineIdx;
+
+  // Section ends before the next heading whose level <= currentHeading.level
+  let endLineExclusive = lines.length;
+  for (let i = activeIdx + 1; i < headings.length; i++) {
+    if (headings[i].level <= currentHeading.level) {
+      endLineExclusive = headings[i].lineIdx;
+      break;
+    }
+  }
+
+  const from = lineStarts[currentHeading.lineIdx];
+  let to =
+    endLineExclusive < lineStarts.length
+      ? lineStarts[endLineExclusive] - 1
+      : docText.length;
+
+  // Trim trailing whitespace/newlines at section boundary if there is a following heading
+  while (to > from && (docText[to - 1] === '\n' || docText[to - 1] === '\r')) {
+    if (endLineExclusive >= lineStarts.length) break;
+    to--;
+  }
+
+  const content = docText.slice(from, to);
+  return {
+    from,
+    to,
+    headingTitle: currentHeading.title,
+    content,
+    level: currentHeading.level,
+    isHeadingLine,
+  };
+}
+
+/**
+ * Builds the replacement string left in the source note after extracting text.
+ */
+export function buildNoteComposerReplacement(
+  targetNoteName: string,
+  targetPath: string,
+  vaultPath: string,
+  afterExtract: NoteComposerAfterExtract,
+  useWikilinks: boolean
+): string {
+  if (afterExtract === 'nothing') return '';
+
+  const relNoExt = getRelativeVaultPath(targetPath, vaultPath) || targetNoteName;
+  const targetMd = relNoExt.toLowerCase().endsWith('.md') ? relNoExt : `${relNoExt}.md`;
+
+  if (afterExtract === 'embed') {
+    return useWikilinks
+      ? `![[${targetNoteName}]]`
+      : `![${targetNoteName}](${encodeURI(targetMd)})`;
+  }
+
+  return useWikilinks
+    ? `[[${targetNoteName}]]`
+    : `[${targetNoteName}](${encodeURI(targetMd)})`;
+}
+
