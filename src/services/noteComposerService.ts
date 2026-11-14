@@ -1,7 +1,18 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { FileItem } from '../types';
-import type { NoteComposerAfterExtract } from '../stores/settingsStore';
-import { normalizePath, getCleanFileName, getRelativeVaultPath } from '../utils/pathUtils';
+import {
+  useSettingsStore,
+  resolveNewFileDir,
+  type NoteComposerAfterExtract,
+} from '../stores/settingsStore';
+import { useVaultStore } from '../stores/vaultStore';
+import { scanAffectedLinks } from './linkRefactorService';
+import {
+  normalizePath,
+  getCleanFileName,
+  getRelativeVaultPath,
+  isSamePath,
+} from '../utils/pathUtils';
 
 /**
  * Formats a Date according to Obsidian/Moment-style tokens commonly used in
@@ -310,4 +321,258 @@ export function buildNoteComposerReplacement(
     ? `[[${targetNoteName}]]`
     : `[${targetNoteName}](${encodeURI(targetMd)})`;
 }
+
+const ILLEGAL_NOTE_NAME_CHARS = /[*"\\<>:|?#^\[\]]/g;
+
+async function resolveTargetNoteDestination(params: {
+  vaultPath: string;
+  sourcePath: string;
+  fileTree: FileItem[];
+  targetPath?: string;
+  newNoteName?: string;
+}): Promise<{ finalPath: string; targetTitle: string; exists: boolean }> {
+  const { vaultPath, sourcePath, fileTree, targetPath, newNoteName } = params;
+
+  if (targetPath) {
+    return {
+      finalPath: targetPath,
+      targetTitle: getCleanFileName(targetPath),
+      exists: true,
+    };
+  }
+
+  const rawName = (newNoteName || '').trim().replace(ILLEGAL_NOTE_NAME_CHARS, '').replace(/\.md$/i, '');
+  if (!rawName) {
+    throw new Error('Invalid destination note name');
+  }
+
+  const normalizedRel = normalizePath(rawName).replace(/^\/+|\/+$/g, '');
+  const existingResolved = resolveVaultNotePath(normalizedRel, vaultPath, fileTree);
+  if (existingResolved) {
+    return {
+      finalPath: existingResolved,
+      targetTitle: getCleanFileName(existingResolved),
+      exists: true,
+    };
+  }
+
+  const segments = normalizedRel.split('/').filter(Boolean);
+  const fileBase = segments.pop() || rawName;
+  const subDir = segments.join('/');
+  const baseDir = subDir
+    ? `${normalizePath(vaultPath)}/${subDir}`.replace(/\/+/g, '/')
+    : normalizePath(resolveNewFileDir(vaultPath, sourcePath));
+  const finalPath = `${baseDir}/${fileBase}.md`.replace(/\/+/g, '/');
+
+  return {
+    finalPath,
+    targetTitle: fileBase,
+    exists: false,
+  };
+}
+
+async function appendOrCreateNote(
+  finalPath: string,
+  vaultPath: string,
+  exists: boolean,
+  renderedContent: string
+): Promise<string> {
+  if (exists) {
+    let existing = '';
+    try {
+      existing = await invoke<string>('read_file', { filePath: finalPath });
+    } catch {
+      existing = '';
+    }
+    const merged =
+      existing.trim().length > 0
+        ? `${existing.replace(/\s+$/, '')}\n\n${renderedContent}`
+        : renderedContent;
+    await invoke('write_file', { filePath: finalPath, content: merged });
+    return merged;
+  }
+
+  const normFinal = normalizePath(finalPath);
+  const parentDir = normFinal.substring(0, normFinal.lastIndexOf('/'));
+  const normVault = normalizePath(vaultPath);
+  if (parentDir && parentDir.toLowerCase() !== normVault.toLowerCase()) {
+    try {
+      await invoke('create_folder', { folderPath: parentDir });
+    } catch {
+      // Folder may already exist
+    }
+  }
+
+  await invoke('create_file', { filePath: finalPath });
+  await invoke('write_file', { filePath: finalPath, content: renderedContent });
+  return renderedContent;
+}
+
+export interface ExecuteNoteExtractionParams {
+  extractedText: string;
+  fromPath: string;
+  targetPath?: string;
+  newNoteName?: string;
+}
+
+export interface ExecuteNoteExtractionResult {
+  targetPath: string;
+  targetTitle: string;
+  replacementText: string;
+}
+
+/**
+ * Extracts selected text or heading section into an existing or new note,
+ * applying the configured Note Composer template and returning the replacement
+ * text to leave behind in the source note.
+ */
+export async function executeNoteExtraction(
+  params: ExecuteNoteExtractionParams
+): Promise<ExecuteNoteExtractionResult> {
+  const { extractedText, fromPath, targetPath, newNoteName } = params;
+  const vaultState = useVaultStore.getState();
+  const { activeVault, fileTree, notesContentMap } = vaultState;
+  if (!activeVault) {
+    throw new Error('No active vault');
+  }
+
+  const settings = useSettingsStore.getState().settings;
+  const fromTitle = getCleanFileName(fromPath);
+  const { finalPath, targetTitle, exists } = await resolveTargetNoteDestination({
+    vaultPath: activeVault,
+    sourcePath: fromPath,
+    fileTree,
+    targetPath,
+    newNoteName,
+  });
+
+  const rendered = await applyNoteComposerTemplate({
+    content: extractedText,
+    fromTitle,
+    newTitle: targetTitle,
+    templatePath: settings.noteComposerTemplatePath,
+    vaultPath: activeVault,
+    fileTree,
+  });
+
+  const writtenContent = await appendOrCreateNote(finalPath, activeVault, exists, rendered);
+
+  useVaultStore.setState({
+    notesContentMap: { ...notesContentMap, [finalPath]: writtenContent },
+  });
+  await vaultState.refreshTree();
+
+  const replacementText = buildNoteComposerReplacement(
+    targetTitle,
+    finalPath,
+    activeVault,
+    settings.noteComposerAfterExtract,
+    settings.useWikilinks
+  );
+
+  return { targetPath: finalPath, targetTitle, replacementText };
+}
+
+export interface ExecuteNoteMergeParams {
+  sourcePath: string;
+  targetPath?: string;
+  newNoteName?: string;
+}
+
+export interface ExecuteNoteMergeResult {
+  targetPath: string;
+  targetTitle: string;
+  updatedLinks: number;
+}
+
+/**
+ * Merges `sourcePath` into an existing or new destination note:
+ * applies template if configured, appends content, updates internal links pointing
+ * to the merged file, deletes the source note, and opens the destination note.
+ */
+export async function executeNoteMerge(
+  params: ExecuteNoteMergeParams
+): Promise<ExecuteNoteMergeResult> {
+  const { sourcePath, targetPath, newNoteName } = params;
+  const vaultState = useVaultStore.getState();
+  const { activeVault, activeFile, fileContent, fileTree, notesContentMap } = vaultState;
+  if (!activeVault) {
+    throw new Error('No active vault');
+  }
+
+  const { finalPath, targetTitle, exists } = await resolveTargetNoteDestination({
+    vaultPath: activeVault,
+    sourcePath,
+    fileTree,
+    targetPath,
+    newNoteName,
+  });
+
+  if (isSamePath(finalPath, sourcePath)) {
+    throw new Error('Cannot merge a note into itself');
+  }
+
+  let sourceContent = '';
+  if (isSamePath(activeFile, sourcePath)) {
+    sourceContent = fileContent;
+  } else {
+    try {
+      sourceContent = await invoke<string>('read_file', { filePath: sourcePath });
+    } catch {
+      sourceContent = notesContentMap[sourcePath] || '';
+    }
+  }
+
+  const settings = useSettingsStore.getState().settings;
+  const fromTitle = getCleanFileName(sourcePath);
+  const rendered = await applyNoteComposerTemplate({
+    content: sourceContent,
+    fromTitle,
+    newTitle: targetTitle,
+    templatePath: settings.noteComposerTemplatePath,
+    vaultPath: activeVault,
+    fileTree,
+  });
+
+  const mergedContent = await appendOrCreateNote(finalPath, activeVault, exists, rendered);
+
+  // Sync in-memory content before scanning links
+  const updatedMap: Record<string, string> = {
+    ...useVaultStore.getState().notesContentMap,
+    [finalPath]: mergedContent,
+  };
+  if (isSamePath(activeFile, finalPath)) {
+    useVaultStore.setState({ fileContent: mergedContent, isDirty: false, notesContentMap: updatedMap });
+  } else {
+    useVaultStore.setState({ notesContentMap: updatedMap });
+  }
+
+  // Update all internal links pointing to sourcePath -> finalPath
+  const scanResult = await scanAffectedLinks(activeVault, sourcePath, finalPath);
+  for (const change of scanResult.changes) {
+    if (isSamePath(change.filePath, sourcePath)) continue;
+    try {
+      await invoke('write_file', { filePath: change.filePath, content: change.newContent });
+      updatedMap[change.filePath] = change.newContent;
+      if (isSamePath(useVaultStore.getState().activeFile, change.filePath)) {
+        useVaultStore.setState({ fileContent: change.newContent, isDirty: false });
+      }
+    } catch (err) {
+      console.error(`Error updating links during merge in ${change.filePath}:`, err);
+    }
+  }
+  useVaultStore.setState({ notesContentMap: updatedMap });
+
+  // Delete the merged source note and open the destination note
+  await useVaultStore.getState().deleteItem(sourcePath);
+  await useVaultStore.getState().selectFile(finalPath);
+  await useVaultStore.getState().loadAllNotesContent();
+
+  return {
+    targetPath: finalPath,
+    targetTitle,
+    updatedLinks: scanResult.totalLinks,
+  };
+}
+
 
