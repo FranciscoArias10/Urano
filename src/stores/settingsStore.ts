@@ -171,6 +171,8 @@ export interface UranoSettings {
   dailyNotesOpenOnStartup: boolean;
   fileRecoveryIntervalMinutes: number;
   fileRecoveryHistoryDays: number;
+  noteComposerAfterExtract: NoteComposerAfterExtract;
+  noteComposerTemplatePath: string;
   noteComposerConfirmMerge: boolean;
   noteComposerTextAfterExtraction: string;
   pagePreviewRequireCtrl: boolean;
