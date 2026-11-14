@@ -553,10 +553,22 @@
       "historyDesc": "Days to keep snapshots."
     },
     "noteComposer": {
+      "afterExtract": "Text after extraction",
+      "afterExtractDesc": "What to show in place of the selected text after extraction.",
+      "afterExtractOptions": {
+        "link": "Link to new file",
+        "embed": "Embed new file",
+        "nothing": "Nothing"
+      },
+      "templatePath": "Template file location",
+      "templatePathDesc": "Choose the file to use as a template when extracting or merging notes. Available variables: {{content}}, {{fromTitle}}, {{newTitle}}, {{date:FORMAT}}, e.g. {{date:YYYY-MM-DD}}.",
+      "templatePathPlaceholder": "Example: folder/note",
+      "confirmMerge": "Confirm file merge",
+      "confirmMergeDesc": "Confirm before merging two notes.",
       "templateFile": "Text after extraction",
-      "templateFileDesc": "Text left behind after extracting a selection to a new note.",
-      "confirm": "Confirm note merge",
-      "confirmDesc": "Ask before merging two notes."
+      "templateFileDesc": "What to show in place of the selected text after extraction.",
+      "confirm": "Confirm file merge",
+      "confirmDesc": "Confirm before merging two notes."
     },
     "pagePreview": {
       "requireCtrl": "Require Ctrl to trigger",
