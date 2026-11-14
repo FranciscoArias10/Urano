@@ -320,8 +320,15 @@ export const HOTKEY_CATALOG: HotkeyCommand[] = [
     section: 'note-composer',
   },
   {
+    id: 'note-composer:extract-heading',
+    nameEs: 'Compositor de notas: Extraer este encabezado...',
+    nameEn: 'Note composer: Extract this heading...',
+    defaultHotkeys: [],
+    section: 'note-composer',
+  },
+  {
     id: 'note-composer:merge',
-    nameEs: 'Compositor de notas: Fusionar archivo completo con...',
+    nameEs: 'Compositor de notas: Combinar todo el archivo con...',
     nameEn: 'Note composer: Merge entire file with...',
     defaultHotkeys: [],
     section: 'note-composer',
