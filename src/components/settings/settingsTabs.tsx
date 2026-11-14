@@ -60,6 +60,7 @@ import {
   CanvasWheelBehavior,
   CanvasCtrlDragBehavior,
   CanvasCardLabel,
+  NoteComposerAfterExtract,
 } from '../../stores/settingsStore';
 import { useSyncStore } from '../../stores/syncStore';
 import { useLocaleStore } from '../../stores/localeStore';
@@ -83,6 +84,7 @@ import {
   HotkeyPill,
 } from './SettingControls';
 import { VaultFolderInput } from './VaultFolderInput';
+import { VaultNoteInput } from './VaultNoteInput';
 import {
   HOTKEY_CATALOG,
   getActiveHotkeys,
@@ -2224,22 +2226,46 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
       id: 'note-composer-options',
       items: [
         {
-          id: 'note-composer-text',
-          name: t('noteComposer.templateFile'),
-          desc: t('noteComposer.templateFileDesc'),
+          id: 'note-composer-after-extract',
+          name: t('noteComposer.afterExtract'),
+          desc: t('noteComposer.afterExtractDesc'),
           control: (
-            <TextInput
-              value={settings.noteComposerTextAfterExtraction}
-              onChange={set('noteComposerTextAfterExtraction')}
-              ariaLabel={t('noteComposer.templateFile')}
+            <Dropdown<NoteComposerAfterExtract>
+              value={settings.noteComposerAfterExtract}
+              onChange={set('noteComposerAfterExtract')}
+              ariaLabel={t('noteComposer.afterExtract')}
+              options={[
+                { value: 'link', label: t('noteComposer.afterExtractOptions.link') },
+                { value: 'embed', label: t('noteComposer.afterExtractOptions.embed') },
+                { value: 'nothing', label: t('noteComposer.afterExtractOptions.nothing') },
+              ]}
+            />
+          ),
+        },
+        {
+          id: 'note-composer-template',
+          name: t('noteComposer.templatePath'),
+          desc: t('noteComposer.templatePathDesc'),
+          control: (
+            <VaultNoteInput
+              value={settings.noteComposerTemplatePath}
+              onChange={set('noteComposerTemplatePath')}
+              placeholder={t('noteComposer.templatePathPlaceholder')}
+              ariaLabel={t('noteComposer.templatePath')}
             />
           ),
         },
         {
           id: 'note-composer-confirm',
-          name: t('noteComposer.confirm'),
-          desc: t('noteComposer.confirmDesc'),
-          control: <Toggle value={settings.noteComposerConfirmMerge} onChange={set('noteComposerConfirmMerge')} ariaLabel={t('noteComposer.confirm')} />,
+          name: t('noteComposer.confirmMerge'),
+          desc: t('noteComposer.confirmMergeDesc'),
+          control: (
+            <Toggle
+              value={settings.noteComposerConfirmMerge}
+              onChange={set('noteComposerConfirmMerge')}
+              ariaLabel={t('noteComposer.confirmMerge')}
+            />
+          ),
         },
       ],
     },
