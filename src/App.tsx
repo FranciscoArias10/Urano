@@ -22,6 +22,10 @@ import {
 } from './utils/pathUtils';
 import { FILE_RENAMED_EVENT, FileRenamedDetail } from './services/linkRefactorService';
 import { TemplateModal } from './components/templates/TemplateModal';
+import {
+  NoteComposerModal,
+  NoteComposerModalRequest,
+} from './components/noteComposer/NoteComposerModal';
 import { UpdateLinksModal } from './components/common/UpdateLinksModal';
 import { GlobalSearchPanel } from './components/search/GlobalSearchPanel';
 import { BookmarksPanel } from './components/bookmarks/BookmarksPanel';
@@ -71,6 +75,8 @@ import {
   SquarePen,
   Table,
   LayoutGrid,
+  FolderInput,
+  Merge,
 } from 'lucide-react';
 
 /** Stable, unique identifier for a workspace leaf (tab). */
@@ -248,6 +254,8 @@ const MainApp: React.FC = () => {
 
   // Vault Switcher popover & VaultManagerModal
   const [showVaultManager, setShowVaultManager] = useState(false);
+  const [noteComposerRequest, setNoteComposerRequest] =
+    useState<NoteComposerModalRequest | null>(null);
   const [vaultSwitcherAnchor, setVaultSwitcherAnchor] = useState<{ top: number; left: number } | null>(null);
   const vaultSwitcherPopoverRef = useRef<HTMLDivElement>(null);
 
@@ -459,6 +467,49 @@ const MainApp: React.FC = () => {
       }
     } catch {}
   }, [tabs, activeVault]);
+
+  // Note Composer merge opener & global event listeners
+  const openMergeModalForFile = useCallback((sourcePath: string) => {
+    setNoteComposerRequest({
+      mode: 'merge',
+      fromPath: sourcePath,
+      onMerged: (mergedFromPath, targetPath, targetTitle) => {
+        setTabs((prev) => {
+          const hasTargetTab = prev.some((tab) => isSamePath(tab.filePath, targetPath));
+          if (hasTargetTab) {
+            return prev.filter((tab) => !isSamePath(tab.filePath, mergedFromPath));
+          }
+          return prev.map((tab) =>
+            isSamePath(tab.filePath, mergedFromPath)
+              ? { ...tab, filePath: targetPath, title: targetTitle, isDirty: false }
+              : tab
+          );
+        });
+      },
+    });
+  }, []);
+
+  useEffect(() => {
+    const onOpenNoteComposer = (e: Event) => {
+      const detail = (e as CustomEvent<NoteComposerModalRequest>).detail;
+      if (detail) {
+        setNoteComposerRequest(detail);
+      }
+    };
+    const onMergeNoteComposer = (e: Event) => {
+      const detail = (e as CustomEvent<{ sourcePath?: string }>).detail;
+      const target = detail?.sourcePath || activeFile;
+      if (target && target.toLowerCase().endsWith('.md')) {
+        openMergeModalForFile(target);
+      }
+    };
+    window.addEventListener('urano-note-composer-open', onOpenNoteComposer);
+    window.addEventListener('urano-note-composer-merge', onMergeNoteComposer);
+    return () => {
+      window.removeEventListener('urano-note-composer-open', onOpenNoteComposer);
+      window.removeEventListener('urano-note-composer-merge', onMergeNoteComposer);
+    };
+  }, [activeFile, openMergeModalForFile]);
 
   // Listen for refresh tree events (e.g. toggling detectAllFileExtensions)
   useEffect(() => {
@@ -1329,6 +1380,28 @@ const MainApp: React.FC = () => {
       icon: <Settings size={15} />,
       action: () => openSettings('sync'),
     },
+    {
+      id: 'note-composer:extract',
+      name: t('commands.noteComposer.extract'),
+      icon: <FolderInput size={15} />,
+      action: () => window.dispatchEvent(new CustomEvent('urano-note-composer-extract-selection')),
+    },
+    {
+      id: 'note-composer:extract-heading',
+      name: t('commands.noteComposer.extractHeading'),
+      icon: <FolderInput size={15} />,
+      action: () => window.dispatchEvent(new CustomEvent('urano-note-composer-extract-heading')),
+    },
+    {
+      id: 'note-composer:merge',
+      name: t('commands.noteComposer.merge'),
+      icon: <Merge size={15} />,
+      action: () => {
+        if (activeFile && activeFile.toLowerCase().endsWith('.md')) {
+          openMergeModalForFile(activeFile);
+        }
+      },
+    },
   ].filter((cmd) => {
     // Commands owned by a disabled core plugin disappear (Urano behaviour)
     if (cmd.id.startsWith('canvas:')) return corePlugins.canvas;
@@ -1340,6 +1413,7 @@ const MainApp: React.FC = () => {
     if (cmd.id.startsWith('bases:')) return corePlugins.bases;
     if (cmd.id.startsWith('command-palette:')) return corePlugins['command-palette'];
     if (cmd.id.startsWith('file-explorer:')) return corePlugins['file-explorer'];
+    if (cmd.id.startsWith('note-composer:')) return corePlugins['note-composer'];
     if (cmd.id === 'workspace:toggle-backlinks') return corePlugins.backlink;
     return true;
   });
@@ -1683,6 +1757,11 @@ const MainApp: React.FC = () => {
               onRename={handleRenameFile}
               onMoveFile={handleMoveFile}
               onDuplicateFile={handleDuplicateFile}
+              onMergeFile={
+                corePlugins['note-composer'] && activeFile?.toLowerCase().endsWith('.md')
+                  ? () => openMergeModalForFile(activeFile)
+                  : undefined
+              }
               onDeleteFile={handleDeleteFile}
               onCopyLink={handleCopyLink}
               onCopyPath={handleCopyPath}
@@ -1841,6 +1920,12 @@ const MainApp: React.FC = () => {
         isOpen={showTemplateModal}
         onClose={() => setShowTemplateModal(false)}
         onInsert={handleInsertTemplate}
+      />
+
+      {/* Note Composer Modal (extract selection/heading & merge notes) */}
+      <NoteComposerModal
+        request={noteComposerRequest}
+        onClose={() => setNoteComposerRequest(null)}
       />
 
       {/* Settings modal (Urano .modal.mod-settings) — Ctrl+, / ⚙ */}
