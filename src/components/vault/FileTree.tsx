@@ -14,6 +14,7 @@ import {
   Bookmark,
   Check,
   LayoutGrid,
+  Merge,
 } from 'lucide-react';
 import { FileItem, SortOrder } from '../../types';
 import { useVaultStore, validateFileName } from '../../stores/vaultStore';
@@ -586,6 +587,22 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
             ctx?.setRenamingPath(newPath);
           },
         },
+        ...(item.name.toLowerCase().endsWith('.md') &&
+        useSettingsStore.getState().settings.corePlugins['note-composer']
+          ? [
+              {
+                title: t('fileTree.contextMenu.mergeFile'),
+                icon: <Merge size={14} />,
+                action: () => {
+                  window.dispatchEvent(
+                    new CustomEvent('urano-note-composer-merge', {
+                      detail: { sourcePath: item.path },
+                    })
+                  );
+                },
+              },
+            ]
+          : []),
         { type: 'separator' },
         {
           title: t('fileTree.contextMenu.rename'),
