@@ -874,6 +874,11 @@
     "editor": {
       "toggleReadingView": "Markdown: Toggle reading view",
       "toggleSourceMode": "Editor: Toggle Live Preview / Source mode"
+    },
+    "noteComposer": {
+      "extract": "Note composer: Extract current selection...",
+      "extractHeading": "Note composer: Extract this heading...",
+      "merge": "Note composer: Merge entire file with..."
     }
   },
   "editor": {
@@ -893,6 +898,7 @@
       "addExternalLink": "Add external link",
       "search": "Search \"{query}\"",
       "extractSelection": "Extract current selection...",
+      "extractHeading": "Extract this heading...",
       "format": "Format",
       "paragraph": "Paragraph",
       "insert": "Insert",
@@ -999,6 +1005,7 @@
       "deleteFolder": "Delete folder",
       "deleteFile": "Delete file",
       "makeCopy": "Make a copy",
+      "mergeFile": "Merge entire file with...",
       "copyImage": "Copy image"
     },
     "notices": {
@@ -1112,6 +1119,21 @@
     "editSource": "Edit LaTeX source",
     "hideSource": "Hide LaTeX source",
     "clickToEdit": "Click to edit LaTeX"
+  },
+  "noteComposer": {
+    "extractTitle": "Extract into note",
+    "extractPlaceholder": "Type a note name to extract into...",
+    "mergeTitle": "Merge entire file with...",
+    "mergePlaceholder": "Type or select destination note...",
+    "createNewNote": "Create new note \"{name}\"",
+    "appendToExisting": "Append to existing note",
+    "confirmMergeTitle": "Confirm file merge",
+    "confirmMergeMessage": "Are you sure you want to merge \"{from}\" into \"{to}\"? The original file \"{from}\" will be deleted.",
+    "confirmMergeAccept": "Merge",
+    "noSelectionNotice": "Select text in the editor to extract into a note",
+    "noHeadingNotice": "Place the cursor on a heading to extract it",
+    "mergedSuccess": "Merged note into \"{name}\"",
+    "mergeFailed": "Failed to merge notes"
   },
   "search": {
     "placeholder": "Search in all notes...",
@@ -1363,6 +1385,7 @@
     "rename": "Rename...",
     "moveFileTo": "Move file to...",
     "makeCopy": "Make a copy",
+    "mergeFile": "Merge entire file with...",
     "copyUranoUrl": "Copy Urano URL",
     "copyFilePath": "Copy file path",
     "deleteFile": "Delete file",

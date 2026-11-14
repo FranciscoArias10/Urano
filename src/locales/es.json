@@ -874,6 +874,11 @@
     "editor": {
       "toggleReadingView": "Markdown: Alternar vista de lectura",
       "toggleSourceMode": "Editor: Alternar código fuente / vista previa en vivo"
+    },
+    "noteComposer": {
+      "extract": "Compositor de notas: Extraer selección actual...",
+      "extractHeading": "Compositor de notas: Extraer este encabezado...",
+      "merge": "Compositor de notas: Combinar todo el archivo con..."
     }
   },
   "editor": {
@@ -893,6 +898,7 @@
       "addExternalLink": "Añadir enlace externo",
       "search": "Buscar \"{query}\"",
       "extractSelection": "Extraer selección actual...",
+      "extractHeading": "Extraer este encabezado...",
       "format": "Formato",
       "paragraph": "Párrafo",
       "insert": "Insertar",
@@ -999,6 +1005,7 @@
       "deleteFolder": "Eliminar carpeta",
       "deleteFile": "Eliminar archivo",
       "makeCopy": "Hacer una copia",
+      "mergeFile": "Combinar todo el archivo con...",
       "copyImage": "Copiar imagen"
     },
     "notices": {
@@ -1112,6 +1119,21 @@
     "editSource": "Editar código fuente LaTeX",
     "hideSource": "Ocultar código fuente LaTeX",
     "clickToEdit": "Haz clic para editar LaTeX"
+  },
+  "noteComposer": {
+    "extractTitle": "Extraer a una nota",
+    "extractPlaceholder": "Escribe el nombre de una nota para extraer...",
+    "mergeTitle": "Combinar todo el archivo con...",
+    "mergePlaceholder": "Escribe o selecciona la nota de destino...",
+    "createNewNote": "Crear nueva nota \"{name}\"",
+    "appendToExisting": "Añadir al final de la nota existente",
+    "confirmMergeTitle": "Confirmar combinación de notas",
+    "confirmMergeMessage": "¿Estás seguro de que quieres combinar \"{from}\" en \"{to}\"? El archivo original \"{from}\" se eliminará.",
+    "confirmMergeAccept": "Combinar",
+    "noSelectionNotice": "Selecciona texto en el editor para extraerlo a una nota",
+    "noHeadingNotice": "Coloca el cursor en un encabezado para extraerlo",
+    "mergedSuccess": "Nota combinada en \"{name}\"",
+    "mergeFailed": "Error al combinar las notas"
   },
   "search": {
     "placeholder": "Buscar en todas las notas...",
@@ -1363,6 +1385,7 @@
     "rename": "Cambiar nombre...",
     "moveFileTo": "Mover archivo a...",
     "makeCopy": "Hacer una copia",
+    "mergeFile": "Combinar todo el archivo con...",
     "copyUranoUrl": "Copiar enlace de Urano",
     "copyFilePath": "Copiar ruta de archivo",
     "deleteFile": "Eliminar archivo",
