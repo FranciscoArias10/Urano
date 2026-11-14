@@ -553,10 +553,22 @@
       "historyDesc": "Días que se conservan las instantáneas."
     },
     "noteComposer": {
-      "templateFile": "Texto tras la extracción",
-      "templateFileDesc": "Texto que queda al extraer una selección a una nota nueva.",
-      "confirm": "Confirmar fusión de notas",
-      "confirmDesc": "Pregunta antes de fusionar dos notas."
+      "afterExtract": "Texto después de la extracción",
+      "afterExtractDesc": "Qué mostrar en lugar del texto seleccionado después de extraerlo.",
+      "afterExtractOptions": {
+        "link": "Enlazar al nuevo archivo",
+        "embed": "Incrustar nuevo archivo",
+        "nothing": "Nada"
+      },
+      "templatePath": "Ubicación de la plantilla",
+      "templatePathDesc": "La plantilla a usar al mezclar o extraer. Variables disponibles : {{content}}, {{fromTitle}}, {{newTitle}}, {{date:FORMAT}}, e.g. {{date:YYYY-MM-DD}}.",
+      "templatePathPlaceholder": "Ejemplo: carpeta/nota",
+      "confirmMerge": "Confirma la combinación de notas",
+      "confirmMergeDesc": "Preguntar antes de combinar dos archivos.",
+      "templateFile": "Texto después de la extracción",
+      "templateFileDesc": "Qué mostrar en lugar del texto seleccionado después de extraerlo.",
+      "confirm": "Confirma la combinación de notas",
+      "confirmDesc": "Preguntar antes de combinar dos archivos."
     },
     "pagePreview": {
       "requireCtrl": "Requerir Ctrl para activar",
