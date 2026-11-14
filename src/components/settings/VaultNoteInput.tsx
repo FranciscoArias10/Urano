@@ -116,3 +116,4 @@ export const VaultNoteInput: React.FC<VaultNoteInputProps> = ({
     </div>
   );
 };
+

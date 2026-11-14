@@ -412,3 +412,4 @@ export const NoteComposerModal: React.FC<NoteComposerModalProps> = ({ request, o
     </div>
   );
 };
+

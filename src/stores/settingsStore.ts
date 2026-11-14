@@ -174,7 +174,6 @@ export interface UranoSettings {
   noteComposerAfterExtract: NoteComposerAfterExtract;
   noteComposerTemplatePath: string;
   noteComposerConfirmMerge: boolean;
-  noteComposerTextAfterExtraction: string;
   pagePreviewRequireCtrl: boolean;
   quickSwitcherShowAttachments: boolean;
   quickSwitcherShowExistingOnly: boolean;
@@ -309,7 +308,6 @@ export const DEFAULT_SETTINGS: UranoSettings = {
   noteComposerAfterExtract: 'link',
   noteComposerTemplatePath: '',
   noteComposerConfirmMerge: true,
-  noteComposerTextAfterExtraction: '![[{{newFile}}]]',
   pagePreviewRequireCtrl: false,
   quickSwitcherShowAttachments: false,
   quickSwitcherShowExistingOnly: false,
@@ -531,6 +529,7 @@ function mergeSettings(raw: unknown): UranoSettings {
     out.canvasZoomThreshold = 100;
   }
 
+  delete (out as unknown as Record<string, unknown>).noteComposerTextAfterExtraction;
   if (!['link', 'embed', 'nothing'].includes(out.noteComposerAfterExtract)) {
     out.noteComposerAfterExtract = 'link';
   }
