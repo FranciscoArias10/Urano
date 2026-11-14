@@ -92,9 +92,10 @@ pub fn setup_hunspell_dictionaries() {
 
     // Configurar DICPATH para que libenchant y hunspell resuelvan los diccionarios
     if let Ok(canonical) = dict_dir_path.canonicalize() {
-        if let Some(path_str) = canonical.to_str() {
-            std::env::set_var("DICPATH", path_str);
-            println!("[Spellcheck] DICPATH configurado en: {}", path_str);
+        if let Some(raw_str) = canonical.to_str() {
+            let clean_str = raw_str.strip_prefix(r"\\?\").unwrap_or(raw_str);
+            std::env::set_var("DICPATH", clean_str);
+            println!("[Spellcheck] DICPATH configurado en: {}", clean_str);
         }
     }
 
