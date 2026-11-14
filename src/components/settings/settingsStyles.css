@@ -1247,3 +1247,16 @@ body.theme-light .urano-settings-root .vertical-tab-nav-item.is-active {
   color: var(--settings-text-muted);
   text-align: center;
 }
+
+/* --- Vault markdown note selector (Compositor de notas / Plantillas) ------ */
+.urano-settings-root .vault-note-dropdown {
+  min-width: 190px;
+  max-width: 280px;
+}
+.urano-settings-root .vault-note-select {
+  width: 100%;
+  text-overflow: ellipsis;
+}
+.urano-settings-root .vault-note-select.is-placeholder {
+  color: var(--settings-text-muted);
+}

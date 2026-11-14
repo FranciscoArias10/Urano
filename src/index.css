@@ -3487,3 +3487,69 @@ body.is-translucent aside.bg-urano-sidebar {
   background-color: var(--background-modifier-hover);
 }
 
+/* ========================================================
+   Note Composer Modal & Confirmation Dialog (Obsidian 1:1)
+   ======================================================== */
+.note-composer-confirm-modal {
+  width: 440px;
+  max-width: 92vw;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  color: var(--text-normal);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.note-composer-confirm-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.note-composer-confirm-message {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.note-composer-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.note-composer-confirm-actions .setting-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding: 5px 14px;
+  border-radius: 5px;
+  border: 1px solid var(--background-modifier-border);
+  background-color: var(--interactive-normal, #2a2a2a);
+  color: var(--text-normal);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.12s ease, filter 0.12s ease;
+}
+
+.note-composer-confirm-actions .setting-button:hover {
+  background-color: var(--interactive-hover, #333333);
+}
+
+.note-composer-confirm-actions .setting-button.mod-cta {
+  background-color: var(--interactive-accent, #e06c1b);
+  border-color: transparent;
+  color: var(--text-on-accent, #ffffff);
+}
+
+.note-composer-confirm-actions .setting-button.mod-cta:hover {
+  filter: brightness(1.08);
+}
+
