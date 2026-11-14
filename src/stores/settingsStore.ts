@@ -21,6 +21,7 @@ export type CanvasNewFileLocation = 'root' | 'current' | 'folder';
 export type CanvasWheelBehavior = 'pan' | 'zoom';
 export type CanvasCtrlDragBehavior = 'menu' | 'select';
 export type CanvasCardLabel = 'always' | 'hover' | 'never';
+export type NoteComposerAfterExtract = 'link' | 'embed' | 'nothing';
 
 export const CORE_PLUGIN_IDS = [
   'bases',
