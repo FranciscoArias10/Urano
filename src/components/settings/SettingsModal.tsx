@@ -434,7 +434,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* ---------------- Content ---------------- */}
           <div className="vertical-tab-content-container" tabIndex={-1}>
-            <div className="vertical-tab-content" ref={contentRef} key={isSearching ? '__search' : activeTab.id}>
+            <div
+              className="vertical-tab-content"
+              ref={contentRef}
+              key={isSearching ? '__search' : activeTab.id}
+              data-tab-id={isSearching ? '__search' : activeTab.id}
+            >
               <div className="vertical-tab-content-inner">
                 {isSearching ? (
                   searchMatches.length === 0 ? (
