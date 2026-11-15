@@ -2159,6 +2159,14 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
     },
   ]);
 
+  const dailyNotesSampleDate = new Date();
+  const effectiveDailyFormat = settings.dailyNotesFormat.trim() || 'YYYY-MM-DD';
+  const dailyFormatDropdownValue = (DAILY_NOTE_PRESET_FORMATS as readonly string[]).includes(
+    effectiveDailyFormat
+  )
+    ? effectiveDailyFormat
+    : 'custom';
+
   const dailyNotes = pluginTab('daily-notes', [
     {
       id: 'daily-notes-options',
@@ -2167,7 +2175,68 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
           id: 'daily-notes-format',
           name: t('dailyNotes.format'),
           desc: t('dailyNotes.formatDesc'),
-          control: <span className="setting-item-value">YYYY-MM-DD</span>,
+          aliases: ['format', 'formato', 'date', 'fecha', 'YYYY-MM-DD'],
+          control: (
+            <Dropdown<string>
+              value={dailyFormatDropdownValue}
+              ariaLabel={t('dailyNotes.format')}
+              options={[
+                ...DAILY_NOTE_PRESET_FORMATS.map((fmt) => ({
+                  value: fmt,
+                  label: formatDailyNoteDate(dailyNotesSampleDate, fmt, language),
+                })),
+                { value: 'custom', label: t('dailyNotes.customFormatOption') },
+              ]}
+              onChange={(val) => {
+                if (val === 'custom') {
+                  document
+                    .querySelector<HTMLInputElement>('#setting-daily-notes-custom-format input')
+                    ?.focus();
+                  return;
+                }
+                setSetting('dailyNotesFormat', val);
+              }}
+            />
+          ),
+        },
+        {
+          id: 'daily-notes-custom-format',
+          name: t('dailyNotes.customFormat'),
+          desc: (
+            <>
+              {t('dailyNotes.customFormatDescPrefix')}
+              <a
+                href="https://momentjs.com/docs/#/displaying/format/"
+                target="_blank"
+                rel="noreferrer"
+                className="setting-link"
+              >
+                {t('dailyNotes.customFormatReferenceLink')}
+              </a>
+              <br />
+              {t('dailyNotes.customFormatSyntaxPreview')}
+              <span
+                className="daily-notes-format-preview"
+                style={{ color: 'var(--interactive-accent)', fontWeight: 500 }}
+              >
+                {formatDailyNoteDate(
+                  dailyNotesSampleDate,
+                  settings.dailyNotesFormat || 'YYYY-MM-DD',
+                  language
+                )}
+              </span>
+            </>
+          ),
+          aliases: ['custom', 'personalizado', 'moment', 'YYYY-MM-DD', 'syntax'],
+          control: (
+            <TextInput
+              commitOnBlur={false}
+              value={settings.dailyNotesFormat}
+              placeholder="YYYY-MM-DD"
+              onChange={(val) => setSetting('dailyNotesFormat', val)}
+              ariaLabel={t('dailyNotes.customFormat')}
+            />
+          ),
         },
         {
           id: 'daily-notes-folder',
