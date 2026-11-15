@@ -15,6 +15,7 @@ import {
   Link,
   FileText,
   Merge,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { useT } from '../../stores/localeStore';
@@ -44,6 +45,8 @@ interface ViewHeaderProps {
   onCopyPath?: () => void;
   onSplitRight?: () => void;
   onSplitDown?: () => void;
+  showBacklinksInDocument?: boolean;
+  onToggleBacklinksInDocument?: () => void;
   hasActiveFile?: boolean;
 }
 
@@ -66,6 +69,8 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
   onCopyPath,
   onSplitRight,
   onSplitDown,
+  showBacklinksInDocument,
+  onToggleBacklinksInDocument,
   hasActiveFile = true,
 }) => {
   const t = useT();
@@ -164,6 +169,16 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
                 title: t('viewHeader.mergeFile'),
                 icon: <Merge size={14} />,
                 action: () => onMergeFile(),
+              },
+            ]
+          : []),
+        ...(onToggleBacklinksInDocument
+          ? [
+              {
+                title: t('viewHeader.toggleBacklinksInDocument'),
+                icon: <ArrowLeftRight size={14} />,
+                checked: showBacklinksInDocument,
+                action: () => onToggleBacklinksInDocument(),
               },
             ]
           : []),
