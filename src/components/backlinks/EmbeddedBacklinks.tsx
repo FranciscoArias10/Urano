@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useT } from '../../stores/localeStore';
@@ -233,6 +233,60 @@ export function scanBacklinkMentions(
   return { linkedGroups, unlinkedGroups };
 }
 
+export function filterAndSortGroups(
+  groups: MentionFileGroup[],
+  query: string,
+  sortOrder: BacklinkSortOrder
+): MentionFileGroup[] {
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? groups
+        .map((group) => {
+          if (group.fileName.toLowerCase().includes(q)) return group;
+          const matchingLines = group.matches.filter((m) =>
+            m.lineText.toLowerCase().includes(q)
+          );
+          if (matchingLines.length === 0) return null;
+          return { ...group, matches: matchingLines };
+        })
+        .filter((g): g is MentionFileGroup => g !== null)
+    : [...groups];
+
+  filtered.sort((a, b) => {
+    switch (sortOrder) {
+      case 'alphabetical-reverse':
+        return b.fileName.localeCompare(a.fileName, undefined, {
+          numeric: true,
+          sensitivity: 'base',
+        });
+      case 'modified-new':
+        return (
+          b.mtime - a.mtime ||
+          a.fileName.localeCompare(b.fileName, undefined, {
+            numeric: true,
+            sensitivity: 'base',
+          })
+        );
+      case 'modified-old':
+        return (
+          a.mtime - b.mtime ||
+          a.fileName.localeCompare(b.fileName, undefined, {
+            numeric: true,
+            sensitivity: 'base',
+          })
+        );
+      case 'alphabetical':
+      default:
+        return a.fileName.localeCompare(b.fileName, undefined, {
+          numeric: true,
+          sensitivity: 'base',
+        });
+    }
+  });
+
+  return filtered;
+}
+
 export const EmbeddedBacklinks: React.FC<EmbeddedBacklinksProps> = ({
   activeFile,
   cleanTitle,
@@ -243,6 +297,15 @@ export const EmbeddedBacklinks: React.FC<EmbeddedBacklinksProps> = ({
   const notesContentMap = useVaultStore((s) => s.notesContentMap);
   const fileTree = useVaultStore((s) => s.fileTree);
   const userIgnoreFilters = useSettingsStore((s) => s.settings.userIgnoreFilters) || [];
+
+  const [showSearch, setShowSearch] = useState(false);
+  const [filterQuery, setFilterQuery] = useState('');
+  const [collapseResults, setCollapseResults] = useState(false);
+  const [sortOrder, setSortOrder] = useState<BacklinkSortOrder>('alphabetical');
+  const [sortMenuPos, setSortMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [linkedOpen, setLinkedOpen] = useState(true);
+  const [unlinkedOpen, setUnlinkedOpen] = useState(true);
+  const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
 
   const { linkedGroups, unlinkedGroups } = useMemo(
     () =>
@@ -257,18 +320,60 @@ export const EmbeddedBacklinks: React.FC<EmbeddedBacklinksProps> = ({
     [activeFile, cleanTitle, activeVault, notesContentMap, fileTree, userIgnoreFilters]
   );
 
+  const visibleLinkedGroups = useMemo(
+    () => filterAndSortGroups(linkedGroups, filterQuery, sortOrder),
+    [linkedGroups, filterQuery, sortOrder]
+  );
+
+  const visibleUnlinkedGroups = useMemo(
+    () => filterAndSortGroups(unlinkedGroups, filterQuery, sortOrder),
+    [unlinkedGroups, filterQuery, sortOrder]
+  );
+
+  const linkedTotal = useMemo(
+    () => visibleLinkedGroups.reduce((acc, g) => acc + g.matches.length, 0),
+    [visibleLinkedGroups]
+  );
+
+  const unlinkedTotal = useMemo(
+    () => visibleUnlinkedGroups.reduce((acc, g) => acc + g.matches.length, 0),
+    [visibleUnlinkedGroups]
+  );
+
+  const handleToggleCollapseAll = () => {
+    setCollapseResults((prev) => !prev);
+    setCollapsedFiles({});
+  };
+
+  const toggleFileCollapsed = (section: 'linked' | 'unlinked', filePath: string) => {
+    const key = `${section}:${filePath}`;
+    setCollapsedFiles((prev) => {
+      const current = key in prev ? prev[key] : collapseResults;
+      return { ...prev, [key]: !current };
+    });
+  };
+
   return (
-    <div className={`embedded-backlinks${readableLineLength ? '' : ' is-full-width'}`}>
+    <div
+      className={`embedded-backlinks${readableLineLength ? '' : ' is-full-width'}`}
+      data-sort-order={sortOrder}
+      data-search-open={showSearch ? 'true' : 'false'}
+      data-sort-menu={sortMenuPos ? 'open' : 'closed'}
+    >
       <div className="embedded-backlinks-header">
         <div className="embedded-backlinks-title">{t('embeddedBacklinks.title')}</div>
       </div>
       <div className="backlink-pane">
-        <div className="backlink-section" data-count={linkedGroups.length}>
-          {t('embeddedBacklinks.linkedMentions')}
-        </div>
-        <div className="backlink-section" data-count={unlinkedGroups.length}>
-          {t('embeddedBacklinks.unlinkedMentions')}
-        </div>
+        {linkedOpen && (
+          <div className="backlink-section" data-count={linkedTotal}>
+            {t('embeddedBacklinks.linkedMentions')} ({linkedTotal})
+          </div>
+        )}
+        {unlinkedOpen && (
+          <div className="backlink-section" data-count={unlinkedTotal}>
+            {t('embeddedBacklinks.unlinkedMentions')} ({unlinkedTotal})
+          </div>
+        )}
       </div>
     </div>
   );
