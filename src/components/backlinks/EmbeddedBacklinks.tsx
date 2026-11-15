@@ -590,6 +590,8 @@ export const EmbeddedBacklinks: React.FC<EmbeddedBacklinksProps> = ({
             className={`clickable-icon${sortMenuPos ? ' is-active' : ''}`}
             aria-label={t('embeddedBacklinks.sortOrder')}
             title={t('embeddedBacklinks.sortOrder')}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               setSortMenuPos((prev) =>
