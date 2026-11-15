@@ -166,6 +166,7 @@ const MainApp: React.FC = () => {
     toggleSettings: () => void;
     toggleLeftSidebar: () => void;
     toggleBacklinks: () => void;
+    toggleBacklinksInDocument: () => void;
     openHelp: () => void;
     openSearch: () => void;
     openTemplates: () => void;
@@ -184,6 +185,7 @@ const MainApp: React.FC = () => {
     toggleSettings: () => {},
     toggleLeftSidebar: () => {},
     toggleBacklinks: () => {},
+    toggleBacklinksInDocument: () => {},
     openHelp: () => {},
     openSearch: () => {},
     openTemplates: () => {},
@@ -233,6 +235,9 @@ const MainApp: React.FC = () => {
     deleteItem,
     pendingRenamePrompt,
     resolvePendingRename,
+    embeddedBacklinksOverrides,
+    toggleEmbeddedBacklinksForNote,
+    clearEmbeddedBacklinksOverrides,
     isLoading,
     closeActiveFile,
   } = useVaultStore();
@@ -288,6 +293,10 @@ const MainApp: React.FC = () => {
   useEffect(() => {
     if (activeVault) loadSettingsFromVault(activeVault);
   }, [activeVault, loadSettingsFromVault]);
+
+  useEffect(() => {
+    clearEmbeddedBacklinksOverrides();
+  }, [settings.backlinkInDocument, clearEmbeddedBacklinksOverrides]);
 
   // Community language packs (.urano/locales/*.json) of the active vault
   const loadVaultLocales = useLocaleStore((s) => s.loadVaultLocales);
@@ -813,6 +822,11 @@ const MainApp: React.FC = () => {
         shortcutsRef.current.toggleBacklinks();
         return;
       }
+      if (activePlugins.backlink && isCommandTriggered(e, 'backlink:toggle-in-document', customHotkeys)) {
+        e.preventDefault();
+        shortcutsRef.current.toggleBacklinksInDocument();
+        return;
+      }
       if (activePlugins['global-search'] && isCommandTriggered(e, 'global-search:open', customHotkeys)) {
         e.preventDefault();
         shortcutsRef.current.openSearch();
@@ -1329,6 +1343,15 @@ const MainApp: React.FC = () => {
       action: () => setShowBacklinks((prev) => !prev),
     },
     {
+      id: 'backlink:toggle-in-document',
+      name: t('commands.workspace.toggleBacklinksInDocument'),
+      icon: <ArrowLeftRight size={15} />,
+      action: () => {
+        if (!corePlugins.backlink || !activeFile || !activeFile.toLowerCase().endsWith('.md')) return;
+        toggleEmbeddedBacklinksForNote(activeFile, settings.backlinkInDocument);
+      },
+    },
+    {
       id: 'file-explorer:new-folder',
       name: t('commands.fileExplorer.newFolder'),
       icon: <FolderPlus size={15} />,
@@ -1414,9 +1437,27 @@ const MainApp: React.FC = () => {
     if (cmd.id.startsWith('command-palette:')) return corePlugins['command-palette'];
     if (cmd.id.startsWith('file-explorer:')) return corePlugins['file-explorer'];
     if (cmd.id.startsWith('note-composer:')) return corePlugins['note-composer'];
-    if (cmd.id === 'workspace:toggle-backlinks') return corePlugins.backlink;
+    if (cmd.id === 'workspace:toggle-backlinks' || cmd.id === 'backlink:toggle-in-document') {
+      return corePlugins.backlink;
+    }
     return true;
   });
+
+  const normActiveFileForBacklinks = activeFile ? normalizePath(activeFile) : '';
+  const isActiveMarkdown = Boolean(
+    normActiveFileForBacklinks && normActiveFileForBacklinks.toLowerCase().endsWith('.md')
+  );
+  const isBacklinksInDocVisible =
+    Boolean(corePlugins.backlink) &&
+    isActiveMarkdown &&
+    (normActiveFileForBacklinks in embeddedBacklinksOverrides
+      ? embeddedBacklinksOverrides[normActiveFileForBacklinks]
+      : settings.backlinkInDocument);
+
+  const handleToggleBacklinksInDocument = () => {
+    if (!corePlugins.backlink || !activeFile || !activeFile.toLowerCase().endsWith('.md')) return;
+    toggleEmbeddedBacklinksForNote(activeFile, settings.backlinkInDocument);
+  };
 
   // Keep the global shortcut listener and palette commands up to date
   shortcutsRef.current = {
@@ -1439,6 +1480,7 @@ const MainApp: React.FC = () => {
     toggleSettings: toggleSettings,
     toggleLeftSidebar: () => setShowLeftSidebar((prev) => !prev),
     toggleBacklinks: () => setShowBacklinks((prev) => !prev),
+    toggleBacklinksInDocument: handleToggleBacklinksInDocument,
     openHelp: handleHelpClick,
     openSearch: () => {
       setShowLeftSidebar(true);
@@ -1760,6 +1802,12 @@ const MainApp: React.FC = () => {
               onMergeFile={
                 corePlugins['note-composer'] && activeFile?.toLowerCase().endsWith('.md')
                   ? () => openMergeModalForFile(activeFile)
+                  : undefined
+              }
+              showBacklinksInDocument={isBacklinksInDocVisible}
+              onToggleBacklinksInDocument={
+                corePlugins.backlink && isActiveMarkdown
+                  ? handleToggleBacklinksInDocument
                   : undefined
               }
               onDeleteFile={handleDeleteFile}
