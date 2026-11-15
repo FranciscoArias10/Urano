@@ -160,6 +160,18 @@ export const SettingsWindow: React.FC = () => {
         action: () => {},
       },
       {
+        id: 'daily-notes:prev',
+        name: t('commands.dailyNotes.prev'),
+        icon: <Calendar size={15} />,
+        action: () => {},
+      },
+      {
+        id: 'daily-notes:next',
+        name: t('commands.dailyNotes.next'),
+        icon: <Calendar size={15} />,
+        action: () => {},
+      },
+      {
         id: 'templates:insert',
         name: t('commands.templates.insert'),
         icon: <Copy size={15} />,
