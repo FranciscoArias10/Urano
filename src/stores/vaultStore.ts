@@ -14,12 +14,109 @@ import {
   setAlwaysUpdateLinksPref,
 } from '../services/linkRefactorService';
 import { normalizePath, isSamePath, resolveFilePathInVault } from '../utils/pathUtils';
+import { useLocaleStore } from './localeStore';
+import {
+  formatDailyNoteDate,
+  parseDailyNoteDate,
+  applyDailyNoteTemplateVariables,
+} from '../utils/dailyNotesUtils';
 
 const triggerAutoSync = (vaultPath?: string | null, vaultName?: string | null) => {
   if (vaultPath) {
     useSyncStore.getState().notifyVaultChanged(vaultPath, vaultName || undefined);
   }
 };
+
+function findFileInTreeByPath(items: FileItem[], targetPath: string): string | null {
+  for (const item of items) {
+    if (!item.isDir && isSamePath(item.path, targetPath)) {
+      return item.path;
+    }
+    if (item.children?.length) {
+      const found = findFileInTreeByPath(item.children, targetPath);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function resolveDailyNoteTarget(
+  vaultRoot: string,
+  folderSetting: string,
+  formatSetting: string,
+  date: Date,
+  locale: string
+): { baseDir: string; fullPath: string; noteTitle: string } {
+  const cleanRoot = normalizePath(vaultRoot).replace(/\/+$/, '');
+  const cleanFolder = normalizePath(folderSetting).trim().replace(/^\/+|\/+$/g, '');
+  const baseDir = cleanFolder ? `${cleanRoot}/${cleanFolder}` : cleanRoot;
+  const formatted = formatDailyNoteDate(date, formatSetting || 'YYYY-MM-DD', locale)
+    .replace(/\\/g, '/')
+    .replace(/^\/+|\/+$/g, '');
+  const relPath = formatted.toLowerCase().endsWith('.md') ? formatted : `${formatted}.md`;
+  const fullPath = `${baseDir}/${relPath}`.replace(/\/+/g, '/');
+  const noteTitle = (formatted.split('/').pop() || formatted).replace(/\.md$/i, '');
+  return { baseDir, fullPath, noteTitle };
+}
+
+async function readDailyNoteTemplateRaw(
+  vaultRoot: string,
+  templateSetting: string,
+  fileTree: FileItem[],
+  notesContentMap: Record<string, string>
+): Promise<string> {
+  const clean = normalizePath(templateSetting).trim().replace(/^\/+/, '');
+  if (!clean) return '';
+
+  const relWithExt = clean.toLowerCase().endsWith('.md') ? clean : `${clean}.md`;
+  const expectedPath = `${normalizePath(vaultRoot).replace(/\/+$/, '')}/${relWithExt}`;
+  const treeMatch = findFileInTreeByPath(fileTree, expectedPath);
+  const candidatePath = treeMatch || expectedPath;
+
+  for (const [k, v] of Object.entries(notesContentMap)) {
+    if (isSamePath(k, candidatePath)) return v;
+  }
+
+  try {
+    return await invoke<string>('read_file', { filePath: candidatePath });
+  } catch (err) {
+    console.warn('Could not read daily note template:', candidatePath, err);
+    useNoticeStore.getState().showNotice(t('dailyNotes.notices.templateReadFailed'), 3000, 'error');
+    return '';
+  }
+}
+
+function collectExistingDailyNotes(
+  items: FileItem[],
+  baseDir: string,
+  formatSetting: string
+): Array<{ path: string; date: Date }> {
+  const normBase = normalizePath(baseDir).replace(/\/+$/, '');
+  const prefix = `${normBase}/`.toLowerCase();
+  const results: Array<{ path: string; date: Date }> = [];
+
+  const walk = (nodes: FileItem[]) => {
+    for (const item of nodes) {
+      if (item.isDir) {
+        if (item.children?.length) walk(item.children);
+        continue;
+      }
+      if (!item.name.toLowerCase().endsWith('.md')) continue;
+      const normItem = normalizePath(item.path);
+      if (!normItem.toLowerCase().startsWith(prefix)) continue;
+      const relWithoutExt = normItem.slice(prefix.length).replace(/\.md$/i, '');
+      if (relWithoutExt.split('/').some((seg) => seg.startsWith('.'))) continue;
+      const parsed = parseDailyNoteDate(relWithoutExt, formatSetting);
+      if (parsed) {
+        results.push({ path: item.path, date: parsed });
+      }
+    }
+  };
+
+  walk(items);
+  results.sort((a, b) => a.date.getTime() - b.date.getTime());
+  return results;
+}
 
 const notifyLinksUpdated = (plan: LinkScanResult) => {
   const key =
