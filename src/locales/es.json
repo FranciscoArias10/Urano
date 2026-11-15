@@ -702,6 +702,24 @@
     "notCreatedYet": "Nota no creada aún",
     "create": "Crear"
   },
+  "embeddedBacklinks": {
+    "title": "Enlaces entrantes",
+    "linkedMentions": "Menciones vinculadas",
+    "unlinkedMentions": "Menciones no vinculadas",
+    "filterPlaceholder": "Filtrar...",
+    "clearFilter": "Limpiar filtro",
+    "showSearch": "Mostrar filtro de búsqueda",
+    "collapseResults": "Colapsar resultados",
+    "expandResults": "Expandir resultados",
+    "sortOrder": "Cambiar orden",
+    "sortAlphabetical": "Nombre de archivo (de la A a la Z)",
+    "sortAlphabeticalReverse": "Nombre de archivo (de la Z a la A)",
+    "sortModifiedNew": "Fecha de modificación (del más nuevo al más antiguo)",
+    "sortModifiedOld": "Fecha de modificación (del más antiguo al más nuevo)",
+    "linkButton": "Enlazar",
+    "noLinkedMentions": "No se encontraron menciones vinculadas.",
+    "noUnlinkedMentions": "No se encontraron menciones no vinculadas."
+  },
   "base": {
     "defaultName": "Base de datos",
     "indexedNotes": "{shown} de {total} notas indexadas",
@@ -861,7 +879,8 @@
     },
     "workspace": {
       "toggleLeftSidebar": "Espacio de trabajo: Alternar barra lateral izquierda",
-      "toggleBacklinks": "Espacio de trabajo: Alternar panel de Backlinks y menciones"
+      "toggleBacklinks": "Espacio de trabajo: Alternar panel de Backlinks y menciones",
+      "toggleBacklinksInDocument": "Enlaces entrantes: Alternar enlaces entrantes en el documento"
     },
     "sync": {
       "now": "Sincronización: Sincronizar ahora con Google Drive"
@@ -1403,6 +1422,7 @@
     "switchToLivePreviewLabel": "Cambiar a Live Preview",
     "toggleReadingView": "Alternar Vista de Lectura (Ctrl+E)",
     "toggleReadingViewLabel": "Alternar Vista de Lectura",
+    "toggleBacklinksInDocument": "Alternar enlaces entrantes en el documento",
     "moreOptions": "Más opciones"
   },
   "window": {
