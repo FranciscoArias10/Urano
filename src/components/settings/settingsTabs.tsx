@@ -2242,20 +2242,30 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
           id: 'daily-notes-folder',
           name: t('dailyNotes.folder'),
           desc: t('dailyNotes.folderDesc'),
+          aliases: ['folder', 'carpeta', 'location', 'ubicación', 'archivo'],
           control: (
-            <TextInput
+            <VaultFolderInput
               value={settings.dailyNotesFolder}
-              placeholder={t('files.folderPlaceholder')}
+              placeholder={t('dailyNotes.folderPlaceholder')}
               onChange={set('dailyNotesFolder')}
               ariaLabel={t('dailyNotes.folder')}
+              emptyText={t('templates.noFoldersFound')}
             />
           ),
         },
         {
-          id: 'daily-notes-startup',
-          name: t('dailyNotes.openOnStartup'),
-          desc: t('dailyNotes.openOnStartupDesc'),
-          control: <Toggle value={settings.dailyNotesOpenOnStartup} onChange={set('dailyNotesOpenOnStartup')} ariaLabel={t('dailyNotes.openOnStartup')} />,
+          id: 'daily-notes-template',
+          name: t('dailyNotes.template'),
+          desc: t('dailyNotes.templateDesc'),
+          aliases: ['template', 'plantilla', 'ubicación'],
+          control: (
+            <VaultNoteInput
+              value={settings.dailyNotesTemplatePath}
+              placeholder={t('dailyNotes.noTemplateSelected')}
+              onChange={set('dailyNotesTemplatePath')}
+              ariaLabel={t('dailyNotes.template')}
+            />
+          ),
         },
       ],
     },
