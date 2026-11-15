@@ -540,9 +540,18 @@
     },
     "dailyNotes": {
       "format": "Formato de fecha",
-      "formatDesc": "Las notas diarias se nombran AAAA-MM-DD.",
-      "folder": "Ubicación de archivos nuevos",
-      "folderDesc": "Las notas diarias nuevas se crearán aquí.",
+      "formatDesc": "Elige cómo se nombran las notas diarias en tu bóveda.",
+      "customFormatOption": "Personalizado",
+      "customFormat": "Formato personalizado",
+      "customFormatDescPrefix": "Para más opciones, vea: ",
+      "customFormatReferenceLink": "referencia de formato",
+      "customFormatSyntaxPreview": "Así es como se verá: ",
+      "folder": "Ubicación del nuevo archivo",
+      "folderDesc": "La carpeta para crear una nota diaria nueva.",
+      "folderPlaceholder": "Ejemplo: carpeta1/carpeta2",
+      "template": "Ubicación de la plantilla",
+      "templateDesc": "La ruta al archivo para usar como plantilla.",
+      "noTemplateSelected": "No hay ningún archivo seleccionado",
       "openOnStartup": "Abrir la nota diaria al iniciar",
       "openOnStartupDesc": "Abre la nota de hoy cuando se inicia Urano."
     },
@@ -662,7 +671,7 @@
       "openQuickSwitcher": "Abrir selector rápido",
       "openGraphView": "Abrir vista gráfica",
       "createNewCanvas": "Crear nuevo lienzo",
-      "openDailyNote": "Abrir la nota diaria de hoy",
+      "openDailyNote": "Abrir nota diaria de hoy",
       "insertTemplate": "Insertar plantilla",
       "openCommandPalette": "Abrir paleta de comandos",
       "createNewBase": "Crear nueva base",
@@ -869,7 +878,9 @@
       "new": "Canvas: Crear nuevo lienzo (.canvas)"
     },
     "dailyNotes": {
-      "today": "Notas diarias: Abrir nota de hoy"
+      "today": "Notas diarias: Abrir nota diaria de hoy",
+      "prev": "Notas diarias: Abrir nota diaria anterior",
+      "next": "Notas diarias: Abrir nota diaria siguiente"
     },
     "templates": {
       "insert": "Plantillas: Insertar plantilla"
@@ -898,6 +909,13 @@
       "extract": "Compositor de notas: Extraer selección actual...",
       "extractHeading": "Compositor de notas: Extraer este encabezado...",
       "merge": "Compositor de notas: Combinar todo el archivo con..."
+    }
+  },
+  "dailyNotes": {
+    "notices": {
+      "noPrevious": "No hay nota diaria anterior a esta.",
+      "noNext": "No hay nota diaria posterior a esta.",
+      "templateReadFailed": "No se pudo leer la plantilla de notas diarias."
     }
   },
   "editor": {
