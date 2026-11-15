@@ -246,6 +246,7 @@ interface VaultState {
   createBaseFile: (parentPath?: string) => Promise<{ path: string; name: string; fileName: string }>;
   openDailyNote: () => Promise<string>;
   openTodayDailyNote: () => Promise<string>;
+  openAdjacentDailyNote: (direction: 'prev' | 'next') => Promise<string>;
   createUntitledFolder: (parentPath?: string) => Promise<string>;
   moveItem: (sourcePath: string, targetFolderPath: string) => Promise<void>;
   duplicateNote: (filePath: string) => Promise<string>;
@@ -924,6 +925,57 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   },
 
   openDailyNote: async (): Promise<string> => get().openTodayDailyNote(),
+
+  // Navigate to the nearest existing previous or next daily note
+  openAdjacentDailyNote: async (direction: 'prev' | 'next'): Promise<string> => {
+    const { activeVault, activeFile, fileTree, selectFile } = get();
+    if (!activeVault) return '';
+
+    const settings = useSettingsStore.getState().settings;
+    const cleanRoot = normalizePath(activeVault).replace(/\/+$/, '');
+    const cleanFolder = normalizePath(settings.dailyNotesFolder).trim().replace(/^\/+|\/+$/g, '');
+    const baseDir = cleanFolder ? `${cleanRoot}/${cleanFolder}` : cleanRoot;
+    const formatStr = settings.dailyNotesFormat || 'YYYY-MM-DD';
+
+    const dailyNotes = collectExistingDailyNotes(fileTree, baseDir, formatStr);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let refTime = today.getTime();
+
+    if (activeFile) {
+      const currentMatch = dailyNotes.find((n) => isSamePath(n.path, activeFile));
+      if (currentMatch) {
+        refTime = currentMatch.date.getTime();
+      }
+    }
+
+    let target: { path: string; date: Date } | undefined;
+    if (direction === 'prev') {
+      for (let i = dailyNotes.length - 1; i >= 0; i--) {
+        if (dailyNotes[i].date.getTime() < refTime) {
+          target = dailyNotes[i];
+          break;
+        }
+      }
+    } else {
+      target = dailyNotes.find((n) => n.date.getTime() > refTime);
+    }
+
+    if (target) {
+      await selectFile(target.path);
+      return target.path;
+    }
+
+    useNoticeStore
+      .getState()
+      .showNotice(
+        t(direction === 'prev' ? 'dailyNotes.notices.noPrevious' : 'dailyNotes.notices.noNext'),
+        2500,
+        'info'
+      );
+    return '';
+  },
 
   // Move item (drag and drop into folder)
   moveItem: async (sourcePath: string, targetFolderPath: string) => {
