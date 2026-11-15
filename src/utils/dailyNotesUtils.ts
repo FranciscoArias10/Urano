@@ -369,3 +369,34 @@ export function parseDailyNoteDate(
   parsed.setHours(0, 0, 0, 0);
   return parsed;
 }
+
+/**
+ * Replaces Obsidian/Urano daily-note template placeholders:
+ * `{{title}}`, `{{date}}`, `{{date:FORMAT}}`, `{{time}}`, and `{{time:FORMAT}}`.
+ */
+export function applyDailyNoteTemplateVariables(
+  templateContent: string,
+  date: Date,
+  title: string,
+  locale?: string,
+  defaultDateFormat = 'YYYY-MM-DD',
+  defaultTimeFormat = 'HH:mm'
+): string {
+  if (!templateContent) return '';
+  return templateContent.replace(
+    /\{\{\s*(title|date|time)(?::([^}]+))?\s*\}\}/gi,
+    (_full, rawKey: string, rawFmt?: string) => {
+      const key = rawKey.toLowerCase();
+      if (key === 'title') {
+        return title;
+      }
+      if (key === 'date') {
+        return formatDailyNoteDate(date, rawFmt ? rawFmt.trim() : defaultDateFormat, locale);
+      }
+      if (key === 'time') {
+        return formatDailyNoteDate(date, rawFmt ? rawFmt.trim() : defaultTimeFormat, locale);
+      }
+      return _full;
+    }
+  );
+}
