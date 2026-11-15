@@ -2227,6 +2227,7 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
               </span>
             </>
           ),
+          descText: `${t('dailyNotes.customFormatDescPrefix')}${t('dailyNotes.customFormatReferenceLink')} ${t('dailyNotes.customFormatSyntaxPreview')}`,
           aliases: ['custom', 'personalizado', 'moment', 'YYYY-MM-DD', 'syntax'],
           control: (
             <TextInput

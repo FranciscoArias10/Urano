@@ -142,8 +142,14 @@ export const VaultFolderInput: React.FC<VaultFolderInputProps> = ({
         placeholder={placeholder}
         onFocus={() => setOpen(true)}
         onChange={(e) => {
-          setDraft(e.target.value);
-          setOpen(true);
+          const next = e.target.value;
+          setDraft(next);
+          if (folders.includes(next)) {
+            onChange(next);
+            setOpen(false);
+          } else {
+            setOpen(true);
+          }
         }}
         onBlur={() => {
           if (draft !== value) onChange(draft.trim().replace(/^\/+/, ''));
