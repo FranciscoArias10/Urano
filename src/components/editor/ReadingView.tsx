@@ -583,6 +583,7 @@ export interface ReadingViewProps {
   showIndentationGuides?: boolean;
   onWikilinkClick?: (noteName: string) => void;
   onTaskToggle?: (rawLineIndex: number, newChecked: boolean) => void;
+  footerContent?: React.ReactNode;
 }
 
 export const ReadingView: React.FC<ReadingViewProps> = ({
@@ -594,6 +595,7 @@ export const ReadingView: React.FC<ReadingViewProps> = ({
   showIndentationGuides = true,
   onWikilinkClick,
   onTaskToggle,
+  footerContent,
 }) => {
   const [copiedCodeKey, setCopiedCodeKey] = useState<string | null>(null);
 
@@ -873,6 +875,8 @@ export const ReadingView: React.FC<ReadingViewProps> = ({
                 return null;
             }
           })}
+
+          {footerContent}
 
           {/* Bottom spacing pusher matching Obsidian */}
           <div className="markdown-preview-pusher" style={{ height: '30vh' }} />
