@@ -89,6 +89,10 @@ import {
   HOTKEY_CATALOG,
   getActiveHotkeys,
 } from '../../services/hotkeyRegistry';
+import {
+  DAILY_NOTE_PRESET_FORMATS,
+  formatDailyNoteDate,
+} from '../../utils/dailyNotesUtils';
 
 /* ----------------------------------------------------------------------------
  * Declarative tab definitions (mirrors Urano's `SettingTab.getSettingDefinitions`)
