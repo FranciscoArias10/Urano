@@ -540,9 +540,18 @@
     },
     "dailyNotes": {
       "format": "Date format",
-      "formatDesc": "Daily notes are named YYYY-MM-DD.",
+      "formatDesc": "Choose how daily notes are named in your vault.",
+      "customFormatOption": "Custom",
+      "customFormat": "Custom format",
+      "customFormatDescPrefix": "For more syntax, refer to ",
+      "customFormatReferenceLink": "format reference",
+      "customFormatSyntaxPreview": "Your current syntax looks like this: ",
       "folder": "New file location",
       "folderDesc": "New daily notes will be placed here.",
+      "folderPlaceholder": "Example: folder1/folder2",
+      "template": "Template file location",
+      "templateDesc": "Choose the file to use as a template.",
+      "noTemplateSelected": "No file selected",
       "openOnStartup": "Open daily note on startup",
       "openOnStartupDesc": "Open today's daily note when Urano starts."
     },
@@ -869,7 +878,9 @@
       "new": "Canvas: Create new canvas"
     },
     "dailyNotes": {
-      "today": "Daily notes: Open today's daily note"
+      "today": "Daily notes: Open today's daily note",
+      "prev": "Daily notes: Open previous daily note",
+      "next": "Daily notes: Open next daily note"
     },
     "templates": {
       "insert": "Templates: Insert template"
@@ -898,6 +909,13 @@
       "extract": "Note composer: Extract current selection...",
       "extractHeading": "Note composer: Extract this heading...",
       "merge": "Note composer: Merge entire file with..."
+    }
+  },
+  "dailyNotes": {
+    "notices": {
+      "noPrevious": "There's no daily note before this one.",
+      "noNext": "There's no daily note after this one.",
+      "templateReadFailed": "Could not read the daily note template."
     }
   },
   "editor": {
