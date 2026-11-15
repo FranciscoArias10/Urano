@@ -187,6 +187,13 @@ export const HOTKEY_CATALOG: HotkeyCommand[] = [
     section: 'backlink',
   },
   {
+    id: 'backlink:toggle-in-document',
+    nameEs: 'Enlaces entrantes: Alternar enlaces entrantes en el documento',
+    nameEn: 'Backlinks: Toggle backlinks in document',
+    defaultHotkeys: [],
+    section: 'backlink',
+  },
+  {
     id: 'workspace:new-tab',
     nameEs: 'Nueva pestaña',
     nameEn: 'New tab',
