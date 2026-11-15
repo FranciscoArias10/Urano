@@ -1991,9 +1991,16 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
       items: [
         {
           id: 'backlinks-in-document',
+          className: 'mod-toggle',
           name: t('backlinks.showInDocument'),
           desc: t('backlinks.showInDocumentDesc'),
-          control: <Toggle value={settings.backlinksInDocument} onChange={set('backlinksInDocument')} ariaLabel={t('backlinks.showInDocument')} />,
+          control: (
+            <Toggle
+              value={settings.backlinkInDocument}
+              onChange={set('backlinkInDocument')}
+              ariaLabel={t('backlinks.showInDocument')}
+            />
+          ),
         },
       ],
     },
