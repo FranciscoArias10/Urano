@@ -187,3 +187,185 @@ export function formatDailyNoteDate(
     }
   });
 }
+
+function escapeRegex(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildLocaleAlternation(lists: readonly (readonly string[])[]): string {
+  const unique = Array.from(new Set(lists.flat())).sort((a, b) => b.length - a.length);
+  return unique.map(escapeRegex).join('|');
+}
+
+/**
+ * Parses a daily note relative path (without `.md`) back to a midnight `Date`
+ * according to the configured Moment-style format. Returns `null` if it does not match.
+ */
+export function parseDailyNoteDate(
+  relativeNotePathWithoutExt: string,
+  formatStr?: string
+): Date | null {
+  const fmt = (formatStr && formatStr.trim() ? formatStr : 'YYYY-MM-DD').replace(/^\/+|\/+$/g, '');
+  const normalizedTarget = relativeNotePathWithoutExt.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+  if (!normalizedTarget) return null;
+
+  const monthsFullAlt = buildLocaleAlternation([CALENDAR_TABLES.es.monthsFull, CALENDAR_TABLES.en.monthsFull]);
+  const monthsShortAlt = buildLocaleAlternation([CALENDAR_TABLES.es.monthsShort, CALENDAR_TABLES.en.monthsShort]);
+  const weekdaysFullAlt = buildLocaleAlternation([CALENDAR_TABLES.es.weekdaysFull, CALENDAR_TABLES.en.weekdaysFull]);
+  const weekdaysShortAlt = buildLocaleAlternation([CALENDAR_TABLES.es.weekdaysShort, CALENDAR_TABLES.en.weekdaysShort]);
+
+  const tokenHandlers: Array<{ token: string; value: string }> = [];
+  let pattern = '^';
+  let lastIdx = 0;
+
+  MOMENT_FORMAT_TOKEN_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = MOMENT_FORMAT_TOKEN_RE.exec(fmt)) !== null) {
+    if (m.index > lastIdx) {
+      pattern += escapeRegex(fmt.slice(lastIdx, m.index));
+    }
+    const token = m[0];
+    const escaped = m[1];
+    if (escaped !== undefined) {
+      pattern += escapeRegex(escaped);
+    } else {
+      switch (token) {
+        case 'YYYY':
+          pattern += '(\\d{4})';
+          tokenHandlers.push({ token, value: '' });
+          break;
+        case 'YY':
+          pattern += '(\\d{2})';
+          tokenHandlers.push({ token, value: '' });
+          break;
+        case 'MMMM':
+          pattern += `(${monthsFullAlt})`;
+          tokenHandlers.push({ token, value: '' });
+          break;
+        case 'MMM':
+          pattern += `(${monthsShortAlt})`;
+          tokenHandlers.push({ token, value: '' });
+          break;
+        case 'MM':
+          pattern += '(\\d{2})';
+          tokenHandlers.push({ token, value: '' });
+          break;
+        case 'M':
+          pattern += '(\\d{1,2})';
+          tokenHandlers.push({ token, value: '' });
+          break;
+        case 'DDDD':
+          pattern += '(\\d{3})';
+          tokenHandlers.push({ token, value: '' });
+          break;
+        case 'DDD':
+          pattern += '(\\d{1,3})';
+          tokenHandlers.push({ token, value: '' });
+          break;
+        case 'DD':
+          pattern += '(\\d{2})';
+          tokenHandlers.push({ token, value: '' });
+          break;
+        case 'D':
+          pattern += '(\\d{1,2})';
+          tokenHandlers.push({ token, value: '' });
+          break;
+        case 'dddd':
+          pattern += `(?:${weekdaysFullAlt})`;
+          break;
+        case 'ddd':
+          pattern += `(?:${weekdaysShortAlt})`;
+          break;
+        case 'HH':
+        case 'hh':
+        case 'mm':
+        case 'ss':
+          pattern += '\\d{2}';
+          break;
+        case 'H':
+        case 'h':
+        case 'm':
+        case 's':
+          pattern += '\\d{1,2}';
+          break;
+        case 'A':
+        case 'a':
+          pattern += '(?:AM|PM|am|pm)';
+          break;
+        default:
+          pattern += escapeRegex(token);
+      }
+    }
+    lastIdx = m.index + token.length;
+  }
+  if (lastIdx < fmt.length) {
+    pattern += escapeRegex(fmt.slice(lastIdx));
+  }
+  pattern += '$';
+
+  const regex = new RegExp(pattern, 'i');
+  const match = regex.exec(normalizedTarget);
+  if (!match) return null;
+
+  let year: number | null = null;
+  let monthIdx: number | null = null;
+  let day: number | null = null;
+  let dayOfYear: number | null = null;
+
+  const findMonthIndex = (raw: string, full: boolean): number => {
+    const lower = raw.toLowerCase();
+    for (const lang of ['es', 'en'] as const) {
+      const arr = full ? CALENDAR_TABLES[lang].monthsFull : CALENDAR_TABLES[lang].monthsShort;
+      const idx = arr.findIndex((name) => name.toLowerCase() === lower);
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
+  for (let i = 0; i < tokenHandlers.length; i++) {
+    const raw = match[i + 1];
+    const tok = tokenHandlers[i].token;
+    if (tok === 'YYYY') {
+      year = Number(raw);
+    } else if (tok === 'YY') {
+      year = 2000 + Number(raw);
+    } else if (tok === 'MM' || tok === 'M') {
+      monthIdx = Number(raw) - 1;
+    } else if (tok === 'MMMM') {
+      const idx = findMonthIndex(raw, true);
+      if (idx >= 0) monthIdx = idx;
+    } else if (tok === 'MMM') {
+      const idx = findMonthIndex(raw, false);
+      if (idx >= 0) monthIdx = idx;
+    } else if (tok === 'DD' || tok === 'D') {
+      day = Number(raw);
+    } else if (tok === 'DDDD' || tok === 'DDD') {
+      dayOfYear = Number(raw);
+    }
+  }
+
+  const now = new Date();
+  const resolvedYear = year ?? now.getFullYear();
+
+  if (dayOfYear !== null && monthIdx === null && day === null) {
+    const candidate = new Date(resolvedYear, 0, dayOfYear);
+    if (candidate.getFullYear() !== resolvedYear) return null;
+    candidate.setHours(0, 0, 0, 0);
+    return candidate;
+  }
+
+  if (monthIdx === null || monthIdx < 0 || monthIdx > 11 || day === null || day < 1 || day > 31) {
+    return null;
+  }
+
+  const parsed = new Date(resolvedYear, monthIdx, day);
+  if (
+    parsed.getFullYear() !== resolvedYear ||
+    parsed.getMonth() !== monthIdx ||
+    parsed.getDate() !== day
+  ) {
+    return null;
+  }
+  parsed.setHours(0, 0, 0, 0);
+  return parsed;
+}
