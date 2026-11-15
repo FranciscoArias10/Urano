@@ -106,6 +106,7 @@ interface VaultState {
   isDirty: boolean;
   isLoading: boolean;
   notesContentMap: Record<string, string>; // path -> content for graph & backlinks
+  embeddedBacklinksOverrides: Record<string, boolean>; // normalized note path -> per-pane embedded backlinks visibility
   autoFocusTitle: boolean;
   shouldSelectTitleOnOpen: boolean;
   pendingRenamePrompt: {
@@ -162,6 +163,8 @@ interface VaultState {
   loadAllNotesContent: () => Promise<void>;
   rebuildVaultCache: () => Promise<void>;
   closeActiveFile: () => void;
+  toggleEmbeddedBacklinksForNote: (filePath: string, defaultVal: boolean) => void;
+  clearEmbeddedBacklinksOverrides: () => void;
   setAutoFocusTitle: (focus: boolean) => void;
   setShouldSelectTitleOnOpen: (focus: boolean) => void;
 }
@@ -215,6 +218,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   isDirty: false,
   isLoading: false,
   notesContentMap: {},
+  embeddedBacklinksOverrides: {},
   autoFocusTitle: false,
   shouldSelectTitleOnOpen: false,
   pendingRenamePrompt: null,
@@ -1169,5 +1173,22 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       console.error('Error al reconstruir caché de la bóveda:', err);
       throw err;
     }
+  },
+
+  toggleEmbeddedBacklinksForNote: (filePath: string, defaultVal: boolean) => {
+    if (!filePath) return;
+    const norm = normalizePath(filePath);
+    const currentOverrides = get().embeddedBacklinksOverrides;
+    const currentVal = norm in currentOverrides ? currentOverrides[norm] : defaultVal;
+    set({
+      embeddedBacklinksOverrides: {
+        ...currentOverrides,
+        [norm]: !currentVal,
+      },
+    });
+  },
+
+  clearEmbeddedBacklinksOverrides: () => {
+    set({ embeddedBacklinksOverrides: {} });
   },
 }));
