@@ -702,6 +702,24 @@
     "notCreatedYet": "Not created yet",
     "create": "Create"
   },
+  "embeddedBacklinks": {
+    "title": "Backlinks",
+    "linkedMentions": "Linked mentions",
+    "unlinkedMentions": "Unlinked mentions",
+    "filterPlaceholder": "Filter...",
+    "clearFilter": "Clear filter",
+    "showSearch": "Show search filter",
+    "collapseResults": "Collapse results",
+    "expandResults": "Expand results",
+    "sortOrder": "Change sort order",
+    "sortAlphabetical": "File name (A to Z)",
+    "sortAlphabeticalReverse": "File name (Z to A)",
+    "sortModifiedNew": "Modified time (new to old)",
+    "sortModifiedOld": "Modified time (old to new)",
+    "linkButton": "Link",
+    "noLinkedMentions": "No linked mentions found.",
+    "noUnlinkedMentions": "No unlinked mentions found."
+  },
   "base": {
     "defaultName": "Database",
     "indexedNotes": "{shown} of {total} indexed notes",
@@ -861,7 +879,8 @@
     },
     "workspace": {
       "toggleLeftSidebar": "Workspace: Toggle left sidebar",
-      "toggleBacklinks": "Workspace: Toggle backlinks and mentions panel"
+      "toggleBacklinks": "Workspace: Toggle backlinks and mentions panel",
+      "toggleBacklinksInDocument": "Backlinks: Toggle backlinks in document"
     },
     "sync": {
       "now": "Sync: Sync now with Google Drive"
@@ -1403,6 +1422,7 @@
     "switchToLivePreviewLabel": "Switch to Live Preview",
     "toggleReadingView": "Toggle reading view (Ctrl+E)",
     "toggleReadingViewLabel": "Toggle reading view",
+    "toggleBacklinksInDocument": "Toggle backlinks in document",
     "moreOptions": "More options"
   },
   "window": {
