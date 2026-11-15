@@ -1,4 +1,14 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
+import {
+  ArrowUpDown,
+  ChevronDown,
+  ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Search,
+  X,
+} from 'lucide-react';
+import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useT } from '../../stores/localeStore';
@@ -400,28 +410,301 @@ export const EmbeddedBacklinks: React.FC<EmbeddedBacklinksProps> = ({
     selectFile(filePath);
   };
 
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const sortMenuItems: MenuItemData[] = useMemo(
+    () => [
+      {
+        title: t('embeddedBacklinks.sortAlphabetical'),
+        checked: sortOrder === 'alphabetical',
+        action: () => setSortOrder('alphabetical'),
+      },
+      {
+        title: t('embeddedBacklinks.sortAlphabeticalReverse'),
+        checked: sortOrder === 'alphabetical-reverse',
+        action: () => setSortOrder('alphabetical-reverse'),
+      },
+      { type: 'separator' },
+      {
+        title: t('embeddedBacklinks.sortModifiedNew'),
+        checked: sortOrder === 'modified-new',
+        action: () => setSortOrder('modified-new'),
+      },
+      {
+        title: t('embeddedBacklinks.sortModifiedOld'),
+        checked: sortOrder === 'modified-old',
+        action: () => setSortOrder('modified-old'),
+      },
+    ],
+    [sortOrder, t]
+  );
+
+  const toggleSearchBar = () => {
+    setShowSearch((prev) => {
+      const next = !prev;
+      if (next) {
+        window.setTimeout(() => searchInputRef.current?.focus(), 20);
+      } else {
+        setFilterQuery('');
+      }
+      return next;
+    });
+  };
+
+  const renderMatchLine = (
+    group: MentionFileGroup,
+    match: MentionMatch,
+    idx: number,
+    isUnlinked: boolean
+  ) => {
+    const before = match.lineText.slice(0, match.matchStart);
+    const matched = match.lineText.slice(match.matchStart, match.matchEnd);
+    const after = match.lineText.slice(match.matchEnd);
+
+    return (
+      <div
+        key={`${group.filePath}-${match.lineIndex}-${match.matchStart}-${idx}`}
+        className="search-result-file-match tappable"
+        onClick={() => handleOpenMentionFile(group.filePath)}
+      >
+        <div className="search-result-file-match-content">
+          {before}
+          <span className="search-result-file-matched-text">{matched}</span>
+          {after}
+        </div>
+        {isUnlinked && (
+          <button
+            type="button"
+            className="search-result-file-match-destination-file"
+            onClick={(e) => handleLinkMention(group.filePath, match, e)}
+          >
+            {t('embeddedBacklinks.linkButton')}
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  const renderResultGroups = (
+    groups: MentionFileGroup[],
+    section: 'linked' | 'unlinked',
+    emptyText: string
+  ) => {
+    if (groups.length === 0) {
+      return <div className="backlink-empty-state">{emptyText}</div>;
+    }
+
+    const isUnlinked = section === 'unlinked';
+
+    return (
+      <div className="search-result-container">
+        {groups.map((group) => {
+          const fileKey = `${section}:${group.filePath}`;
+          const isFileCollapsed =
+            fileKey in collapsedFiles ? collapsedFiles[fileKey] : collapseResults;
+
+          return (
+            <div
+              key={fileKey}
+              className={`search-result${isFileCollapsed ? ' is-collapsed' : ''}`}
+            >
+              <div
+                className="search-result-file-title is-clickable"
+                onClick={() => handleOpenMentionFile(group.filePath)}
+              >
+                <button
+                  type="button"
+                  className="tree-item-icon collapse-icon clickable-icon"
+                  aria-expanded={!isFileCollapsed}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFileCollapsed(section, group.filePath);
+                  }}
+                >
+                  {isFileCollapsed ? (
+                    <ChevronRight size={14} strokeWidth={2} />
+                  ) : (
+                    <ChevronDown size={14} strokeWidth={2} />
+                  )}
+                </button>
+                <span className="tree-item-inner">{group.fileName}</span>
+                <span className="tree-item-flair-outer">
+                  <span className="tree-item-flair">{group.matches.length}</span>
+                </span>
+              </div>
+
+              {!isFileCollapsed && (
+                <div className="search-result-file-matches">
+                  {group.matches.map((m, idx) =>
+                    renderMatchLine(group, m, idx, isUnlinked)
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div
       className={`embedded-backlinks${readableLineLength ? '' : ' is-full-width'}`}
       data-sort-order={sortOrder}
-      data-search-open={showSearch ? 'true' : 'false'}
-      data-sort-menu={sortMenuPos ? 'open' : 'closed'}
     >
       <div className="embedded-backlinks-header">
         <div className="embedded-backlinks-title">{t('embeddedBacklinks.title')}</div>
+        <div className="embedded-backlinks-actions">
+          <button
+            type="button"
+            className={`clickable-icon${showSearch ? ' is-active' : ''}`}
+            aria-label={t('embeddedBacklinks.showSearch')}
+            title={t('embeddedBacklinks.showSearch')}
+            onClick={toggleSearchBar}
+          >
+            <Search size={15} strokeWidth={1.9} />
+          </button>
+          <button
+            type="button"
+            className={`clickable-icon${collapseResults ? ' is-active' : ''}`}
+            aria-label={
+              collapseResults
+                ? t('embeddedBacklinks.expandResults')
+                : t('embeddedBacklinks.collapseResults')
+            }
+            title={
+              collapseResults
+                ? t('embeddedBacklinks.expandResults')
+                : t('embeddedBacklinks.collapseResults')
+            }
+            onClick={handleToggleCollapseAll}
+          >
+            {collapseResults ? (
+              <ChevronsUpDown size={15} strokeWidth={1.9} />
+            ) : (
+              <ChevronsDownUp size={15} strokeWidth={1.9} />
+            )}
+          </button>
+          <button
+            type="button"
+            className={`clickable-icon${sortMenuPos ? ' is-active' : ''}`}
+            aria-label={t('embeddedBacklinks.sortOrder')}
+            title={t('embeddedBacklinks.sortOrder')}
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              setSortMenuPos((prev) =>
+                prev ? null : { x: rect.right, y: rect.bottom + 4 }
+              );
+            }}
+          >
+            <ArrowUpDown size={15} strokeWidth={1.9} />
+          </button>
+        </div>
       </div>
+
+      {showSearch && (
+        <div className="embedded-backlinks-search">
+          <div className="search-input-container">
+            <span className="search-input-icon">
+              <Search size={14} strokeWidth={2} />
+            </span>
+            <input
+              ref={searchInputRef}
+              type="search"
+              spellCheck={false}
+              placeholder={t('embeddedBacklinks.filterPlaceholder')}
+              value={filterQuery}
+              onChange={(e) => setFilterQuery(e.target.value)}
+            />
+            {filterQuery.length > 0 && (
+              <button
+                type="button"
+                className="search-input-clear-button"
+                aria-label={t('embeddedBacklinks.clearFilter')}
+                title={t('embeddedBacklinks.clearFilter')}
+                onClick={() => {
+                  setFilterQuery('');
+                  searchInputRef.current?.focus();
+                }}
+              >
+                <X size={12} strokeWidth={2.2} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="backlink-pane">
-        {linkedOpen && (
-          <div className="backlink-section" data-count={linkedTotal}>
-            {t('embeddedBacklinks.linkedMentions')} ({linkedTotal})
+        {/* Section 1: Linked mentions */}
+        <div className="backlink-section">
+          <div
+            className={`backlink-section-header tree-item-self is-clickable${
+              linkedOpen ? '' : ' is-collapsed'
+            }`}
+            onClick={() => setLinkedOpen((prev) => !prev)}
+          >
+            <span className="tree-item-icon collapse-icon">
+              {linkedOpen ? (
+                <ChevronDown size={14} strokeWidth={2} />
+              ) : (
+                <ChevronRight size={14} strokeWidth={2} />
+              )}
+            </span>
+            <span className="tree-item-inner">
+              {t('embeddedBacklinks.linkedMentions')}
+            </span>
+            <span className="tree-item-flair-outer">
+              <span className="tree-item-flair">{linkedTotal}</span>
+            </span>
           </div>
-        )}
-        {unlinkedOpen && (
-          <div className="backlink-section" data-count={unlinkedTotal}>
-            {t('embeddedBacklinks.unlinkedMentions')} ({unlinkedTotal})
+          {linkedOpen &&
+            renderResultGroups(
+              visibleLinkedGroups,
+              'linked',
+              t('embeddedBacklinks.noLinkedMentions')
+            )}
+        </div>
+
+        {/* Section 2: Unlinked mentions */}
+        <div className="backlink-section">
+          <div
+            className={`backlink-section-header tree-item-self is-clickable${
+              unlinkedOpen ? '' : ' is-collapsed'
+            }`}
+            onClick={() => setUnlinkedOpen((prev) => !prev)}
+          >
+            <span className="tree-item-icon collapse-icon">
+              {unlinkedOpen ? (
+                <ChevronDown size={14} strokeWidth={2} />
+              ) : (
+                <ChevronRight size={14} strokeWidth={2} />
+              )}
+            </span>
+            <span className="tree-item-inner">
+              {t('embeddedBacklinks.unlinkedMentions')}
+            </span>
+            <span className="tree-item-flair-outer">
+              <span className="tree-item-flair">{unlinkedTotal}</span>
+            </span>
           </div>
-        )}
+          {unlinkedOpen &&
+            renderResultGroups(
+              visibleUnlinkedGroups,
+              'unlinked',
+              t('embeddedBacklinks.noUnlinkedMentions')
+            )}
+        </div>
       </div>
+
+      {sortMenuPos && (
+        <UranoMenu
+          x={sortMenuPos.x}
+          y={sortMenuPos.y}
+          align="right"
+          items={sortMenuItems}
+          onClose={() => setSortMenuPos(null)}
+        />
+      )}
     </div>
   );
 };
