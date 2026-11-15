@@ -44,6 +44,7 @@ import { useT } from '../../stores/localeStore';
 import { ImageLightbox } from '../common/ImageLightbox';
 import { FileItem } from '../../types';
 import { ReadingView } from './ReadingView';
+import { EmbeddedBacklinks } from '../backlinks/EmbeddedBacklinks';
 import {
   FileText,
   Highlighter,
@@ -150,6 +151,10 @@ export const Editor: React.FC<EditorProps> = ({
   const autoPairBrackets = useSettingsStore((st) => st.settings.autoPairBrackets);
   const autoPairMarkdown = useSettingsStore((st) => st.settings.autoPairMarkdown);
   const propertiesInDocument = useSettingsStore((st) => st.settings.propertiesInDocument);
+  const backlinkPluginEnabled = Boolean(
+    useSettingsStore((st) => st.settings.corePlugins.backlink)
+  );
+  const backlinkInDocument = useSettingsStore((st) => st.settings.backlinkInDocument);
 
   const buildFoldingExtensions = (foldHeadingEnabled: boolean, foldIndentEnabled: boolean) => {
     if (!foldHeadingEnabled && !foldIndentEnabled) return [];
@@ -442,8 +447,18 @@ export const Editor: React.FC<EditorProps> = ({
     setAutoFocusTitle,
     shouldSelectTitleOnOpen,
     setShouldSelectTitleOnOpen,
+    embeddedBacklinksOverrides,
     isLoading,
   } = useVaultStore();
+
+  const normActiveFile = activeFile ? normalizePath(activeFile) : '';
+  const isMarkdownNote = Boolean(normActiveFile && normActiveFile.toLowerCase().endsWith('.md'));
+  const showEmbeddedBacklinks =
+    backlinkPluginEnabled &&
+    isMarkdownNote &&
+    (normActiveFile in embeddedBacklinksOverrides
+      ? embeddedBacklinksOverrides[normActiveFile]
+      : backlinkInDocument);
 
   const { showNotice } = useNoticeStore();
   const t = useT();
@@ -2657,14 +2672,25 @@ export const Editor: React.FC<EditorProps> = ({
             showIndentationGuides={showIndentationGuides}
             onWikilinkClick={onWikilinkClick}
             onTaskToggle={handleTaskToggle}
+            footerContent={
+              showEmbeddedBacklinks && activeFile ? (
+                <EmbeddedBacklinks
+                  activeFile={activeFile}
+                  cleanTitle={cleanTitle}
+                  readableLineLength={readableLineLength}
+                />
+              ) : undefined
+            }
           />
         </div>
 
         {/* Live Preview / Source Mode (CodeMirror 6) */}
         <div
-          className={`flex-1 flex flex-col h-full overflow-hidden relative ${
-            editorMode === 'source' ? 'source-mode' : ''
-          } ${editorMode === 'reading' ? 'hidden' : 'flex'}`}
+          className={`flex-1 flex flex-col h-full relative ${
+            showEmbeddedBacklinks ? 'overflow-y-auto has-embedded-backlinks' : 'overflow-hidden'
+          } ${editorMode === 'source' ? 'source-mode' : ''} ${
+            editorMode === 'reading' ? 'hidden' : 'flex'
+          }`}
           style={{ display: editorMode === 'reading' ? 'none' : 'flex' }}
         >
           {/* Inline Title (.inline-title) directly above the CodeMirror 6 canvas */}
@@ -2691,7 +2717,21 @@ export const Editor: React.FC<EditorProps> = ({
           )}
 
           {/* CodeMirror 6 Editor Canvas */}
-          <div ref={editorRef} className="flex-1 min-h-0" />
+          <div
+            ref={editorRef}
+            className={showEmbeddedBacklinks ? 'urano-cm-embedded-host shrink-0' : 'flex-1 min-h-0'}
+          />
+
+          {/* Embedded Backlinks at bottom of document when active */}
+          {showEmbeddedBacklinks && activeFile && (
+            <div className="px-12 w-full shrink-0">
+              <EmbeddedBacklinks
+                activeFile={activeFile}
+                cleanTitle={cleanTitle}
+                readableLineLength={readableLineLength}
+              />
+            </div>
+          )}
         </div>
       </div>
 
