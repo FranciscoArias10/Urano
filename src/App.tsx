@@ -1334,6 +1334,18 @@ const MainApp: React.FC = () => {
       action: handleOpenDailyNote,
     },
     {
+      id: 'daily-notes:prev',
+      name: t('commands.dailyNotes.prev'),
+      icon: <Calendar size={15} />,
+      action: handleOpenPrevDailyNote,
+    },
+    {
+      id: 'daily-notes:next',
+      name: t('commands.dailyNotes.next'),
+      icon: <Calendar size={15} />,
+      action: handleOpenNextDailyNote,
+    },
+    {
       id: 'templates:insert',
       name: t('commands.templates.insert'),
       icon: <Copy size={15} />,
