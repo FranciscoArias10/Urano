@@ -245,6 +245,7 @@ interface VaultState {
   createUntitledBase: (parentPath?: string) => Promise<{ path: string; name: string }>;
   createBaseFile: (parentPath?: string) => Promise<{ path: string; name: string; fileName: string }>;
   openDailyNote: () => Promise<string>;
+  openTodayDailyNote: () => Promise<string>;
   createUntitledFolder: (parentPath?: string) => Promise<string>;
   moveItem: (sourcePath: string, targetFolderPath: string) => Promise<void>;
   duplicateNote: (filePath: string) => Promise<string>;
@@ -847,52 +848,82 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     };
   },
 
-  // Open or create today's daily note (YYYY-MM-DD.md)
-  openDailyNote: async (): Promise<string> => {
-    const { activeVault, fileTree, refreshTree, selectFile } = get();
+  // Open or create today's daily note respecting dailyNotesFormat, dailyNotesFolder, and template
+  openTodayDailyNote: async (): Promise<string> => {
+    const { activeVault, fileTree, notesContentMap, refreshTree, selectFile, vaultName } = get();
     if (!activeVault) return '';
 
+    const settings = useSettingsStore.getState().settings;
+    const language = useLocaleStore.getState().language;
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
-    const targetFileName = `${dateStr}.md`;
+    const { fullPath, noteTitle } = resolveDailyNoteTarget(
+      activeVault,
+      settings.dailyNotesFolder,
+      settings.dailyNotesFormat,
+      now,
+      language
+    );
 
-    // Search anywhere in vault
-    const findFile = (items: FileItem[]): string | null => {
-      for (const item of items) {
-        if (!item.isDir && (item.name === targetFileName || item.name === `${dateStr}.markdown`)) {
-          return item.path;
-        }
-        if (item.children) {
-          const res = findFile(item.children);
-          if (res) return res;
-        }
-      }
-      return null;
-    };
-
-    const existingPath = findFile(fileTree);
-    if (existingPath) {
-      await selectFile(existingPath);
-      return existingPath;
+    const existingInTree = findFileInTreeByPath(fileTree, fullPath);
+    if (existingInTree) {
+      await selectFile(existingInTree);
+      return existingInTree;
     }
 
-    // Create daily note in the folder configured in Settings → Daily notes (vault root by default)
-    const dailyFolder = useSettingsStore
-      .getState()
-      .settings.dailyNotesFolder.trim()
-      .replace(/^[\\/]+|[\\/]+$/g, '');
-    const fullPath = `${activeVault}/${dailyFolder ? `${dailyFolder}/` : ''}${targetFileName}`.replace(/\/+/g, '/');
-    const initialContent = t('vault.dailyNoteBody', { date: dateStr });
+    // Double-check on disk in case the tree hasn't refreshed after external changes
+    const existsOnDisk = await invoke<string>('read_file', { filePath: fullPath })
+      .then(() => true)
+      .catch(() => false);
+    if (existsOnDisk) {
+      await refreshTree();
+      await selectFile(fullPath);
+      return fullPath;
+    }
+
+    // Create intermediate subfolders automatically (e.g. dailyNotesFolder or slashes in format like YYYY/MM/DD)
+    const parentDir = fullPath.substring(0, fullPath.lastIndexOf('/'));
+    const cleanRoot = normalizePath(activeVault).replace(/\/+$/, '');
+    if (parentDir && parentDir !== cleanRoot) {
+      await invoke('create_folder', { folderPath: parentDir }).catch(() => {});
+    }
+
+    let initialContent = '';
+    if (settings.dailyNotesTemplatePath && settings.dailyNotesTemplatePath.trim()) {
+      const rawTemplate = await readDailyNoteTemplateRaw(
+        activeVault,
+        settings.dailyNotesTemplatePath,
+        fileTree,
+        notesContentMap
+      );
+      initialContent = applyDailyNoteTemplateVariables(
+        rawTemplate,
+        now,
+        noteTitle,
+        language,
+        settings.templatesDateFormat || 'YYYY-MM-DD',
+        settings.templatesTimeFormat || 'HH:mm'
+      );
+    }
+
     await invoke('create_file', { filePath: fullPath });
-    await invoke('write_file', { filePath: fullPath, content: initialContent });
+    if (initialContent) {
+      await invoke('write_file', { filePath: fullPath, content: initialContent });
+    }
+
+    set((state) => ({
+      notesContentMap: {
+        ...state.notesContentMap,
+        [fullPath]: initialContent,
+      },
+    }));
 
     await refreshTree();
     await selectFile(fullPath);
+    triggerAutoSync(activeVault, vaultName);
     return fullPath;
   },
+
+  openDailyNote: async (): Promise<string> => get().openTodayDailyNote(),
 
   // Move item (drag and drop into folder)
   moveItem: async (sourcePath: string, targetFolderPath: string) => {
