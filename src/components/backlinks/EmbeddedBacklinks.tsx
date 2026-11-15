@@ -296,6 +296,8 @@ export const EmbeddedBacklinks: React.FC<EmbeddedBacklinksProps> = ({
   const activeVault = useVaultStore((s) => s.activeVault);
   const notesContentMap = useVaultStore((s) => s.notesContentMap);
   const fileTree = useVaultStore((s) => s.fileTree);
+  const selectFile = useVaultStore((s) => s.selectFile);
+  const updateNoteContent = useVaultStore((s) => s.updateNoteContent);
   const userIgnoreFilters = useSettingsStore((s) => s.settings.userIgnoreFilters) || [];
 
   const [showSearch, setShowSearch] = useState(false);
@@ -351,6 +353,51 @@ export const EmbeddedBacklinks: React.FC<EmbeddedBacklinksProps> = ({
       const current = key in prev ? prev[key] : collapseResults;
       return { ...prev, [key]: !current };
     });
+  };
+
+  const handleLinkMention = async (
+    filePath: string,
+    match: MentionMatch,
+    e: React.MouseEvent
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const targetTitle = cleanTitle.trim();
+    if (!targetTitle) return;
+
+    const latestMap = useVaultStore.getState().notesContentMap;
+    const currentContent = latestMap[filePath] ?? notesContentMap[filePath];
+    if (typeof currentContent !== 'string') return;
+
+    const lines = currentContent.split('\n');
+    if (match.lineIndex < 0 || match.lineIndex >= lines.length) return;
+
+    const rawLine = lines[match.lineIndex];
+    const hasCarriageReturn = rawLine.endsWith('\r');
+    const lineBody = hasCarriageReturn ? rawLine.slice(0, -1) : rawLine;
+
+    if (
+      match.matchStart < 0 ||
+      match.matchEnd > lineBody.length ||
+      lineBody.slice(match.matchStart, match.matchEnd).toLowerCase() !==
+        targetTitle.toLowerCase()
+    ) {
+      return;
+    }
+
+    const updatedLine =
+      lineBody.slice(0, match.matchStart) +
+      `[[${targetTitle}]]` +
+      lineBody.slice(match.matchEnd) +
+      (hasCarriageReturn ? '\r' : '');
+    lines[match.lineIndex] = updatedLine;
+
+    await updateNoteContent(filePath, lines.join('\n'));
+  };
+
+  const handleOpenMentionFile = (filePath: string) => {
+    selectFile(filePath);
   };
 
   return (
