@@ -168,7 +168,9 @@ export interface UranoSettings {
   canvasSnapToGrid: boolean;
   canvasSnapToObjects: boolean;
   canvasZoomThreshold: number;
+  dailyNotesFormat: string;
   dailyNotesFolder: string;
+  dailyNotesTemplatePath: string;
   dailyNotesOpenOnStartup: boolean;
   fileRecoveryIntervalMinutes: number;
   fileRecoveryHistoryDays: number;
@@ -303,7 +305,9 @@ export const DEFAULT_SETTINGS: UranoSettings = {
   canvasSnapToGrid: true,
   canvasSnapToObjects: true,
   canvasZoomThreshold: 100,
+  dailyNotesFormat: 'YYYY-MM-DD',
   dailyNotesFolder: '',
+  dailyNotesTemplatePath: '',
   dailyNotesOpenOnStartup: false,
   fileRecoveryIntervalMinutes: 5,
   fileRecoveryHistoryDays: 7,
