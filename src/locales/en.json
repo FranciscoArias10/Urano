@@ -498,7 +498,7 @@
     },
     "backlinks": {
       "showInDocument": "Backlink in document",
-      "showInDocumentDesc": "Show backlinks at the bottom of notes."
+      "showInDocumentDesc": "Show backlinks at the bottom of notes by default when opening new panes."
     },
     "canvas": {
       "newFileLocation": "Default location for new canvas files",
