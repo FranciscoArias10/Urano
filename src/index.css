@@ -3677,4 +3677,75 @@ body.is-translucent aside.bg-urano-sidebar {
   background-color: var(--background-modifier-hover);
 }
 
+.backlink-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.backlink-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.backlink-section-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 2px;
+  border-radius: var(--radius-s, 4px);
+  font-size: var(--font-ui-small, 13px);
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.backlink-section-header:hover {
+  background-color: var(--nav-item-background-hover, var(--background-modifier-hover));
+  color: var(--text-normal);
+}
+
+.backlink-section-header .collapse-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.backlink-section-header .tree-item-inner {
+  flex: 1;
+  min-width: 0;
+}
+
+.backlink-section-header .tree-item-flair-outer {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.backlink-section-header .tree-item-flair {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-muted);
+  background-color: var(--background-secondary);
+}
+
+.backlink-empty-state {
+  padding: 6px 8px 10px 22px;
+  font-size: var(--font-ui-smaller, 12px);
+  color: var(--text-faint);
+}
+
 
