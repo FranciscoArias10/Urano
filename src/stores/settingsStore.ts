@@ -548,6 +548,16 @@ function mergeSettings(raw: unknown): UranoSettings {
   out.backlinkInDocument = rawBacklinkInDoc !== undefined ? Boolean(rawBacklinkInDoc) : DEFAULT_SETTINGS.backlinkInDocument;
   out.backlinksInDocument = out.backlinkInDocument;
 
+  out.dailyNotesFormat =
+    typeof src?.dailyNotesFormat === 'string'
+      ? src.dailyNotesFormat
+      : DEFAULT_SETTINGS.dailyNotesFormat;
+  out.dailyNotesFolder =
+    typeof src?.dailyNotesFolder === 'string' ? src.dailyNotesFolder.trim() : '';
+  out.dailyNotesTemplatePath =
+    typeof src?.dailyNotesTemplatePath === 'string' ? src.dailyNotesTemplatePath.trim() : '';
+  out.dailyNotesOpenOnStartup = Boolean(src?.dailyNotesOpenOnStartup);
+
   return out;
 }
 
