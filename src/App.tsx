@@ -226,7 +226,8 @@ const MainApp: React.FC = () => {
     createUntitledNote,
     createUntitledCanvas,
     createUntitledBase,
-    openDailyNote,
+    openTodayDailyNote,
+    openAdjacentDailyNote,
     createUntitledFolder,
     openOrCreateWikilink,
     renameNoteWithLinkRefactor,
@@ -922,12 +923,28 @@ const MainApp: React.FC = () => {
     }
   };
 
-  // Open daily note
+  // Open today's daily note (or previous/next existing daily note)
   const handleOpenDailyNote = async () => {
     if (!activeVault) return;
-    const path = await openDailyNote();
+    const path = await openTodayDailyNote();
     if (path) {
-      setActiveTabId(path);
+      handleOpenFile(path);
+    }
+  };
+
+  const handleOpenPrevDailyNote = async () => {
+    if (!activeVault) return;
+    const path = await openAdjacentDailyNote('prev');
+    if (path) {
+      handleOpenFile(path);
+    }
+  };
+
+  const handleOpenNextDailyNote = async () => {
+    if (!activeVault) return;
+    const path = await openAdjacentDailyNote('next');
+    if (path) {
+      handleOpenFile(path);
     }
   };
 
