@@ -3888,4 +3888,23 @@ body.is-translucent aside.bg-urano-sidebar {
   color: var(--text-normal);
 }
 
+/* ========================================================
+   Daily Notes Settings (Notas diarias)
+   ======================================================== */
+
+.daily-notes-format-preview {
+  color: var(--interactive-accent);
+  font-weight: 500;
+}
+
+.setting-item-description .setting-link {
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.setting-item-description .setting-link:hover {
+  color: var(--text-normal);
+}
+
 
