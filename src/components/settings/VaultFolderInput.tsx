@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Folder, Search, X } from 'lucide-react';
 import type { FileItem } from '../../types';
@@ -62,6 +62,7 @@ export const VaultFolderInput: React.FC<VaultFolderInputProps> = ({
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const datalistId = useId();
 
   useEffect(() => {
     setDraft(value);
@@ -130,6 +131,7 @@ export const VaultFolderInput: React.FC<VaultFolderInputProps> = ({
       <input
         ref={inputRef}
         type="text"
+        list={datalistId}
         role="combobox"
         aria-expanded={open}
         aria-autocomplete="list"
@@ -175,6 +177,11 @@ export const VaultFolderInput: React.FC<VaultFolderInputProps> = ({
           }
         }}
       />
+      <datalist id={datalistId}>
+        {folders.map((folder) => (
+          <option key={folder} value={folder} />
+        ))}
+      </datalist>
       {draft && !disabled && (
         <button
           type="button"
