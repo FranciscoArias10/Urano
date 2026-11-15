@@ -497,8 +497,8 @@
       "notAvailable": "Los plugins de la comunidad aún no están disponibles en Urano."
     },
     "backlinks": {
-      "showInDocument": "Backlinks en el documento",
-      "showInDocumentDesc": "Muestra los backlinks al final de las notas."
+      "showInDocument": "Enlaces entrantes en el documento",
+      "showInDocumentDesc": "Mostrar enlaces entrantes en el documento por defecto al abrir nuevos paneles."
     },
     "canvas": {
       "newFileLocation": "Ubicación por defecto para nuevos archivos de canvas",
