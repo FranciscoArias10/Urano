@@ -158,6 +158,7 @@ export interface UranoSettings {
   corePlugins: Record<CorePluginId, boolean>;
 
   // Core plugin options
+  backlinkInDocument: boolean;
   backlinksInDocument: boolean;
   canvasNewFileLocation: CanvasNewFileLocation;
   canvasDefaultFolder: string;
@@ -292,6 +293,7 @@ export const DEFAULT_SETTINGS: UranoSettings = {
     webviewer: false,
   },
 
+  backlinkInDocument: false,
   backlinksInDocument: false,
   canvasNewFileLocation: 'root',
   canvasDefaultFolder: '',
@@ -538,6 +540,10 @@ function mergeSettings(raw: unknown): UranoSettings {
   out.noteComposerConfirmMerge =
     src?.noteComposerConfirmMerge !== undefined ? Boolean(src.noteComposerConfirmMerge) : true;
 
+  const rawBacklinkInDoc = src?.backlinkInDocument ?? src?.backlinksInDocument;
+  out.backlinkInDocument = rawBacklinkInDoc !== undefined ? Boolean(rawBacklinkInDoc) : DEFAULT_SETTINGS.backlinkInDocument;
+  out.backlinksInDocument = out.backlinkInDocument;
+
   return out;
 }
 
@@ -734,6 +740,11 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
       next.useTabs = Boolean(value);
     } else if (key === 'useTabs') {
       next.indentUsingTabs = Boolean(value);
+    }
+    if (key === 'backlinkInDocument') {
+      next.backlinksInDocument = Boolean(value);
+    } else if (key === 'backlinksInDocument') {
+      next.backlinkInDocument = Boolean(value);
     }
     if (key === 'tabSize') {
       next.tabSize = Math.min(8, Math.max(2, Math.round(Number(value) || 4)));
