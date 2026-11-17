@@ -762,6 +762,10 @@ export interface SettingsStoreState {
   unpinCommand: (commandId: string) => void;
   movePinnedCommand: (fromIndex: number, toIndex: number) => void;
 
+  fileSnapshots: FileSnapshot[];
+  recordSnapshot: (path: string, content: string, force?: boolean) => void;
+  clearAllSnapshots: () => void;
+
   loadFromVault: (vaultPath: string) => Promise<void>;
   markStartupComplete: () => void;
 }
