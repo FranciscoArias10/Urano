@@ -2281,15 +2281,21 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
           id: 'file-recovery-interval',
           name: t('fileRecovery.interval'),
           desc: t('fileRecovery.intervalDesc'),
+          aliases: ['snapshot', 'interval', 'intervalo', 'captura', 'minutos'],
           control: (
-            <Slider
-              value={settings.fileRecoveryIntervalMinutes}
+            <input
+              type="number"
               min={1}
-              max={60}
-              step={1}
-              format={(v) => `${v} min`}
-              onChange={set('fileRecoveryIntervalMinutes')}
-              ariaLabel={t('fileRecovery.interval')}
+              max={1440}
+              value={settings.fileRecoveryInterval}
+              onChange={(e) => {
+                if (e.target.value === '') return;
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) {
+                  setSetting('fileRecoveryInterval', Math.min(1440, Math.max(1, Math.round(n))));
+                }
+              }}
+              aria-label={t('fileRecovery.interval')}
             />
           ),
         },
@@ -2297,16 +2303,52 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
           id: 'file-recovery-history',
           name: t('fileRecovery.history'),
           desc: t('fileRecovery.historyDesc'),
+          aliases: ['history', 'historial', 'longitud', 'días', 'days'],
           control: (
-            <Slider
-              value={settings.fileRecoveryHistoryDays}
+            <input
+              type="number"
               min={1}
-              max={30}
-              step={1}
-              format={(v) => `${v} d`}
-              onChange={set('fileRecoveryHistoryDays')}
-              ariaLabel={t('fileRecovery.history')}
+              max={3650}
+              value={settings.fileRecoveryHistoryLength}
+              onChange={(e) => {
+                if (e.target.value === '') return;
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) {
+                  setSetting('fileRecoveryHistoryLength', Math.min(3650, Math.max(1, Math.round(n))));
+                }
+              }}
+              aria-label={t('fileRecovery.history')}
             />
+          ),
+        },
+        {
+          id: 'file-recovery-snapshots',
+          name: t('fileRecovery.snapshots'),
+          desc: t('fileRecovery.snapshotsDesc'),
+          aliases: ['snapshots', 'capturas', 'ver', 'recuperar', 'recover'],
+          control: (
+            <button
+              type="button"
+              className="mod-cta-secondary"
+              onClick={() => window.dispatchEvent(new CustomEvent('urano:open-file-recovery'))}
+            >
+              {t('fileRecovery.view')}
+            </button>
+          ),
+        },
+        {
+          id: 'file-recovery-clear',
+          name: t('fileRecovery.clearHistory'),
+          desc: t('fileRecovery.clearHistoryDesc'),
+          aliases: ['clear', 'limpiar', 'historial', 'delete', 'borrar'],
+          control: (
+            <button
+              type="button"
+              className="mod-warning"
+              onClick={() => window.dispatchEvent(new CustomEvent('urano:confirm-clear-file-recovery'))}
+            >
+              {t('fileRecovery.clear')}
+            </button>
           ),
         },
       ],
