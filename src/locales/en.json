@@ -866,7 +866,9 @@
     "toOpen": "to open",
     "toOpenInNewTab": "to open in new tab",
     "toCreate": "to create",
-    "toDismiss": "to dismiss"
+    "toDismiss": "to dismiss",
+    "pinned": "Pinned",
+    "selectCommandToPin": "Select a command to pin..."
   },
   "commands": {
     "fileExplorer": {

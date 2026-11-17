@@ -866,7 +866,9 @@
     "toOpen": "para abrir",
     "toOpenInNewTab": "en pestaña nueva",
     "toCreate": "para crear",
-    "toDismiss": "para cerrar"
+    "toDismiss": "para cerrar",
+    "pinned": "Fijado",
+    "selectCommandToPin": "Selecciona un comando para fijar..."
   },
   "commands": {
     "fileExplorer": {
