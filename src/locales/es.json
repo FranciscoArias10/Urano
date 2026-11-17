@@ -536,7 +536,13 @@
     "commandPalette": {
       "pinned": "Comandos fijados",
       "pinnedDesc": "Los comandos fijados aparecen al principio de la paleta.",
-      "none": "No hay comandos fijados."
+      "none": "No hay comandos fijados.",
+      "noCommandsFound": "No se encontraron comandos.",
+      "pinCommand": "Fijar comando",
+      "unpin": "Desfijar",
+      "moveUp": "Mover arriba",
+      "moveDown": "Mover abajo",
+      "selectCommandPlaceholder": "Selecciona un comando para fijar..."
     },
     "dailyNotes": {
       "format": "Formato de fecha",
