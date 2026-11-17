@@ -3980,4 +3980,389 @@ button.mod-cta-secondary:hover {
   background-color: var(--interactive-hover, #363636);
 }
 
+/* ========================================================
+   File Recovery Snapshots Modal & Diff Viewer (Obsidian 1:1)
+   ======================================================== */
+.file-recovery-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 280;
+  background-color: var(--background-modifier-cover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.file-recovery-modal {
+  width: 860px;
+  max-width: 94vw;
+  height: 78vh;
+  max-height: 680px;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--text-normal);
+}
+
+.file-recovery-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background-color: var(--background-secondary);
+}
+
+.file-recovery-modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.file-recovery-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.file-recovery-close-btn:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.file-recovery-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background-color: var(--background-primary);
+}
+
+.file-recovery-search-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.file-recovery-search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-normal);
+  font-family: var(--font-interface);
+  font-size: 13px;
+  outline: none;
+}
+
+.file-recovery-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.file-recovery-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 4px;
+  padding: 2px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.file-recovery-clear-btn:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.file-recovery-file-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  overflow-x: auto;
+  flex-shrink: 0;
+  background-color: var(--background-secondary);
+}
+
+.file-recovery-file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--background-modifier-border);
+  background-color: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-interface);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.file-recovery-file-chip:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.file-recovery-file-chip.is-selected {
+  background-color: var(--interactive-accent, #e06c1b);
+  border-color: transparent;
+  color: var(--text-on-accent, #ffffff);
+}
+
+.file-recovery-file-chip-path {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-recovery-file-chip-count {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.file-recovery-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.file-recovery-snapshots-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--background-modifier-border);
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background-secondary);
+}
+
+.file-recovery-sidebar-header {
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.file-recovery-snapshots-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.file-recovery-snapshot-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-interface);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.file-recovery-snapshot-item:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.file-recovery-snapshot-item.is-selected {
+  background-color: var(--interactive-normal, rgba(255, 255, 255, 0.08));
+  color: var(--text-normal);
+  font-weight: 500;
+}
+
+.file-recovery-snapshot-icon {
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.file-recovery-snapshot-time {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-recovery-viewer {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.file-recovery-viewer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background-color: var(--background-primary);
+}
+
+.file-recovery-diff-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-normal);
+  cursor: pointer;
+  user-select: none;
+}
+
+.file-recovery-viewer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-recovery-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.file-recovery-action-btn.mod-cta {
+  background-color: var(--interactive-accent, #e06c1b);
+  border: 1px solid transparent;
+  color: var(--text-on-accent, #ffffff);
+}
+
+.file-recovery-action-btn.mod-cta:hover {
+  filter: brightness(1.08);
+}
+
+.file-recovery-viewer-content {
+  flex: 1;
+  overflow: auto;
+  padding: 14px 16px;
+  background-color: var(--background-primary);
+}
+
+.file-recovery-plain-content {
+  margin: 0;
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-normal);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.file-recovery-diff-view {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.file-recovery-diff-line {
+  display: flex;
+  gap: 8px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.file-recovery-diff-line.is-added {
+  background-color: rgba(34, 197, 94, 0.16);
+  color: var(--text-normal);
+}
+
+.file-recovery-diff-line.is-removed {
+  background-color: rgba(233, 49, 71, 0.18);
+  color: var(--text-muted);
+}
+
+.file-recovery-diff-prefix {
+  width: 12px;
+  flex-shrink: 0;
+  user-select: none;
+  opacity: 0.75;
+}
+
+.file-recovery-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.file-recovery-confirm-modal {
+  width: 440px;
+  max-width: 92vw;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.file-recovery-confirm-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.file-recovery-confirm-message {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.file-recovery-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
 
