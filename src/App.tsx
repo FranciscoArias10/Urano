@@ -26,6 +26,7 @@ import {
   NoteComposerModal,
   NoteComposerModalRequest,
 } from './components/noteComposer/NoteComposerModal';
+import { FileRecoveryModal } from './components/recovery/FileRecoveryModal';
 import { UpdateLinksModal } from './components/common/UpdateLinksModal';
 import { GlobalSearchPanel } from './components/search/GlobalSearchPanel';
 import { BookmarksPanel } from './components/bookmarks/BookmarksPanel';
@@ -77,6 +78,7 @@ import {
   LayoutGrid,
   FolderInput,
   Merge,
+  History,
 } from 'lucide-react';
 
 /** Stable, unique identifier for a workspace leaf (tab). */
@@ -262,6 +264,7 @@ const MainApp: React.FC = () => {
   const [showVaultManager, setShowVaultManager] = useState(false);
   const [noteComposerRequest, setNoteComposerRequest] =
     useState<NoteComposerModalRequest | null>(null);
+  const [showFileRecoveryModal, setShowFileRecoveryModal] = useState(false);
   const [vaultSwitcherAnchor, setVaultSwitcherAnchor] = useState<{ top: number; left: number } | null>(null);
   const vaultSwitcherPopoverRef = useRef<HTMLDivElement>(null);
 
@@ -1454,6 +1457,12 @@ const MainApp: React.FC = () => {
         }
       },
     },
+    {
+      id: 'file-recovery:open',
+      name: t('commands.fileRecovery.open'),
+      icon: <History size={15} />,
+      action: () => setShowFileRecoveryModal(true),
+    },
   ].filter((cmd) => {
     // Commands owned by a disabled core plugin disappear (Urano behaviour)
     if (cmd.id.startsWith('canvas:')) return corePlugins.canvas;
@@ -1466,6 +1475,7 @@ const MainApp: React.FC = () => {
     if (cmd.id.startsWith('command-palette:')) return corePlugins['command-palette'];
     if (cmd.id.startsWith('file-explorer:')) return corePlugins['file-explorer'];
     if (cmd.id.startsWith('note-composer:')) return corePlugins['note-composer'];
+    if (cmd.id.startsWith('file-recovery:')) return corePlugins['file-recovery'];
     if (cmd.id === 'workspace:toggle-backlinks' || cmd.id === 'backlink:toggle-in-document') {
       return corePlugins.backlink;
     }
@@ -2003,6 +2013,12 @@ const MainApp: React.FC = () => {
       <NoteComposerModal
         request={noteComposerRequest}
         onClose={() => setNoteComposerRequest(null)}
+      />
+
+      {/* File Recovery Snapshots Modal */}
+      <FileRecoveryModal
+        isOpen={showFileRecoveryModal}
+        onClose={() => setShowFileRecoveryModal(false)}
       />
 
       {/* Settings modal (Urano .modal.mod-settings) — Ctrl+, / ⚙ */}
