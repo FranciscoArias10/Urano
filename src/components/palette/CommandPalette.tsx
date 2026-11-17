@@ -275,33 +275,43 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               )}
             </div>
           ) : mode === 'commands' ? (
-            (items as CommandItem[]).map((cmd, i) => (
-              <div
-                key={cmd.id}
-                onClick={() => {
-                  cmd.action();
-                  onClose();
-                }}
-                className={`suggestion-item flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors ${
-                  i === selectedIndex
-                    ? 'is-selected'
-                    : 'text-urano-text hover:bg-[var(--interactive-hover)]'
-                }`}
-                onMouseEnter={() => setSelectedIndex(i)}
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="text-urano-muted">
-                    {cmd.icon}
-                  </span>
-                  <span className="font-medium">{cmd.name}</span>
-                </div>
-                {cmd.shortcut && (
-                  <span className="text-[10px] text-urano-muted font-mono bg-[var(--interactive-normal)] px-2 py-0.5 rounded border border-urano-border">
-                    {cmd.shortcut}
-                  </span>
-                )}
-              </div>
-            ))
+            (items as CommandItem[]).map((cmd, i) => {
+              const showSeparatorAfter =
+                pinnedCommandItems.length > 0 &&
+                unpinnedCommandItems.length > 0 &&
+                i === pinnedCommandItems.length - 1;
+              return (
+                <React.Fragment key={cmd.id}>
+                  <div
+                    onClick={() => {
+                      cmd.action();
+                      onClose();
+                    }}
+                    className={`suggestion-item flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors ${
+                      i === selectedIndex
+                        ? 'is-selected'
+                        : 'text-urano-text hover:bg-[var(--interactive-hover)]'
+                    }`}
+                    onMouseEnter={() => setSelectedIndex(i)}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-urano-muted">
+                        {cmd.icon}
+                      </span>
+                      <span className="font-medium">{cmd.name}</span>
+                    </div>
+                    {cmd.shortcut && (
+                      <span className="text-[10px] text-urano-muted font-mono bg-[var(--interactive-normal)] px-2 py-0.5 rounded border border-urano-border">
+                        {cmd.shortcut}
+                      </span>
+                    )}
+                  </div>
+                  {showSeparatorAfter && (
+                    <div className="command-palette-pinned-separator" role="separator" />
+                  )}
+                </React.Fragment>
+              );
+            })
           ) : (
             (items as typeof allFiles).map((file, i) => {
               const isSelected = i === selectedIndex;
