@@ -536,7 +536,13 @@
     "commandPalette": {
       "pinned": "Pinned commands",
       "pinnedDesc": "Pinned commands appear at the top of the command palette.",
-      "none": "No pinned commands."
+      "none": "No pinned commands.",
+      "noCommandsFound": "No commands found.",
+      "pinCommand": "Pin command",
+      "unpin": "Unpin",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "selectCommandPlaceholder": "Select a command to pin..."
     },
     "dailyNotes": {
       "format": "Date format",
