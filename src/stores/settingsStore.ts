@@ -965,6 +965,26 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     set({ settings: next });
   },
 
+  movePinnedCommand: (fromIndex, toIndex) => {
+    const current = get().settings;
+    const existing = [...(current.pinnedCommands || [])];
+    if (
+      fromIndex === toIndex ||
+      fromIndex < 0 ||
+      toIndex < 0 ||
+      fromIndex >= existing.length ||
+      toIndex >= existing.length
+    ) {
+      return;
+    }
+    const [moved] = existing.splice(fromIndex, 1);
+    existing.splice(toIndex, 0, moved);
+    const next = { ...current, pinnedCommands: existing };
+    writeLocalSettings(next);
+    scheduleVaultWrite(get().vaultPath, next);
+    set({ settings: next });
+  },
+
   loadFromVault: async (vaultPath) => {
     const configDir = getConfigFolder(get().settings);
     const filePath = `${vaultPath.replace(/[\\/]+$/, '')}/${configDir}/settings.json`;
