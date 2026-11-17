@@ -711,6 +711,54 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         />
       )}
 
+      <FileRecoveryModal
+        isOpen={showFileRecoveryModal}
+        onClose={() => setShowFileRecoveryModal(false)}
+      />
+
+      {showClearRecoveryConfirm && (
+        <div
+          className="file-recovery-modal-backdrop"
+          role="presentation"
+          onClick={() => setShowClearRecoveryConfirm(false)}
+        >
+          <div
+            className="file-recovery-confirm-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('fileRecovery.clearConfirmTitle')}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="file-recovery-confirm-title">
+              {t('fileRecovery.clearConfirmTitle')}
+            </div>
+            <p className="file-recovery-confirm-message">
+              {t('fileRecovery.clearConfirmMessage')}
+            </p>
+            <div className="file-recovery-confirm-actions">
+              <button
+                type="button"
+                className="mod-cta-secondary"
+                onClick={() => setShowClearRecoveryConfirm(false)}
+              >
+                {t('fileRecovery.clearConfirmCancel')}
+              </button>
+              <button
+                type="button"
+                className="mod-warning"
+                onClick={() => {
+                  clearAllSnapshots();
+                  setShowClearRecoveryConfirm(false);
+                  showNotice(t('fileRecovery.clearedNotice'), 2500, 'success');
+                }}
+              >
+                {t('fileRecovery.clearConfirmAccept')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showPinCommandModal && (
         <div
           className="command-palette-pin-modal-backdrop"
