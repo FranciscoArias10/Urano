@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X, Plus } from 'lucide-react';
 import { useSettingsStore, useT } from '../../stores/settingsStore';
 import { useLocaleStore } from '../../stores/localeStore';
 import { HOTKEY_CATALOG } from '../../services/hotkeyRegistry';
@@ -533,6 +533,36 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <HotkeysSettingsTab commands={commands} />
                 ) : activeTab.id === 'core-plugins' ? (
                   <CorePluginsSettingsTab />
+                ) : activeTab.id === 'command-palette' ? (
+                  <div className="command-palette-settings-tab">
+                    <div className="setting-item-heading command-palette-pinned-heading">
+                      <div className="setting-item-name command-palette-pinned-heading-title">
+                        {t('commandPalette.pinned')}
+                      </div>
+                      <button
+                        type="button"
+                        className="clickable-icon"
+                        title={t('commandPalette.pinCommand')}
+                        aria-label={t('commandPalette.pinCommand')}
+                        onClick={() => setShowPinCommandModal(true)}
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                    <div className="setting-group">
+                      <div className="setting-items">
+                        {pinnedCommands.length === 0 ? (
+                          <div className="setting-item command-palette-empty-item">
+                            <div className="setting-item-info">
+                              <div className="command-palette-empty-text">
+                                {t('commandPalette.noCommandsFound')}
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   activeTab.groups.map((g) => renderGroup(g))
                 )}
