@@ -419,7 +419,7 @@ export const HOTKEY_CATALOG: HotkeyCommand[] = [
   },
   {
     id: 'file-recovery:open',
-    nameEs: 'Recuperación de archivos: Abrir instantáneas guardadas',
+    nameEs: 'Recuperación de archivos: Abrir capturas guardadas',
     nameEn: 'File recovery: Open saved snapshots',
     defaultHotkeys: [],
     section: 'file-recovery',
