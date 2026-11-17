@@ -893,6 +893,22 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
         document.documentElement.style.setProperty('--editor-tab-size', String(next.tabSize));
       }
     }
+    if (key === 'fileRecoveryInterval' || key === 'fileRecoveryIntervalMinutes') {
+      const clamped = Math.min(1440, Math.max(1, Math.round(Number(value) || 5)));
+      next.fileRecoveryInterval = clamped;
+      next.fileRecoveryIntervalMinutes = clamped;
+    }
+    if (key === 'fileRecoveryHistoryLength' || key === 'fileRecoveryHistoryDays') {
+      const clamped = Math.min(3650, Math.max(1, Math.round(Number(value) || 7)));
+      next.fileRecoveryHistoryLength = clamped;
+      next.fileRecoveryHistoryDays = clamped;
+      const pruned = pruneExpiredSnapshots(get().fileSnapshots, clamped);
+      if (pruned.length !== get().fileSnapshots.length) {
+        writeLocalSnapshots(pruned);
+        scheduleSnapshotsVaultWrite(get().vaultPath, next, pruned);
+        set({ fileSnapshots: pruned });
+      }
+    }
 
     writeLocalSettings(next);
     scheduleVaultWrite(get().vaultPath, next);
@@ -1158,6 +1174,7 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
       // dictionary.txt not yet created
     }
 
+    let loadedSettings = get().settings;
     try {
       let raw = '';
       try {
@@ -1175,6 +1192,7 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
       if (dictWords.length > 0) {
         merged.customDictionary = Array.from(new Set([...merged.customDictionary, ...dictWords]));
       }
+      loadedSettings = merged;
       writeLocalSettings(merged);
       applyBaseTheme(merged.theme);
       set({ settings: merged, vaultPath });
@@ -1188,12 +1206,38 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
       if (dictWords.length > 0) {
         current.customDictionary = Array.from(new Set([...current.customDictionary, ...dictWords]));
       }
+      loadedSettings = current;
       set({ vaultPath });
       scheduleVaultWrite(vaultPath, current);
       invoke('set_spellcheck_language', {
         lang: current.language,
         enabled: current.spellcheck,
       }).catch(() => {});
+    }
+
+    // Load and merge persisted file recovery snapshots from vault cache
+    const effectiveConfigDir = getConfigFolder(loadedSettings);
+    const recoveryFilePath = `${vaultPath.replace(/[\\/]+$/, '')}/${effectiveConfigDir}/file-recovery.json`;
+    const historyDays =
+      loadedSettings.fileRecoveryHistoryLength || loadedSettings.fileRecoveryHistoryDays || 7;
+    try {
+      const recoveryRaw = await invoke<string>('read_file', { filePath: recoveryFilePath });
+      const vaultSnaps = sanitizeSnapshotList(JSON.parse(recoveryRaw));
+      const localSnaps = get().fileSnapshots;
+      const byId = new Map<string, FileSnapshot>();
+      for (const s of localSnaps) byId.set(s.id, s);
+      for (const s of vaultSnaps) byId.set(s.id, s);
+      const combined = pruneExpiredSnapshots(Array.from(byId.values()), historyDays).sort(
+        (a, b) => a.timestamp - b.timestamp
+      );
+      writeLocalSnapshots(combined);
+      set({ fileSnapshots: combined });
+    } catch {
+      const prunedLocal = pruneExpiredSnapshots(get().fileSnapshots, historyDays);
+      if (prunedLocal.length !== get().fileSnapshots.length) {
+        writeLocalSnapshots(prunedLocal);
+        set({ fileSnapshots: prunedLocal });
+      }
     }
   },
 
@@ -1203,7 +1247,7 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   },
 }));
 
-// Cross-window reactivity: sync settings when modified in another window
+// Cross-window reactivity: sync settings and snapshots when modified in another window
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (event) => {
     if (event.key === LOCAL_STORAGE_KEY && event.newValue) {
@@ -1224,6 +1268,17 @@ if (typeof window !== 'undefined') {
         }
       } catch (err) {
         console.error('Error syncing settings from storage event:', err);
+      }
+    } else if (event.key === SNAPSHOTS_STORAGE_KEY) {
+      try {
+        const historyDays =
+          useSettingsStore.getState().settings.fileRecoveryHistoryLength || 7;
+        const nextSnaps = event.newValue
+          ? pruneExpiredSnapshots(sanitizeSnapshotList(JSON.parse(event.newValue)), historyDays)
+          : [];
+        useSettingsStore.setState({ fileSnapshots: nextSnaps });
+      } catch {
+        // Ignore malformed snapshot storage event
       }
     }
   });
