@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Command, FileText, LayoutDashboard, LayoutList } from 'lucide-react';
+import { Search, Command, FileText, LayoutDashboard, LayoutList, Pin } from 'lucide-react';
 import { FileItem } from '../../types';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useT, useLocaleStore } from '../../stores/localeStore';
-import { HOTKEY_CATALOG } from '../../services/hotkeyRegistry';
+import { HOTKEY_CATALOG, getActiveHotkeys } from '../../services/hotkeyRegistry';
 import { getRelativeVaultPath, isPathExcluded } from '../../utils/pathUtils';
 
 export interface CommandItem {
@@ -43,6 +43,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   const userIgnoreFilters = useSettingsStore((s) => s.settings.userIgnoreFilters) || [];
   const pinnedCommandIds = useSettingsStore((s) => s.settings.pinnedCommands) || [];
+  const customHotkeys = useSettingsStore((s) => s.settings.hotkeys) || {};
   const currentLang =
     useLocaleStore((s) => s.locale) || useSettingsStore((s) => s.settings.language) || 'es';
   const isEs = currentLang.toLowerCase().startsWith('es');
@@ -276,6 +277,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             </div>
           ) : mode === 'commands' ? (
             (items as CommandItem[]).map((cmd, i) => {
+              const isPinned = pinnedSet.has(cmd.id);
+              const activeShortcut =
+                cmd.id in customHotkeys
+                  ? getActiveHotkeys(cmd.id, customHotkeys)[0]
+                  : cmd.shortcut || getActiveHotkeys(cmd.id, customHotkeys)[0];
               const showSeparatorAfter =
                 pinnedCommandItems.length > 0 &&
                 unpinnedCommandItems.length > 0 &&
@@ -300,10 +306,21 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                       </span>
                       <span className="font-medium">{cmd.name}</span>
                     </div>
-                    {cmd.shortcut && (
-                      <span className="text-[10px] text-urano-muted font-mono bg-[var(--interactive-normal)] px-2 py-0.5 rounded border border-urano-border">
-                        {cmd.shortcut}
-                      </span>
+                    {(isPinned || activeShortcut) && (
+                      <div className="command-palette-right-meta">
+                        {activeShortcut && (
+                          <span className="text-[10px] text-urano-muted font-mono bg-[var(--interactive-normal)] px-2 py-0.5 rounded border border-urano-border">
+                            {activeShortcut}
+                          </span>
+                        )}
+                        {isPinned && (
+                          <Pin
+                            size={13}
+                            className="command-palette-pin-icon"
+                            aria-label={t('commandPalette.pinned')}
+                          />
+                        )}
+                      </div>
                     )}
                   </div>
                   {showSeparatorAfter && (
