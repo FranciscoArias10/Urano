@@ -18,6 +18,8 @@ import { CommunityThemesModal } from './appearance/CommunityThemesModal';
 import { FontPickerModal, FontTarget } from './appearance/FontPickerModal';
 import { RibbonConfigModal } from './interface/RibbonConfigModal';
 import { ExcludedFilesModal } from './ExcludedFilesModal';
+import { FileRecoveryModal } from '../recovery/FileRecoveryModal';
+import { useNoticeStore } from '../common/Notice';
 import { HotkeysSettingsTab } from './hotkeys/HotkeysSettingsTab';
 import { CorePluginsSettingsTab } from './plugins/CorePluginsSettingsTab';
 import './settingsStyles.css';
@@ -105,6 +107,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [showRibbonModal, setShowRibbonModal] = useState(false);
   const [showExcludedFilesModal, setShowExcludedFilesModal] = useState(false);
   const [showPinCommandModal, setShowPinCommandModal] = useState(false);
+  const [showFileRecoveryModal, setShowFileRecoveryModal] = useState(false);
+  const [showClearRecoveryConfirm, setShowClearRecoveryConfirm] = useState(false);
   const [pinModalQuery, setPinModalQuery] = useState('');
   const [pinModalSelectedIndex, setPinModalSelectedIndex] = useState(0);
   const [draggedPinnedIdx, setDraggedPinnedIdx] = useState<number | null>(null);
@@ -117,6 +121,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const pinCommand = useSettingsStore((s) => s.pinCommand);
   const unpinCommand = useSettingsStore((s) => s.unpinCommand);
   const movePinnedCommand = useSettingsStore((s) => s.movePinnedCommand);
+  const clearAllSnapshots = useSettingsStore((s) => s.clearAllSnapshots);
+  const showNotice = useNoticeStore((s) => s.showNotice);
   const currentLang =
     useLocaleStore((s) => s.locale) || useSettingsStore((s) => s.settings.language) || 'es';
   const isEs = currentLang.toLowerCase().startsWith('es');
@@ -248,6 +254,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     return () => window.removeEventListener('urano:open-font-picker', handler);
   }, []);
 
+  useEffect(() => {
+    if (!isOpen && !standalone) return;
+    const onOpenRecovery = () => setShowFileRecoveryModal(true);
+    const onConfirmClear = () => setShowClearRecoveryConfirm(true);
+    window.addEventListener('urano:open-file-recovery', onOpenRecovery);
+    window.addEventListener('urano:confirm-clear-file-recovery', onConfirmClear);
+    return () => {
+      window.removeEventListener('urano:open-file-recovery', onOpenRecovery);
+      window.removeEventListener('urano:confirm-clear-file-recovery', onConfirmClear);
+    };
+  }, [isOpen, standalone]);
+
   const visibleTabs = useMemo(() => tabs.filter((tab) => !tab.hidden), [tabs]);
   const activeTab = visibleTabs.find((tab) => tab.id === activeTabId) ?? visibleTabs[0];
 
@@ -272,6 +290,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
+        if (showClearRecoveryConfirm) {
+          setShowClearRecoveryConfirm(false);
+          return;
+        }
+        if (showFileRecoveryModal) {
+          setShowFileRecoveryModal(false);
+          return;
+        }
         if (showPinCommandModal) {
           setShowPinCommandModal(false);
           return;
@@ -290,7 +316,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     };
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [isOpen, standalone, showPinCommandModal, handleClose]);
+  }, [
+    isOpen,
+    standalone,
+    showClearRecoveryConfirm,
+    showFileRecoveryModal,
+    showPinCommandModal,
+    handleClose,
+  ]);
 
   // Scroll content to top when switching tabs.
   useEffect(() => {
