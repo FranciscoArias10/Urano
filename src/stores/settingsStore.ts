@@ -643,6 +643,87 @@ function scheduleVaultWrite(vaultPath: string | null, settings: UranoSettings): 
   }, 300);
 }
 
+const SNAPSHOTS_STORAGE_KEY = 'urano_file_recovery_snapshots';
+
+function sanitizeSnapshotList(raw: unknown): FileSnapshot[] {
+  if (!Array.isArray(raw)) return [];
+  const valid: FileSnapshot[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const rec = item as Partial<FileSnapshot>;
+    if (
+      typeof rec.id === 'string' &&
+      typeof rec.path === 'string' &&
+      rec.path.trim().length > 0 &&
+      typeof rec.content === 'string' &&
+      typeof rec.timestamp === 'number' &&
+      Number.isFinite(rec.timestamp)
+    ) {
+      valid.push({
+        id: rec.id,
+        path: rec.path.replace(/\\/g, '/'),
+        content: rec.content,
+        timestamp: rec.timestamp,
+      });
+    }
+  }
+  return valid;
+}
+
+function pruneExpiredSnapshots(snapshots: FileSnapshot[], historyDays: number): FileSnapshot[] {
+  const days = Math.max(1, Number.isFinite(historyDays) ? historyDays : 7);
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  return snapshots.filter((s) => s.timestamp >= cutoff);
+}
+
+function readLocalSnapshots(historyDays: number): FileSnapshot[] {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(SNAPSHOTS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return pruneExpiredSnapshots(sanitizeSnapshotList(parsed), historyDays);
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalSnapshots(snapshots: FileSnapshot[]): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(SNAPSHOTS_STORAGE_KEY, JSON.stringify(snapshots));
+  } catch {
+    // Retry with most recent subset if storage quota is tight
+    try {
+      const recent = snapshots.slice(-100);
+      localStorage.setItem(SNAPSHOTS_STORAGE_KEY, JSON.stringify(recent));
+    } catch {
+      // localStorage unavailable
+    }
+  }
+}
+
+let snapshotsVaultWriteTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleSnapshotsVaultWrite(
+  vaultPath: string | null,
+  settings: UranoSettings,
+  snapshots: FileSnapshot[]
+): void {
+  if (!vaultPath) return;
+  if (snapshotsVaultWriteTimer) clearTimeout(snapshotsVaultWriteTimer);
+  snapshotsVaultWriteTimer = setTimeout(() => {
+    snapshotsVaultWriteTimer = null;
+    const configDir = getConfigFolder(settings);
+    const folderPath = `${vaultPath.replace(/[\\/]+$/, '')}/${configDir}`;
+    const filePath = `${folderPath}/file-recovery.json`;
+    invoke('create_folder', { folderPath }).catch(() => {});
+    invoke('write_file', { filePath, content: JSON.stringify(snapshots) }).catch((err) => {
+      console.warn(`[Urano] No se pudo guardar ${configDir}/file-recovery.json:`, err);
+    });
+  }, 300);
+}
+
 export interface SettingsStoreState {
   settings: UranoSettings;
   /** Vault whose `.urano/settings.json` is the source of truth right now. */
