@@ -306,6 +306,7 @@ export const DEFAULT_SETTINGS: UranoSettings = {
   canvasSnapToGrid: true,
   canvasSnapToObjects: true,
   canvasZoomThreshold: 100,
+  pinnedCommands: [],
   dailyNotesFormat: 'YYYY-MM-DD',
   dailyNotesFolder: '',
   dailyNotesTemplatePath: '',
