@@ -3929,4 +3929,55 @@ body.is-translucent aside.bg-urano-sidebar {
   flex-shrink: 0;
 }
 
+/* ========================================================
+   Destructive & Secondary Buttons (Obsidian 1:1)
+   ======================================================== */
+button.mod-warning {
+  background-color: rgba(233, 49, 71, 0.18);
+  color: #f87171;
+  border: 1px solid rgba(233, 49, 71, 0.35);
+  border-radius: 6px;
+  padding: 5px 14px;
+  font-family: var(--font-interface);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+button.mod-warning:hover {
+  background-color: rgba(233, 49, 71, 0.3);
+  border-color: rgba(233, 49, 71, 0.55);
+  color: #fca5a5;
+}
+
+body.theme-light button.mod-warning {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+body.theme-light button.mod-warning:hover {
+  background-color: rgba(220, 38, 38, 0.18);
+  border-color: rgba(220, 38, 38, 0.45);
+  color: #b91c1c;
+}
+
+button.mod-cta-secondary {
+  background-color: var(--interactive-normal, #2a2a2a);
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 5px 14px;
+  font-family: var(--font-interface);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+button.mod-cta-secondary:hover {
+  background-color: var(--interactive-hover, #363636);
+}
+
 
