@@ -563,9 +563,20 @@
     },
     "fileRecovery": {
       "interval": "Snapshot interval",
-      "intervalDesc": "Minutes between snapshots of modified files.",
+      "intervalDesc": "Minimum minutes between two snapshots.",
       "history": "History length",
-      "historyDesc": "Days to keep snapshots."
+      "historyDesc": "Number of days snapshots will be kept for.",
+      "snapshots": "Snapshots",
+      "snapshotsDesc": "View and recover saved snapshots.",
+      "view": "View",
+      "clearHistory": "Clear history",
+      "clearHistoryDesc": "Clear all snapshots.",
+      "clear": "Clear",
+      "clearConfirmTitle": "Clear history",
+      "clearConfirmMessage": "Are you sure you want to delete all saved snapshots? This action cannot be undone.",
+      "clearConfirmCancel": "Cancel",
+      "clearConfirmAccept": "Clear",
+      "clearedNotice": "All saved snapshots have been cleared."
     },
     "noteComposer": {
       "afterExtract": "Text after extraction",
@@ -917,7 +928,23 @@
       "extract": "Note composer: Extract current selection...",
       "extractHeading": "Note composer: Extract this heading...",
       "merge": "Note composer: Merge entire file with..."
+    },
+    "fileRecovery": {
+      "open": "File recovery: Open saved snapshots"
     }
+  },
+  "fileRecoveryModal": {
+    "title": "File recovery",
+    "searchPlaceholder": "Type a file name to search...",
+    "noSnapshots": "No saved snapshots found.",
+    "noMatchingFiles": "No matching files found.",
+    "snapshotsCount": "{count} snapshots",
+    "showDiff": "Show diff",
+    "copy": "Copy to clipboard",
+    "copiedNotice": "Snapshot copied to clipboard.",
+    "restore": "Restore",
+    "restoredNotice": "File restored from snapshot.",
+    "selectFileHint": "Select a file to view its snapshots."
   },
   "dailyNotes": {
     "notices": {
