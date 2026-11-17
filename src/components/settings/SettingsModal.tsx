@@ -677,6 +677,124 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           onClose={() => setShowExcludedFilesModal(false)}
         />
       )}
+
+      {showPinCommandModal && (
+        <div
+          className="command-palette-pin-modal-backdrop"
+          role="presentation"
+          onClick={() => setShowPinCommandModal(false)}
+        >
+          <div
+            className="command-palette-pin-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('commandPalette.pinCommand')}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="command-palette-pin-modal-input-row">
+              <Search size={15} className="command-palette-pin-modal-search-icon" />
+              <input
+                ref={pinModalInputRef}
+                type="text"
+                autoFocus
+                className="command-palette-pin-modal-input"
+                placeholder={t('commandPalette.selectCommandPlaceholder')}
+                value={pinModalQuery}
+                onChange={(e) => {
+                  setPinModalQuery(e.target.value);
+                  setPinModalSelectedIndex(0);
+                }}
+                onKeyDown={(e) => {
+                  const len = filteredCommandsToPin.length;
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowPinCommandModal(false);
+                    return;
+                  }
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (len > 0) {
+                      const nextIdx = (pinModalSelectedIndex + 1) % len;
+                      setPinModalSelectedIndex(nextIdx);
+                      const targetEl = e.currentTarget
+                        .closest('.command-palette-pin-modal')
+                        ?.querySelector<HTMLElement>(`[data-pin-index="${nextIdx}"]`);
+                      targetEl?.scrollIntoView({ block: 'nearest' });
+                    }
+                    return;
+                  }
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (len > 0) {
+                      const nextIdx = (pinModalSelectedIndex - 1 + len) % len;
+                      setPinModalSelectedIndex(nextIdx);
+                      const targetEl = e.currentTarget
+                        .closest('.command-palette-pin-modal')
+                        ?.querySelector<HTMLElement>(`[data-pin-index="${nextIdx}"]`);
+                      targetEl?.scrollIntoView({ block: 'nearest' });
+                    }
+                    return;
+                  }
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const safeIdx = Math.min(pinModalSelectedIndex, Math.max(0, len - 1));
+                    const picked = filteredCommandsToPin[safeIdx];
+                    if (picked) {
+                      pinCommand(picked.id);
+                      setShowPinCommandModal(false);
+                    }
+                  }
+                }}
+              />
+              {pinModalQuery && (
+                <SearchClearButton
+                  label={t('modal.close')}
+                  onClick={() => {
+                    setPinModalQuery('');
+                    setPinModalSelectedIndex(0);
+                    pinModalInputRef.current?.focus();
+                  }}
+                />
+              )}
+            </div>
+            <div className="command-palette-pin-modal-list" role="listbox">
+              {filteredCommandsToPin.length === 0 ? (
+                <div className="command-palette-pin-modal-empty">
+                  {t('commandPalette.noCommandsFound')}
+                </div>
+              ) : (
+                filteredCommandsToPin.map((cmd, idx) => {
+                  const safeSelected = Math.min(
+                    pinModalSelectedIndex,
+                    filteredCommandsToPin.length - 1
+                  );
+                  const isSelected = idx === safeSelected;
+                  return (
+                    <button
+                      key={cmd.id}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      data-pin-index={idx}
+                      className={`command-palette-pin-modal-item${
+                        isSelected ? ' is-selected' : ''
+                      }`}
+                      onMouseEnter={() => setPinModalSelectedIndex(idx)}
+                      onClick={() => {
+                        pinCommand(cmd.id);
+                        setShowPinCommandModal(false);
+                      }}
+                    >
+                      <span className="command-palette-pin-modal-item-name">{cmd.name}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
