@@ -554,6 +554,9 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         isDirty: false,
         isLoading: false,
       });
+      if (!isImg) {
+        useSettingsStore.getState().recordSnapshot(targetPath, content);
+      }
     } catch (err) {
       set({ isLoading: false });
       console.error('Error al leer archivo:', err);
@@ -607,6 +610,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     });
     try {
       await invoke('write_file', { filePath, content });
+      useSettingsStore.getState().recordSnapshot(filePath, content);
     } catch (err) {
       console.error('Error al guardar la nota editada desde el Canvas:', err);
     }
@@ -617,6 +621,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     if (!activeFile || !activeFile.trim() || isImagePath(activeFile)) return;
     try {
       await invoke('write_file', { filePath: activeFile, content: fileContent });
+      useSettingsStore.getState().recordSnapshot(activeFile, fileContent);
       set({ isDirty: false });
       get().loadAllNotesContent();
       triggerAutoSync(get().activeVault, get().vaultName);
