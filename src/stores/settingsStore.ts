@@ -322,6 +322,8 @@ export const DEFAULT_SETTINGS: UranoSettings = {
   dailyNotesOpenOnStartup: false,
   fileRecoveryIntervalMinutes: 5,
   fileRecoveryHistoryDays: 7,
+  fileRecoveryInterval: 5,
+  fileRecoveryHistoryLength: 7,
   noteComposerAfterExtract: 'link',
   noteComposerTemplatePath: '',
   noteComposerConfirmMerge: true,
