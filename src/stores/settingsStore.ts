@@ -799,6 +799,7 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   activeTabId: 'general',
   startupMs: null,
   hotkeySearchQuery: '',
+  fileSnapshots: readLocalSnapshots(initialSettings.fileRecoveryHistoryLength),
 
   openSettings: (tabId) => {
     const { settings } = get();
@@ -1093,6 +1094,53 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     writeLocalSettings(next);
     scheduleVaultWrite(get().vaultPath, next);
     set({ settings: next });
+  },
+
+  recordSnapshot: (path, content, force = false) => {
+    const cleanPath = (path || '').trim().replace(/\\/g, '/');
+    if (!cleanPath) return;
+    const { settings, fileSnapshots, vaultPath } = get();
+    if (!settings.corePlugins['file-recovery']) return;
+
+    const historyDays = settings.fileRecoveryHistoryLength || settings.fileRecoveryHistoryDays || 7;
+    const pruned = pruneExpiredSnapshots(fileSnapshots, historyDays);
+
+    let latest: FileSnapshot | null = null;
+    for (const snap of pruned) {
+      if (snap.path.toLowerCase() === cleanPath.toLowerCase()) {
+        if (!latest || snap.timestamp > latest.timestamp) {
+          latest = snap;
+        }
+      }
+    }
+
+    const now = Date.now();
+    const intervalMinutes = settings.fileRecoveryInterval || settings.fileRecoveryIntervalMinutes || 5;
+    const intervalMs = Math.max(1, intervalMinutes) * 60 * 1000;
+
+    if (latest) {
+      if (latest.content === content) return;
+      if (!force && now - latest.timestamp < intervalMs) return;
+    }
+
+    const newSnapshot: FileSnapshot = {
+      id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
+      path: cleanPath,
+      content,
+      timestamp: now,
+    };
+
+    const nextSnapshots = [...pruned, newSnapshot];
+    writeLocalSnapshots(nextSnapshots);
+    scheduleSnapshotsVaultWrite(vaultPath, settings, nextSnapshots);
+    set({ fileSnapshots: nextSnapshots });
+  },
+
+  clearAllSnapshots: () => {
+    const { vaultPath, settings } = get();
+    writeLocalSnapshots([]);
+    scheduleSnapshotsVaultWrite(vaultPath, settings, []);
+    set({ fileSnapshots: [] });
   },
 
   loadFromVault: async (vaultPath) => {
