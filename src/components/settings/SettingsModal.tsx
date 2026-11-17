@@ -264,7 +264,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     return () => window.clearTimeout(id);
   }, [isOpen, standalone]);
 
-  // Escape closes, Mod+F focuses search (Urano `modalEl` keydown handler).
+  // Escape closes top-most selector first, otherwise closes Settings; Mod+F focuses search.
   useEffect(() => {
     if (!isOpen && !standalone) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -272,16 +272,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
+        if (showPinCommandModal) {
+          setShowPinCommandModal(false);
+          return;
+        }
         handleClose();
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
         e.preventDefault();
+        if (showPinCommandModal) {
+          pinModalInputRef.current?.focus();
+          pinModalInputRef.current?.select();
+          return;
+        }
         searchRef.current?.focus();
         searchRef.current?.select();
       }
     };
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [isOpen, standalone, handleClose]);
+  }, [isOpen, standalone, showPinCommandModal, handleClose]);
 
   // Scroll content to top when switching tabs.
   useEffect(() => {
