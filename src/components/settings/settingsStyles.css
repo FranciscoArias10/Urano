@@ -611,8 +611,56 @@ body.theme-light .urano-settings-root .vertical-tab-nav-item.is-active {
 .urano-settings-root .setting-button.mod-cta:hover {
   filter: brightness(1.08);
 }
-.urano-settings-root .setting-button.mod-warning {
+.urano-settings-root .setting-item-control button.mod-warning:not(.clickable-icon):not(.setting-link):not(.vault-folder-input-clear):not(.vault-folder-suggestion-item),
+.urano-settings-root .setting-button.mod-warning,
+.urano-settings-root button.mod-warning {
+  background-color: rgba(233, 49, 71, 0.18);
   color: #f87171;
+  border: 1px solid rgba(233, 49, 71, 0.35);
+  border-radius: 6px;
+  padding: 5px 14px;
+  font-family: var(--font-interface);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.urano-settings-root .setting-item-control button.mod-warning:not(.clickable-icon):not(.setting-link):not(.vault-folder-input-clear):not(.vault-folder-suggestion-item):hover,
+.urano-settings-root .setting-button.mod-warning:hover,
+.urano-settings-root button.mod-warning:hover {
+  background-color: rgba(233, 49, 71, 0.3);
+  border-color: rgba(233, 49, 71, 0.55);
+  color: #fca5a5;
+}
+body.theme-light .urano-settings-root .setting-item-control button.mod-warning:not(.clickable-icon):not(.setting-link):not(.vault-folder-input-clear):not(.vault-folder-suggestion-item),
+body.theme-light .urano-settings-root .setting-button.mod-warning,
+body.theme-light .urano-settings-root button.mod-warning {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.3);
+}
+body.theme-light .urano-settings-root .setting-item-control button.mod-warning:not(.clickable-icon):not(.setting-link):not(.vault-folder-input-clear):not(.vault-folder-suggestion-item):hover,
+body.theme-light .urano-settings-root .setting-button.mod-warning:hover,
+body.theme-light .urano-settings-root button.mod-warning:hover {
+  background-color: rgba(220, 38, 38, 0.18);
+  border-color: rgba(220, 38, 38, 0.45);
+  color: #b91c1c;
+}
+.urano-settings-root .setting-item-control button.mod-cta-secondary:not(.clickable-icon):not(.setting-link):not(.vault-folder-input-clear):not(.vault-folder-suggestion-item),
+.urano-settings-root button.mod-cta-secondary {
+  background: var(--settings-button-bg);
+  border: 1px solid var(--settings-button-border);
+  border-radius: 6px;
+  padding: 5px 14px;
+  font-family: var(--font-interface);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--settings-text);
+  cursor: pointer;
+}
+.urano-settings-root .setting-item-control button.mod-cta-secondary:not(.clickable-icon):not(.setting-link):not(.vault-folder-input-clear):not(.vault-folder-suggestion-item):hover,
+.urano-settings-root button.mod-cta-secondary:hover {
+  background: var(--settings-button-hover);
 }
 .urano-settings-root .setting-button.mod-loading {
   color: transparent;
@@ -719,8 +767,8 @@ body.theme-light .urano-settings-root .vertical-tab-nav-item.is-active {
   transition: border-color 0.1s ease;
 }
 .urano-settings-root .setting-item-control input[type='number'] {
-  width: 72px;
-  text-align: end;
+  width: 220px;
+  text-align: start;
 }
 .urano-settings-root .setting-item-control input[type='text']::placeholder {
   color: var(--settings-text-faint);
