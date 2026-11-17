@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { Search, X, Plus } from 'lucide-react';
+import { Search, X, Plus, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
 import { useSettingsStore, useT } from '../../stores/settingsStore';
 import { useLocaleStore } from '../../stores/localeStore';
 import { HOTKEY_CATALOG } from '../../services/hotkeyRegistry';
@@ -559,7 +559,75 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               </div>
                             </div>
                           </div>
-                        ) : null}
+                        ) : (
+                          pinnedCommands.map((cmdId, idx) => {
+                            const label = commandNameById.get(cmdId) ?? cmdId;
+                            return (
+                              <div
+                                key={cmdId}
+                                className={`setting-item command-palette-pinned-item${
+                                  draggedPinnedIdx === idx ? ' is-dragging' : ''
+                                }`}
+                                draggable
+                                onDragStart={(e) => {
+                                  setDraggedPinnedIdx(idx);
+                                  e.dataTransfer.effectAllowed = 'move';
+                                  e.dataTransfer.setData('text/plain', String(idx));
+                                }}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.dataTransfer.dropEffect = 'move';
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  if (draggedPinnedIdx !== null && draggedPinnedIdx !== idx) {
+                                    movePinnedCommand(draggedPinnedIdx, idx);
+                                  }
+                                  setDraggedPinnedIdx(null);
+                                }}
+                                onDragEnd={() => setDraggedPinnedIdx(null)}
+                              >
+                                <div className="setting-item-info command-palette-pinned-info">
+                                  <span className="command-palette-drag-handle" aria-hidden="true">
+                                    <GripVertical size={14} />
+                                  </span>
+                                  <div className="setting-item-name">{label}</div>
+                                </div>
+                                <div className="setting-item-control command-palette-pinned-controls">
+                                  <button
+                                    type="button"
+                                    className="clickable-icon"
+                                    disabled={idx === 0}
+                                    title={t('commandPalette.moveUp')}
+                                    aria-label={t('commandPalette.moveUp')}
+                                    onClick={() => movePinnedCommand(idx, idx - 1)}
+                                  >
+                                    <ArrowUp size={15} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="clickable-icon"
+                                    disabled={idx === pinnedCommands.length - 1}
+                                    title={t('commandPalette.moveDown')}
+                                    aria-label={t('commandPalette.moveDown')}
+                                    onClick={() => movePinnedCommand(idx, idx + 1)}
+                                  >
+                                    <ArrowDown size={15} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="clickable-icon"
+                                    title={t('commandPalette.unpin')}
+                                    aria-label={t('commandPalette.unpin')}
+                                    onClick={() => unpinCommand(cmdId)}
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
                       </div>
                     </div>
                   </div>
