@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Search, X } from 'lucide-react';
 import { useSettingsStore, useT } from '../../stores/settingsStore';
+import { useLocaleStore } from '../../stores/localeStore';
+import { HOTKEY_CATALOG } from '../../services/hotkeyRegistry';
 import type { CommandItem } from '../palette/CommandPalette';
 import {
   useSettingTabs,
@@ -102,9 +104,72 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   });
   const [showRibbonModal, setShowRibbonModal] = useState(false);
   const [showExcludedFilesModal, setShowExcludedFilesModal] = useState(false);
+  const [showPinCommandModal, setShowPinCommandModal] = useState(false);
+  const [pinModalQuery, setPinModalQuery] = useState('');
+  const [pinModalSelectedIndex, setPinModalSelectedIndex] = useState(0);
+  const [draggedPinnedIdx, setDraggedPinnedIdx] = useState<number | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const pinModalInputRef = useRef<HTMLInputElement>(null);
+
+  const pinnedCommands = useSettingsStore((s) => s.settings.pinnedCommands) || [];
+  const pinCommand = useSettingsStore((s) => s.pinCommand);
+  const unpinCommand = useSettingsStore((s) => s.unpinCommand);
+  const movePinnedCommand = useSettingsStore((s) => s.movePinnedCommand);
+  const currentLang =
+    useLocaleStore((s) => s.locale) || useSettingsStore((s) => s.settings.language) || 'es';
+  const isEs = currentLang.toLowerCase().startsWith('es');
+
+  const catalogCommands = useMemo(() => {
+    const byId = new Map<string, { id: string; name: string }>();
+    if (commands && commands.length > 0) {
+      for (const cmd of commands) {
+        if (!byId.has(cmd.id)) {
+          byId.set(cmd.id, { id: cmd.id, name: cmd.name });
+        }
+      }
+    }
+    for (const cmd of HOTKEY_CATALOG) {
+      if (!byId.has(cmd.id)) {
+        byId.set(cmd.id, { id: cmd.id, name: isEs ? cmd.nameEs : cmd.nameEn });
+      }
+    }
+    return Array.from(byId.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, currentLang, { sensitivity: 'base' })
+    );
+  }, [commands, isEs, currentLang]);
+
+  const commandNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const cmd of catalogCommands) {
+      map.set(cmd.id, cmd.name);
+    }
+    return map;
+  }, [catalogCommands]);
+
+  const pinnedSet = useMemo(() => new Set(pinnedCommands), [pinnedCommands]);
+
+  const availableCommandsToPin = useMemo(
+    () => catalogCommands.filter((cmd) => !pinnedSet.has(cmd.id)),
+    [catalogCommands, pinnedSet]
+  );
+
+  const filteredCommandsToPin = useMemo(() => {
+    const q = normalize(pinModalQuery.trim());
+    if (!q) return availableCommandsToPin;
+    return availableCommandsToPin.filter(
+      (cmd) => normalize(cmd.name).includes(q) || cmd.id.toLowerCase().includes(q)
+    );
+  }, [availableCommandsToPin, pinModalQuery]);
+
+  useEffect(() => {
+    if (!showPinCommandModal) return;
+    setPinModalQuery('');
+    setPinModalSelectedIndex(0);
+    const id = window.setTimeout(() => pinModalInputRef.current?.focus(), 30);
+    return () => window.clearTimeout(id);
+  }, [showPinCommandModal]);
 
   // Close handler: closes native window if in standalone mode, otherwise closes integrated modal
   const handleClose = useCallback(() => {
