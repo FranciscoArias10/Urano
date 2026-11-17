@@ -192,6 +192,54 @@ export const FileRecoveryModal: React.FC<FileRecoveryModalProps> = ({ isOpen, on
   );
   const selectedSnapshot = snapshots[selectedSnapshotIndex] || snapshots[0] || null;
 
+  const currentNoteContent = (() => {
+    if (!selectedFileGroup) return '';
+    for (const [k, v] of Object.entries(notesContentMap)) {
+      if (isSamePath(k, selectedFileGroup.path)) return v;
+    }
+    return '';
+  })();
+
+  const comparisonSnapshot = snapshots[selectedSnapshotIndex + 1] || null;
+  const diffBaseline = comparisonSnapshot ? comparisonSnapshot.content : currentNoteContent;
+  const diffLines =
+    showDiff && selectedSnapshot
+      ? computeLineDiff(diffBaseline, selectedSnapshot.content)
+      : [];
+
+  const handleCopy = async () => {
+    if (!selectedSnapshot) return;
+    try {
+      await navigator.clipboard.writeText(selectedSnapshot.content);
+      showNotice(t('fileRecoveryModal.copiedNotice'), 2000, 'success');
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = selectedSnapshot.content;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      showNotice(t('fileRecoveryModal.copiedNotice'), 2000, 'success');
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!selectedSnapshot) return;
+    try {
+      await updateNoteContent(selectedSnapshot.path, selectedSnapshot.content);
+      if (useVaultStore.getState().activeVault) {
+        await useVaultStore.getState().refreshTree();
+        if (!activeFile || !isSamePath(activeFile, selectedSnapshot.path)) {
+          await selectFile(selectedSnapshot.path);
+        }
+      }
+      showNotice(t('fileRecoveryModal.restoredNotice'), 2500, 'success');
+      onClose();
+    } catch (err) {
+      console.error('Error al restaurar captura:', err);
+    }
+  };
+
   return (
     <div
       className="file-recovery-modal-backdrop"
@@ -303,6 +351,75 @@ export const FileRecoveryModal: React.FC<FileRecoveryModalProps> = ({ isOpen, on
                     );
                   })}
                 </div>
+              </div>
+
+              <div className="file-recovery-viewer">
+                {selectedSnapshot ? (
+                  <>
+                    <div className="file-recovery-viewer-toolbar">
+                      <label className="file-recovery-diff-toggle">
+                        <input
+                          type="checkbox"
+                          checked={showDiff}
+                          onChange={(e) => setShowDiff(e.target.checked)}
+                        />
+                        <span>{t('fileRecoveryModal.showDiff')}</span>
+                      </label>
+                      <div className="file-recovery-viewer-actions">
+                        <button
+                          type="button"
+                          className="mod-cta-secondary file-recovery-action-btn"
+                          onClick={handleCopy}
+                        >
+                          <Copy size={14} />
+                          <span>{t('fileRecoveryModal.copy')}</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="mod-cta file-recovery-action-btn"
+                          onClick={handleRestore}
+                        >
+                          <RotateCcw size={14} />
+                          <span>{t('fileRecoveryModal.restore')}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="file-recovery-viewer-content">
+                      {showDiff ? (
+                        <div className="file-recovery-diff-view">
+                          {diffLines.map((line, idx) => (
+                            <div
+                              key={idx}
+                              className={`file-recovery-diff-line${
+                                line.type === 'add'
+                                  ? ' is-added'
+                                  : line.type === 'del'
+                                    ? ' is-removed'
+                                    : ''
+                              }`}
+                            >
+                              <span className="file-recovery-diff-prefix">
+                                {line.type === 'add' ? '+' : line.type === 'del' ? '-' : ' '}
+                              </span>
+                              <span className="file-recovery-diff-text">
+                                {line.text || '\u00A0'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <pre className="file-recovery-plain-content">
+                          {selectedSnapshot.content}
+                        </pre>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="file-recovery-empty-state">
+                    <p>{t('fileRecoveryModal.selectFileHint')}</p>
+                  </div>
+                )}
               </div>
             </div>
           </>
