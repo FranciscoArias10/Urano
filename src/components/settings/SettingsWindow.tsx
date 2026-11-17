@@ -25,6 +25,7 @@ import {
   Settings,
   BookOpen,
   Code,
+  History,
 } from 'lucide-react';
 
 export const SettingsWindow: React.FC = () => {
@@ -236,6 +237,12 @@ export const SettingsWindow: React.FC = () => {
         }),
         icon: <Code size={15} />,
         action: () => {},
+      },
+      {
+        id: 'file-recovery:open',
+        name: t('commands.fileRecovery.open'),
+        icon: <History size={15} />,
+        action: () => window.dispatchEvent(new CustomEvent('urano:open-file-recovery')),
       },
     ],
     [t]
