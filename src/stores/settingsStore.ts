@@ -652,6 +652,10 @@ export interface SettingsStoreState {
   resetHotkey: (commandId: string) => void;
   restoreAllHotkeys: () => void;
 
+  pinCommand: (commandId: string) => void;
+  unpinCommand: (commandId: string) => void;
+  movePinnedCommand: (fromIndex: number, toIndex: number) => void;
+
   loadFromVault: (vaultPath: string) => Promise<void>;
   markStartupComplete: () => void;
 }
