@@ -23,6 +23,13 @@ export type CanvasCtrlDragBehavior = 'menu' | 'select';
 export type CanvasCardLabel = 'always' | 'hover' | 'never';
 export type NoteComposerAfterExtract = 'link' | 'embed' | 'nothing';
 
+export interface FileSnapshot {
+  id: string;
+  path: string;
+  content: string;
+  timestamp: number;
+}
+
 export const CORE_PLUGIN_IDS = [
   'bases',
   'global-search',
@@ -175,6 +182,8 @@ export interface UranoSettings {
   dailyNotesOpenOnStartup: boolean;
   fileRecoveryIntervalMinutes: number;
   fileRecoveryHistoryDays: number;
+  fileRecoveryInterval: number;
+  fileRecoveryHistoryLength: number;
   noteComposerAfterExtract: NoteComposerAfterExtract;
   noteComposerTemplatePath: string;
   noteComposerConfirmMerge: boolean;
