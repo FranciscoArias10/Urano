@@ -3,7 +3,8 @@ import { Search, Command, FileText, LayoutDashboard, LayoutList } from 'lucide-r
 import { FileItem } from '../../types';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useSettingsStore } from '../../stores/settingsStore';
-import { useT } from '../../stores/localeStore';
+import { useT, useLocaleStore } from '../../stores/localeStore';
+import { HOTKEY_CATALOG } from '../../services/hotkeyRegistry';
 import { getRelativeVaultPath, isPathExcluded } from '../../utils/pathUtils';
 
 export interface CommandItem {
@@ -41,6 +42,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const { activeVault, createNote } = useVaultStore();
 
   const userIgnoreFilters = useSettingsStore((s) => s.settings.userIgnoreFilters) || [];
+  const pinnedCommandIds = useSettingsStore((s) => s.settings.pinnedCommands) || [];
+  const currentLang =
+    useLocaleStore((s) => s.locale) || useSettingsStore((s) => s.settings.language) || 'es';
+  const isEs = currentLang.toLowerCase().startsWith('es');
 
   // Flatten all files from fileTree (respecting excluded files)
   const allFiles = React.useMemo(() => {
@@ -78,11 +83,64 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  const pinnedSet = React.useMemo(() => new Set(pinnedCommandIds), [pinnedCommandIds]);
 
-  const filteredCommands = commands.filter((c) =>
-    c.name.toLowerCase().includes(query.toLowerCase())
-  );
+  const { pinnedCommandItems, unpinnedCommandItems, orderedCommands } = React.useMemo(() => {
+    const q = query.toLowerCase();
+    const matchesQuery = (c: CommandItem) => !q || c.name.toLowerCase().includes(q);
+
+    const byId = new Map<string, CommandItem>();
+    for (const c of commands) {
+      if (!byId.has(c.id)) {
+        byId.set(c.id, c);
+      }
+    }
+
+    const catalogById = new Map(HOTKEY_CATALOG.map((c) => [c.id, c]));
+
+    const pinned: CommandItem[] = [];
+    const seenIds = new Set<string>();
+
+    for (const pinnedId of pinnedCommandIds) {
+      if (seenIds.has(pinnedId)) continue;
+      let resolved = byId.get(pinnedId);
+      if (!resolved) {
+        const hc = catalogById.get(pinnedId);
+        if (hc) {
+          resolved = {
+            id: hc.id,
+            name: isEs ? hc.nameEs : hc.nameEn,
+            shortcut: hc.defaultHotkeys[0],
+            icon: <Command size={15} />,
+            action: () => {},
+          };
+        }
+      }
+      if (resolved) {
+        seenIds.add(pinnedId);
+        if (matchesQuery(resolved)) {
+          pinned.push(resolved);
+        }
+      }
+    }
+
+    const unpinned: CommandItem[] = [];
+    for (const c of commands) {
+      if (pinnedSet.has(c.id) || seenIds.has(c.id)) continue;
+      seenIds.add(c.id);
+      if (matchesQuery(c)) {
+        unpinned.push(c);
+      }
+    }
+
+    return {
+      pinnedCommandItems: pinned,
+      unpinnedCommandItems: unpinned,
+      orderedCommands: [...pinned, ...unpinned],
+    };
+  }, [commands, pinnedCommandIds, pinnedSet, query, isEs]);
+
+  if (!isOpen) return null;
 
   const filteredFiles = allFiles.filter(
     (f) =>
@@ -90,7 +148,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       f.path.toLowerCase().includes(query.toLowerCase())
   );
 
-  const items = mode === 'commands' ? filteredCommands : filteredFiles;
+  const items = mode === 'commands' ? orderedCommands : filteredFiles;
 
   // "Press {key} to create this note": the key is rendered as a styled element, so the
   // translated sentence is split around the placeholder instead of concatenating fragments.
