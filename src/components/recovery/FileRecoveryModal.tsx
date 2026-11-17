@@ -180,6 +180,18 @@ export const FileRecoveryModal: React.FC<FileRecoveryModalProps> = ({ isOpen, on
 
   if (!isOpen) return null;
 
+  const selectedFileGroup =
+    filteredFiles.find((f) => isSamePath(f.path, selectedPath)) ||
+    filteredFiles[0] ||
+    null;
+
+  const snapshots = selectedFileGroup?.snapshots || [];
+  const selectedSnapshotIndex = Math.max(
+    0,
+    snapshots.findIndex((s) => s.id === selectedSnapshotId)
+  );
+  const selectedSnapshot = snapshots[selectedSnapshotIndex] || snapshots[0] || null;
+
   return (
     <div
       className="file-recovery-modal-backdrop"
@@ -204,6 +216,97 @@ export const FileRecoveryModal: React.FC<FileRecoveryModalProps> = ({ isOpen, on
             <X size={16} />
           </button>
         </div>
+
+        {/* Search Bar */}
+        <div className="file-recovery-search-bar">
+          <Search size={15} className="file-recovery-search-icon" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t('fileRecoveryModal.searchPlaceholder')}
+            className="file-recovery-search-input"
+          />
+          {query && (
+            <button
+              type="button"
+              className="clickable-icon file-recovery-clear-btn"
+              aria-label={t('common.close')}
+              onClick={() => {
+                setQuery('');
+                searchInputRef.current?.focus();
+              }}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {filesWithSnapshots.length === 0 ? (
+          <div className="file-recovery-empty-state">
+            <Clock size={28} />
+            <p>{t('fileRecoveryModal.noSnapshots')}</p>
+          </div>
+        ) : filteredFiles.length === 0 ? (
+          <div className="file-recovery-empty-state">
+            <p>{t('fileRecoveryModal.noMatchingFiles')}</p>
+          </div>
+        ) : (
+          <>
+            {/* Filtered File Selector List */}
+            <div className="file-recovery-file-chips" role="listbox" aria-label={t('fileRecoveryModal.title')}>
+              {filteredFiles.map((file) => {
+                const isActiveFile = selectedFileGroup && isSamePath(file.path, selectedFileGroup.path);
+                return (
+                  <button
+                    key={file.path}
+                    type="button"
+                    role="option"
+                    aria-selected={Boolean(isActiveFile)}
+                    className={`file-recovery-file-chip${isActiveFile ? ' is-selected' : ''}`}
+                    title={file.relPath}
+                    onClick={() => {
+                      setSelectedPath(file.path);
+                      setSelectedSnapshotId(file.snapshots[0]?.id || '');
+                    }}
+                  >
+                    <span className="file-recovery-file-chip-path">{file.relPath}</span>
+                    <span className="file-recovery-file-chip-count">{file.snapshots.length}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Bottom Split View: Chronological Snapshots (Left) + Content / Diff (Right) */}
+            <div className="file-recovery-body">
+              <div className="file-recovery-snapshots-sidebar">
+                <div className="file-recovery-sidebar-header">
+                  {t('fileRecoveryModal.snapshotsCount', { count: snapshots.length })}
+                </div>
+                <div className="file-recovery-snapshots-list">
+                  {snapshots.map((snap) => {
+                    const isSelected = selectedSnapshot?.id === snap.id;
+                    return (
+                      <button
+                        key={snap.id}
+                        type="button"
+                        className={`file-recovery-snapshot-item${isSelected ? ' is-selected' : ''}`}
+                        onClick={() => setSelectedSnapshotId(snap.id)}
+                      >
+                        <Clock size={13} className="file-recovery-snapshot-icon" />
+                        <span className="file-recovery-snapshot-time">
+                          {formatSnapshotTimestamp(snap.timestamp, locale)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
