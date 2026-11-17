@@ -2153,7 +2153,8 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
         {
           id: 'command-palette-pinned-info',
           name: t('commandPalette.pinned'),
-          desc: `${t('commandPalette.pinnedDesc')} ${t('commandPalette.none')}`,
+          desc: `${t('commandPalette.pinnedDesc')} ${t('commandPalette.noCommandsFound')}`,
+          aliases: ['pinned', 'fijados', 'fijar', 'command', 'comando', 'ctrl+p'],
         },
       ],
     },
