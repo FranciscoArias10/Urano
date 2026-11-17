@@ -560,6 +560,16 @@ function mergeSettings(raw: unknown): UranoSettings {
     typeof src?.dailyNotesTemplatePath === 'string' ? src.dailyNotesTemplatePath.trim() : '';
   out.dailyNotesOpenOnStartup = Boolean(src?.dailyNotesOpenOnStartup);
 
+  out.pinnedCommands = Array.isArray(src?.pinnedCommands)
+    ? Array.from(
+        new Set(
+          src.pinnedCommands
+            .filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+            .map((id) => id.trim())
+        )
+      )
+    : [];
+
   return out;
 }
 
