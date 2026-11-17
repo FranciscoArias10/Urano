@@ -581,6 +581,20 @@ function mergeSettings(raw: unknown): UranoSettings {
       )
     : [];
 
+  const rawRecoveryInterval = src?.fileRecoveryInterval ?? src?.fileRecoveryIntervalMinutes;
+  out.fileRecoveryInterval =
+    typeof rawRecoveryInterval === 'number' && Number.isFinite(rawRecoveryInterval)
+      ? Math.min(1440, Math.max(1, Math.round(rawRecoveryInterval)))
+      : DEFAULT_SETTINGS.fileRecoveryInterval;
+  out.fileRecoveryIntervalMinutes = out.fileRecoveryInterval;
+
+  const rawRecoveryHistory = src?.fileRecoveryHistoryLength ?? src?.fileRecoveryHistoryDays;
+  out.fileRecoveryHistoryLength =
+    typeof rawRecoveryHistory === 'number' && Number.isFinite(rawRecoveryHistory)
+      ? Math.min(3650, Math.max(1, Math.round(rawRecoveryHistory)))
+      : DEFAULT_SETTINGS.fileRecoveryHistoryLength;
+  out.fileRecoveryHistoryDays = out.fileRecoveryHistoryLength;
+
   return out;
 }
 
