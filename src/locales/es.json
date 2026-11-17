@@ -562,10 +562,21 @@
       "openOnStartupDesc": "Abre la nota de hoy cuando se inicia Urano."
     },
     "fileRecovery": {
-      "interval": "Intervalo de instantáneas",
-      "intervalDesc": "Minutos entre instantáneas de los archivos modificados.",
-      "history": "Duración del historial",
-      "historyDesc": "Días que se conservan las instantáneas."
+      "interval": "Intervalo de captura",
+      "intervalDesc": "Intervalo mínimo en minutos entre dos capturas.",
+      "history": "Longitud del historial",
+      "historyDesc": "Cantidad de días durante los que se guardan las capturas.",
+      "snapshots": "Capturas",
+      "snapshotsDesc": "Ver y recuperar capturas guardadas.",
+      "view": "Ver",
+      "clearHistory": "Limpiar historial",
+      "clearHistoryDesc": "Limpiar todas las capturas.",
+      "clear": "Limpiar",
+      "clearConfirmTitle": "Limpiar historial",
+      "clearConfirmMessage": "¿Estás seguro de que quieres eliminar todas las capturas guardadas? Esta acción no se puede deshacer.",
+      "clearConfirmCancel": "Cancelar",
+      "clearConfirmAccept": "Limpiar",
+      "clearedNotice": "Se han eliminado todas las capturas guardadas."
     },
     "noteComposer": {
       "afterExtract": "Texto después de la extracción",
@@ -917,7 +928,23 @@
       "extract": "Compositor de notas: Extraer selección actual...",
       "extractHeading": "Compositor de notas: Extraer este encabezado...",
       "merge": "Compositor de notas: Combinar todo el archivo con..."
+    },
+    "fileRecovery": {
+      "open": "Recuperación de archivos: Abrir capturas guardadas"
     }
+  },
+  "fileRecoveryModal": {
+    "title": "Recuperación de archivos",
+    "searchPlaceholder": "Escribe el nombre de un archivo para buscar...",
+    "noSnapshots": "No se encontraron capturas guardadas.",
+    "noMatchingFiles": "No se encontraron archivos.",
+    "snapshotsCount": "{count} capturas",
+    "showDiff": "Mostrar diferencias",
+    "copy": "Copiar al portapapeles",
+    "copiedNotice": "Captura copiada al portapapeles.",
+    "restore": "Restaurar",
+    "restoredNotice": "Archivo restaurado desde la captura.",
+    "selectFileHint": "Selecciona un archivo para ver sus capturas."
   },
   "dailyNotes": {
     "notices": {
