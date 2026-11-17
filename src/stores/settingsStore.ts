@@ -168,6 +168,7 @@ export interface UranoSettings {
   canvasSnapToGrid: boolean;
   canvasSnapToObjects: boolean;
   canvasZoomThreshold: number;
+  pinnedCommands: string[];
   dailyNotesFormat: string;
   dailyNotesFolder: string;
   dailyNotesTemplatePath: string;
