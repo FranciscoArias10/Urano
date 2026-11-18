@@ -2,6 +2,7 @@ import React from 'react';
 import { FilePlus, FileText, LayoutDashboard, LayoutList } from 'lucide-react';
 import type { FileItem } from '../../types';
 import { getRelativeVaultPath, isPathExcluded, normalizePath } from '../../utils/pathUtils';
+import { CommandPalette } from './CommandPalette';
 
 export const QUICK_SWITCHER_DOC_EXTENSIONS = new Set([
   'md',
@@ -236,3 +237,29 @@ export const QuickSwitcherItemRow: React.FC<QuickSwitcherItemRowProps> = ({
     </div>
   );
 };
+
+export interface QuickSwitcherProps {
+  isOpen: boolean;
+  fileTree: FileItem[];
+  onClose: () => void;
+  onSelectFile: (filePath: string) => void;
+  onOpenInNewTab?: (filePath: string) => void;
+}
+
+export const QuickSwitcher: React.FC<QuickSwitcherProps> = ({
+  isOpen,
+  fileTree,
+  onClose,
+  onSelectFile,
+  onOpenInNewTab,
+}) => (
+  <CommandPalette
+    isOpen={isOpen}
+    mode="files"
+    fileTree={fileTree}
+    commands={[]}
+    onClose={onClose}
+    onSelectFile={onSelectFile}
+    onOpenInNewTab={onOpenInNewTab}
+  />
+);
