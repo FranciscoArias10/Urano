@@ -13,7 +13,12 @@ import {
   LinkScanResult,
   setAlwaysUpdateLinksPref,
 } from '../services/linkRefactorService';
-import { normalizePath, isSamePath, resolveFilePathInVault } from '../utils/pathUtils';
+import {
+  normalizePath,
+  isSamePath,
+  resolveFilePathInVault,
+  getRelativeVaultPath,
+} from '../utils/pathUtils';
 import { useLocaleStore } from './localeStore';
 import {
   formatDailyNoteDate,
@@ -55,6 +60,84 @@ export function flattenVaultFiles(items: FileItem[]): FileItem[] {
   };
   walk(items);
   return result;
+}
+
+const ATTACHMENT_TARGET_EXT_RE =
+  /\.(png|jpe?g|gif|svg|webp|avif|bmp|ico|mp4|webm|ogv|mp3|wav|ogg|m4a|pdf)$/i;
+
+/**
+ * Extracts deduplicated internal `[[Target]]` wikilink targets across vault notes
+ * that do not correspond to any existing file in `files`.
+ */
+export function extractUnresolvedWikilinks(
+  notesContentMap: Record<string, string>,
+  files: FileItem[],
+  vaultPath: string | null,
+  activeFile?: string | null,
+  activeContent?: string
+): string[] {
+  const existingKeys = new Set<string>();
+  const cleanVault = vaultPath ? normalizePath(vaultPath) : '';
+
+  for (const file of files) {
+    if (file.isDir) continue;
+    const lowerName = file.name.toLowerCase();
+    existingKeys.add(lowerName);
+    existingKeys.add(lowerName.replace(/\.(md|markdown)$/i, ''));
+
+    const rel = cleanVault
+      ? getRelativeVaultPath(file.path, cleanVault)
+      : normalizePath(file.path);
+    const lowerRel = rel.toLowerCase();
+    existingKeys.add(lowerRel);
+    existingKeys.add(lowerRel.replace(/\.(md|markdown)$/i, ''));
+  }
+
+  const contentsByPath = new Map<string, string>();
+  for (const [notePath, noteContent] of Object.entries(notesContentMap)) {
+    contentsByPath.set(normalizePath(notePath), noteContent);
+  }
+  if (activeFile && activeContent !== undefined) {
+    const normActive = normalizePath(activeFile);
+    let matchedKey: string | null = null;
+    for (const k of contentsByPath.keys()) {
+      if (isSamePath(k, normActive)) {
+        matchedKey = k;
+        break;
+      }
+    }
+    contentsByPath.set(matchedKey || normActive, activeContent);
+  }
+
+  const unresolved: string[] = [];
+  const seenTargets = new Set<string>();
+  const wikiRegex = /(?<!!)\[\[([^\]|#\r\n]+)(?:#[^\]|\r\n]*)?(?:\|[^\]\r\n]*)?\]\]/g;
+
+  for (const content of contentsByPath.values()) {
+    if (!content) continue;
+    const sanitized = content.replace(/```[\s\S]*?```/g, '');
+    wikiRegex.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = wikiRegex.exec(sanitized)) !== null) {
+      const rawTarget = match[1].trim().replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
+      if (!rawTarget) continue;
+      if (/^https?:\/\//i.test(rawTarget)) continue;
+      if (ATTACHMENT_TARGET_EXT_RE.test(rawTarget)) continue;
+
+      const normalizedKey = rawTarget.replace(/\.(md|markdown)$/i, '').toLowerCase();
+      if (!normalizedKey) continue;
+      if (existingKeys.has(normalizedKey) || existingKeys.has(rawTarget.toLowerCase())) {
+        continue;
+      }
+
+      if (!seenTargets.has(normalizedKey)) {
+        seenTargets.add(normalizedKey);
+        unresolved.push(rawTarget.replace(/\.(md|markdown)$/i, ''));
+      }
+    }
+  }
+
+  return unresolved.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 }
 
 function resolveDailyNoteTarget(
