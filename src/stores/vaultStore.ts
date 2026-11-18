@@ -444,6 +444,13 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       const detectAll = settings.detectAllFileExtensions;
       const configDir = settings.configFolderOverride || '.urano';
       const tree = await invoke<FileItem[]>('open_vault', { vaultPath, detectAll, configDir });
+      const allTree = detectAll
+        ? tree
+        : await invoke<FileItem[]>('list_vault_files', {
+            vaultPath,
+            detectAll: true,
+            configDir,
+          }).catch(() => tree);
       const parts = vaultPath.replace(/\\/g, '/').split('/');
       const vaultName = parts[parts.length - 1] || t('vault.defaultVaultName');
 
@@ -453,6 +460,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         activeVault: vaultPath,
         vaultName,
         fileTree: sortFileTree(tree, get().sortOrder),
+        files: flattenVaultFiles(allTree),
         activeFile: null,
         activeFileName: null,
         fileContent: '',
@@ -506,7 +514,17 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       const detectAll = settings.detectAllFileExtensions;
       const configDir = settings.configFolderOverride || '.urano';
       const tree = await invoke<FileItem[]>('list_vault_files', { vaultPath: activeVault, detectAll, configDir });
-      set({ fileTree: sortFileTree(tree, sortOrder) });
+      const allTree = detectAll
+        ? tree
+        : await invoke<FileItem[]>('list_vault_files', {
+            vaultPath: activeVault,
+            detectAll: true,
+            configDir,
+          }).catch(() => tree);
+      set({
+        fileTree: sortFileTree(tree, sortOrder),
+        files: flattenVaultFiles(allTree),
+      });
       get().loadAllNotesContent();
     } catch (err) {
       console.error('Error al refrescar árbol:', err);
