@@ -595,6 +595,15 @@ function mergeSettings(raw: unknown): UranoSettings {
       : DEFAULT_SETTINGS.fileRecoveryHistoryLength;
   out.fileRecoveryHistoryDays = out.fileRecoveryHistoryLength;
 
+  out.quickSwitcherShowExistingOnly =
+    src?.quickSwitcherShowExistingOnly !== undefined
+      ? Boolean(src.quickSwitcherShowExistingOnly)
+      : DEFAULT_SETTINGS.quickSwitcherShowExistingOnly;
+  out.quickSwitcherShowAttachments =
+    src?.quickSwitcherShowAttachments !== undefined
+      ? Boolean(src.quickSwitcherShowAttachments)
+      : DEFAULT_SETTINGS.quickSwitcherShowAttachments;
+
   return out;
 }
 
