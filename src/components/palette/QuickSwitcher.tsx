@@ -1,3 +1,5 @@
+import React from 'react';
+import { FilePlus, FileText, LayoutDashboard, LayoutList } from 'lucide-react';
 import type { FileItem } from '../../types';
 import { getRelativeVaultPath, isPathExcluded, normalizePath } from '../../utils/pathUtils';
 
@@ -153,3 +155,84 @@ export function buildQuickSwitcherEntries({
 
   return [...matchedExisting, ...unresolvedEntries];
 }
+
+export interface QuickSwitcherItemRowProps {
+  entry: QuickSwitcherEntry;
+  isSelected: boolean;
+  unresolvedHint?: string;
+  onSelect: () => void;
+  onHover: () => void;
+}
+
+export const QuickSwitcherItemRow: React.FC<QuickSwitcherItemRowProps> = ({
+  entry,
+  isSelected,
+  unresolvedHint,
+  onSelect,
+  onHover,
+}) => {
+  const isSubfolder = entry.relPath.includes('/');
+  const isMarkdown = entry.ext === 'md' || entry.ext === 'markdown';
+  const displayName = entry.isUnresolved
+    ? entry.basename
+    : isMarkdown
+      ? (isSubfolder
+          ? entry.relPath.split('/').pop()?.replace(/\.(md|markdown)$/i, '') || entry.basename
+          : entry.relPath.replace(/\.(md|markdown)$/i, '') || entry.basename)
+      : entry.name;
+
+  return (
+    <div
+      onClick={onSelect}
+      onMouseEnter={onHover}
+      className={`suggestion-item flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors ${
+        isSelected ? 'is-selected' : 'text-urano-text hover:bg-[var(--interactive-hover)]'
+      }${entry.isUnresolved ? ' quick-switcher-item-unresolved' : ''}`}
+    >
+      <div className="flex items-center gap-2.5 min-w-0">
+        {entry.isUnresolved ? (
+          <FilePlus size={14} className="quick-switcher-unresolved-icon shrink-0" />
+        ) : entry.ext === 'canvas' ? (
+          <LayoutDashboard size={14} className="text-urano-muted shrink-0" />
+        ) : entry.ext === 'base' ? (
+          <LayoutList size={14} className="text-urano-muted shrink-0" />
+        ) : (
+          <FileText size={14} className="text-urano-muted shrink-0" />
+        )}
+        <span className="font-medium truncate">{displayName}</span>
+      </div>
+
+      <div className="quick-switcher-item-right">
+        {isSubfolder && (
+          <span className="text-[10px] text-urano-faint truncate max-w-[220px] font-mono">
+            {entry.relPath}
+          </span>
+        )}
+        {entry.isUnresolved && unresolvedHint && (
+          <span className="text-[10px] text-urano-faint">{unresolvedHint}</span>
+        )}
+        {!entry.isUnresolved && entry.ext === 'canvas' && (
+          <span className="nav-file-tag quick-switcher-ext-badge">CANVAS</span>
+        )}
+        {!entry.isUnresolved && entry.ext === 'base' && (
+          <span className="nav-file-tag quick-switcher-ext-badge">BASE</span>
+        )}
+        {!entry.isUnresolved && entry.isAttachment && entry.ext && (
+          <span className="nav-file-tag quick-switcher-ext-badge uppercase">
+            {entry.ext.toUpperCase()}
+          </span>
+        )}
+        {!entry.isUnresolved &&
+          !isMarkdown &&
+          entry.ext !== 'canvas' &&
+          entry.ext !== 'base' &&
+          !entry.isAttachment &&
+          entry.ext && (
+            <span className="nav-file-tag quick-switcher-ext-badge uppercase">
+              {entry.ext.toUpperCase()}
+            </span>
+          )}
+      </div>
+    </div>
+  );
+};
