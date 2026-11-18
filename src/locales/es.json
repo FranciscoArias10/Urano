@@ -601,10 +601,10 @@
       "requireCtrlDesc": "Muestra la vista previa solo mientras se mantiene Ctrl."
     },
     "quickSwitcher": {
+      "showExisting": "Mostrar solo archivos existentes",
+      "showExistingDesc": "Decida si mostrar o no los enlaces a archivos que no han sido creados aún.",
       "showAttachments": "Mostrar adjuntos",
-      "showAttachmentsDesc": "Muestra imágenes y otros adjuntos en el selector rápido.",
-      "showExisting": "Mostrar solo existentes",
-      "showExistingDesc": "Muestra solo archivos que existen en la bóveda."
+      "showAttachmentsDesc": "Mostrar archivos adjuntos como imágenes, videos y PDFs."
     },
     "templates": {
       "folder": "Ubicación de la carpeta de plantillas",
