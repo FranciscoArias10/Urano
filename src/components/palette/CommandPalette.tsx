@@ -1,12 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Command, FileText, LayoutDashboard, LayoutList, Pin } from 'lucide-react';
 import { FileItem } from '../../types';
-import { useVaultStore, flattenVaultFiles } from '../../stores/vaultStore';
+import {
+  useVaultStore,
+  flattenVaultFiles,
+  extractUnresolvedWikilinks,
+} from '../../stores/vaultStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useT, useLocaleStore } from '../../stores/localeStore';
 import { HOTKEY_CATALOG, getActiveHotkeys } from '../../services/hotkeyRegistry';
 import { getRelativeVaultPath } from '../../utils/pathUtils';
-import { buildQuickSwitcherFileEntries } from './QuickSwitcher';
+import {
+  buildQuickSwitcherFileEntries,
+  buildQuickSwitcherEntries,
+} from './QuickSwitcher';
 
 export interface CommandItem {
   id: string;
@@ -40,10 +47,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  const { activeVault, createNote, files } = useVaultStore();
+  const { activeVault, createNote, files, notesContentMap, activeFile, fileContent } =
+    useVaultStore();
 
   const userIgnoreFilters = useSettingsStore((s) => s.settings.userIgnoreFilters) || [];
   const showAttachments = useSettingsStore((s) => s.settings.quickSwitcherShowAttachments);
+  const showExistingOnly = useSettingsStore((s) => s.settings.quickSwitcherShowExistingOnly);
   const pinnedCommandIds = useSettingsStore((s) => s.settings.pinnedCommands) || [];
   const customHotkeys = useSettingsStore((s) => s.settings.hotkeys) || {};
   const currentLang =
@@ -132,13 +141,25 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     };
   }, [commands, pinnedCommandIds, pinnedSet, query, isEs]);
 
+  const unresolvedLinks = React.useMemo(() => {
+    if (!isOpen || mode !== 'files' || showExistingOnly) return [];
+    return extractUnresolvedWikilinks(
+      notesContentMap,
+      sourceFiles,
+      activeVault || null,
+      activeFile,
+      fileContent
+    );
+  }, [isOpen, mode, showExistingOnly, notesContentMap, sourceFiles, activeVault, activeFile, fileContent]);
+
   if (!isOpen) return null;
 
-  const filteredFiles = allFiles.filter(
-    (f) =>
-      f.basename.toLowerCase().includes(query.toLowerCase()) ||
-      f.path.toLowerCase().includes(query.toLowerCase())
-  );
+  const filteredFiles = buildQuickSwitcherEntries({
+    fileEntries: allFiles,
+    unresolvedLinks,
+    showExistingOnly,
+    query,
+  });
 
   const items = mode === 'commands' ? orderedCommands : filteredFiles;
 
