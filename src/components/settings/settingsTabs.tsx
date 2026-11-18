@@ -2424,16 +2424,30 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
       id: 'switcher-options',
       items: [
         {
-          id: 'switcher-attachments',
-          name: t('quickSwitcher.showAttachments'),
-          desc: t('quickSwitcher.showAttachmentsDesc'),
-          control: <Toggle value={settings.quickSwitcherShowAttachments} onChange={set('quickSwitcherShowAttachments')} ariaLabel={t('quickSwitcher.showAttachments')} />,
-        },
-        {
           id: 'switcher-existing',
           name: t('quickSwitcher.showExisting'),
           desc: t('quickSwitcher.showExistingDesc'),
-          control: <Toggle value={settings.quickSwitcherShowExistingOnly} onChange={set('quickSwitcherShowExistingOnly')} ariaLabel={t('quickSwitcher.showExisting')} />,
+          aliases: ['existing', 'existentes', 'unresolved', 'links', 'enlaces'],
+          control: (
+            <Toggle
+              value={settings.quickSwitcherShowExistingOnly}
+              onChange={set('quickSwitcherShowExistingOnly')}
+              ariaLabel={t('quickSwitcher.showExisting')}
+            />
+          ),
+        },
+        {
+          id: 'switcher-attachments',
+          name: t('quickSwitcher.showAttachments'),
+          desc: t('quickSwitcher.showAttachmentsDesc'),
+          aliases: ['attachments', 'adjuntos', 'images', 'videos', 'pdf'],
+          control: (
+            <Toggle
+              value={settings.quickSwitcherShowAttachments}
+              onChange={set('quickSwitcherShowAttachments')}
+              ariaLabel={t('quickSwitcher.showAttachments')}
+            />
+          ),
         },
       ],
     },
