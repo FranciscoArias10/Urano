@@ -879,7 +879,8 @@
     "toCreate": "para crear",
     "toDismiss": "para cerrar",
     "pinned": "Fijado",
-    "selectCommandToPin": "Selecciona un comando para fijar..."
+    "selectCommandToPin": "Selecciona un comando para fijar...",
+    "createUnresolvedHint": "Crear nota"
   },
   "commands": {
     "fileExplorer": {
