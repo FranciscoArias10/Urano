@@ -4365,4 +4365,29 @@ button.mod-cta-secondary:hover {
   margin-top: 6px;
 }
 
+/* ========================================================
+   Quick Switcher Unresolved Links & Attachment Badges (Ctrl + O)
+   ======================================================== */
+.quick-switcher-unresolved-icon {
+  color: var(--text-muted);
+  opacity: 0.45;
+  flex-shrink: 0;
+}
+
+.quick-switcher-item-unresolved {
+  color: var(--text-muted);
+}
+
+.quick-switcher-item-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.quick-switcher-ext-badge {
+  flex-shrink: 0;
+}
+
 
