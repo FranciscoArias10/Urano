@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Command, FileText, LayoutDashboard, LayoutList, Pin } from 'lucide-react';
+import { Search, Command, Pin } from 'lucide-react';
 import { FileItem } from '../../types';
 import {
   useVaultStore,
@@ -9,10 +9,10 @@ import {
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useT, useLocaleStore } from '../../stores/localeStore';
 import { HOTKEY_CATALOG, getActiveHotkeys } from '../../services/hotkeyRegistry';
-import { getRelativeVaultPath } from '../../utils/pathUtils';
 import {
   buildQuickSwitcherFileEntries,
   buildQuickSwitcherEntries,
+  QuickSwitcherItemRow,
   type QuickSwitcherEntry,
 } from './QuickSwitcher';
 
@@ -370,61 +370,19 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               );
             })
           ) : (
-            (items as typeof allFiles).map((file, i) => {
-              const isSelected = i === selectedIndex;
-              const rel = getRelativeVaultPath(file.path, activeVault || '');
-              const isSubfolder = rel.includes('/');
-              const isMarkdown = file.ext === 'md' || file.ext === 'markdown';
-              const displayName = isMarkdown
-                ? (isSubfolder ? rel.split('/').pop()?.replace(/\.(md|markdown)$/i, '') || file.basename : rel?.replace(/\.(md|markdown)$/i, '') || file.basename)
-                : file.name;
-
-              return (
-                <div
-                  key={file.key}
-                  onClick={async () => {
-                    await handleSelectSwitcherEntry(file, false);
-                    onClose();
-                  }}
-                  className={`suggestion-item flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors ${
-                    isSelected
-                      ? 'is-selected'
-                      : 'text-urano-text hover:bg-[var(--interactive-hover)]'
-                  }`}
-                  onMouseEnter={() => setSelectedIndex(i)}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    {file.ext === 'canvas' ? (
-                      <LayoutDashboard
-                        size={14}
-                        className="text-urano-muted shrink-0"
-                      />
-                    ) : file.ext === 'base' ? (
-                      <LayoutList
-                        size={14}
-                        className="text-urano-muted shrink-0"
-                      />
-                    ) : (
-                      <FileText
-                        size={14}
-                        className="text-urano-muted shrink-0"
-                      />
-                    )}
-                    <span className="font-medium truncate">{displayName}</span>
-                    {file.ext === 'canvas' && <span className="nav-file-tag">CANVAS</span>}
-                    {file.ext === 'base' && <span className="nav-file-tag">BASE</span>}
-                    {!isMarkdown && file.ext !== 'canvas' && file.ext !== 'base' && file.ext && (
-                      <span className="nav-file-tag uppercase">{file.ext}</span>
-                    )}
-                  </div>
-                  {isSubfolder && (
-                    <span className="text-[10px] text-urano-faint truncate max-w-[240px] ml-2 font-mono">
-                      {rel}
-                    </span>
-                  )}
-                </div>
-              );
-            })
+            (items as QuickSwitcherEntry[]).map((file, i) => (
+              <QuickSwitcherItemRow
+                key={file.key}
+                entry={file}
+                isSelected={i === selectedIndex}
+                unresolvedHint={t('commandPalette.createUnresolvedHint')}
+                onHover={() => setSelectedIndex(i)}
+                onSelect={async () => {
+                  await handleSelectSwitcherEntry(file, false);
+                  onClose();
+                }}
+              />
+            ))
           )}
         </div>
 
