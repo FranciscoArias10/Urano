@@ -359,7 +359,8 @@ interface VaultState {
   createFolder: (parentPath: string, name: string) => Promise<void>;
   deleteItem: (path: string) => Promise<void>;
   renameItem: (oldPath: string, newPath: string) => Promise<void>;
-  openOrCreateWikilink: (noteName: string) => Promise<void>;
+  openOrCreateWikilink: (noteName: string) => Promise<string>;
+  getUnresolvedLinks: () => string[];
   loadAllNotesContent: () => Promise<void>;
   rebuildVaultCache: () => Promise<void>;
   closeActiveFile: () => void;
@@ -1408,9 +1409,9 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     triggerAutoSync(get().activeVault, get().vaultName);
   },
 
-  openOrCreateWikilink: async (noteName: string) => {
+  openOrCreateWikilink: async (noteName: string): Promise<string> => {
     const { activeVault, fileTree, selectFile, createNote } = get();
-    if (!activeVault) return;
+    if (!activeVault) return '';
 
     const findNote = (items: FileItem[]): string | null => {
       for (const item of items) {
@@ -1433,6 +1434,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     const existingPath = findNote(fileTree);
     if (existingPath) {
       await selectFile(existingPath);
+      return existingPath;
     } else {
       const isBase = noteName.toLowerCase().endsWith('.base');
       const isCanvas = noteName.toLowerCase().endsWith('.canvas');
@@ -1441,7 +1443,20 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         : `${noteName}.md`;
       const newPath = await createNote(activeVault, fileName);
       await selectFile(newPath);
+      return newPath;
     }
+  },
+
+  getUnresolvedLinks: () => {
+    const { notesContentMap, files, fileTree, activeVault, activeFile, fileContent } = get();
+    const sourceFiles = files.length > 0 ? files : flattenVaultFiles(fileTree);
+    return extractUnresolvedWikilinks(
+      notesContentMap,
+      sourceFiles,
+      activeVault,
+      activeFile,
+      fileContent
+    );
   },
 
   loadAllNotesContent: async () => {
