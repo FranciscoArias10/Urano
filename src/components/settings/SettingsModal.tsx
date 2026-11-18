@@ -11,7 +11,7 @@ import {
   SettingItemDef,
   SettingsSection,
 } from './settingsTabs';
-import { SettingGroup, SettingItem, SearchClearButton } from './SettingControls';
+import { SettingGroup, SettingItem, SearchClearButton, Toggle } from './SettingControls';
 import { useVaultStore } from '../../stores/vaultStore';
 import { CssSnippetsModal } from './appearance/CssSnippetsModal';
 import { CommunityThemesModal } from './appearance/CommunityThemesModal';
@@ -122,6 +122,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const unpinCommand = useSettingsStore((s) => s.unpinCommand);
   const movePinnedCommand = useSettingsStore((s) => s.movePinnedCommand);
   const clearAllSnapshots = useSettingsStore((s) => s.clearAllSnapshots);
+  const quickSwitcherShowExistingOnly = useSettingsStore(
+    (s) => s.settings.quickSwitcherShowExistingOnly
+  );
+  const quickSwitcherShowAttachments = useSettingsStore(
+    (s) => s.settings.quickSwitcherShowAttachments
+  );
+  const setSetting = useSettingsStore((s) => s.setSetting);
   const showNotice = useNoticeStore((s) => s.showNotice);
   const currentLang =
     useLocaleStore((s) => s.locale) || useSettingsStore((s) => s.settings.language) || 'es';
@@ -664,6 +671,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                     </div>
                   </div>
+                ) : activeTab.id === 'switcher' ? (
+                  <SettingGroup id="switcher-options">
+                    <SettingItem
+                      id="setting-switcher-existing"
+                      name={t('quickSwitcher.showExisting')}
+                      desc={t('quickSwitcher.showExistingDesc')}
+                    >
+                      <Toggle
+                        value={quickSwitcherShowExistingOnly}
+                        onChange={(val) => setSetting('quickSwitcherShowExistingOnly', val)}
+                        ariaLabel={t('quickSwitcher.showExisting')}
+                      />
+                    </SettingItem>
+                    <SettingItem
+                      id="setting-switcher-attachments"
+                      name={t('quickSwitcher.showAttachments')}
+                      desc={t('quickSwitcher.showAttachmentsDesc')}
+                    >
+                      <Toggle
+                        value={quickSwitcherShowAttachments}
+                        onChange={(val) => setSetting('quickSwitcherShowAttachments', val)}
+                        ariaLabel={t('quickSwitcher.showAttachments')}
+                      />
+                    </SettingItem>
+                  </SettingGroup>
                 ) : (
                   activeTab.groups.map((g) => renderGroup(g))
                 )}
