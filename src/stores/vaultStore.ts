@@ -40,6 +40,23 @@ function findFileInTreeByPath(items: FileItem[], targetPath: string): string | n
   return null;
 }
 
+/** Recursively collects all non-directory files from a vault `FileItem[]` tree. */
+export function flattenVaultFiles(items: FileItem[]): FileItem[] {
+  const result: FileItem[] = [];
+  const walk = (nodes: FileItem[]) => {
+    for (const item of nodes) {
+      if (!item.isDir) {
+        result.push(item);
+      }
+      if (item.children?.length) {
+        walk(item.children);
+      }
+    }
+  };
+  walk(items);
+  return result;
+}
+
 function resolveDailyNoteTarget(
   vaultRoot: string,
   folderSetting: string,
@@ -200,6 +217,7 @@ interface VaultState {
   activeFileName: string | null;
   fileContent: string;
   fileTree: FileItem[];
+  files: FileItem[];
   isDirty: boolean;
   isLoading: boolean;
   notesContentMap: Record<string, string>; // path -> content for graph & backlinks
@@ -314,6 +332,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   activeFileName: null,
   fileContent: '',
   fileTree: [],
+  files: [],
   isDirty: false,
   isLoading: false,
   notesContentMap: {},
