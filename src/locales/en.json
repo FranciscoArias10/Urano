@@ -601,10 +601,10 @@
       "requireCtrlDesc": "Only show the page preview while holding Ctrl."
     },
     "quickSwitcher": {
-      "showAttachments": "Show attachments",
-      "showAttachmentsDesc": "Show images and other attachments in the quick switcher.",
       "showExisting": "Show existing only",
-      "showExistingDesc": "Only show files that exist in the vault."
+      "showExistingDesc": "Choose whether to show links to files that have not been created yet.",
+      "showAttachments": "Show attachments",
+      "showAttachmentsDesc": "Show attachment files such as images, videos, and PDFs."
     },
     "templates": {
       "folder": "Template folder location",
