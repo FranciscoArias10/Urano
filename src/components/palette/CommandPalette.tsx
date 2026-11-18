@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Command, FileText, LayoutDashboard, LayoutList, Pin } from 'lucide-react';
 import { FileItem } from '../../types';
-import { useVaultStore } from '../../stores/vaultStore';
+import { useVaultStore, flattenVaultFiles } from '../../stores/vaultStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useT, useLocaleStore } from '../../stores/localeStore';
 import { HOTKEY_CATALOG, getActiveHotkeys } from '../../services/hotkeyRegistry';
-import { getRelativeVaultPath, isPathExcluded } from '../../utils/pathUtils';
+import { getRelativeVaultPath } from '../../utils/pathUtils';
+import { buildQuickSwitcherFileEntries } from './QuickSwitcher';
 
 export interface CommandItem {
   id: string;
@@ -39,42 +40,32 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  const { activeVault, createNote } = useVaultStore();
+  const { activeVault, createNote, files } = useVaultStore();
 
   const userIgnoreFilters = useSettingsStore((s) => s.settings.userIgnoreFilters) || [];
+  const showAttachments = useSettingsStore((s) => s.settings.quickSwitcherShowAttachments);
   const pinnedCommandIds = useSettingsStore((s) => s.settings.pinnedCommands) || [];
   const customHotkeys = useSettingsStore((s) => s.settings.hotkeys) || {};
   const currentLang =
     useLocaleStore((s) => s.locale) || useSettingsStore((s) => s.settings.language) || 'es';
   const isEs = currentLang.toLowerCase().startsWith('es');
 
-  // Flatten all files from fileTree (respecting excluded files)
-  const allFiles = React.useMemo(() => {
-    const list: { name: string; path: string; basename: string; ext: string }[] = [];
-    const traverse = (items: FileItem[]) => {
-      for (const item of items) {
-        if (!item.isDir) {
-          if (isPathExcluded(item.path, userIgnoreFilters)) {
-            continue;
-          }
-          const lastDot = item.name.lastIndexOf('.');
-          const ext = lastDot > 0 ? item.name.substring(lastDot + 1).toLowerCase() : '';
-          const basename = lastDot > 0 ? item.name.substring(0, lastDot) : item.name;
-          list.push({
-            name: item.name,
-            path: item.path,
-            basename,
-            ext,
-          });
-        }
-        if (item.children) {
-          traverse(item.children);
-        }
-      }
-    };
-    traverse(fileTree);
-    return list;
-  }, [fileTree, userIgnoreFilters]);
+  const sourceFiles = React.useMemo(
+    () => (files.length > 0 ? files : flattenVaultFiles(fileTree)),
+    [files, fileTree]
+  );
+
+  // Flatten and filter vault documents + attachments (respecting quickSwitcherShowAttachments)
+  const allFiles = React.useMemo(
+    () =>
+      buildQuickSwitcherFileEntries({
+        files: sourceFiles,
+        vaultPath: activeVault || '',
+        userIgnoreFilters,
+        showAttachments,
+      }),
+    [sourceFiles, activeVault, userIgnoreFilters, showAttachments]
+  );
 
   useEffect(() => {
     if (isOpen) {
