@@ -13,6 +13,7 @@ import { getRelativeVaultPath } from '../../utils/pathUtils';
 import {
   buildQuickSwitcherFileEntries,
   buildQuickSwitcherEntries,
+  type QuickSwitcherEntry,
 } from './QuickSwitcher';
 
 export interface CommandItem {
@@ -167,6 +168,35 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   // translated sentence is split around the placeholder instead of concatenating fragments.
   const [createHintBefore, createHintAfter] = t('commandPalette.pressToCreate').split('{key}');
 
+  const handleSelectSwitcherEntry = async (
+    entry: QuickSwitcherEntry,
+    openInNewTab = false
+  ) => {
+    if (entry.isUnresolved) {
+      if (!activeVault) return;
+      const raw = entry.path.replace(/\\/g, '/').replace(/^\/+/, '');
+      const hasFolder = raw.includes('/');
+      const cleanRoot = activeVault.replace(/[\\/]+$/, '');
+      const parentDir = hasFolder
+        ? `${cleanRoot}/${raw.slice(0, raw.lastIndexOf('/'))}`
+        : activeVault;
+      const baseName = hasFolder ? raw.slice(raw.lastIndexOf('/') + 1) : raw;
+      const cleanTitle = baseName.toLowerCase().endsWith('.md') ? baseName : `${baseName}.md`;
+      const newPath = await createNote(parentDir, cleanTitle);
+      if (newPath) {
+        if (openInNewTab && onOpenInNewTab) onOpenInNewTab(newPath);
+        else onSelectFile(newPath);
+      }
+      return;
+    }
+
+    if (openInNewTab && onOpenInNewTab) {
+      onOpenInNewTab(entry.path);
+    } else {
+      onSelectFile(entry.path);
+    }
+  };
+
   const handleKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       onClose();
@@ -205,9 +235,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         if (mode === 'commands') {
           (items[selectedIndex] as CommandItem).action();
         } else {
-          const target = items[selectedIndex] as (typeof allFiles)[0];
-          if (onOpenInNewTab) onOpenInNewTab(target.path);
-          else onSelectFile(target.path);
+          await handleSelectSwitcherEntry(items[selectedIndex] as QuickSwitcherEntry, true);
         }
         onClose();
         return;
@@ -221,7 +249,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         if (mode === 'commands') {
           (items[selectedIndex] as CommandItem).action();
         } else {
-          onSelectFile((items[selectedIndex] as (typeof allFiles)[0]).path);
+          await handleSelectSwitcherEntry(items[selectedIndex] as QuickSwitcherEntry, false);
         }
         onClose();
       } else if (mode === 'files' && query.trim() && activeVault) {
@@ -353,9 +381,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
               return (
                 <div
-                  key={file.path}
-                  onClick={() => {
-                    onSelectFile(file.path);
+                  key={file.key}
+                  onClick={async () => {
+                    await handleSelectSwitcherEntry(file, false);
                     onClose();
                   }}
                   className={`suggestion-item flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors ${
