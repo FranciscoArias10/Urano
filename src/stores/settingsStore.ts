@@ -328,7 +328,7 @@ export const DEFAULT_SETTINGS: UranoSettings = {
   noteComposerTemplatePath: '',
   noteComposerConfirmMerge: true,
   pagePreviewRequireCtrl: false,
-  quickSwitcherShowAttachments: false,
+  quickSwitcherShowAttachments: true,
   quickSwitcherShowExistingOnly: false,
   templatesFolder: 'Templates',
   templatesDateFormat: 'YYYY-MM-DD',
