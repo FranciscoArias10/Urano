@@ -102,3 +102,54 @@ export function buildQuickSwitcherFileEntries({
 
   return entries;
 }
+
+export interface BuildQuickSwitcherEntriesParams {
+  fileEntries: QuickSwitcherEntry[];
+  unresolvedLinks: string[];
+  showExistingOnly: boolean;
+  query: string;
+}
+
+/**
+ * Combines filtered vault file entries with unresolved `[[Target]]` wikilink
+ * candidates when `showExistingOnly` is disabled.
+ */
+export function buildQuickSwitcherEntries({
+  fileEntries,
+  unresolvedLinks,
+  showExistingOnly,
+  query,
+}: BuildQuickSwitcherEntriesParams): QuickSwitcherEntry[] {
+  const q = query.trim().toLowerCase();
+  const matchesFile = (f: QuickSwitcherEntry) =>
+    !q ||
+    f.basename.toLowerCase().includes(q) ||
+    f.name.toLowerCase().includes(q) ||
+    f.relPath.toLowerCase().includes(q) ||
+    f.path.toLowerCase().includes(q);
+
+  const matchedExisting = fileEntries.filter(matchesFile);
+  if (showExistingOnly || unresolvedLinks.length === 0) {
+    return matchedExisting;
+  }
+
+  const unresolvedEntries: QuickSwitcherEntry[] = [];
+  for (const target of unresolvedLinks) {
+    const base = target.split('/').pop() || target;
+    if (q && !target.toLowerCase().includes(q) && !base.toLowerCase().includes(q)) {
+      continue;
+    }
+    unresolvedEntries.push({
+      key: `unresolved:${target.toLowerCase()}`,
+      name: `${target}.md`,
+      path: target,
+      basename: base,
+      ext: 'md',
+      relPath: target,
+      isUnresolved: true,
+      isAttachment: false,
+    });
+  }
+
+  return [...matchedExisting, ...unresolvedEntries];
+}
