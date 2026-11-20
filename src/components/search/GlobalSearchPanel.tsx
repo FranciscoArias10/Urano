@@ -146,6 +146,8 @@ export const GlobalSearchPanel: React.FC<GlobalSearchPanelProps> = ({ onOpenFile
               <div key={res.filePath} className="rounded-md overflow-hidden bg-urano-sidebar/60 border border-urano-border">
                 {/* File Header */}
                 <div
+                  data-page-preview-context="search"
+                  data-page-preview-target={res.filePath}
                   onClick={() => toggleCollapse(res.filePath)}
                   className="flex items-center justify-between px-2.5 py-1.5 cursor-pointer hover:bg-[var(--interactive-hover)] text-xs text-urano-text font-medium"
                 >
@@ -165,6 +167,8 @@ export const GlobalSearchPanel: React.FC<GlobalSearchPanelProps> = ({ onOpenFile
                     {res.matches.map((m, idx) => (
                       <div
                         key={idx}
+                        data-page-preview-context="search"
+                        data-page-preview-target={res.filePath}
                         onClick={() => {
                           if (onOpenFile) {
                             onOpenFile(res.filePath);

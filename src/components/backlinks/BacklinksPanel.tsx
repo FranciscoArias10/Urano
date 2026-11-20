@@ -166,6 +166,8 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
             incomingLinks.map((item) => (
               <div
                 key={item.path}
+                data-page-preview-context="search"
+                data-page-preview-target={item.path}
                 onClick={() => onOpenNote(item.path)}
                 className="p-2 rounded-lg bg-urano-bg border border-urano-border hover:border-orange-500/40 cursor-pointer group transition-colors"
               >
@@ -190,6 +192,8 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
           outgoingLinks.map((item) => (
             <div
               key={item.targetName}
+              data-page-preview-context="search"
+              data-page-preview-target={item.resolvedPath || item.targetName}
               onClick={() => onOpenNote(item.resolvedPath || item.targetName)}
               className="flex items-center justify-between p-2 rounded-lg bg-urano-bg border border-urano-border hover:border-orange-500/40 cursor-pointer text-xs transition-colors"
             >

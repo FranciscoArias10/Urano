@@ -465,6 +465,8 @@ export const EmbeddedBacklinks: React.FC<EmbeddedBacklinksProps> = ({
       <div
         key={`${group.filePath}-${match.lineIndex}-${match.matchStart}-${idx}`}
         className="search-result-file-match tappable"
+        data-page-preview-context="search"
+        data-page-preview-target={group.filePath}
         onClick={() => handleOpenMentionFile(group.filePath)}
       >
         <div className="search-result-file-match-content">
@@ -510,6 +512,8 @@ export const EmbeddedBacklinks: React.FC<EmbeddedBacklinksProps> = ({
             >
               <div
                 className="search-result-file-title is-clickable"
+                data-page-preview-context="search"
+                data-page-preview-target={group.filePath}
                 onClick={() => handleOpenMentionFile(group.filePath)}
               >
                 <button
