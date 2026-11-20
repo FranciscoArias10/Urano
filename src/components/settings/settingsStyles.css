@@ -1502,3 +1502,43 @@ body.theme-light .urano-settings-root button.mod-warning:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* --- Page Preview Settings Tab (Obsidian 1:1) ---------------------------- */
+.urano-settings-root .page-preview-settings-tab {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.urano-settings-root .setting-item.setting-item-heading.page-preview-settings-heading {
+  margin: 0 0 12px 0;
+  padding: 0;
+  border-top: none;
+  border-bottom: none;
+  background: transparent;
+}
+
+.urano-settings-root .page-preview-settings-heading .setting-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.urano-settings-root .page-preview-filter-row {
+  padding: 12px 0;
+}
+
+.urano-settings-root .page-preview-filter-input-wrap {
+  width: 100%;
+}
+
+.urano-settings-root .page-preview-filter-input-wrap input {
+  width: 100%;
+  height: 34px;
+  padding: 6px 32px;
+}
+
+.urano-settings-root .page-preview-settings-tab .setting-item.mod-toggle {
+  align-items: center;
+  padding: 14px 0;
+}
