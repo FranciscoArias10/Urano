@@ -634,6 +634,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
   // Determine Tag (.canvas -> CANVAS, .base -> BASE, or image format tag)
   const isCanvas = item.name.toLowerCase().endsWith('.canvas');
   const isBase = item.name.toLowerCase().endsWith('.base');
+  const isPreviewableNote = !item.isDir && item.name.toLowerCase().endsWith('.md');
   const imageTag = getImageFormatTag(item.name);
   const displayName = item.isDir
     ? item.name
@@ -686,6 +687,8 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
         }}
         onClick={handleSelect}
         onContextMenu={handleContextMenu}
+        data-page-preview-context={isPreviewableNote ? 'fileExplorer' : undefined}
+        data-page-preview-target={isPreviewableNote ? item.path : undefined}
         style={{ paddingLeft: `${depth * 14 + 10}px` }}
         className={`group flex items-center justify-between pr-2.5 py-1 text-xs cursor-pointer transition-colors relative outline-none ${
           isDragTarget ? 'bg-orange-500/20 ring-1 ring-orange-500' : ''
