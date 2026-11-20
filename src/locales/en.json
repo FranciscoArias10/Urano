@@ -597,8 +597,21 @@
       "confirmDesc": "Confirm before merging two notes."
     },
     "pagePreview": {
-      "requireCtrl": "Require Ctrl to trigger",
-      "requireCtrlDesc": "Only show the page preview while holding Ctrl."
+      "requireCtrl": "Require Ctrl to trigger page preview",
+      "requireCtrlDesc": "Hold Ctrl (Cmd on macOS) when hovering over a link to trigger page preview.",
+      "heading": "Require Ctrl to trigger page preview on hover",
+      "filterPlaceholder": "Filter...",
+      "noResults": "No matching contexts found.",
+      "search": "Search, Backlinks, and Outgoing Links",
+      "preview": "Reading view",
+      "editor": "Editor",
+      "tabHeader": "Tab header",
+      "fileExplorer": "File explorer",
+      "properties": "Properties view",
+      "bookmarks": "Bookmarks",
+      "outline": "Outline",
+      "bases": "Bases",
+      "graph": "Graph view"
     },
     "quickSwitcher": {
       "showExisting": "Show existing only",
@@ -1207,6 +1220,11 @@
     "noHeadingNotice": "Place the cursor on a heading to extract it",
     "mergedSuccess": "Merged note into \"{name}\"",
     "mergeFailed": "Failed to merge notes"
+  },
+  "pagePreview": {
+    "emptyNote": "This note is empty.",
+    "notFound": "Note \"{name}\" has not been created yet.",
+    "openNote": "Open note"
   },
   "search": {
     "placeholder": "Search in all notes...",
