@@ -61,6 +61,7 @@ import {
   CanvasCtrlDragBehavior,
   CanvasCardLabel,
   NoteComposerAfterExtract,
+  PagePreviewContextKey,
 } from '../../stores/settingsStore';
 import { useSyncStore } from '../../stores/syncStore';
 import { useLocaleStore } from '../../stores/localeStore';
@@ -2405,28 +2406,40 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
     },
   ]);
 
+  const pagePreviewContextKeys: PagePreviewContextKey[] = [
+    'search',
+    'preview',
+    'editor',
+    'tabHeader',
+    'fileExplorer',
+    'properties',
+    'bookmarks',
+    'outline',
+    'bases',
+    'graph',
+  ];
+
   const pagePreview = pluginTab('page-preview', [
     {
       id: 'page-preview-options',
-      items: [
-        {
-          id: 'page-preview-ctrl',
-          name: t('pagePreview.requireCtrl'),
-          desc: t('pagePreview.requireCtrlDesc'),
+      heading: t('pagePreview.heading'),
+      items: pagePreviewContextKeys.map((contextKey) => {
+        const label = t(`pagePreview.${contextKey}`);
+        return {
+          id: `page-preview-${contextKey}`,
+          name: label,
+          aliases: ['ctrl', 'hover', 'preview', 'vista previa', contextKey],
           control: (
             <Toggle
-              value={Boolean(settings.pagePreviewRequireCtrl?.preview)}
+              value={Boolean(settings.pagePreviewRequireCtrl?.[contextKey])}
               onChange={(val) =>
-                useSettingsStore.getState().setSetting('pagePreviewRequireCtrl', {
-                  ...settings.pagePreviewRequireCtrl,
-                  preview: val,
-                })
+                useSettingsStore.getState().setPagePreviewRequireCtrl(contextKey, val)
               }
-              ariaLabel={t('pagePreview.requireCtrl')}
+              ariaLabel={label}
             />
           ),
-        },
-      ],
+        };
+      }),
     },
   ]);
 
