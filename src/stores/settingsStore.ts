@@ -825,6 +825,7 @@ export interface SettingsStoreState {
   pinCommand: (commandId: string) => void;
   unpinCommand: (commandId: string) => void;
   movePinnedCommand: (fromIndex: number, toIndex: number) => void;
+  setPagePreviewRequireCtrl: (contextKey: PagePreviewContextKey, value: boolean) => void;
 
   fileSnapshots: FileSnapshot[];
   recordSnapshot: (path: string, content: string, force?: boolean) => void;
@@ -1171,6 +1172,22 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     const [moved] = existing.splice(fromIndex, 1);
     existing.splice(toIndex, 0, moved);
     const next = { ...current, pinnedCommands: existing };
+    writeLocalSettings(next);
+    scheduleVaultWrite(get().vaultPath, next);
+    set({ settings: next });
+  },
+
+  setPagePreviewRequireCtrl: (contextKey, value) => {
+    const current = get().settings;
+    const normalized = normalizePagePreviewConfig(current.pagePreviewRequireCtrl);
+    if (normalized[contextKey] === value) return;
+    const next: UranoSettings = {
+      ...current,
+      pagePreviewRequireCtrl: {
+        ...normalized,
+        [contextKey]: value,
+      },
+    };
     writeLocalSettings(next);
     scheduleVaultWrite(get().vaultPath, next);
     set({ settings: next });
