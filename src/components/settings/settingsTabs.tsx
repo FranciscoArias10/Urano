@@ -2413,7 +2413,18 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
           id: 'page-preview-ctrl',
           name: t('pagePreview.requireCtrl'),
           desc: t('pagePreview.requireCtrlDesc'),
-          control: <Toggle value={settings.pagePreviewRequireCtrl} onChange={set('pagePreviewRequireCtrl')} ariaLabel={t('pagePreview.requireCtrl')} />,
+          control: (
+            <Toggle
+              value={Boolean(settings.pagePreviewRequireCtrl?.preview)}
+              onChange={(val) =>
+                useSettingsStore.getState().setSetting('pagePreviewRequireCtrl', {
+                  ...settings.pagePreviewRequireCtrl,
+                  preview: val,
+                })
+              }
+              ariaLabel={t('pagePreview.requireCtrl')}
+            />
+          ),
         },
       ],
     },

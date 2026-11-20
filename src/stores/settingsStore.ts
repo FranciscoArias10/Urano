@@ -215,7 +215,7 @@ export interface UranoSettings {
   noteComposerAfterExtract: NoteComposerAfterExtract;
   noteComposerTemplatePath: string;
   noteComposerConfirmMerge: boolean;
-  pagePreviewRequireCtrl: boolean;
+  pagePreviewRequireCtrl: PagePreviewConfig;
   quickSwitcherShowAttachments: boolean;
   quickSwitcherShowExistingOnly: boolean;
   templatesFolder: string;
@@ -355,7 +355,7 @@ export const DEFAULT_SETTINGS: UranoSettings = {
   noteComposerAfterExtract: 'link',
   noteComposerTemplatePath: '',
   noteComposerConfirmMerge: true,
-  pagePreviewRequireCtrl: false,
+  pagePreviewRequireCtrl: { ...DEFAULT_PAGE_PREVIEW_CONFIG },
   quickSwitcherShowAttachments: true,
   quickSwitcherShowExistingOnly: false,
   templatesFolder: 'Templates',
