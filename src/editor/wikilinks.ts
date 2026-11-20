@@ -37,6 +37,8 @@ class BaseEmbedWidget extends WidgetType {
     const card = document.createElement('div');
     card.className =
       'cm-base-embed my-2.5 rounded-lg border border-[#2e2e2e] bg-[#1a1714] p-3 text-stone-300 font-sans shadow-md hover:border-orange-500/40 transition-all cursor-pointer select-none';
+    card.setAttribute('data-page-preview-target', this.fileName);
+    card.setAttribute('data-page-preview-context', 'editor');
 
     const header = document.createElement('div');
     header.className = 'flex items-center justify-between gap-2 pb-2 border-b border-stone-800/80';
@@ -94,10 +96,6 @@ class BaseEmbedWidget extends WidgetType {
 }
 
 export function createWikilinksExtension(handler?: WikilinkHandler) {
-  const wikilinkDecoration = Decoration.mark({
-    class: 'cm-wikilink',
-  });
-
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
@@ -158,7 +156,15 @@ export function createWikilinksExtension(handler?: WikilinkHandler) {
 
               const start = line.from + match.index;
               const end = start + match[0].length;
-              widgets.push(wikilinkDecoration.range(start, end));
+              widgets.push(
+                Decoration.mark({
+                  class: 'cm-wikilink',
+                  attributes: {
+                    'data-page-preview-target': targetNote,
+                    'data-page-preview-context': 'editor',
+                  },
+                }).range(start, end)
+              );
             }
 
             pos = line.to + 1;

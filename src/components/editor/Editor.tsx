@@ -2719,6 +2719,7 @@ export const Editor: React.FC<EditorProps> = ({
           {/* CodeMirror 6 Editor Canvas */}
           <div
             ref={editorRef}
+            data-page-preview-area="editor"
             className={showEmbeddedBacklinks ? 'urano-cm-embedded-host shrink-0' : 'flex-1 min-h-0'}
           />
 
