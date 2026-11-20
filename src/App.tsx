@@ -46,6 +46,7 @@ import { UranoLogo } from './components/common/UranoLogo';
 import { WindowControls } from './components/layout/WindowControls';
 import { NoticeContainer, useNoticeStore } from './components/common/Notice';
 import { VaultManagerModal } from './components/vault/VaultManagerModal';
+import { PagePreviewPopover } from './components/preview/PagePreviewPopover';
 import { isCommandTriggered } from './services/hotkeyRegistry';
 import {
   FolderOpen,
@@ -2117,6 +2118,9 @@ const MainApp: React.FC = () => {
           onDoNotUpdate={() => resolvePendingRename('skip')}
         />
       )}
+
+      {/* Urano Page Preview Hover Popover */}
+      <PagePreviewPopover onOpenNote={(target) => openOrCreateWikilink(target)} />
 
       {/* Urano Floating Notices */}
       <NoticeContainer />
