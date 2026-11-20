@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import {
   type PagePreviewContextKey,
   useSettingsStore,
 } from '../../stores/settingsStore';
+import { useVaultStore } from '../../stores/vaultStore';
 import type { FileItem } from '../../types';
 import {
   getCleanFileName,
@@ -180,6 +182,52 @@ export interface ActiveHoverTriggerState {
 const AUTOMATIC_OPEN_DELAY_MS = 300;
 const CTRL_OPEN_DELAY_MS = 100;
 const CLOSE_GRACE_DELAY_MS = 200;
+const POPOVER_WIDTH = 420;
+const POPOVER_MAX_HEIGHT = 360;
+const VIEWPORT_MARGIN = 12;
+
+export function computePopoverCoords(anchorRect: DOMRect): {
+  top: number;
+  left: number;
+} {
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1280;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+
+  let left = anchorRect.left;
+  if (left + POPOVER_WIDTH > vw - VIEWPORT_MARGIN) {
+    left = vw - POPOVER_WIDTH - VIEWPORT_MARGIN;
+  }
+  if (left < VIEWPORT_MARGIN) {
+    left = VIEWPORT_MARGIN;
+  }
+
+  let top = anchorRect.bottom + 8;
+  if (top + POPOVER_MAX_HEIGHT > vh - VIEWPORT_MARGIN) {
+    const aboveTop = anchorRect.top - POPOVER_MAX_HEIGHT - 8;
+    if (aboveTop >= VIEWPORT_MARGIN) {
+      top = aboveTop;
+    } else {
+      top = Math.max(VIEWPORT_MARGIN, vh - POPOVER_MAX_HEIGHT - VIEWPORT_MARGIN);
+    }
+  }
+
+  return { top, left };
+}
+
+function readContentFromCache(
+  resolvedPath: string,
+  notesContentMap: Record<string, string>
+): string | null {
+  if (resolvedPath in notesContentMap) {
+    return notesContentMap[resolvedPath];
+  }
+  for (const [candidatePath, content] of Object.entries(notesContentMap)) {
+    if (isSamePath(candidatePath, resolvedPath)) {
+      return content;
+    }
+  }
+  return null;
+}
 
 export const PagePreviewPopover: React.FC<PagePreviewPopoverProps> = () => {
   const isPluginEnabled = useSettingsStore((s) =>
@@ -189,8 +237,16 @@ export const PagePreviewPopover: React.FC<PagePreviewPopoverProps> = () => {
     (s) => s.settings.pagePreviewRequireCtrl
   );
 
+  const fileTree = useVaultStore((s) => s.fileTree);
+  const activeVault = useVaultStore((s) => s.activeVault);
+  const activeFile = useVaultStore((s) => s.activeFile);
+  const fileContent = useVaultStore((s) => s.fileContent);
+  const notesContentMap = useVaultStore((s) => s.notesContentMap);
+
   const [activeTrigger, setActiveTrigger] =
     useState<ActiveHoverTriggerState | null>(null);
+  const [loadedContent, setLoadedContent] = useState<string | null>(null);
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
 
   const hoveredTriggerRef = useRef<PreviewTriggerInfo | null>(null);
   const openTimerRef = useRef<number | null>(null);
@@ -379,16 +435,87 @@ export const PagePreviewPopover: React.FC<PagePreviewPopoverProps> = () => {
     scheduleOpenForTrigger,
   ]);
 
-  if (!isPluginEnabled || !activeTrigger) {
+  const resolvedTarget = useMemo(() => {
+    if (!activeTrigger) return null;
+    return resolvePreviewTarget(activeTrigger.target, fileTree, activeVault);
+  }, [activeTrigger, fileTree, activeVault]);
+
+  useEffect(() => {
+    if (!isPluginEnabled || !activeTrigger || !resolvedTarget) {
+      setLoadedContent(null);
+      setIsLoadingContent(false);
+      return;
+    }
+
+    if (!resolvedTarget.isExisting || !resolvedTarget.resolvedPath) {
+      setLoadedContent(null);
+      setIsLoadingContent(false);
+      return;
+    }
+
+    const targetPath = resolvedTarget.resolvedPath;
+    if (activeFile && isSamePath(activeFile, targetPath)) {
+      setLoadedContent(fileContent);
+      setIsLoadingContent(false);
+      return;
+    }
+
+    const cached = readContentFromCache(targetPath, notesContentMap);
+    if (cached !== null) {
+      setLoadedContent(cached);
+      setIsLoadingContent(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingContent(true);
+    invoke<string>('read_file', { filePath: targetPath })
+      .then((raw) => {
+        if (!cancelled) {
+          setLoadedContent(raw ?? '');
+          setIsLoadingContent(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoadedContent(null);
+          setIsLoadingContent(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isPluginEnabled,
+    activeTrigger,
+    resolvedTarget,
+    activeFile,
+    fileContent,
+    notesContentMap,
+  ]);
+
+  const coords = useMemo(() => {
+    if (!activeTrigger) return null;
+    return computePopoverCoords(activeTrigger.rect);
+  }, [activeTrigger]);
+
+  if (!isPluginEnabled || !activeTrigger || !resolvedTarget || !coords) {
     return null;
   }
 
   return (
     <div
       ref={popoverRef}
-      data-preview-target={activeTrigger.target}
+      data-preview-target={resolvedTarget.resolvedPath || activeTrigger.target}
       data-preview-context={activeTrigger.context}
-      style={{ display: 'none' }}
+      data-preview-loading={isLoadingContent ? 'true' : 'false'}
+      data-preview-length={loadedContent?.length ?? 0}
+      style={{
+        display: 'none',
+        top: `${coords.top}px`,
+        left: `${coords.left}px`,
+      }}
     />
   );
 };
