@@ -245,10 +245,10 @@ export const TabBar: React.FC<TabBarProps> = ({
                     .join(' ')}
                   data-type={TAB_VIEW_TYPE[tab.type]}
                   data-page-preview-context={
-                    tab.filePath && tab.type === 'markdown' ? 'tabHeader' : undefined
+                    tab.filePath && tab.type === 'note' ? 'tabHeader' : undefined
                   }
                   data-page-preview-target={
-                    tab.filePath && tab.type === 'markdown' ? tab.filePath : undefined
+                    tab.filePath && tab.type === 'note' ? tab.filePath : undefined
                   }
                   title={label}
                   onClick={() => onSelectTab(tab.id)}
