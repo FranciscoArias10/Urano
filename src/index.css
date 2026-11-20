@@ -4390,4 +4390,99 @@ button.mod-cta-secondary:hover {
   flex-shrink: 0;
 }
 
+/* ========================================================
+   Page Preview Floating Popover (.popover.hover-popover)
+   ======================================================== */
+.popover.hover-popover {
+  position: fixed;
+  width: 420px;
+  max-width: calc(100vw - 24px);
+  max-height: 360px;
+  overflow-y: auto;
+  border-radius: 8px;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  box-shadow: var(--shadow-l, 0 12px 32px rgba(0, 0, 0, 0.38));
+  z-index: 1000;
+  color: var(--text-normal);
+  overscroll-behavior: contain;
+}
+
+.popover.hover-popover .markdown-embed,
+.popover.hover-popover .markdown-embed-content,
+.popover.hover-popover .markdown-reading-view {
+  width: 100%;
+  height: auto;
+}
+
+.popover.hover-popover .markdown-reading-view .markdown-preview-view {
+  padding: 14px 18px;
+  height: auto;
+  overflow-y: visible;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.popover.hover-popover .inline-title {
+  font-size: 1.35em;
+  margin-bottom: 10px;
+}
+
+.popover.hover-popover .markdown-preview-pusher {
+  max-height: 8px;
+}
+
+.popover.hover-popover .page-preview-empty-state {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.popover.hover-popover .page-preview-empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.popover.hover-popover .page-preview-empty-desc,
+.popover.hover-popover .page-preview-empty-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.popover.hover-popover .page-preview-open-button {
+  margin-top: 4px;
+  padding: 5px 12px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background-color: var(--interactive-accent, #e06c1b);
+  color: var(--text-on-accent, #ffffff);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.popover.hover-popover .page-preview-open-button:hover {
+  filter: brightness(1.08);
+}
+
+.popover.hover-popover .page-preview-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+}
+
+.popover.hover-popover .page-preview-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--background-modifier-border);
+  border-top-color: var(--interactive-accent, #e06c1b);
+  animation: urano-sync-spin 0.7s linear infinite;
+}
+
 
