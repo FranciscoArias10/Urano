@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Search, X, Plus, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
-import { useSettingsStore, useT } from '../../stores/settingsStore';
+import {
+  useSettingsStore,
+  useT,
+  type PagePreviewContextKey,
+} from '../../stores/settingsStore';
 import { useLocaleStore } from '../../stores/localeStore';
 import { HOTKEY_CATALOG } from '../../services/hotkeyRegistry';
 import type { CommandItem } from '../palette/CommandPalette';
@@ -39,6 +43,19 @@ export interface SettingsModalProps {
 }
 
 const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+const PAGE_PREVIEW_CONTEXT_KEYS: PagePreviewContextKey[] = [
+  'search',
+  'preview',
+  'editor',
+  'tabHeader',
+  'fileExplorer',
+  'properties',
+  'bookmarks',
+  'outline',
+  'bases',
+  'graph',
+];
 
 function itemSearchText(item: SettingItemDef): string {
   const desc = typeof item.desc === 'string' ? item.desc : item.descText ?? '';
@@ -112,16 +129,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [pinModalQuery, setPinModalQuery] = useState('');
   const [pinModalSelectedIndex, setPinModalSelectedIndex] = useState(0);
   const [draggedPinnedIdx, setDraggedPinnedIdx] = useState<number | null>(null);
+  const [pagePreviewFilter, setPagePreviewFilter] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const pinModalInputRef = useRef<HTMLInputElement>(null);
+  const pagePreviewFilterInputRef = useRef<HTMLInputElement>(null);
 
   const pinnedCommands = useSettingsStore((s) => s.settings.pinnedCommands) || [];
   const pinCommand = useSettingsStore((s) => s.pinCommand);
   const unpinCommand = useSettingsStore((s) => s.unpinCommand);
   const movePinnedCommand = useSettingsStore((s) => s.movePinnedCommand);
   const clearAllSnapshots = useSettingsStore((s) => s.clearAllSnapshots);
+  const pagePreviewRequireCtrl = useSettingsStore(
+    (s) => s.settings.pagePreviewRequireCtrl
+  );
+  const setPagePreviewRequireCtrl = useSettingsStore(
+    (s) => s.setPagePreviewRequireCtrl
+  );
   const quickSwitcherShowExistingOnly = useSettingsStore(
     (s) => s.settings.quickSwitcherShowExistingOnly
   );
@@ -175,6 +200,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       (cmd) => normalize(cmd.name).includes(q) || cmd.id.toLowerCase().includes(q)
     );
   }, [availableCommandsToPin, pinModalQuery]);
+
+  const filteredPagePreviewContexts = useMemo(() => {
+    const q = normalize(pagePreviewFilter.trim());
+    if (!q) return PAGE_PREVIEW_CONTEXT_KEYS;
+    return PAGE_PREVIEW_CONTEXT_KEYS.filter((contextKey) =>
+      normalize(t(`pagePreview.${contextKey}`)).includes(q)
+    );
+  }, [pagePreviewFilter, t]);
 
   useEffect(() => {
     if (!showPinCommandModal) return;
@@ -663,6 +696,73 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                   >
                                     <X size={16} />
                                   </button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : activeTab.id === 'page-preview' ? (
+                  <div className="page-preview-settings-tab">
+                    <div className="setting-item setting-item-heading page-preview-settings-heading">
+                      <div className="setting-item-info">
+                        <div className="setting-item-name">{t('pagePreview.heading')}</div>
+                      </div>
+                    </div>
+                    <div className="setting-group">
+                      <div className="setting-items">
+                        <div className="setting-item page-preview-filter-row">
+                          <div className="search-input-container page-preview-filter-input-wrap">
+                            <span className="search-input-icon">
+                              <Search size={15} strokeWidth={2} />
+                            </span>
+                            <input
+                              ref={pagePreviewFilterInputRef}
+                              type="text"
+                              spellCheck={false}
+                              placeholder={t('pagePreview.filterPlaceholder')}
+                              value={pagePreviewFilter}
+                              onChange={(e) => setPagePreviewFilter(e.target.value)}
+                            />
+                            {pagePreviewFilter && (
+                              <SearchClearButton
+                                label={t('modal.close')}
+                                onClick={() => {
+                                  setPagePreviewFilter('');
+                                  pagePreviewFilterInputRef.current?.focus();
+                                }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                        {filteredPagePreviewContexts.length === 0 ? (
+                          <div className="setting-item page-preview-empty-row">
+                            <div className="setting-item-info">
+                              <div className="setting-item-description">
+                                {t('pagePreview.noResults')}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          filteredPagePreviewContexts.map((contextKey) => {
+                            const label = t(`pagePreview.${contextKey}`);
+                            return (
+                              <div
+                                key={contextKey}
+                                className="setting-item mod-toggle"
+                                data-page-preview-setting={contextKey}
+                              >
+                                <div className="setting-item-info">
+                                  <div className="setting-item-name">{label}</div>
+                                </div>
+                                <div className="setting-item-control">
+                                  <Toggle
+                                    value={Boolean(pagePreviewRequireCtrl?.[contextKey])}
+                                    onChange={(val) => setPagePreviewRequireCtrl(contextKey, val)}
+                                    ariaLabel={label}
+                                  />
                                 </div>
                               </div>
                             );
