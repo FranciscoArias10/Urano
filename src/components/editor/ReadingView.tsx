@@ -341,6 +341,7 @@ export function parseMarkdownBlocks(source: string): MarkdownBlock[] {
 
 interface InlineContext {
   onWikilinkClick?: (target: string) => void;
+  linkContext?: 'preview' | 'properties';
 }
 
 const INLINE_RE =
@@ -476,6 +477,8 @@ function renderInline(text: string, ctx: InlineContext, keyPrefix: string): Reac
         <a
           key={key}
           className="internal-link text-orange-400 hover:text-orange-300 underline cursor-pointer"
+          data-page-preview-target={target.trim()}
+          data-page-preview-context={ctx.linkContext ?? 'preview'}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -700,7 +703,10 @@ export const ReadingView: React.FC<ReadingViewProps> = ({
 
           {/* Frontmatter Metadata Container (if valid YAML exists) */}
           {frontmatter && Object.keys(frontmatter).length > 0 && (
-            <div className="metadata-container border border-urano-border rounded-lg p-3 mb-6 bg-urano-secondary/30 text-xs">
+            <div
+              className="metadata-container border border-urano-border rounded-lg p-3 mb-6 bg-urano-secondary/30 text-xs"
+              data-page-preview-area="properties"
+            >
               <div className="text-[11px] font-semibold uppercase text-urano-muted tracking-wider mb-2">
                 Propiedades
               </div>
@@ -708,7 +714,9 @@ export const ReadingView: React.FC<ReadingViewProps> = ({
                 {Object.entries(frontmatter).map(([k, v]) => (
                   <div key={k} className="flex items-center gap-3">
                     <span className="text-urano-muted font-medium w-28 truncate">{k}</span>
-                    <span className="text-urano-text font-mono truncate">{String(v)}</span>
+                    <span className="text-urano-text font-mono truncate">
+                      {renderInline(String(v), { ...ctx, linkContext: 'properties' }, `fm-${k}`)}
+                    </span>
                   </div>
                 ))}
               </div>
