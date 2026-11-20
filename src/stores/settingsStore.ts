@@ -30,6 +30,34 @@ export interface FileSnapshot {
   timestamp: number;
 }
 
+export interface PagePreviewConfig {
+  search: boolean;
+  preview: boolean;
+  editor: boolean;
+  tabHeader: boolean;
+  fileExplorer: boolean;
+  properties: boolean;
+  bookmarks: boolean;
+  outline: boolean;
+  bases: boolean;
+  graph: boolean;
+}
+
+export type PagePreviewContextKey = keyof PagePreviewConfig;
+
+export const DEFAULT_PAGE_PREVIEW_CONFIG: PagePreviewConfig = {
+  search: true,
+  preview: false,
+  editor: true,
+  tabHeader: true,
+  fileExplorer: true,
+  properties: true,
+  bookmarks: true,
+  outline: true,
+  bases: true,
+  graph: true,
+};
+
 export const CORE_PLUGIN_IDS = [
   'bases',
   'global-search',
