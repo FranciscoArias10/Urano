@@ -244,6 +244,12 @@ export const TabBar: React.FC<TabBarProps> = ({
                     .filter(Boolean)
                     .join(' ')}
                   data-type={TAB_VIEW_TYPE[tab.type]}
+                  data-page-preview-context={
+                    tab.filePath && tab.type === 'markdown' ? 'tabHeader' : undefined
+                  }
+                  data-page-preview-target={
+                    tab.filePath && tab.type === 'markdown' ? tab.filePath : undefined
+                  }
                   title={label}
                   onClick={() => onSelectTab(tab.id)}
                   onAuxClick={(e) => {
