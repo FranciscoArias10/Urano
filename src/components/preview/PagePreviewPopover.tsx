@@ -5,6 +5,8 @@ import {
   useSettingsStore,
 } from '../../stores/settingsStore';
 import { useVaultStore } from '../../stores/vaultStore';
+import { useT } from '../../stores/localeStore';
+import { ReadingView } from '../editor/ReadingView';
 import type { FileItem } from '../../types';
 import {
   getCleanFileName,
@@ -229,12 +231,19 @@ function readContentFromCache(
   return null;
 }
 
-export const PagePreviewPopover: React.FC<PagePreviewPopoverProps> = () => {
+export const PagePreviewPopover: React.FC<PagePreviewPopoverProps> = ({
+  onOpenNote,
+}) => {
+  const t = useT();
   const isPluginEnabled = useSettingsStore((s) =>
     Boolean(s.settings.corePlugins['page-preview'])
   );
   const pagePreviewRequireCtrl = useSettingsStore(
     (s) => s.settings.pagePreviewRequireCtrl
+  );
+  const strictLineBreaks = useSettingsStore((s) => s.settings.strictLineBreaks);
+  const showIndentationGuides = useSettingsStore(
+    (s) => s.settings.showIndentationGuides ?? s.settings.indentGuides
   );
 
   const fileTree = useVaultStore((s) => s.fileTree);
@@ -504,18 +513,79 @@ export const PagePreviewPopover: React.FC<PagePreviewPopoverProps> = () => {
     return null;
   }
 
+  const contentString = loadedContent ?? '';
+  const hasContent = contentString.trim().length > 0;
+
   return (
     <div
       ref={popoverRef}
+      className="popover hover-popover"
+      role="dialog"
+      aria-label={resolvedTarget.displayTitle || activeTrigger.target}
       data-preview-target={resolvedTarget.resolvedPath || activeTrigger.target}
       data-preview-context={activeTrigger.context}
-      data-preview-loading={isLoadingContent ? 'true' : 'false'}
-      data-preview-length={loadedContent?.length ?? 0}
       style={{
-        display: 'none',
         top: `${coords.top}px`,
         left: `${coords.left}px`,
       }}
-    />
+      onMouseEnter={() => {
+        isPointerInsidePopoverRef.current = true;
+        clearCloseTimer();
+      }}
+      onMouseLeave={() => {
+        isPointerInsidePopoverRef.current = false;
+        scheduleClose();
+      }}
+    >
+      <div className="markdown-embed is-loaded">
+        <div className="markdown-embed-content">
+          {!resolvedTarget.isExisting ? (
+            <div className="page-preview-empty-state">
+              <div className="page-preview-empty-title">
+                {resolvedTarget.displayTitle || activeTrigger.target}
+              </div>
+              <p className="page-preview-empty-desc">
+                {t('pagePreview.notFound', {
+                  name: resolvedTarget.displayTitle || activeTrigger.target,
+                })}
+              </p>
+              <button
+                type="button"
+                className="page-preview-open-button"
+                onClick={() => {
+                  const targetToOpen = activeTrigger.target;
+                  closePopover();
+                  onOpenNote(targetToOpen);
+                }}
+              >
+                {t('pagePreview.openNote')}
+              </button>
+            </div>
+          ) : isLoadingContent && loadedContent === null ? (
+            <div className="page-preview-loading">
+              <div className="page-preview-spinner" />
+            </div>
+          ) : (
+            <ReadingView
+              content={contentString}
+              title={resolvedTarget.displayTitle}
+              showInlineTitle={true}
+              readableLineLength={false}
+              strictLineBreaks={strictLineBreaks}
+              showIndentationGuides={Boolean(showIndentationGuides)}
+              onWikilinkClick={(target) => {
+                closePopover();
+                onOpenNote(target);
+              }}
+              footerContent={
+                !hasContent ? (
+                  <p className="page-preview-empty-note">{t('pagePreview.emptyNote')}</p>
+                ) : undefined
+              }
+            />
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
