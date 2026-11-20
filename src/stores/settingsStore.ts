@@ -375,9 +375,34 @@ export function getConfigFolder(settings?: UranoSettings | null): string {
   return raw.startsWith('.') ? raw : `.${raw}`;
 }
 
+/** Normalizes pagePreviewRequireCtrl from persisted object or legacy boolean. */
+function normalizePagePreviewConfig(raw: unknown): PagePreviewConfig {
+  if (typeof raw === 'boolean') {
+    return {
+      ...DEFAULT_PAGE_PREVIEW_CONFIG,
+      preview: raw,
+    };
+  }
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { ...DEFAULT_PAGE_PREVIEW_CONFIG };
+  }
+  const obj = raw as Partial<Record<PagePreviewContextKey, unknown>>;
+  const next: PagePreviewConfig = { ...DEFAULT_PAGE_PREVIEW_CONFIG };
+  (Object.keys(DEFAULT_PAGE_PREVIEW_CONFIG) as PagePreviewContextKey[]).forEach((key) => {
+    if (typeof obj[key] === 'boolean') {
+      next[key] = obj[key] as boolean;
+    }
+  });
+  return next;
+}
+
 /** Merges a partial/unknown object into the defaults, dropping unknown keys and bad types. */
 function mergeSettings(raw: unknown): UranoSettings {
-  const out: UranoSettings = { ...DEFAULT_SETTINGS, corePlugins: { ...DEFAULT_SETTINGS.corePlugins } };
+  const out: UranoSettings = {
+    ...DEFAULT_SETTINGS,
+    corePlugins: { ...DEFAULT_SETTINGS.corePlugins },
+    pagePreviewRequireCtrl: { ...DEFAULT_PAGE_PREVIEW_CONFIG },
+  };
   if (!raw || typeof raw !== 'object') return out;
   const src = raw as Record<string, unknown>;
   for (const key of Object.keys(DEFAULT_SETTINGS) as (keyof UranoSettings)[]) {
@@ -631,6 +656,8 @@ function mergeSettings(raw: unknown): UranoSettings {
     src?.quickSwitcherShowAttachments !== undefined
       ? Boolean(src.quickSwitcherShowAttachments)
       : DEFAULT_SETTINGS.quickSwitcherShowAttachments;
+
+  out.pagePreviewRequireCtrl = normalizePagePreviewConfig(src?.pagePreviewRequireCtrl);
 
   return out;
 }
