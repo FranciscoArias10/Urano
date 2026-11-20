@@ -40,6 +40,8 @@ export const BookmarksPanel: React.FC<BookmarksPanelProps> = ({ onOpenFile }) =>
           bookmarks.map((b) => (
             <div
               key={b.id}
+              data-page-preview-context={b.type === 'file' ? 'bookmarks' : undefined}
+              data-page-preview-target={b.type === 'file' ? b.path : undefined}
               onClick={() => {
                 if (b.type === 'file') {
                   if (onOpenFile) {

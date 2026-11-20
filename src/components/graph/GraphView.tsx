@@ -6,6 +6,10 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { isPathExcluded } from '../../utils/pathUtils';
 import { GraphData, GraphNode, GraphLink } from '../../types';
 import { Settings, Wand2 } from 'lucide-react';
+import {
+  PAGE_PREVIEW_HOVER_EVENT,
+  type PagePreviewCustomHoverDetail,
+} from '../preview/PagePreviewPopover';
 
 interface GraphViewProps {
   onSelectNote: (notePath: string) => void;
@@ -17,6 +21,7 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
   const graphInstance = useRef<any>(null);
   const [, setHoverTick] = useState(0);
   const hoveredNodeRef = useRef<any>(null);
+  const lastPointerRef = useRef({ x: 0, y: 0, ctrlKey: false, hasMoved: false });
   const [showFilters, setShowFilters] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const controlsRef = useRef<HTMLDivElement>(null);
@@ -177,6 +182,35 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
         if (containerRef.current) {
           containerRef.current.style.cursor = node ? 'pointer' : 'default';
         }
+        if (!node) {
+          window.dispatchEvent(new CustomEvent(PAGE_PREVIEW_HOVER_EVENT, { detail: null }));
+          return;
+        }
+        let targetPath: string = node.name || node.id || '';
+        for (const filePath of Object.keys(notesContentMap)) {
+          const fileName = filePath.replace(/\\/g, '/').split('/').pop() || '';
+          if (fileName.replace(/\.md$/i, '').toLowerCase() === node.id) {
+            targetPath = filePath;
+            break;
+          }
+        }
+        const rect = containerRef.current?.getBoundingClientRect();
+        const detail: PagePreviewCustomHoverDetail = {
+          context: 'graph',
+          target: targetPath,
+          clientX: lastPointerRef.current.hasMoved
+            ? lastPointerRef.current.x
+            : rect
+            ? rect.left + rect.width / 2
+            : 0,
+          clientY: lastPointerRef.current.hasMoved
+            ? lastPointerRef.current.y
+            : rect
+            ? rect.top + rect.height / 2
+            : 0,
+          ctrlKey: lastPointerRef.current.ctrlKey,
+        };
+        window.dispatchEvent(new CustomEvent(PAGE_PREVIEW_HOVER_EVENT, { detail }));
       })
       .onNodeClick((node: any) => {
         for (const filePath of Object.keys(notesContentMap)) {
@@ -190,6 +224,17 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
       });
 
     graphInstance.current = fg;
+
+    const containerEl = containerRef.current;
+    const handlePointerMove = (e: MouseEvent) => {
+      lastPointerRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        ctrlKey: e.ctrlKey || e.metaKey,
+        hasMoved: true,
+      };
+    };
+    containerEl.addEventListener('mousemove', handlePointerMove);
 
     // ResizeObserver connects to container to dynamically fill 100% of the visible area
     const ro = new ResizeObserver((entries) => {
@@ -207,10 +252,12 @@ export const GraphView: React.FC<GraphViewProps> = ({ onSelectNote, onClose }) =
       }
     });
 
-    ro.observe(containerRef.current);
+    ro.observe(containerEl);
 
     return () => {
+      containerEl.removeEventListener('mousemove', handlePointerMove);
       ro.disconnect();
+      window.dispatchEvent(new CustomEvent(PAGE_PREVIEW_HOVER_EVENT, { detail: null }));
       if (graphInstance.current) {
         graphInstance.current._destructor?.();
         graphInstance.current = null;

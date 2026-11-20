@@ -266,6 +266,8 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
               displayedNotes.map((note) => (
                 <tr
                   key={note.path}
+                  data-page-preview-context="bases"
+                  data-page-preview-target={note.path}
                   onClick={() => selectFile(note.path)}
                   className="hover:bg-[var(--interactive-hover)] cursor-pointer transition-colors group"
                 >
