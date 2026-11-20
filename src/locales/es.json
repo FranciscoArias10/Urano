@@ -597,8 +597,21 @@
       "confirmDesc": "Preguntar antes de combinar dos archivos."
     },
     "pagePreview": {
-      "requireCtrl": "Requerir Ctrl para activar",
-      "requireCtrlDesc": "Muestra la vista previa solo mientras se mantiene Ctrl."
+      "requireCtrl": "Requerir Ctrl para activar la vista previa",
+      "requireCtrlDesc": "Mantén pulsado Ctrl (Cmd en macOS) al pasar el cursor sobre un enlace para ver la vista previa.",
+      "heading": "Requerir Ctrl para desencadenar la vista previa de página al ponerse encima",
+      "filterPlaceholder": "Filtrar...",
+      "noResults": "No se encontraron contextos coincidentes.",
+      "search": "Búsqueda, Enlaces Entrantes y Enlaces Salientes",
+      "preview": "Vista previa",
+      "editor": "Editor",
+      "tabHeader": "Encabezado de pestaña",
+      "fileExplorer": "Explorador de archivos",
+      "properties": "Vista de propiedades",
+      "bookmarks": "Marcadores",
+      "outline": "Esquema",
+      "bases": "Bases",
+      "graph": "Vista gráfica"
     },
     "quickSwitcher": {
       "showExisting": "Mostrar solo archivos existentes",
@@ -1207,6 +1220,11 @@
     "noHeadingNotice": "Coloca el cursor en un encabezado para extraerlo",
     "mergedSuccess": "Nota combinada en \"{name}\"",
     "mergeFailed": "Error al combinar las notas"
+  },
+  "pagePreview": {
+    "emptyNote": "Esta nota está vacía.",
+    "notFound": "La nota «{name}» aún no ha sido creada.",
+    "openNote": "Abrir nota"
   },
   "search": {
     "placeholder": "Buscar en todas las notas...",
