@@ -150,17 +150,18 @@ Urano connects securely to your personal Google Drive account using OAuth 2.0 PK
 
 ---
 
-## 🌍 Idiomas
+<a id="languages"></a>
+## 🌍 Languages
 
-Urano habla el idioma que elijas en **Ajustes → General → Idioma**. El cambio se aplica al instante en toda la interfaz (barra superior, pestañas, explorador, menús contextuales, Canvas y la propia ventana de Ajustes), sin reiniciar. El idioma se guarda en `localStorage` (`urano_language`) y en `.urano/settings.json` de la bóveda.
+Urano speaks whichever language you choose in **Settings → General → Language**. Changes apply instantly across the entire interface (title bar, tabs, file explorer, context menus, Canvas, and the Settings window itself) without restarting. Your language preference is saved in `localStorage` (`urano_language`) and in your vault's `.urano/settings.json`.
 
-El catálogo de Urano incluye 51 idiomas con su autónimo (*Español*, *Deutsch*, *日本語*, *العربية*…). Urano incluye diccionarios completos para `en` y `es`; cualquier otro idioma muestra en inglés los textos que aún no tienen traducción.
+The built-in catalog includes 51 languages listed by their native name (*Español*, *Deutsch*, *日本語*, *العربية*…). Urano ships complete dictionaries for `en` and `es`; any other language falls back to English for untranslated strings.
 
-### Añadir o corregir un idioma sin recompilar
+### Adding or fixing a language without rebuilding
 
-1. Abre la carpeta `.urano/locales/` de tu bóveda (el enlace *"Learn how to add a new language to Urano."* de Ajustes la abre por ti).
-2. Crea `<código>.json`, por ejemplo `fr.json`, `pt-br.json` o `es.json` si solo quieres corregir una cadena. Las claves son las de [`src/locales/en.json`](src/locales/en.json); puedes anidarlas o escribirlas planas con puntos (`"settings.general.language": "Langue"`). Solo necesitas las claves que quieras cambiar: el resto cae en inglés.
-3. Para un idioma que no está en el catálogo, añade un bloque `_meta`:
+1. Open the `.urano/locales/` folder inside your vault (clicking *"Learn how to add a new language to Urano."* in Settings opens it for you).
+2. Create `<code>.json` — for example `fr.json`, `pt-br.json`, or `es.json` if you only want to override a single string. Keys match [`src/locales/en.json`](src/locales/en.json); you can nest them or write flat dot-separated keys (`"settings.general.language": "Langue"`). You only need to include the keys you want to change—everything else falls back to English.
+3. For a language not listed in the catalog, add a `_meta` block:
 
 ```json
 {
@@ -169,9 +170,11 @@ El catálogo de Urano incluye 51 idiomas con su autónimo (*Español*, *Deutsch*
 }
 ```
 
-4. Vuelve a abrir la bóveda (o reinicia Urano): el idioma aparece en el desplegable y tus textos se superponen a los embebidos. `dir: "rtl"` activa la disposición de derecha a izquierda de menús y modales en Urano.
+4. Reopen the vault (or restart Urano): the language appears in the dropdown and your strings override the bundled ones. Setting `dir: "rtl"` enables right-to-left layout for menus and modals in Urano.
 
-Para contribuir un idioma al repositorio, copia tu archivo a `src/locales/<código>.json` y ejecuta `npm run i18n:check`, que lista las claves que faltan respecto a `en.json`.
+To contribute a language to the repository, copy your file to `src/locales/<code>.json` and run `npm run i18n:check`, which lists any keys missing compared to `en.json`.
+
+---
 
 ## 📂 Included Sample Vault
 
