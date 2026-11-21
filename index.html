@@ -1,17 +1,62 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" class="dark" style="background-color: #1e1e1e; color-scheme: dark;">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/urano-logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Urano</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      html, body, #root {
+        background-color: #1e1e1e;
+        color: #dcddde;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+    <script>
+      (function() {
+        try {
+          var raw = localStorage.getItem('urano_settings');
+          var theme = 'dark';
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed && parsed.theme) theme = parsed.theme;
+          }
+          var isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var bg = isDark ? '#1e1e1e' : '#ffffff';
+          var fg = isDark ? '#dcddde' : '#222222';
+          document.documentElement.style.backgroundColor = bg;
+          document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+            document.addEventListener('DOMContentLoaded', function() {
+              if (document.body) {
+                document.body.classList.add('theme-dark');
+                document.body.style.backgroundColor = bg;
+              }
+            });
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.addEventListener('DOMContentLoaded', function() {
+              if (document.body) {
+                document.body.classList.add('theme-light');
+                document.body.style.backgroundColor = bg;
+              }
+            });
+          }
+        } catch (e) {}
+      })();
+    </script>
     <!-- Google Fonts: Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   </head>
-  <body class="overflow-hidden select-none">
-    <div id="root" class="h-screen w-screen flex flex-col"></div>
+  <body class="overflow-hidden select-none theme-dark" style="background-color: #1e1e1e;">
+    <div id="root" class="h-screen w-screen flex flex-col" style="background-color: #1e1e1e;"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
