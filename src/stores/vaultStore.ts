@@ -303,6 +303,7 @@ interface VaultState {
   files: FileItem[];
   isDirty: boolean;
   isLoading: boolean;
+  loadingMessage: string;
   notesContentMap: Record<string, string>; // path -> content for graph & backlinks
   embeddedBacklinksOverrides: Record<string, boolean>; // normalized note path -> per-pane embedded backlinks visibility
   autoFocusTitle: boolean;
@@ -331,6 +332,7 @@ interface VaultState {
   // Auto-reveal
   autoReveal: boolean;
   setAutoReveal: (reveal: boolean) => void;
+  setLoadingMessage: (msg: string) => void;
 
   // Actions
   setVault: (vaultPath: string) => Promise<void>;
@@ -419,6 +421,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   files: [],
   isDirty: false,
   isLoading: false,
+  loadingMessage: '',
   notesContentMap: {},
   embeddedBacklinksOverrides: {},
   autoFocusTitle: false,
@@ -520,10 +523,11 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
   setAutoFocusTitle: (focus: boolean) => set({ autoFocusTitle: focus }),
   setShouldSelectTitleOnOpen: (focus: boolean) => set({ shouldSelectTitleOnOpen: focus }),
+  setLoadingMessage: (msg: string) => set({ loadingMessage: msg }),
 
   setVault: async (vaultPath: string) => {
     try {
-      set({ isLoading: true });
+      set({ isLoading: true, loadingMessage: 'Cargando bóveda...' });
       const settings = useSettingsStore.getState().settings;
       const detectAll = settings.detectAllFileExtensions;
       const configDir = settings.configFolderOverride || '.urano';
@@ -550,6 +554,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         fileContent: '',
         isDirty: false,
         isLoading: false,
+        loadingMessage: '',
       });
 
       get().addRecentVault(vaultName, vaultPath);
@@ -584,7 +589,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         }
       }
     } catch (err) {
-      set({ isLoading: false });
+      set({ isLoading: false, loadingMessage: '' });
       console.error('Error al abrir bóveda:', err);
       throw err;
     }
@@ -674,6 +679,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         fileContent: content,
         isDirty: false,
         isLoading: false,
+        loadingMessage: '',
       });
       if (!isImg) {
         useSettingsStore.getState().recordSnapshot(targetPath, content);
