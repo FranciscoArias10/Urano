@@ -31,3 +31,4 @@ export const ProgressBarScreen: React.FC<ProgressBarScreenProps> = ({
     </div>
   );
 };
+
