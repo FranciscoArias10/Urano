@@ -20,7 +20,9 @@
         "minimizable": true,
         "closable": true,
         "fullscreen": false,
-        "decorations": false
+        "decorations": false,
+        "backgroundColor": "#1e1e1e",
+        "theme": "Dark"
       }
     ],
     "security": {
