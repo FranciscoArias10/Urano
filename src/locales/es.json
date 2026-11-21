@@ -1508,7 +1508,8 @@
   "window": {
     "minimize": "Minimizar",
     "maximize": "Maximizar",
-    "restore": "Restaurar"
+    "restore": "Restaurar",
+    "close": "Cerrar"
   },
   "vaultManager": {
     "title": "Urano",
