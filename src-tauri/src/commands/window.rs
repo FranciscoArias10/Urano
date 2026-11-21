@@ -88,7 +88,9 @@ pub async fn open_settings_window(
     .inner_size(900.0, 680.0)
     .min_inner_size(600.0, 450.0)
     .resizable(true)
-    .decorations(is_native);
+    .decorations(is_native)
+    .theme(Some(tauri::Theme::Dark))
+    .background_color(tauri::window::Color(30, 30, 30, 255));
 
     let window = builder.build().map_err(|e| e.to_string())?;
 
