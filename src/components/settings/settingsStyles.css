@@ -124,14 +124,16 @@
 /* × — Urano .modal-header-button.mod-raised.clickable-icon */
 .urano-settings-root .modal-header-button {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  z-index: 2;
+  top: 14px;
+  right: 20px;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 28px;
+  height: 28px;
   padding: 4px;
-  border-radius: 4px;
+  border-radius: 6px;
   color: var(--settings-text-muted);
   cursor: pointer;
   background: transparent;
