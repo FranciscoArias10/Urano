@@ -47,6 +47,7 @@ import { WindowControls } from './components/layout/WindowControls';
 import { NoticeContainer, useNoticeStore } from './components/common/Notice';
 import { VaultManagerModal } from './components/vault/VaultManagerModal';
 import { PagePreviewPopover } from './components/preview/PagePreviewPopover';
+import { ProgressBarScreen } from './components/common/ProgressBarScreen';
 import { isCommandTriggered } from './services/hotkeyRegistry';
 import {
   FolderOpen,
@@ -243,6 +244,7 @@ const MainApp: React.FC = () => {
     toggleEmbeddedBacklinksForNote,
     clearEmbeddedBacklinksOverrides,
     isLoading,
+    loadingMessage,
     closeActiveFile,
   } = useVaultStore();
 
@@ -252,6 +254,10 @@ const MainApp: React.FC = () => {
   const syncOnline = useSyncStore((s) => s.isOnline);
   const { showNotice } = useNoticeStore();
   const t = useT();
+
+  const [isStartupLoading, setIsStartupLoading] = useState(true);
+  const [isStartupFading, setIsStartupFading] = useState(false);
+  const [startupMessage, setStartupMessage] = useState<string>(() => t('startUp.loadingVault') || 'Cargando bóveda...');
 
   // Settings (Urano-style modal, Ctrl+, / ⚙) — persisted in localStorage + .urano/settings.json
   const settings = useSettingsStore((s) => s.settings);
@@ -385,14 +391,28 @@ const MainApp: React.FC = () => {
     });
   }, [settings.windowFrameStyle]);
 
-  // On mount: restore previous vault and Google auth status
+  // On mount: restore previous vault and Google auth status as fast as possible
   useEffect(() => {
     checkAuthStatus();
     const lastVault = localStorage.getItem('urano_last_vault');
     if (lastVault) {
-      setVault(lastVault).catch((e) => {
-        console.warn('No se pudo restaurar la última bóveda:', e);
-      });
+      setStartupMessage(t('startUp.loadingVault') || 'Cargando bóveda...');
+      setVault(lastVault)
+        .catch((e) => {
+          console.warn('No se pudo restaurar la última bóveda:', e);
+        })
+        .finally(() => {
+          setStartupMessage(t('startUp.loadingWorkspace') || 'Cargando el espacio de trabajo...');
+          setIsStartupFading(true);
+          setTimeout(() => {
+            setIsStartupLoading(false);
+          }, 150);
+        });
+    } else {
+      setIsStartupFading(true);
+      setTimeout(() => {
+        setIsStartupLoading(false);
+      }, 150);
     }
   }, []);
 
@@ -1879,9 +1899,17 @@ const MainApp: React.FC = () => {
                 />
               </EditorErrorBoundary>
             ) : isLoading ? (
-              <div className="flex-1 h-full flex flex-col items-center justify-center text-urano-muted p-8 text-center bg-urano-bg">
-                <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-4" />
-                <p className="text-sm text-urano-muted">{t('common.loading') || 'Cargando...'}</p>
+              <div className="flex-1 h-full flex flex-col items-center justify-center p-8 text-center bg-urano-bg select-none">
+                <div className="progress-bar" style={{ maxWidth: '400px' }}>
+                  <div className="progress-bar-message">
+                    {loadingMessage || t('startUp.loadingVault') || t('common.loading')}
+                  </div>
+                  <div className="progress-bar-indicator">
+                    <div className="progress-bar-line" />
+                    <div className="progress-bar-subline mod-increase" />
+                    <div className="progress-bar-subline mod-decrease" />
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="flex-1 h-full flex flex-col items-center justify-center p-8 text-center bg-urano-bg select-none">
@@ -2124,6 +2152,14 @@ const MainApp: React.FC = () => {
 
       {/* Urano Floating Notices */}
       <NoticeContainer />
+
+      {/* Obsidian 1:1 Startup Loading Progress Bar */}
+      {isStartupLoading && (
+        <ProgressBarScreen
+          message={startupMessage || t('startUp.loadingVault')}
+          isFadingOut={isStartupFading}
+        />
+      )}
     </div>
   );
 };
