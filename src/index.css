@@ -16,6 +16,11 @@ html, body, #root, button, input, select, textarea, .view-header, .workspace-tab
   font-family: var(--font-interface);
 }
 
+html, body, #root {
+  background-color: var(--background-primary, #1e1e1e);
+  color: var(--text-normal, #dcddde);
+}
+
 :root {
   /* Urano Core Architecture with Neutral Dark Grays and Urano Orange Accent */
   --accent-h: 24;
