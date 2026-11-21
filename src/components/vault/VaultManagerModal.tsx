@@ -14,11 +14,13 @@ import { CreateVaultForm } from './CreateVaultForm';
 export interface VaultManagerModalProps {
   isOpen: boolean;
   onClose: () => void;
+  standalone?: boolean;
 }
 
 export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
   isOpen,
   onClose,
+  standalone = false,
 }) => {
   const t = useT();
   const {
@@ -85,6 +87,16 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
       setView('main');
     }
   }, [isOpen]);
+
+  // Window title synchronization in standalone mode
+  useEffect(() => {
+    if (standalone) {
+      document.title = 'Urano';
+      try {
+        getCurrentWindow().setTitle('Urano').catch(() => {});
+      } catch {}
+    }
+  }, [standalone]);
 
   // Window maximize detection
   useEffect(() => {
@@ -157,12 +169,20 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-[var(--background-modifier-cover)] flex items-center justify-center select-none"
+      className={
+        standalone
+          ? 'w-screen h-screen flex bg-urano-sidebar select-none overflow-hidden relative'
+          : 'fixed inset-0 bg-[var(--background-modifier-cover)] flex items-center justify-center select-none'
+      }
       style={{ zIndex: 350 }}
-      onClick={onClose}
+      onClick={standalone ? undefined : onClose}
     >
       <div
-        className="w-[800px] h-[580px] flex rounded-[10px] overflow-hidden border border-urano-border bg-urano-sidebar shadow-2xl relative"
+        className={
+          standalone
+            ? 'w-full h-full flex overflow-hidden bg-urano-sidebar relative'
+            : 'w-[800px] h-[580px] flex rounded-[10px] overflow-hidden border border-urano-border bg-urano-sidebar shadow-2xl relative'
+        }
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top titlebar drag region */}
@@ -234,14 +254,18 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
               type="button"
               onClick={async (e) => {
                 e.stopPropagation();
-                try {
-                  await getCurrentWindow().close();
-                } catch {
-                  await invoke('close_window').catch(() => {});
+                if (standalone) {
+                  try {
+                    await getCurrentWindow().close();
+                  } catch {
+                    await invoke('close_window').catch(() => {});
+                  }
+                } else {
+                  onClose();
                 }
               }}
               className="p-1.5 text-urano-muted hover:text-urano-text hover:bg-[#e81123] rounded transition-colors cursor-pointer"
-              title={t('common.close')}
+              title={standalone ? t('window.close') || t('common.close') : t('common.close')}
             >
               <X size={15} strokeWidth={1.6} />
             </button>
