@@ -81,6 +81,7 @@ import {
   FolderInput,
   Merge,
   History,
+  FolderX,
 } from 'lucide-react';
 
 /** Stable, unique identifier for a workspace leaf (tab). */
@@ -400,6 +401,8 @@ const MainApp: React.FC = () => {
       setVault(lastVault)
         .catch((e) => {
           console.warn('No se pudo restaurar la última bóveda:', e);
+          useVaultStore.setState({ activeVault: null, vaultName: null });
+          localStorage.removeItem('urano_last_vault');
         })
         .finally(() => {
           setStartupMessage(t('startUp.loadingWorkspace') || 'Cargando el espacio de trabajo...');
@@ -409,10 +412,8 @@ const MainApp: React.FC = () => {
           }, 150);
         });
     } else {
-      setIsStartupFading(true);
-      setTimeout(() => {
-        setIsStartupLoading(false);
-      }, 150);
+      useVaultStore.setState({ activeVault: null, vaultName: null });
+      setIsStartupLoading(false);
     }
   }, []);
 
@@ -1642,6 +1643,26 @@ const MainApp: React.FC = () => {
     }
   };
 
+  // If no active vault is defined, render VaultManagerModal in standalone full-window mode.
+  // The main workspace cannot function without a valid vault folder.
+  if (!activeVault) {
+    return (
+      <div className="urano-app h-screen w-screen overflow-hidden bg-urano-sidebar flex flex-col select-none">
+        <VaultManagerModal
+          isOpen={true}
+          standalone={true}
+          onClose={() => {}}
+        />
+        {isStartupLoading && (
+          <ProgressBarScreen
+            message={startupMessage || t('startUp.loadingVault')}
+            isFadingOut={isStartupFading}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen w-screen bg-urano-bg text-urano-text overflow-hidden select-none">
       {/* Urano Custom Frame Titlebar (rendered in 'custom' / 'Marco de Urano' mode) */}
@@ -2126,6 +2147,27 @@ const MainApp: React.FC = () => {
             <Vault size={16} className="text-urano-muted shrink-0" />
             <span>{t('app.vaultMenu.manageVaults')}</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setVaultSwitcherAnchor(null);
+              useVaultStore.setState({
+                activeVault: null,
+                vaultName: null,
+                fileTree: [],
+                files: [],
+                activeFile: null,
+                activeFileName: null,
+                fileContent: '',
+              });
+              localStorage.removeItem('urano_last_vault');
+            }}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[5px] text-[13px] text-urano-muted hover:text-urano-text hover:bg-[var(--interactive-hover)] transition-colors cursor-pointer text-left"
+          >
+            <FolderX size={16} className="text-urano-muted shrink-0" />
+            <span>{t('app.vaultMenu.closeVault')}</span>
+          </button>
         </div>
       )}
 
@@ -2133,6 +2175,7 @@ const MainApp: React.FC = () => {
       <VaultManagerModal
         isOpen={showVaultManager}
         onClose={() => setShowVaultManager(false)}
+        standalone={false}
       />
 
       {/* Urano 1:1 "Update links" Modal */}
