@@ -93,6 +93,7 @@
       (function() {
         try {
           var isSettings = window.location.search.indexOf('window=settings') !== -1;
+          var hasVault = Boolean(localStorage.getItem('urano_last_vault'));
           var raw = localStorage.getItem('urano_settings');
           var theme = 'dark';
           var lang = 'es';
@@ -113,7 +114,7 @@
                 document.body.classList.add('theme-dark');
                 document.body.style.backgroundColor = bg;
               }
-              if (isSettings) {
+              if (isSettings || !hasVault) {
                 var splash = document.getElementById('app-splash-screen');
                 if (splash) splash.style.display = 'none';
               } else {
@@ -130,7 +131,7 @@
                 document.body.classList.add('theme-light');
                 document.body.style.backgroundColor = bg;
               }
-              if (isSettings) {
+              if (isSettings || !hasVault) {
                 var splash = document.getElementById('app-splash-screen');
                 if (splash) splash.style.display = 'none';
               } else {
