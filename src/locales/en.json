@@ -26,6 +26,13 @@
     "dragToRearrange": "Drag to rearrange",
     "refresh": "Refresh"
   },
+  "startUp": {
+    "loadingApp": "Loading Urano...",
+    "loadingVault": "Loading vault...",
+    "loadingWorkspace": "Loading workspace...",
+    "loadingCache": "Loading cache...",
+    "loadingPlugins": "Loading plugins..."
+  },
   "language": {
     "title": "Language",
     "description": "Change the display language.",
