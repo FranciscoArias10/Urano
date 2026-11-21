@@ -319,7 +319,7 @@ const MainApp: React.FC = () => {
   // Settings → General → "Learn how to add a new language to Urano." → open the locales folder
   const handleOpenLocalesFolder = useCallback(async () => {
     if (!activeVault) {
-      window.open('https://github.com/FranciscoArias10/Urano#idiomas', '_blank', 'noopener');
+      window.open('https://github.com/FranciscoArias10/Urano#languages', '_blank', 'noopener');
       return;
     }
     try {

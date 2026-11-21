@@ -112,7 +112,7 @@ export const SettingsWindow: React.FC = () => {
   const handleOpenLocalesFolder = async () => {
     const vaultPath = useVaultStore.getState().activeVault;
     if (!vaultPath) {
-      window.open('https://github.com/FranciscoArias10/Urano#idiomas', '_blank', 'noopener');
+      window.open('https://github.com/FranciscoArias10/Urano#languages', '_blank', 'noopener');
       return;
     }
     try {

@@ -145,7 +145,7 @@ export interface SettingTabsContext {
 export const URANO_VERSION = '1.14.5';
 export const URANO_INSTALLER_VERSION = '1.14.4';
 /** Documentación para añadir un idioma (cuando no hay bóveda abierta). */
-export const LOCALES_DOCS_URL = 'https://github.com/FranciscoArias10/Urano#idiomas';
+export const LOCALES_DOCS_URL = 'https://github.com/FranciscoArias10/Urano#languages';
 
 const ICON = 16;
 
