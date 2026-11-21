@@ -26,6 +26,13 @@
     "dragToRearrange": "Arrastra para reordenar",
     "refresh": "Actualizar"
   },
+  "startUp": {
+    "loadingApp": "Cargando Urano...",
+    "loadingVault": "Cargando bóveda...",
+    "loadingWorkspace": "Cargando el espacio de trabajo...",
+    "loadingCache": "Cargando la caché...",
+    "loadingPlugins": "Cargando complementos..."
+  },
   "language": {
     "title": "Idioma",
     "description": "Cambia el idioma de la interfaz.",
