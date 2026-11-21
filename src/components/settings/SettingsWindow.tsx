@@ -249,7 +249,10 @@ export const SettingsWindow: React.FC = () => {
   );
 
   return (
-    <div className="urano-app mod-settings-window flex flex-col">
+    <div
+      className="urano-app mod-settings-window flex flex-col"
+      style={{ backgroundColor: 'var(--background-primary, #1e1e1e)' }}
+    >
       {settings.windowFrameStyle !== 'native' && (
         <div
           className="titlebar"
