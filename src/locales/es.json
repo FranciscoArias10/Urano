@@ -700,7 +700,8 @@
       "openAnotherVault": "Abrir otra carpeta de bóveda...",
       "syncLogs": "Registros de sincronización...",
       "defaultVaultName": "Bóveda",
-      "manageVaults": "Administrar bóvedas..."
+      "manageVaults": "Administrar bóvedas...",
+      "closeVault": "Cerrar bóveda"
     },
     "ribbon": {
       "showSidebar": "Mostrar barra lateral",

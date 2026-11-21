@@ -700,7 +700,8 @@
       "openAnotherVault": "Open another vault...",
       "syncLogs": "Sync logs...",
       "defaultVaultName": "Vault",
-      "manageVaults": "Manage vaults..."
+      "manageVaults": "Manage vaults...",
+      "closeVault": "Close vault"
     },
     "ribbon": {
       "showSidebar": "Show sidebar",
