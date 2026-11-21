@@ -14,16 +14,92 @@
         color: #dcddde;
         margin: 0;
         padding: 0;
+        height: 100%;
+        width: 100%;
+      }
+      .progress-bar-container {
+        position: absolute;
+        height: 100vh;
+        width: 100vw;
+        top: 0;
+        inset-inline-start: 0;
+        background-color: #1e1e1e;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        opacity: 1;
+        transition: opacity 150ms ease-out;
+      }
+      .progress-bar {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 8px;
+        width: 100%;
+      }
+      .progress-bar-message {
+        margin-bottom: 32px;
+        color: #888888;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Ubuntu, sans-serif;
+        font-size: 15px;
+        font-weight: 500;
+        text-align: center;
+        user-select: none;
+      }
+      .progress-bar-indicator {
+        position: relative;
+        height: 8px;
+        margin: 0 auto;
+        width: 90vw;
+        max-width: 400px;
+        overflow-x: hidden;
+        border-radius: 4px;
+        background-color: #262626;
+      }
+      .progress-bar-line {
+        position: absolute;
+        opacity: 0.35;
+        background-color: #e06c1b;
+        width: 100%;
+        height: 8px;
+      }
+      .progress-bar-subline {
+        position: absolute;
+        background-color: #e06c1b;
+        height: 8px;
+        width: 100%;
+        transform-origin: left center;
+      }
+      .progress-bar-subline.mod-increase {
+        animation: progress-increase 2s infinite;
+      }
+      .progress-bar-subline.mod-decrease {
+        animation: progress-decrease 2s 0.5s infinite;
+      }
+      @keyframes progress-increase {
+        from { transform: translateX(-5%) scaleX(0.05); }
+        to { transform: translateX(130%) scaleX(1); }
+      }
+      @keyframes progress-decrease {
+        from { transform: translateX(-80%) scaleX(0.8); }
+        to { transform: translateX(110%) scaleX(0.1); }
       }
     </style>
     <script>
       (function() {
         try {
+          var isSettings = window.location.search.indexOf('window=settings') !== -1;
           var raw = localStorage.getItem('urano_settings');
           var theme = 'dark';
+          var lang = 'es';
           if (raw) {
             var parsed = JSON.parse(raw);
             if (parsed && parsed.theme) theme = parsed.theme;
+            if (parsed && parsed.language) lang = parsed.language;
           }
           var isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
           var bg = isDark ? '#1e1e1e' : '#ffffff';
@@ -37,6 +113,15 @@
                 document.body.classList.add('theme-dark');
                 document.body.style.backgroundColor = bg;
               }
+              if (isSettings) {
+                var splash = document.getElementById('app-splash-screen');
+                if (splash) splash.style.display = 'none';
+              } else {
+                var msgEl = document.getElementById('app-splash-message');
+                if (msgEl) {
+                  msgEl.textContent = lang === 'en' ? 'Loading Urano...' : 'Cargando Urano...';
+                }
+              }
             });
           } else {
             document.documentElement.classList.remove('dark');
@@ -44,6 +129,15 @@
               if (document.body) {
                 document.body.classList.add('theme-light');
                 document.body.style.backgroundColor = bg;
+              }
+              if (isSettings) {
+                var splash = document.getElementById('app-splash-screen');
+                if (splash) splash.style.display = 'none';
+              } else {
+                var msgEl = document.getElementById('app-splash-message');
+                if (msgEl) {
+                  msgEl.textContent = lang === 'en' ? 'Loading Urano...' : 'Cargando Urano...';
+                }
               }
             });
           }
@@ -56,7 +150,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   </head>
   <body class="overflow-hidden select-none theme-dark" style="background-color: #1e1e1e;">
-    <div id="root" class="h-screen w-screen flex flex-col" style="background-color: #1e1e1e;"></div>
+    <div id="root" class="h-screen w-screen flex flex-col" style="background-color: #1e1e1e;">
+      <div id="app-splash-screen" class="progress-bar-container">
+        <div class="progress-bar">
+          <div class="progress-bar-message" id="app-splash-message">Cargando Urano...</div>
+          <div class="progress-bar-indicator">
+            <div class="progress-bar-line"></div>
+            <div class="progress-bar-subline mod-increase"></div>
+            <div class="progress-bar-subline mod-decrease"></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
