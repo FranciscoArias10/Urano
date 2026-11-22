@@ -86,25 +86,80 @@ export function splitPath(path: string): { dir: string; fileName: string; baseNa
  * Mirrors Urano: a target written without extension stays without it for
  * markdown notes, while non-markdown targets always carry the extension.
  */
-function resolveReplacementTarget(rawTarget: string, oldPath: string, newPath: string): string | null {
-  const { fileName: oldFileName, baseName: oldBaseName, ext: oldExt } = splitPath(oldPath);
-  const { fileName: newFileName, baseName: newBaseName } = splitPath(newPath);
+function resolveReplacementTarget(
+  rawTarget: string,
+  oldPath: string,
+  newPath: string,
+  isMarkdownLink = false
+): string | null {
+  const trimmed = rawTarget.trim();
+  if (!trimmed || /^[a-z][a-z0-9+.-]*:/i.test(trimmed)) {
+    return null;
+  }
+
+  const wasUrlEncoded = /%[0-9a-fA-F]{2}/.test(trimmed);
+  let decodedTarget = trimmed;
+  if (wasUrlEncoded) {
+    try {
+      decodedTarget = decodeURIComponent(trimmed);
+    } catch {
+      decodedTarget = trimmed;
+    }
+  }
+
+  const { dir: oldDir, fileName: oldFileName, baseName: oldBaseName, ext: oldExt } = splitPath(oldPath);
+  const { dir: newDir, fileName: newFileName, baseName: newBaseName } = splitPath(newPath);
   const isMd = oldExt.toLowerCase() === '.md' || oldExt.toLowerCase() === '.markdown';
 
-  const cleanTarget = normalizePath(rawTarget.trim());
+  const cleanTarget = normalizePath(decodedTarget);
   const lastSlash = cleanTarget.lastIndexOf('/');
-  const targetDir = lastSlash !== -1 ? cleanTarget.substring(0, lastSlash + 1) : '';
+  const targetDir = lastSlash !== -1 ? cleanTarget.substring(0, lastSlash) : '';
   const targetFile = lastSlash !== -1 ? cleanTarget.substring(lastSlash + 1) : cleanTarget;
 
   const matchesFileName = targetFile.toLowerCase() === oldFileName.toLowerCase();
-  const matchesBaseName = targetFile.toLowerCase() === oldBaseName.toLowerCase();
+  const matchesBaseName = isMd && targetFile.toLowerCase() === oldBaseName.toLowerCase();
 
   if (!matchesFileName && !matchesBaseName) {
     return null;
   }
 
+  const lowerOldDir = oldDir.toLowerCase();
+  const lowerNewDir = newDir.toLowerCase();
+  const lowerTargetDir = targetDir.replace(/^(\.\/)+/, '').toLowerCase();
+
+  let nextDirPrefix = '';
+  if (lowerTargetDir) {
+    const dirMatches =
+      lowerOldDir === lowerTargetDir || lowerOldDir.endsWith(`/${lowerTargetDir}`);
+    if (!dirMatches) {
+      return null;
+    }
+
+    if (lowerOldDir === lowerNewDir) {
+      nextDirPrefix = `${targetDir}/`;
+    } else {
+      const rootPrefixLen = oldDir.length - lowerTargetDir.length;
+      const rootPrefix = oldDir.slice(0, rootPrefixLen).replace(/\/+$/, '');
+      if (
+        rootPrefix &&
+        (lowerNewDir === rootPrefix.toLowerCase() ||
+          lowerNewDir.startsWith(`${rootPrefix.toLowerCase()}/`))
+      ) {
+        const relNewDir = newDir.slice(rootPrefix.length).replace(/^\/+/, '');
+        nextDirPrefix = relNewDir ? `${relNewDir}/` : '';
+      } else {
+        const newDirName = newDir.split('/').filter(Boolean).pop() || '';
+        nextDirPrefix = newDirName ? `${newDirName}/` : '';
+      }
+    }
+  }
+
   const replacementName = matchesFileName ? newFileName : isMd ? newBaseName : newFileName;
-  return `${targetDir}${replacementName}`;
+  const finalTarget = `${nextDirPrefix}${replacementName}`;
+  if (isMarkdownLink && wasUrlEncoded) {
+    return encodeURI(finalTarget);
+  }
+  return finalTarget;
 }
 
 /**
@@ -120,7 +175,7 @@ export function findLinkReplacements(text: string, oldPath: string, newPath: str
   let m: RegExpExecArray | null;
   while ((m = wikilinkRegex.exec(text)) !== null) {
     const [full, prefix, rawTarget, rest, suffix] = m;
-    const replacement = resolveReplacementTarget(rawTarget, oldPath, newPath);
+    const replacement = resolveReplacementTarget(rawTarget, oldPath, newPath, false);
     if (replacement === null) continue;
     replacements.push({
       from: m.index,
@@ -133,7 +188,7 @@ export function findLinkReplacements(text: string, oldPath: string, newPath: str
   const mdLinkRegex = /(!?\[[^\]]*\]\()([^)#]+)(.*?\))/g;
   while ((m = mdLinkRegex.exec(text)) !== null) {
     const [full, prefix, rawTarget, rest] = m;
-    const replacement = resolveReplacementTarget(rawTarget, oldPath, newPath);
+    const replacement = resolveReplacementTarget(rawTarget, oldPath, newPath, true);
     if (replacement === null) continue;
     replacements.push({
       from: m.index,
@@ -187,9 +242,6 @@ export function replaceLinksInCanvas(
   oldPath: string,
   newPath: string
 ): { updatedContent: string; count: number } {
-  const { fileName: oldFileName, baseName: oldBaseName } = splitPath(oldPath);
-  const { fileName: newFileName, baseName: newBaseName } = splitPath(newPath);
-
   try {
     const canvasObj = JSON.parse(content);
     let count = 0;
@@ -198,17 +250,9 @@ export function replaceLinksInCanvas(
     if (Array.isArray(canvasObj.nodes)) {
       for (const node of canvasObj.nodes) {
         if (node.type === 'file' && typeof node.file === 'string') {
-          const normFile = normalizePath(node.file);
-          const lastSlash = normFile.lastIndexOf('/');
-          const nodeDir = lastSlash !== -1 ? normFile.substring(0, lastSlash + 1) : '';
-          const nodeFile = lastSlash !== -1 ? normFile.substring(lastSlash + 1) : normFile;
-
-          if (nodeFile.toLowerCase() === oldFileName.toLowerCase()) {
-            node.file = `${nodeDir}${newFileName}`;
-            count++;
-            changed = true;
-          } else if (nodeFile.toLowerCase() === oldBaseName.toLowerCase()) {
-            node.file = `${nodeDir}${newBaseName}`;
+          const replacement = resolveReplacementTarget(node.file, oldPath, newPath, false);
+          if (replacement !== null && replacement !== node.file) {
+            node.file = replacement;
             count++;
             changed = true;
           }
