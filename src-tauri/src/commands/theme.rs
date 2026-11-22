@@ -11,6 +11,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct InstalledTheme {
     pub name: String,
     pub version: Option<String>,
