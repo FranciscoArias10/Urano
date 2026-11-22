@@ -10,6 +10,7 @@ import { useSyncStore } from '../../stores/syncStore';
 import { RecentVaultsList } from './RecentVaultsList';
 import { VaultActionsCard } from './VaultActionsCard';
 import { CreateVaultForm } from './CreateVaultForm';
+import { isSamePath, normalizePath } from '../../utils/pathUtils';
 
 export interface VaultManagerModalProps {
   isOpen: boolean;
@@ -67,7 +68,7 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
         title: t('vaultManager.remote.chooseFolder', { name: remoteVault.name }),
       });
       if (selected && typeof selected === 'string') {
-        const destPath = `${selected.replace(/\/+$/, '')}/${remoteVault.name}`;
+        const destPath = `${normalizePath(selected)}/${remoteVault.name}`;
         setDownloadingVaultId(remoteVault.id);
         const success = await downloadRemoteVault(remoteVault.id, destPath);
         setDownloadingVaultId(null);
@@ -133,7 +134,7 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
   };
 
   const handleCreateVaultSubmit = async (vaultName: string, location: string) => {
-    const fullPath = `${location.replace(/\/+$/, '')}/${vaultName}`;
+    const fullPath = `${normalizePath(location)}/${vaultName}`;
     await invoke('create_folder', { folderPath: fullPath });
     await setVault(fullPath);
     onClose();
@@ -155,10 +156,10 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
         title: t('vaultManager.dialogs.moveDest'),
       });
       if (selectedParent && typeof selectedParent === 'string') {
-        const newPath = `${selectedParent.replace(/\/+$/, '')}/${name}`;
+        const newPath = `${normalizePath(selectedParent)}/${name}`;
         await invoke('rename_item', { oldPath: path, newPath });
         updateRecentVault(path, newPath, name);
-        if (activeVault === path) {
+        if (activeVault && isSamePath(activeVault, path)) {
           await setVault(newPath);
         }
       }
@@ -185,24 +186,26 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
         }
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top titlebar drag region */}
-        <div
-          className="absolute top-0 left-0 right-0 h-10 z-0"
-          data-tauri-drag-region
-          onDoubleClick={async () => {
-            try {
-              await getCurrentWindow().toggleMaximize();
-            } catch {
-              await invoke('toggle_maximize_window').catch(() => {});
-            }
-          }}
-        />
+        {/* Top titlebar drag region (standalone window only) */}
+        {standalone && (
+          <div
+            className="absolute top-0 left-0 right-0 h-10 z-0"
+            data-tauri-drag-region
+            onDoubleClick={async () => {
+              try {
+                await getCurrentWindow().toggleMaximize();
+              } catch {
+                await invoke('toggle_maximize_window').catch(() => {});
+              }
+            }}
+          />
+        )}
         {/* Left Column: Recent Vaults List */}
         <RecentVaultsList
           vaults={recentVaults}
           activeVault={activeVault}
-          onSelectVault={(path) => {
-            setVault(path);
+          onSelectVault={async (path) => {
+            await setVault(path);
             onClose();
           }}
           onShowInExplorer={handleShowInExplorer}
@@ -214,42 +217,46 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
         <main className="flex-1 bg-urano-sidebar flex flex-col items-center justify-center p-8 px-11 relative">
           {/* Window controls in top right */}
           <div className="absolute top-3 right-3.5 flex items-center gap-1.5 z-10">
-            <button
-              type="button"
-              onClick={async (e) => {
-                e.stopPropagation();
-                try {
-                  await getCurrentWindow().minimize();
-                } catch {
-                  await invoke('minimize_window').catch(() => {});
-                }
-              }}
-              className="p-1.5 text-urano-muted hover:text-urano-text hover:bg-[var(--interactive-hover)] rounded transition-colors cursor-pointer"
-              title={t('window.minimize')}
-            >
-              <Minus size={14} strokeWidth={1.6} />
-            </button>
-            <button
-              type="button"
-              onClick={async (e) => {
-                e.stopPropagation();
-                try {
-                  await getCurrentWindow().toggleMaximize();
-                  setIsMaximized(await getCurrentWindow().isMaximized());
-                } catch {
-                  await invoke('toggle_maximize_window').catch(() => {});
-                  setIsMaximized((prev) => !prev);
-                }
-              }}
-              className="p-1.5 text-urano-muted hover:text-urano-text hover:bg-[var(--interactive-hover)] rounded transition-colors cursor-pointer"
-              title={isMaximized ? t('window.restore') : t('window.maximize')}
-            >
-              {isMaximized ? (
-                <Copy size={12} strokeWidth={1.6} />
-              ) : (
-                <Square size={12} strokeWidth={1.6} />
-              )}
-            </button>
+            {standalone && (
+              <>
+                <button
+                  type="button"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      await getCurrentWindow().minimize();
+                    } catch {
+                      await invoke('minimize_window').catch(() => {});
+                    }
+                  }}
+                  className="p-1.5 text-urano-muted hover:text-urano-text hover:bg-[var(--interactive-hover)] rounded transition-colors cursor-pointer"
+                  title={t('window.minimize')}
+                >
+                  <Minus size={14} strokeWidth={1.6} />
+                </button>
+                <button
+                  type="button"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      await getCurrentWindow().toggleMaximize();
+                      setIsMaximized(await getCurrentWindow().isMaximized());
+                    } catch {
+                      await invoke('toggle_maximize_window').catch(() => {});
+                      setIsMaximized((prev) => !prev);
+                    }
+                  }}
+                  className="p-1.5 text-urano-muted hover:text-urano-text hover:bg-[var(--interactive-hover)] rounded transition-colors cursor-pointer"
+                  title={isMaximized ? t('window.restore') : t('window.maximize')}
+                >
+                  {isMaximized ? (
+                    <Copy size={12} strokeWidth={1.6} />
+                  ) : (
+                    <Square size={12} strokeWidth={1.6} />
+                  )}
+                </button>
+              </>
+            )}
             <button
               type="button"
               onClick={async (e) => {
@@ -290,6 +297,9 @@ export const VaultManagerModal: React.FC<VaultManagerModalProps> = ({
               onCreateClick={() => setView('create')}
               onOpenFolderClick={handleOpenFolderAsVault}
               onSyncClick={handleSyncClick}
+              onHelpClick={() =>
+                window.open('https://github.com/FranciscoArias10/Urano', '_blank', 'noopener')
+              }
             />
           ) : view === 'create' ? (
             <div className="w-full max-w-[460px] bg-urano-bg border border-urano-border rounded-[10px] px-5 py-1">
