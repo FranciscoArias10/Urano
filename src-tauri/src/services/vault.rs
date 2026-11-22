@@ -9,6 +9,7 @@ pub const IMAGE_EXTENSIONS: &[&str] = &[
 ];
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct FileItem {
     pub path: String,
     pub name: String,
