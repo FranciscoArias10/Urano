@@ -12,6 +12,8 @@ import {
   executeFileRenameOnly,
   LinkScanResult,
   setAlwaysUpdateLinksPref,
+  FILE_RENAMED_EVENT,
+  FileRenamedDetail,
 } from '../services/linkRefactorService';
 import {
   normalizePath,
@@ -62,6 +64,103 @@ function collectExistingNamesInDir(fileTree: FileItem[], targetDir: string): Set
   };
   walk(fileTree);
   return existingNames;
+}
+
+function isPathOrDescendant(candidate: string | null | undefined, targetPrefix: string): boolean {
+  if (!candidate || !targetPrefix) return false;
+  if (isSamePath(candidate, targetPrefix)) return true;
+  const normCandidate = normalizePath(candidate).toLowerCase();
+  const normPrefix = normalizePath(targetPrefix).toLowerCase();
+  return normCandidate.startsWith(`${normPrefix}/`);
+}
+
+function remapPathPrefix(targetPath: string, oldPrefix: string, newPrefix: string): string | null {
+  if (isSamePath(targetPath, oldPrefix)) return normalizePath(newPrefix);
+  const normTarget = normalizePath(targetPath);
+  const normOld = normalizePath(oldPrefix);
+  const normNew = normalizePath(newPrefix);
+  if (normTarget.toLowerCase().startsWith(`${normOld.toLowerCase()}/`)) {
+    return `${normNew}${normTarget.slice(normOld.length)}`;
+  }
+  return null;
+}
+
+function dispatchFileRenamedEvent(oldPath: string, newPath: string): void {
+  const normNew = normalizePath(newPath);
+  const fileName = normNew.substring(normNew.lastIndexOf('/') + 1);
+  const lastDot = fileName.lastIndexOf('.');
+  const baseName = lastDot > 0 ? fileName.substring(0, lastDot) : fileName;
+  const detail: FileRenamedDetail = {
+    oldPath,
+    newPath,
+    newFileName: fileName,
+    newBaseName: baseName,
+  };
+  window.dispatchEvent(new CustomEvent<FileRenamedDetail>(FILE_RENAMED_EVENT, { detail }));
+}
+
+function buildPrefixRenamePatch(
+  oldPrefix: string,
+  newPrefix: string,
+  fileTree: FileItem[],
+  activeFile: string | null,
+  notesContentMap: Record<string, string>
+): {
+  notesContentMap: Record<string, string>;
+  activeFile?: string;
+  activeFileName?: string;
+} {
+  const renamedPaths = new Map<string, string>();
+  const recordIfMatch = (candidate: string) => {
+    const remapped = remapPathPrefix(candidate, oldPrefix, newPrefix);
+    if (remapped) {
+      const key = normalizePath(candidate).toLowerCase();
+      if (!renamedPaths.has(key)) renamedPaths.set(key, candidate);
+    }
+  };
+
+  const walkFiles = (items: FileItem[]) => {
+    for (const item of items) {
+      if (!item.isDir) recordIfMatch(item.path);
+      if (item.children?.length) walkFiles(item.children);
+    }
+  };
+  walkFiles(fileTree);
+  for (const notePath of Object.keys(notesContentMap)) recordIfMatch(notePath);
+  if (activeFile) recordIfMatch(activeFile);
+
+  for (const originalPath of renamedPaths.values()) {
+    const remapped = remapPathPrefix(originalPath, oldPrefix, newPrefix);
+    if (remapped) dispatchFileRenamedEvent(originalPath, remapped);
+  }
+
+  const updatedMap: Record<string, string> = {};
+  for (const [k, v] of Object.entries(notesContentMap)) {
+    const remapped = remapPathPrefix(k, oldPrefix, newPrefix);
+    updatedMap[remapped ?? k] = v;
+  }
+
+  const remappedActive = activeFile ? remapPathPrefix(activeFile, oldPrefix, newPrefix) : null;
+  if (remappedActive) {
+    const fileName = remappedActive.substring(remappedActive.lastIndexOf('/') + 1);
+    return {
+      notesContentMap: updatedMap,
+      activeFile: remappedActive,
+      activeFileName: fileName,
+    };
+  }
+  return { notesContentMap: updatedMap };
+}
+
+function readInitialBookmarks(): BookmarkItem[] {
+  try {
+    const raw = localStorage.getItem('urano_bookmarks');
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
 /** Recursively collects all non-directory files from a vault `FileItem[]` tree. */
@@ -470,7 +569,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
   addRecentVault: (name: string, path: string) => {
     const { recentVaults } = get();
-    const filtered = recentVaults.filter((v) => v.path !== path);
+    const filtered = recentVaults.filter((v) => !isSamePath(v.path, path));
     const updated = [{ name, path }, ...filtered];
     localStorage.setItem('urano_recent_vaults', JSON.stringify(updated));
     set({ recentVaults: updated });
@@ -478,7 +577,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
   removeRecentVault: (path: string) => {
     const { recentVaults } = get();
-    const updated = recentVaults.filter((v) => v.path !== path);
+    const updated = recentVaults.filter((v) => !isSamePath(v.path, path));
     localStorage.setItem('urano_recent_vaults', JSON.stringify(updated));
     set({ recentVaults: updated });
   },
@@ -486,7 +585,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   updateRecentVault: (oldPath: string, newPath: string, newName?: string) => {
     const { recentVaults } = get();
     const updated = recentVaults.map((v) => {
-      if (v.path === oldPath) {
+      if (isSamePath(v.path, oldPath)) {
         return {
           name: newName || v.name,
           path: newPath,
@@ -499,13 +598,13 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   },
 
   // Bookmarks
-  bookmarks: JSON.parse(localStorage.getItem('urano_bookmarks') || '[]'),
+  bookmarks: readInitialBookmarks(),
   toggleBookmark: (item) => {
     const { bookmarks } = get();
-    const exists = bookmarks.some((b) => b.path === item.path);
+    const exists = bookmarks.some((b) => isSamePath(b.path, item.path));
     let updated: BookmarkItem[];
     if (exists) {
-      updated = bookmarks.filter((b) => b.path !== item.path);
+      updated = bookmarks.filter((b) => !isSamePath(b.path, item.path));
     } else {
       updated = [
         ...bookmarks,
@@ -517,12 +616,12 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   },
   removeBookmark: (path) => {
     const { bookmarks } = get();
-    const updated = bookmarks.filter((b) => b.path !== path);
+    const updated = bookmarks.filter((b) => !isSamePath(b.path, path));
     localStorage.setItem('urano_bookmarks', JSON.stringify(updated));
     set({ bookmarks: updated });
   },
   isBookmarked: (path) => {
-    return get().bookmarks.some((b) => b.path === path);
+    return get().bookmarks.some((b) => isSamePath(b.path, path));
   },
 
   // Sorting
@@ -1104,11 +1203,10 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     if (isSamePath(normSource, newPath)) return;
 
     await invoke('rename_item', { oldPath: sourcePath, newPath });
-    const { activeFile } = get();
-    if (isSamePath(activeFile, sourcePath)) {
-      set({ activeFile: newPath, activeFileName: fileName });
-    }
+    const { fileTree, activeFile, notesContentMap } = get();
+    set(buildPrefixRenamePatch(sourcePath, newPath, fileTree, activeFile, notesContentMap));
     await get().refreshTree();
+    triggerAutoSync(get().activeVault, get().vaultName);
   },
 
   // Urano prompt-free folder creation
@@ -1380,20 +1478,28 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     // Delete the main item
     await removeSinglePath(path);
 
-    if (isSamePath(activeFile, path)) {
-      set({ activeFile: null, activeFileName: null, fileContent: '', isDirty: false });
+    const updatedMap: Record<string, string> = {};
+    for (const [k, v] of Object.entries(get().notesContentMap)) {
+      if (!isPathOrDescendant(k, path)) {
+        updatedMap[k] = v;
+      }
     }
+
+    const activeDeleted = isPathOrDescendant(activeFile, path);
+    set({
+      notesContentMap: updatedMap,
+      ...(activeDeleted
+        ? { activeFile: null, activeFileName: null, fileContent: '', isDirty: false }
+        : {}),
+    });
     await refreshTree();
     triggerAutoSync(get().activeVault, get().vaultName);
   },
 
   renameItem: async (oldPath: string, newPath: string) => {
     await invoke('rename_item', { oldPath, newPath });
-    const { activeFile } = get();
-    if (isSamePath(activeFile, oldPath)) {
-      const parts = newPath.replace(/\\/g, '/').split('/');
-      set({ activeFile: newPath, activeFileName: parts[parts.length - 1] });
-    }
+    const { fileTree, activeFile, notesContentMap } = get();
+    set(buildPrefixRenamePatch(oldPath, newPath, fileTree, activeFile, notesContentMap));
     await get().refreshTree();
     triggerAutoSync(get().activeVault, get().vaultName);
   },
