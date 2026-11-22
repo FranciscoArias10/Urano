@@ -117,7 +117,7 @@ pub fn list_installed_themes(vault_path: String) -> Result<Vec<InstalledTheme>, 
         }
     }
 
-    themes.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    themes.sort_by_key(|a| a.name.to_lowercase());
     Ok(themes)
 }
 
@@ -219,7 +219,7 @@ pub fn list_css_snippets(vault_path: String) -> Result<Vec<SnippetInfo>, String>
         }
     }
 
-    snippets.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    snippets.sort_by_key(|a| a.name.to_lowercase());
     Ok(snippets)
 }
 
