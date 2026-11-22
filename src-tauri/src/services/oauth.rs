@@ -309,3 +309,9 @@ impl OAuthService {
         })
     }
 }
+
+impl Default for OAuthService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
