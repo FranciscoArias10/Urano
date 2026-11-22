@@ -3,6 +3,7 @@ import { MoreVertical } from 'lucide-react';
 import { useT } from '../../stores/localeStore';
 import { RecentVault } from '../../stores/vaultStore';
 import { RecentVaultContextMenu } from './RecentVaultContextMenu';
+import { isSamePath } from '../../utils/pathUtils';
 
 export interface RecentVaultsListProps {
   vaults: RecentVault[];
@@ -35,7 +36,7 @@ export const RecentVaultsList: React.FC<RecentVaultsListProps> = ({
     setActiveMenuPath(path);
   };
 
-  const activeVaultItem = vaults.find((v) => v.path === activeMenuPath);
+  const activeVaultItem = vaults.find((v) => isSamePath(v.path, activeMenuPath));
 
   return (
     <aside className="w-[260px] bg-urano-sidebar border-r border-urano-border p-3 flex flex-col shrink-0">
@@ -46,7 +47,7 @@ export const RecentVaultsList: React.FC<RecentVaultsListProps> = ({
           </div>
         ) : (
           vaults.map((vault) => {
-            const isActive = activeVault === vault.path;
+            const isActive = Boolean(activeVault) && isSamePath(activeVault, vault.path);
             return (
               <div
                 key={vault.path}
