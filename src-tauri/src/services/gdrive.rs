@@ -250,3 +250,9 @@ impl GDriveClient {
         Ok(())
     }
 }
+
+impl Default for GDriveClient {
+    fn default() -> Self {
+        Self::new()
+    }
+}
