@@ -1311,7 +1311,7 @@ async fn list_remote_drive_vaults_impl(
             });
         }
     }
-    vaults.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    vaults.sort_by_key(|a| a.name.to_lowercase());
 
     Ok(vaults)
 }
@@ -1602,6 +1602,7 @@ fn write_downloaded_file(dest: &Path, bytes: &[u8]) -> Result<(), String> {
 ///      content (metadata POST + media PATCH);
 ///   4. PATCH files edited locally, download files edited or created remotely, keep both
 ///      versions on conflicts and propagate deletions through the trash on each side.
+///
 /// Per-file failures are logged (`drive-sync:log` kind `error`) and counted but never abort
 /// the pass, so one unreadable file cannot leave the whole vault un-synced.
 async fn sync_vault_with_drive_impl(
