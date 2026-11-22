@@ -30,6 +30,22 @@ import { useNoticeStore } from '../common/Notice';
 import { Tooltip } from '../common/Tooltip';
 import { isSamePath, normalizePath } from '../../utils/pathUtils';
 
+export function canMoveToFolder(sourcePath: string, targetFolderPath: string): boolean {
+  const normSrc = normalizePath(sourcePath);
+  const normDst = normalizePath(targetFolderPath);
+  if (!normSrc || !normDst) return false;
+  const lowerSrc = normSrc.toLowerCase();
+  const lowerDst = normDst.toLowerCase();
+  if (lowerSrc === lowerDst) return false;
+  // Prevent moving a folder into itself or any of its descendants
+  if (lowerDst.startsWith(`${lowerSrc}/`)) return false;
+  // Prevent no-op move into the same parent folder
+  const lastSlash = lowerSrc.lastIndexOf('/');
+  const srcParent = lastSlash !== -1 ? lowerSrc.substring(0, lastSlash) : '';
+  if (srcParent === lowerDst) return false;
+  return true;
+}
+
 /**
  * Extracts the base name (without extension) and extension for any file.
  * Folders return { baseName: fileName, extension: '' }.
@@ -70,6 +86,7 @@ interface FileTreeProps {
 
 export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNewTab, onOpenFile }) => {
   const {
+    activeVault,
     sortOrder,
     setSortOrder,
     autoReveal,
@@ -77,8 +94,8 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
     createUntitledNote,
     createUntitledCanvas,
     createUntitledFolder,
+    moveItem,
     fileTree,
-    selectFile,
   } = useVaultStore();
 
   const { showNotice } = useNoticeStore();
@@ -86,6 +103,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
 
   const [collapsedMap, setCollapsedMap] = useState<Record<string, boolean>>({});
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
+  const [isRootDragTarget, setIsRootDragTarget] = useState(false);
 
   const [sortMenu, setSortMenu] = useState<{ x: number; y: number } | null>(null);
   const [rootContextMenu, setRootContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -170,16 +188,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
   };
 
   const handleCreateNewNote = async () => {
-    const { path } = await createUntitledNote();
-    if (path) {
-      if (onOpenFile) {
-        onOpenFile(path);
-      } else if (onOpenInNewTab) {
-        onOpenInNewTab(path);
-      } else {
-        selectFile(path);
-      }
-    }
+    await createUntitledNote();
   };
 
   const handleCreateNewCanvas = async () => {
@@ -311,7 +320,65 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
 
         {/* Tree Items List */}
         <div
-          className="flex flex-col flex-1 overflow-y-auto pt-1 pb-4"
+          className={`flex flex-col flex-1 overflow-y-auto pt-1 pb-4 transition-colors ${
+            isRootDragTarget ? 'bg-orange-500/10 ring-1 ring-inset ring-orange-500/60 rounded-md' : ''
+          }`}
+          onDragOver={(e) => {
+            if (depth === 0 && activeVault) {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+              setIsRootDragTarget(true);
+            }
+          }}
+          onDragLeave={(e) => {
+            if (e.currentTarget === e.target || !e.currentTarget.contains(e.relatedTarget as Node)) {
+              setIsRootDragTarget(false);
+            }
+          }}
+          onDrop={async (e) => {
+            if (depth !== 0 || !activeVault) return;
+            e.preventDefault();
+            setIsRootDragTarget(false);
+
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+              const droppedFiles = Array.from(e.dataTransfer.files);
+              try {
+                for (const f of droppedFiles) {
+                  const fullPath = `${normalizePath(activeVault)}/${f.name}`.replace(/\/+/g, '/');
+                  await getStorageAdapter().writeBinary(fullPath, f);
+                }
+                await useVaultStore.getState().refreshTree();
+                showNotice(
+                  t('fileTree.notices.filesSaved', { count: droppedFiles.length }),
+                  2000,
+                  'success'
+                );
+              } catch (err: any) {
+                console.error('Error saving dropped files to vault root:', err);
+                showNotice(
+                  err?.toString() || t('fileTree.notices.renameFileError'),
+                  3000,
+                  'error'
+                );
+              }
+              return;
+            }
+
+            const sourcePath = e.dataTransfer.getData('application/x-urano-path');
+            if (sourcePath && canMoveToFolder(sourcePath, activeVault)) {
+              try {
+                await moveItem(sourcePath, activeVault);
+                showNotice(t('fileTree.notices.itemMoved'), 2000, 'success');
+              } catch (err: any) {
+                console.error('Error moving item to vault root:', err);
+                showNotice(
+                  err?.toString() || t('fileTree.notices.renameFileError'),
+                  3000,
+                  'error'
+                );
+              }
+            }
+          }}
           onContextMenu={(e) => {
             if (e.target === e.currentTarget) {
               e.preventDefault();
@@ -442,6 +509,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
     const validation = validateFileName(trimmed);
     if (!validation.valid) {
       showNotice(validation.error || t('fileTree.notices.invalidName'), 3000, 'error');
+      setRenameValue(initialBaseName);
       ctx?.setRenamingPath(null);
       return;
     }
@@ -468,15 +536,8 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           title: t('fileTree.newNote'),
           icon: <SquarePen size={14} />,
           action: async () => {
-            const { path } = await createUntitledNote(item.path);
+            await createUntitledNote(item.path);
             ctx?.setFolderOpen(item.path, true);
-            if (path) {
-              if (ctx?.onOpenInNewTab) {
-                ctx.onOpenInNewTab(path);
-              } else {
-                selectFile(path);
-              }
-            }
           },
         },
         {
@@ -646,6 +707,14 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
     <div className="flex flex-col">
       <div
         ref={itemRef}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'F2' && !isRenaming) {
+            e.preventDefault();
+            e.stopPropagation();
+            ctx?.setRenamingPath(item.path);
+          }
+        }}
         draggable={true}
         onDragStart={(e) => {
           e.dataTransfer.setData('text/plain', item.path);
@@ -655,6 +724,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
         onDragOver={(e) => {
           if (item.isDir) {
             e.preventDefault();
+            e.stopPropagation();
             e.dataTransfer.dropEffect = 'move';
             setIsDragTarget(true);
           }
@@ -663,26 +733,37 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
         onDrop={async (e) => {
           if (!item.isDir) return;
           e.preventDefault();
+          e.stopPropagation();
           setIsDragTarget(false);
 
           // Handle dropped files from OS
           if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             const files = Array.from(e.dataTransfer.files);
-            for (const f of files) {
-              const fullPath = `${item.path}/${f.name}`.replace(/\/+/g, '/');
-              await getStorageAdapter().writeBinary(fullPath, f);
+            try {
+              for (const f of files) {
+                const fullPath = `${normalizePath(item.path)}/${f.name}`.replace(/\/+/g, '/');
+                await getStorageAdapter().writeBinary(fullPath, f);
+              }
+              ctx?.setFolderOpen(item.path, true);
+              await useVaultStore.getState().refreshTree();
+              showNotice(t('fileTree.notices.filesSaved', { count: files.length }), 2000, 'success');
+            } catch (err: any) {
+              console.error('Error saving dropped files to folder:', err);
+              showNotice(err?.toString() || t('fileTree.notices.renameFileError'), 3000, 'error');
             }
-            ctx?.setFolderOpen(item.path, true);
-            await useVaultStore.getState().refreshTree();
-            showNotice(t('fileTree.notices.filesSaved', { count: files.length }), 2000, 'success');
             return;
           }
 
-          const sourcePath = e.dataTransfer.getData('text/plain');
-          if (sourcePath && sourcePath !== item.path) {
-            await moveItem(sourcePath, item.path);
-            ctx?.setFolderOpen(item.path, true);
-            showNotice(t('fileTree.notices.itemMoved'), 2000, 'success');
+          const sourcePath = e.dataTransfer.getData('application/x-urano-path');
+          if (sourcePath && canMoveToFolder(sourcePath, item.path)) {
+            try {
+              await moveItem(sourcePath, item.path);
+              ctx?.setFolderOpen(item.path, true);
+              showNotice(t('fileTree.notices.itemMoved'), 2000, 'success');
+            } catch (err: any) {
+              console.error('Error moving item into folder:', err);
+              showNotice(err?.toString() || t('fileTree.notices.renameFileError'), 3000, 'error');
+            }
           }
         }}
         onClick={handleSelect}
