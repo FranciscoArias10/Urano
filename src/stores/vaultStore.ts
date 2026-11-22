@@ -45,6 +45,25 @@ function findFileInTreeByPath(items: FileItem[], targetPath: string): string | n
   return null;
 }
 
+/** Collects lowercased direct child names inside `targetDir`, normalizing Windows/Unix slashes. */
+function collectExistingNamesInDir(fileTree: FileItem[], targetDir: string): Set<string> {
+  const normTargetDir = normalizePath(targetDir).toLowerCase();
+  const existingNames = new Set<string>();
+  const walk = (items: FileItem[]) => {
+    for (const item of items) {
+      const normItem = normalizePath(item.path);
+      const slashIdx = normItem.lastIndexOf('/');
+      const itemParent = slashIdx !== -1 ? normItem.substring(0, slashIdx).toLowerCase() : '';
+      if (itemParent === normTargetDir) {
+        existingNames.add(item.name.toLowerCase());
+      }
+      if (item.children?.length) walk(item.children);
+    }
+  };
+  walk(fileTree);
+  return existingNames;
+}
+
 /** Recursively collects all non-directory files from a vault `FileItem[]` tree. */
 export function flattenVaultFiles(items: FileItem[]): FileItem[] {
   const result: FileItem[] = [];
@@ -787,23 +806,15 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       targetDir = resolveNewFileDir(activeVault, activeFile);
     }
 
-    if (targetDir !== activeVault) {
+    const normTargetDir = normalizePath(targetDir);
+    if (normTargetDir.toLowerCase() !== normalizePath(activeVault).toLowerCase()) {
       try {
-        await invoke('create_folder', { folderPath: targetDir });
+        await invoke('create_folder', { folderPath: normTargetDir });
       } catch {}
     }
 
     // Collect all existing names in targetDir
-    const existingNames = new Set<string>();
-    const collectInDir = (items: FileItem[]) => {
-      for (const item of items) {
-        if (item.path.startsWith(targetDir)) {
-          existingNames.add(item.name.toLowerCase());
-        }
-        if (item.children) collectInDir(item.children);
-      }
-    };
-    collectInDir(fileTree);
+    const existingNames = collectExistingNamesInDir(fileTree, normTargetDir);
 
     const untitled = t('common.untitled');
     let candidateName = `${untitled}.md`;
@@ -813,7 +824,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       counter++;
     }
 
-    const fullPath = `${targetDir}/${candidateName}`.replace(/\/+/g, '/');
+    const fullPath = `${normTargetDir}/${candidateName}`.replace(/\/+/g, '/');
     const initialContent = '';
 
     await invoke('create_file', { filePath: fullPath });
@@ -840,23 +851,14 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     }
     if (!targetDir) return { path: '', name: '' };
 
-    if (targetDir !== activeVault) {
+    const normTargetDir = normalizePath(targetDir);
+    if (normTargetDir.toLowerCase() !== normalizePath(activeVault).toLowerCase()) {
       try {
-        await invoke('create_folder', { folderPath: targetDir });
+        await invoke('create_folder', { folderPath: normTargetDir });
       } catch {}
     }
 
-    const normTargetDir = normalizePath(targetDir);
-    const existingNames = new Set<string>();
-    const collectInDir = (items: FileItem[]) => {
-      for (const item of items) {
-        if (normalizePath(item.path).startsWith(normTargetDir)) {
-          existingNames.add(item.name.toLowerCase());
-        }
-        if (item.children) collectInDir(item.children);
-      }
-    };
-    collectInDir(fileTree);
+    const existingNames = collectExistingNamesInDir(fileTree, normTargetDir);
 
     const untitled = t('common.untitled');
     let candidateName = `${untitled}.canvas`;
@@ -866,7 +868,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       counter++;
     }
 
-    const fullPath = `${targetDir}/${candidateName}`.replace(/\/+/g, '/');
+    const fullPath = `${normTargetDir}/${candidateName}`.replace(/\/+/g, '/');
     const initialCanvas = JSON.stringify(
       {
         nodes: [],
@@ -892,16 +894,8 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     const targetDir = parentPath || activeVault;
     if (!targetDir) return { path: '', name: '' };
 
-    const existingNames = new Set<string>();
-    const collectInDir = (items: FileItem[]) => {
-      for (const item of items) {
-        if (item.path.startsWith(targetDir)) {
-          existingNames.add(item.name.toLowerCase());
-        }
-        if (item.children) collectInDir(item.children);
-      }
-    };
-    collectInDir(fileTree);
+    const normTargetDir = normalizePath(targetDir);
+    const existingNames = collectExistingNamesInDir(fileTree, normTargetDir);
 
     const untitled = t('common.untitled');
     let candidateName = `${untitled}.base`;
@@ -911,7 +905,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       counter++;
     }
 
-    const fullPath = `${targetDir}/${candidateName}`.replace(/\/+/g, '/');
+    const fullPath = `${normTargetDir}/${candidateName}`.replace(/\/+/g, '/');
     const initialBase = JSON.stringify(
       {
         title: candidateName.replace(/\.base$/, ''),
@@ -939,16 +933,8 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     const targetDir = parentPath || activeVault;
     if (!targetDir) return { path: '', name: '', fileName: '' };
 
-    const existingNames = new Set<string>();
-    const collectInDir = (items: FileItem[]) => {
-      for (const item of items) {
-        if (item.path.startsWith(targetDir)) {
-          existingNames.add(item.name.toLowerCase());
-        }
-        if (item.children) collectInDir(item.children);
-      }
-    };
-    collectInDir(fileTree);
+    const normTargetDir = normalizePath(targetDir);
+    const existingNames = collectExistingNamesInDir(fileTree, normTargetDir);
 
     const untitled = t('common.untitled');
     let candidateName = `${untitled}.base`;
@@ -958,7 +944,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       counter++;
     }
 
-    const fullPath = `${targetDir}/${candidateName}`.replace(/\/+/g, '/');
+    const fullPath = `${normTargetDir}/${candidateName}`.replace(/\/+/g, '/');
     const initialBase = JSON.stringify(
       {
         title: candidateName.replace(/\.base$/, ''),
@@ -1111,9 +1097,11 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
   // Move item (drag and drop into folder)
   moveItem: async (sourcePath: string, targetFolderPath: string) => {
-    const fileName = sourcePath.substring(sourcePath.lastIndexOf('/') + 1);
-    const newPath = `${targetFolderPath}/${fileName}`.replace(/\/+/g, '/');
-    if (sourcePath === newPath) return;
+    const normSource = normalizePath(sourcePath);
+    const normTargetDir = normalizePath(targetFolderPath);
+    const fileName = normSource.substring(normSource.lastIndexOf('/') + 1);
+    const newPath = `${normTargetDir}/${fileName}`.replace(/\/+/g, '/');
+    if (isSamePath(normSource, newPath)) return;
 
     await invoke('rename_item', { oldPath: sourcePath, newPath });
     const { activeFile } = get();
@@ -1129,16 +1117,8 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     const targetDir = parentPath || activeVault;
     if (!targetDir) return '';
 
-    const existingNames = new Set<string>();
-    const collectInDir = (items: FileItem[]) => {
-      for (const item of items) {
-        if (item.path.startsWith(targetDir)) {
-          existingNames.add(item.name.toLowerCase());
-        }
-        if (item.children) collectInDir(item.children);
-      }
-    };
-    collectInDir(fileTree);
+    const normTargetDir = normalizePath(targetDir);
+    const existingNames = collectExistingNamesInDir(fileTree, normTargetDir);
 
     const untitledFolder = t('vault.untitledFolder');
     let candidateName = untitledFolder;
@@ -1148,7 +1128,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       counter++;
     }
 
-    const fullPath = `${targetDir}/${candidateName}`.replace(/\/+/g, '/');
+    const fullPath = `${normTargetDir}/${candidateName}`.replace(/\/+/g, '/');
     await invoke('create_folder', { folderPath: fullPath });
     await refreshTree();
     return fullPath;
@@ -1157,29 +1137,24 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   // Duplicate a note
   duplicateNote: async (filePath: string): Promise<string> => {
     const { fileTree, refreshTree, selectFile } = get();
-    const parentDir = filePath.substring(0, filePath.lastIndexOf('/'));
-    const fileName = filePath.substring(filePath.lastIndexOf('/') + 1);
-    const baseName = fileName.replace(/\.md$/i, '');
+    const normFilePath = normalizePath(filePath);
+    const lastSlash = normFilePath.lastIndexOf('/');
+    const parentDir = lastSlash !== -1 ? normFilePath.substring(0, lastSlash) : '';
+    const fileName = lastSlash !== -1 ? normFilePath.substring(lastSlash + 1) : normFilePath;
+    const dotIdx = fileName.lastIndexOf('.');
+    const ext = dotIdx > 0 ? fileName.substring(dotIdx) : '.md';
+    const baseName = dotIdx > 0 ? fileName.substring(0, dotIdx) : fileName;
 
-    const existingNames = new Set<string>();
-    const collectNames = (items: FileItem[]) => {
-      for (const item of items) {
-        if (item.path.startsWith(parentDir)) {
-          existingNames.add(item.name.toLowerCase());
-        }
-        if (item.children) collectNames(item.children);
-      }
-    };
-    collectNames(fileTree);
+    const existingNames = collectExistingNamesInDir(fileTree, parentDir);
 
-    let candidate = `${baseName} 1.md`;
+    let candidate = `${baseName} 1${ext}`;
     let counter = 2;
     while (existingNames.has(candidate.toLowerCase())) {
-      candidate = `${baseName} ${counter}.md`;
+      candidate = `${baseName} ${counter}${ext}`;
       counter++;
     }
 
-    const newPath = `${parentDir}/${candidate}`.replace(/\/+/g, '/');
+    const newPath = (parentDir ? `${parentDir}/${candidate}` : candidate).replace(/\/+/g, '/');
     const content = await invoke<string>('read_file', { filePath });
 
     await invoke('create_file', { filePath: newPath });
@@ -1206,30 +1181,38 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     }
 
     const cleanTitle = newTitle.trim();
-    const parentDir = oldPath.substring(0, oldPath.lastIndexOf('/'));
-    const oldFileName = oldPath.substring(oldPath.lastIndexOf('/') + 1);
+    const normOldPath = normalizePath(oldPath);
+    const lastSlash = normOldPath.lastIndexOf('/');
+    const parentDir = lastSlash !== -1 ? normOldPath.substring(0, lastSlash) : '';
+    const oldFileName = lastSlash !== -1 ? normOldPath.substring(lastSlash + 1) : normOldPath;
     const lastDot = oldFileName.lastIndexOf('.');
     const ext = lastDot > 0 ? oldFileName.substring(lastDot) : '.md';
     const oldBaseName = lastDot > 0 ? oldFileName.substring(0, lastDot) : oldFileName;
     const newFileName = cleanTitle.toLowerCase().endsWith(ext.toLowerCase())
       ? cleanTitle
       : `${cleanTitle}${ext}`;
-    const newPath = `${parentDir}/${newFileName}`.replace(/\/+/g, '/');
+    const newPath = (parentDir ? `${parentDir}/${newFileName}` : newFileName).replace(/\/+/g, '/');
 
     // If name didn't change
     if (oldBaseName.toLowerCase() === cleanTitle.toLowerCase() && oldFileName === newFileName) {
       return { success: true, newPath: oldPath };
     }
 
-    // Check collision with another file in the same folder
-    const fileExists = fileTree.some((item) => {
-      if (item.path.toLowerCase() === newPath.toLowerCase() && item.path !== oldPath) {
-        return true;
+    // Check collision recursively with another file/folder using normalized paths
+    const hasCollision = (items: FileItem[]): boolean => {
+      for (const item of items) {
+        const normItem = normalizePath(item.path).toLowerCase();
+        if (normItem === newPath.toLowerCase() && normItem !== normOldPath.toLowerCase()) {
+          return true;
+        }
+        if (item.children?.length && hasCollision(item.children)) {
+          return true;
+        }
       }
       return false;
-    });
+    };
 
-    if (fileExists) {
+    if (hasCollision(fileTree)) {
       return { success: false, error: t('vault.errors.nameExists') };
     }
 
