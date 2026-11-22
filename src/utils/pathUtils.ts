@@ -21,9 +21,14 @@ export function getRelativeVaultPath(fullPath: string, vaultPath: string): strin
   if (!fullPath) return '';
   const normFull = normalizePath(fullPath);
   const normVault = normalizePath(vaultPath);
+  const lowerFull = normFull.toLowerCase();
+  const lowerVault = normVault.toLowerCase();
 
-  // Comparación case-insensitive para letras de unidad en Windows (C: vs c:)
-  if (normVault && normFull.toLowerCase().startsWith(normVault.toLowerCase())) {
+  // Comparación case-insensitive con límite de directorio para evitar colisiones (C:/Vault vs C:/Vault2)
+  if (
+    normVault &&
+    (lowerFull === lowerVault || lowerFull.startsWith(`${lowerVault}/`))
+  ) {
     const rel = normFull.slice(normVault.length).replace(/^\/+/, '');
     return rel.replace(/\.(md|canvas|base|markdown)$/i, '');
   }
@@ -168,7 +173,9 @@ export function resolveFilePathInVault(
   const normPath = normalizePath(filePath);
   if (activeVault) {
     const normVault = normalizePath(activeVault);
-    if (normPath.toLowerCase().startsWith(normVault.toLowerCase())) {
+    const lowerPath = normPath.toLowerCase();
+    const lowerVault = normVault.toLowerCase();
+    if (lowerPath === lowerVault || lowerPath.startsWith(`${lowerVault}/`)) {
       return normPath;
     }
     return `${normVault}/${normPath.replace(/^\/+/, '')}`;
