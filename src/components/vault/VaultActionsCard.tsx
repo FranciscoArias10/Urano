@@ -92,7 +92,7 @@ export const VaultActionsCard: React.FC<VaultActionsCardProps> = ({
           type="button"
           onClick={onHelpClick}
           className="text-urano-muted hover:text-urano-text p-1 rounded transition-colors cursor-pointer shrink-0"
-          title={t('general.help')}
+          title={t('settings.general.help')}
         >
           <HelpCircle size={18} />
         </button>
@@ -101,7 +101,7 @@ export const VaultActionsCard: React.FC<VaultActionsCardProps> = ({
           <LanguageDropdown
             value={language}
             languages={languages}
-            ariaLabel={t('general.language')}
+            ariaLabel={t('settings.general.language')}
             direction="up"
             onChange={(code) => void setLanguage(code)}
           />
