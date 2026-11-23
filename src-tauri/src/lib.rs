@@ -21,17 +21,14 @@ pub fn run() {
         .on_window_event(|window, event| {
             use tauri::Manager;
             if window.label() == "main" {
-                match event {
-                    tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed => {
-                        let app_handle = window.app_handle();
-                        for (label, w) in app_handle.webview_windows() {
-                            if label != "main" {
-                                let _ = w.close();
-                            }
+                if let tauri::WindowEvent::Destroyed = event {
+                    let app_handle = window.app_handle();
+                    for (label, w) in app_handle.webview_windows() {
+                        if label != "main" {
+                            let _ = w.close();
                         }
-                        app_handle.exit(0);
                     }
-                    _ => {}
+                    app_handle.exit(0);
                 }
             }
         })
