@@ -8,9 +8,10 @@ import {
 } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/state';
 import { t } from '../locales/i18n';
+import { getFencedCodeBlocks } from './codeRangeUtils';
 
 class CodeCopyWidget extends WidgetType {
-  constructor(readonly getCode: () => string) {
+  constructor(readonly code: string) {
     super();
   }
 
@@ -32,8 +33,7 @@ class CodeCopyWidget extends WidgetType {
     copyBtn.addEventListener('mousedown', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      const code = this.getCode();
-      navigator.clipboard.writeText(code).then(() => {
+      navigator.clipboard.writeText(this.code).then(() => {
         copyBtn.classList.add('copied');
         copyBtn.innerHTML = `
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e06c1b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -56,8 +56,8 @@ class CodeCopyWidget extends WidgetType {
     return wrap;
   }
 
-  eq(): boolean {
-    return true;
+  eq(other: CodeCopyWidget): boolean {
+    return this.code === other.code;
   }
 
   ignoreEvent(): boolean {
@@ -100,78 +100,29 @@ export const codeBlockExtension = ViewPlugin.fromClass(
         endLine: number;
         language: string;
         isCursorInside: boolean;
-        getCode: () => string;
+        hasClosingFence: boolean;
+        code: string;
       }
 
-      const blocks: CodeBlockInfo[] = [];
-      let inBlock = false;
-      let startLine = 1;
-      let lang = '';
-
-      // 1. Detect code blocks between opening and closing ```
-      for (let i = 1; i <= doc.lines; i++) {
-        const line = doc.line(i);
-        const trimmed = line.text.trim();
-
-        if (trimmed.startsWith('```')) {
-          if (!inBlock) {
-            inBlock = true;
-            startLine = i;
-            lang = trimmed.slice(3).trim();
-          } else {
-            inBlock = false;
-            const s = startLine;
-            const e = i;
-            const currentLang = lang;
-            const startObj = doc.line(s);
-            const endObj = doc.line(e);
-            const isInside = selection.from <= endObj.to && selection.to >= startObj.from;
-
-            const getCode = () => {
-              const lines: string[] = [];
-              for (let l = s + 1; l < e; l++) {
-                lines.push(doc.line(l).text);
-              }
-              return lines.join('\n');
-            };
-
-            blocks.push({
-              startLine: s,
-              endLine: e,
-              language: currentLang,
-              isCursorInside: isInside,
-              getCode,
-            });
-          }
+      const rawBlocks = getFencedCodeBlocks(doc);
+      const blocks: CodeBlockInfo[] = rawBlocks.map((b) => {
+        const isInside = selection.from <= b.to && selection.to >= b.from;
+        const contentEndLine = b.hasClosingFence ? b.endLine - 1 : b.endLine;
+        const lines: string[] = [];
+        for (let l = b.startLine + 1; l <= contentEndLine; l++) {
+          lines.push(doc.line(l).text);
         }
-      }
-
-      if (inBlock) {
-        const s = startLine;
-        const e = doc.lines;
-        const currentLang = lang;
-        const startObj = doc.line(s);
-        const endObj = doc.line(e);
-        const isInside = selection.from <= endObj.to && selection.to >= startObj.from;
-
-        const getCode = () => {
-          const lines: string[] = [];
-          for (let l = s + 1; l <= e; l++) {
-            lines.push(doc.line(l).text);
-          }
-          return lines.join('\n');
-        };
-
-        blocks.push({
-          startLine: s,
-          endLine: e,
-          language: currentLang,
+        return {
+          startLine: b.startLine,
+          endLine: b.endLine,
+          language: b.language,
           isCursorInside: isInside,
-          getCode,
-        });
-      }
+          hasClosingFence: b.hasClosingFence,
+          code: lines.join('\n'),
+        };
+      });
 
-      // 2. Map line numbers to block info
+      // Map line numbers to block info
       const lineMap = new Map<number, CodeBlockInfo>();
       for (const b of blocks) {
         for (let l = b.startLine; l <= b.endLine; l++) {
@@ -179,7 +130,7 @@ export const codeBlockExtension = ViewPlugin.fromClass(
         }
       }
 
-      // 3. Emit decorations strictly in ascending line order
+      // Emit decorations strictly in ascending line order
       for (let lineNum = 1; lineNum <= doc.lines; lineNum++) {
         const block = lineMap.get(lineNum);
         if (!block) continue;
@@ -199,7 +150,11 @@ export const codeBlockExtension = ViewPlugin.fromClass(
 
         // B. Delimiter hiding marks & header flair widget when cursor is outside
         if (!block.isCursorInside) {
-          if (lineNum === block.startLine || lineNum === block.endLine) {
+          const isClosingFenceLine =
+            lineNum === block.endLine &&
+            block.hasClosingFence &&
+            block.endLine > block.startLine;
+          if (lineNum === block.startLine || isClosingFenceLine) {
             if (line.to > line.from) {
               builder.add(line.from, line.to, delimiterHiddenMark);
             }
@@ -211,7 +166,7 @@ export const codeBlockExtension = ViewPlugin.fromClass(
               line.to,
               line.to,
               Decoration.widget({
-                widget: new CodeCopyWidget(block.getCode),
+                widget: new CodeCopyWidget(block.code),
                 side: 1,
               })
             );
