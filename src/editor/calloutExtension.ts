@@ -2,11 +2,10 @@ import {
   Decoration,
   DecorationSet,
   EditorView,
-  ViewPlugin,
-  ViewUpdate,
   WidgetType,
 } from '@codemirror/view';
-import { RangeSetBuilder } from '@codemirror/state';
+import { StateField, EditorState, RangeSetBuilder } from '@codemirror/state';
+import { getFencedCodeLineSet } from './codeRangeUtils';
 
 interface CalloutData {
   type: string;
@@ -17,13 +16,13 @@ interface CalloutData {
 }
 
 class CalloutWidget extends WidgetType {
-  constructor(readonly data: CalloutData, readonly onClick: () => void) {
+  constructor(readonly data: CalloutData) {
     super();
   }
 
-  toDOM(): HTMLElement {
+  toDOM(view: EditorView): HTMLElement {
     const callout = document.createElement('div');
-    callout.className = `callout select-none cursor-pointer animate-fadeIn`;
+    callout.className = 'callout select-none cursor-pointer animate-fadeIn';
     callout.setAttribute('data-callout', this.data.type.toLowerCase());
 
     const titleEl = document.createElement('div');
@@ -73,7 +72,10 @@ class CalloutWidget extends WidgetType {
     callout.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      this.onClick();
+      view.dispatch({
+        selection: { anchor: Math.min(this.data.startPos + 2, view.state.doc.length) },
+      });
+      view.focus();
     });
 
     return callout;
@@ -83,7 +85,9 @@ class CalloutWidget extends WidgetType {
     return (
       other.data.type === this.data.type &&
       other.data.title === this.data.title &&
-      other.data.content === this.data.content
+      other.data.content === this.data.content &&
+      other.data.startPos === this.data.startPos &&
+      other.data.endPos === this.data.endPos
     );
   }
 
@@ -92,121 +96,103 @@ class CalloutWidget extends WidgetType {
   }
 }
 
-const calloutLineHidden = Decoration.line({ class: 'cm-callout-line-hidden' });
+function buildCalloutDecorations(state: EditorState): DecorationSet {
+  const builder = new RangeSetBuilder<Decoration>();
+  const doc = state.doc;
+  const selection = state.selection.main;
+  const codeLines = getFencedCodeLineSet(doc);
 
-export const calloutExtension = ViewPlugin.fromClass(
-  class {
-    decorations: DecorationSet;
+  const callouts: {
+    startLine: number;
+    endLine: number;
+    type: string;
+    title: string;
+    contentLines: string[];
+  }[] = [];
 
-    constructor(view: EditorView) {
-      this.decorations = this.computeDecorations(view);
+  let currentCallout: {
+    startLine: number;
+    endLine: number;
+    type: string;
+    title: string;
+    contentLines: string[];
+  } | null = null;
+
+  for (let i = 1; i <= doc.lines; i++) {
+    if (codeLines.has(i)) {
+      if (currentCallout) {
+        callouts.push(currentCallout);
+        currentCallout = null;
+      }
+      continue;
     }
 
-    update(update: ViewUpdate) {
-      if (update.docChanged || update.viewportChanged || update.selectionSet) {
-        this.decorations = this.computeDecorations(update.view);
-      }
-    }
+    const line = doc.line(i);
+    const text = line.text;
+    const headerMatch = text.match(/^>\s*\[!([a-zA-Z0-9_-]+)\](?:\s+(.*))?$/);
 
-    computeDecorations(view: EditorView): DecorationSet {
-      const builder = new RangeSetBuilder<Decoration>();
-      const doc = view.state.doc;
-      const selection = view.state.selection.main;
-
-      const callouts: {
-        startLine: number;
-        endLine: number;
-        type: string;
-        title: string;
-        contentLines: string[];
-      }[] = [];
-
-      let currentCallout: {
-        startLine: number;
-        endLine: number;
-        type: string;
-        title: string;
-        contentLines: string[];
-      } | null = null;
-
-      for (let i = 1; i <= doc.lines; i++) {
-        const line = doc.line(i);
-        const text = line.text;
-
-        const headerMatch = text.match(/^>\s*\[!([a-zA-Z0-9_-]+)\](?:\s+(.*))?$/);
-
-        if (headerMatch) {
-          if (currentCallout) {
-            callouts.push(currentCallout);
-          }
-          currentCallout = {
-            startLine: i,
-            endLine: i,
-            type: headerMatch[1],
-            title: (headerMatch[2] || '').trim(),
-            contentLines: [],
-          };
-        } else if (currentCallout && text.startsWith('>')) {
-          currentCallout.endLine = i;
-          const content = text.replace(/^>\s?/, '');
-          currentCallout.contentLines.push(content);
-        } else {
-          if (currentCallout) {
-            callouts.push(currentCallout);
-            currentCallout = null;
-          }
-        }
-      }
-
+    if (headerMatch) {
       if (currentCallout) {
         callouts.push(currentCallout);
       }
-
-      for (const callout of callouts) {
-        const startLineObj = doc.line(callout.startLine);
-        const endLineObj = doc.line(callout.endLine);
-
-        const isCursorInside =
-          selection.from <= endLineObj.to && selection.to >= startLineObj.from;
-
-        if (!isCursorInside) {
-          // 1. Hide raw markdown quote lines first (Line decorations must precede point decorations at same line.from)
-          for (let l = callout.startLine; l <= callout.endLine; l++) {
-            const lineObj = doc.line(l);
-            builder.add(lineObj.from, lineObj.from, calloutLineHidden);
-          }
-
-          // 2. Render Live Preview Callout Widget
-          builder.add(
-            startLineObj.from,
-            startLineObj.from,
-            Decoration.widget({
-              widget: new CalloutWidget(
-                {
-                  type: callout.type,
-                  title: callout.title,
-                  content: callout.contentLines.join('\n'),
-                  startPos: startLineObj.from,
-                  endPos: endLineObj.to,
-                },
-                () => {
-                  view.dispatch({
-                    selection: { anchor: startLineObj.from + 2 },
-                  });
-                  view.focus();
-                }
-              ),
-              side: -1,
-              block: true,
-            })
-          );
-        }
-      }
-
-      return builder.finish();
+      currentCallout = {
+        startLine: i,
+        endLine: i,
+        type: headerMatch[1],
+        title: (headerMatch[2] || '').trim(),
+        contentLines: [],
+      };
+    } else if (currentCallout && text.startsWith('>')) {
+      currentCallout.endLine = i;
+      const content = text.replace(/^>\s?/, '');
+      currentCallout.contentLines.push(content);
+    } else if (currentCallout) {
+      callouts.push(currentCallout);
+      currentCallout = null;
     }
-  },
-  {
-    decorations: (v) => v.decorations,
   }
-);
+
+  if (currentCallout) {
+    callouts.push(currentCallout);
+  }
+
+  for (const callout of callouts) {
+    const startLineObj = doc.line(callout.startLine);
+    const endLineObj = doc.line(callout.endLine);
+
+    const isCursorInside =
+      selection.from <= endLineObj.to && selection.to >= startLineObj.from;
+
+    if (!isCursorInside && endLineObj.to > startLineObj.from) {
+      builder.add(
+        startLineObj.from,
+        endLineObj.to,
+        Decoration.replace({
+          widget: new CalloutWidget({
+            type: callout.type,
+            title: callout.title,
+            content: callout.contentLines.join('\n'),
+            startPos: startLineObj.from,
+            endPos: endLineObj.to,
+          }),
+          block: true,
+        })
+      );
+    }
+  }
+
+  return builder.finish();
+}
+
+export const calloutExtension = StateField.define<DecorationSet>({
+  create(state) {
+    return buildCalloutDecorations(state);
+  },
+  update(decorations, tr) {
+    if (tr.docChanged || tr.selection) {
+      return buildCalloutDecorations(tr.state);
+    }
+    return decorations.map(tr.changes);
+  },
+  provide: (field) => EditorView.decorations.from(field),
+});
