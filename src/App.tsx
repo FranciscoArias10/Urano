@@ -1,7 +1,14 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
-import { useVaultStore } from './stores/vaultStore';
+import { useVaultStore, isNativeVaultFile } from './stores/vaultStore';
+import {
+  TabHistoryEntry,
+  pushHistoryEntry,
+  stepHistory,
+  renameHistoryEntries,
+  pruneHistoryForTabs,
+} from './utils/navHistoryUtils';
 import { useSyncStore } from './stores/syncStore';
 import { TabBar, TabItem } from './components/tabs/TabBar';
 import { ViewHeader, ViewMode } from './components/layout/ViewHeader';
@@ -94,6 +101,31 @@ const makeTabId = () => {
 /** Background pull interval for Google Drive changes made on other devices. */
 const BACKGROUND_SYNC_INTERVAL_MS = 5 * 60 * 1000;
 
+function getTabMetaForPath(
+  filePath: string,
+  activeVault: string | null | undefined,
+  fallbackTitle: string
+): { type: TabItem['type']; title: string } {
+  const lower = filePath.toLowerCase();
+  let type: TabItem['type'] = 'note';
+  let ext = '.md';
+  if (lower.endsWith('.canvas')) {
+    type = 'canvas';
+    ext = '.canvas';
+  } else if (lower.endsWith('.base')) {
+    type = 'base';
+    ext = '.base';
+  } else if (isImagePath(filePath)) {
+    type = 'image';
+    ext = '';
+  }
+  const rel = getRelativeVaultPath(filePath, activeVault || '');
+  const rawName = rel.split('/').filter(Boolean).pop() || '';
+  const title =
+    (ext ? rawName.replace(new RegExp(`\\${ext}$`, 'i'), '') : rawName) || fallbackTitle;
+  return { type, title };
+}
+
 const isSettingsWindow =
   typeof window !== 'undefined' &&
   (new URLSearchParams(window.location.search).get('window') === 'settings' ||
@@ -109,9 +141,7 @@ const MainApp: React.FC = () => {
   );
 
   // Per tab navigation history (Urano leaf history: historyStack + currentIndex)
-  const [navHistory, setNavHistory] = useState<
-    Record<string, { stack: string[]; index: number }>
-  >({});
+  const [navHistory, setNavHistory] = useState<Record<string, TabHistoryEntry>>({});
 
   // Live Preview / Reading View (Urano "Toggle reading view", Ctrl+E)
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -155,6 +185,8 @@ const MainApp: React.FC = () => {
   // When true the next activeFile change navigates the current tab instead of
   // opening a new one (Urano navigates the leaf in place).
   const reuseActiveTabRef = useRef(false);
+  // Suppresses re-recording history while stepping backward/forward via navHistory.
+  const skipHistoryRecordRef = useRef(false);
 
   // Latest shortcut handlers (kept in a ref so the global listener never goes stale)
   const shortcutsRef = useRef<{
@@ -433,9 +465,10 @@ const MainApp: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [syncAuthenticated, autoSyncEnabled, syncOnline, activeVault]);
 
-  // Keep tabs pointing at the new path when a file is renamed (sidebar inline rename,
-  // editor title rename). Runs before the store re-points activeFile, so the tab sync
-  // effect below updates the existing tab instead of opening a duplicate.
+  // Keep tabs and navigation history pointing at the new path when a file is renamed
+  // (sidebar inline rename, editor title rename, or folder rename). Runs before the store
+  // re-points activeFile, so the tab sync effect below updates the existing tab instead of
+  // opening a duplicate.
   useEffect(() => {
     const onRenamed = (e: Event) => {
       const detail = (e as CustomEvent<FileRenamedDetail>).detail;
@@ -445,9 +478,57 @@ const MainApp: React.FC = () => {
       setTabs((prev) =>
         prev.map((t) => (isSamePath(t.filePath, oldPath) ? { ...t, filePath: newPath, title } : t))
       );
+      setNavHistory((prev) => renameHistoryEntries(prev, oldPath, newPath));
     };
     window.addEventListener(FILE_RENAMED_EVENT, onRenamed);
     return () => window.removeEventListener(FILE_RENAMED_EVENT, onRenamed);
+  }, []);
+
+  // Flush pending dirty edits before closing or unloading the main window
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const { isDirty, activeFile, saveCurrentFile } = useVaultStore.getState();
+      if (isDirty && activeFile) {
+        void saveCurrentFile();
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    let disposed = false;
+    let unlistenClose: (() => void) | undefined;
+    let isClosingAfterSave = false;
+    import('@tauri-apps/api/window')
+      .then(({ getCurrentWindow }) => {
+        if (disposed) return;
+        const win = getCurrentWindow();
+        if (win.label !== 'main') return;
+        win
+          .onCloseRequested(async (event) => {
+            if (isClosingAfterSave) return;
+            const { isDirty, activeFile, saveCurrentFile } = useVaultStore.getState();
+            if (isDirty && activeFile) {
+              event.preventDefault();
+              isClosingAfterSave = true;
+              await saveCurrentFile();
+              await invoke('close_main_and_exit').catch(() => win.destroy());
+            }
+          })
+          .then((fn) => {
+            if (disposed) {
+              fn();
+            } else {
+              unlistenClose = fn;
+            }
+          })
+          .catch(() => {});
+      })
+      .catch(() => {});
+
+    return () => {
+      disposed = true;
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      if (unlistenClose) unlistenClose();
+    };
   }, []);
 
   // Restore tabs from localStorage when vault is loaded
@@ -557,20 +638,15 @@ const MainApp: React.FC = () => {
 
   // Registers a file in the history of a leaf (Urano leaf history)
   const recordVisit = useCallback((tabId: string, filePath: string) => {
+    if (skipHistoryRecordRef.current) {
+      skipHistoryRecordRef.current = false;
+      return;
+    }
     setNavHistory((prev) => {
       const current = prev[tabId];
-      if (!current) {
-        return { ...prev, [tabId]: { stack: [filePath], index: 0 } };
-      }
-      // Already visited: just move the cursor (Urano does not duplicate entries)
-      const existingIndex = current.stack.indexOf(filePath);
-      if (existingIndex !== -1) {
-        if (existingIndex === current.index) return prev;
-        return { ...prev, [tabId]: { ...current, index: existingIndex } };
-      }
-      const stack = current.stack.slice(0, current.index + 1);
-      stack.push(filePath);
-      return { ...prev, [tabId]: { stack, index: stack.length - 1 } };
+      const next = pushHistoryEntry(current, filePath);
+      if (next === current) return prev;
+      return { ...prev, [tabId]: next };
     });
   }, []);
 
@@ -580,9 +656,17 @@ const MainApp: React.FC = () => {
       if (!filePath) return;
       const resolved = resolveFilePathInVault(filePath, fileTree, activeVault) || filePath;
 
+      // Non-native files (e.g. PDF, audio, video) open in the OS app without leaving a phantom tab
+      if (!isNativeVaultFile(resolved)) {
+        reuseActiveTabRef.current = false;
+        selectFile(resolved);
+        return;
+      }
+
       // 1. If already open in an existing tab, focus it and open immediately
       const existing = tabs.find((t) => isSamePath(t.filePath, resolved));
       if (existing) {
+        reuseActiveTabRef.current = false;
         setActiveTabId(existing.id);
         if (!activeFile || !isSamePath(activeFile, resolved)) {
           selectFile(resolved);
@@ -597,23 +681,11 @@ const MainApp: React.FC = () => {
         (activeTab && (!activeTab.filePath || activeTab.type === 'empty'));
       reuseActiveTabRef.current = false;
 
-      let type: TabItem['type'] = 'note';
-      let ext = '.md';
-      if (resolved.endsWith('.canvas')) {
-        type = 'canvas';
-        ext = '.canvas';
-      } else if (resolved.endsWith('.base')) {
-        type = 'base';
-        ext = '.base';
-      } else if (isImagePath(resolved)) {
-        type = 'image';
-        ext = '';
-      }
-
-      const rel = getRelativeVaultPath(resolved, activeVault || '');
-      const parts = rel.split('/').filter(Boolean);
-      const rawName = parts.pop() || '';
-      const fileName = (ext ? rawName.replace(new RegExp(`\\${ext}$`, 'i'), '') : rawName) || t('common.untitled');
+      const { type, title: fileName } = getTabMetaForPath(
+        resolved,
+        activeVault,
+        t('common.untitled')
+      );
 
       if (shouldReuse && activeTab) {
         setTabs((prev) =>
@@ -649,27 +721,10 @@ const MainApp: React.FC = () => {
   useEffect(() => {
     if (!activeFile) return;
 
-    let type: TabItem['type'] = 'note';
-    let ext = '.md';
-    if (activeFile.endsWith('.canvas')) {
-      type = 'canvas';
-      ext = '.canvas';
-    } else if (activeFile.endsWith('.base')) {
-      type = 'base';
-      ext = '.base';
-    } else if (isImagePath(activeFile)) {
-      type = 'image';
-      ext = '';
-    }
-
-    const relName = activeFile
-      ? getRelativeVaultPath(activeFile, activeVault || '').split('/').pop()
-      : undefined;
-    const fileName =
-      relName ||
-      (activeFileName
-        ? (ext ? activeFileName.replace(new RegExp(`\\${ext}$`, 'i'), '') : activeFileName)
-        : t('common.untitled'));
+    const fallbackName = activeFileName
+      ? activeFileName.replace(/\.(md|markdown|canvas|base)$/i, '') || activeFileName
+      : t('common.untitled');
+    const { type, title: fileName } = getTabMetaForPath(activeFile, activeVault, fallbackName);
 
     // Which leaf hosts this file?
     const existing = tabs.find((t) => isSamePath(t.filePath, activeFile));
@@ -723,31 +778,39 @@ const MainApp: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFile, activeFileName, isDirty]);
 
-  // Navigates the active leaf to another file, reusing the current tab
-  const navigateLeafTo = useCallback(
-    (filePath: string) => {
-      reuseActiveTabRef.current = true;
-      handleOpenFile(filePath);
+  // Back / forward navigation within the active leaf without jumping tabs
+  const navigateTabHistory = useCallback(
+    (delta: -1 | 1) => {
+      const res = stepHistory(navHistory[activeTabId], delta);
+      if (!res) return;
+      const { nextEntry, targetPath } = res;
+      const resolved = resolveFilePathInVault(targetPath, fileTree, activeVault) || targetPath;
+
+      setNavHistory((prev) => ({ ...prev, [activeTabId]: nextEntry }));
+      skipHistoryRecordRef.current = true;
+      reuseActiveTabRef.current = false;
+
+      const { type, title } = getTabMetaForPath(resolved, activeVault, t('common.untitled'));
+      setTabs((prev) =>
+        prev.map((tab) =>
+          tab.id === activeTabId
+            ? { ...tab, filePath: resolved, title, type, isDirty: false }
+            : tab
+        )
+      );
+      selectFile(resolved);
     },
-    [handleOpenFile]
+    [navHistory, activeTabId, fileTree, activeVault, t, selectFile]
   );
 
   // Back / forward navigation (Alt+Left / Alt+Right)
   const handleNavigateBack = useCallback(() => {
-    const history = navHistory[activeTabId];
-    if (!history || history.index <= 0) return;
-    const target = history.stack[history.index - 1];
-    if (!target) return;
-    navigateLeafTo(target);
-  }, [navHistory, activeTabId, navigateLeafTo]);
+    navigateTabHistory(-1);
+  }, [navigateTabHistory]);
 
   const handleNavigateForward = useCallback(() => {
-    const history = navHistory[activeTabId];
-    if (!history || history.index >= history.stack.length - 1) return;
-    const target = history.stack[history.index + 1];
-    if (!target) return;
-    navigateLeafTo(target);
-  }, [navHistory, activeTabId, navigateLeafTo]);
+    navigateTabHistory(1);
+  }, [navigateTabHistory]);
 
   const canGoBack = (navHistory[activeTabId]?.index ?? -1) > 0;
   const canGoForward =
@@ -1018,15 +1081,21 @@ const MainApp: React.FC = () => {
     showNotice(t('app.notices.shortcutsHelp'), 5000, 'info');
   };
 
-  // Close other tabs
+  // Close other tabs (Urano keeps pinned tabs open)
   const handleCloseOtherTabs = (tabId: string) => {
-    setTabs((prev) => prev.filter((t) => t.id === tabId));
-    setActiveTabId(tabId);
-    const tab = tabs.find((t) => t.id === tabId);
-    if (tab?.filePath && tab.type !== 'empty') {
-      selectFile(tab.filePath);
-    } else {
-      closeActiveFile();
+    const remaining = tabs.filter((t) => t.id === tabId || t.pinned);
+    setTabs(remaining);
+    setNavHistory((prev) => pruneHistoryForTabs(prev, remaining.map((t) => t.id)));
+    if (!remaining.some((t) => t.id === activeTabId)) {
+      const target = remaining.find((t) => t.id === tabId) ?? remaining[remaining.length - 1];
+      if (target) {
+        setActiveTabId(target.id);
+        if (target.filePath && target.type !== 'empty' && target.type !== 'graph') {
+          selectFile(target.filePath);
+        } else {
+          void closeActiveFile();
+        }
+      }
     }
   };
 
@@ -1042,18 +1111,20 @@ const MainApp: React.FC = () => {
       };
       setTabs([emptyTab]);
       setActiveTabId(newTabId);
-      closeActiveFile();
+      setNavHistory({});
+      void closeActiveFile();
       return;
     }
 
     setTabs(remaining);
+    setNavHistory((prev) => pruneHistoryForTabs(prev, remaining.map((t) => t.id)));
     if (!remaining.some((t) => t.id === activeTabId)) {
       const next = remaining[remaining.length - 1];
       setActiveTabId(next.id);
-      if (next.filePath && next.type !== 'empty') {
+      if (next.filePath && next.type !== 'empty' && next.type !== 'graph') {
         selectFile(next.filePath);
       } else {
-        closeActiveFile();
+        void closeActiveFile();
       }
     }
   };
@@ -1145,26 +1216,22 @@ const MainApp: React.FC = () => {
   };
 
   // Wikilinks navigate the current leaf in place (Urano behaviour)
-  const handleWikilinkClick = (name: string) => {
+  const handleWikilinkClick = async (name: string) => {
     reuseActiveTabRef.current = true;
-    openOrCreateWikilink(name);
+    await openOrCreateWikilink(name);
+    reuseActiveTabRef.current = false;
   };
 
   // Open note in a new tab (or to the right)
   const handleOpenInNewTab = (filePathOrName: string) => {
     let targetPath = filePathOrName;
-    if (
-      !targetPath.endsWith('.md') &&
-      !targetPath.endsWith('.canvas') &&
-      !targetPath.endsWith('.base') &&
-      !isImagePath(targetPath)
-    ) {
+    if (!isNativeVaultFile(targetPath)) {
       const findInTree = (items: typeof fileTree): string | null => {
         for (const item of items) {
           if (
             !item.isDir &&
             (item.name.toLowerCase() === filePathOrName.toLowerCase() ||
-              item.name.replace(/\.(md|canvas|base)$/i, '').toLowerCase() ===
+              item.name.replace(/\.(md|markdown|canvas|base)$/i, '').toLowerCase() ===
                 filePathOrName.toLowerCase())
           ) {
             return item.path;
@@ -1181,23 +1248,12 @@ const MainApp: React.FC = () => {
         found || (activeVault ? `${activeVault}/${filePathOrName}.md` : `${filePathOrName}.md`);
     }
 
-    let type: TabItem['type'] = 'note';
-    let ext = '.md';
-    if (targetPath.endsWith('.canvas')) {
-      type = 'canvas';
-      ext = '.canvas';
-    } else if (targetPath.endsWith('.base')) {
-      type = 'base';
-      ext = '.base';
-    } else if (isImagePath(targetPath)) {
-      type = 'image';
-      ext = '';
+    if (!isNativeVaultFile(targetPath)) {
+      void selectFile(targetPath);
+      return;
     }
 
-    const rel = getRelativeVaultPath(targetPath, activeVault || '');
-    const title =
-      rel.split('/').filter(Boolean).pop()?.replace(new RegExp(`\\${ext}$`, 'i'), '') ||
-      t('common.untitled');
+    const { type, title } = getTabMetaForPath(targetPath, activeVault, t('common.untitled'));
     const tabId = `${targetPath}_tab_${Date.now()}`;
     const newTab: TabItem = {
       id: tabId,
@@ -1206,6 +1262,7 @@ const MainApp: React.FC = () => {
       title,
     };
     setTabs((prev) => [...prev, newTab]);
+    recordVisit(tabId, targetPath);
     const alwaysFocus = useSettingsStore.getState().settings.alwaysFocusNewTabs;
     if (alwaysFocus) {
       setActiveTabId(tabId);
@@ -1222,6 +1279,7 @@ const MainApp: React.FC = () => {
       return [...prev, { id: graphTabId, type: 'graph', title: t('tabs.graphView') }];
     });
     setActiveTabId(graphTabId);
+    void closeActiveFile();
   };
 
   // Create New Tab (1:1 with Obsidian: empty leaf with "Nueva pestaña")
@@ -1234,25 +1292,28 @@ const MainApp: React.FC = () => {
     };
     setTabs((prev) => [...prev, emptyTab]);
     setActiveTabId(newTabId);
-    closeActiveFile();
+    void closeActiveFile();
   }, [t, closeActiveFile]);
 
   // Tab Selection (event-driven, 1:1 with Obsidian)
   const handleSelectTab = (tabId: string) => {
     setActiveTabId(tabId);
     const tab = tabs.find((t) => t.id === tabId);
-    if (tab && tab.filePath && tab.type !== 'empty') {
+    if (tab && tab.filePath && tab.type !== 'empty' && tab.type !== 'graph') {
       if (!activeFile || !isSamePath(activeFile, tab.filePath)) {
         selectFile(tab.filePath);
       }
     } else {
-      closeActiveFile();
+      void closeActiveFile();
     }
   };
 
-  // Close Tab
+  // Close Tab (pinned tabs cannot be closed directly)
   const handleCloseTab = (tabId: string) => {
-    let remaining = tabs.filter((t) => t.id !== tabId);
+    const targetTab = tabs.find((t) => t.id === tabId);
+    if (!targetTab || targetTab.pinned) return;
+
+    const remaining = tabs.filter((t) => t.id !== tabId);
 
     // If no tabs remain, maintain Obsidian's 1:1 behavior: open a "Nueva pestaña"
     if (remaining.length === 0) {
@@ -1264,19 +1325,21 @@ const MainApp: React.FC = () => {
       };
       setTabs([emptyTab]);
       setActiveTabId(newTabId);
-      closeActiveFile();
+      setNavHistory({});
+      void closeActiveFile();
       return;
     }
 
     setTabs(remaining);
+    setNavHistory((prev) => pruneHistoryForTabs(prev, remaining.map((t) => t.id)));
 
     if (activeTabId === tabId) {
       const next = remaining[remaining.length - 1];
       setActiveTabId(next.id);
-      if (next.filePath && next.type !== 'empty') {
+      if (next.filePath && next.type !== 'empty' && next.type !== 'graph') {
         selectFile(next.filePath);
       } else {
-        closeActiveFile();
+        void closeActiveFile();
       }
     }
   };
@@ -1548,7 +1611,14 @@ const MainApp: React.FC = () => {
       setSidebarTab('search');
     },
     openTemplates: () => setShowTemplateModal(true),
-    reload: () => window.location.reload(),
+    reload: async () => {
+      const { isDirty: dirty, activeFile: currentFile, saveCurrentFile: flush } =
+        useVaultStore.getState();
+      if (dirty && currentFile) {
+        await flush();
+      }
+      window.location.reload();
+    },
   };
   paletteCommandsRef.current = paletteCommands;
 
@@ -2150,8 +2220,9 @@ const MainApp: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
               setVaultSwitcherAnchor(null);
+              await useVaultStore.getState().closeActiveFile();
               useVaultStore.setState({
                 activeVault: null,
                 vaultName: null,
@@ -2160,7 +2231,14 @@ const MainApp: React.FC = () => {
                 activeFile: null,
                 activeFileName: null,
                 fileContent: '',
+                isDirty: false,
+                notesContentMap: {},
+                pendingRenamePrompt: null,
+                embeddedBacklinksOverrides: {},
               });
+              setTabs([]);
+              setActiveTabId('');
+              setNavHistory({});
               localStorage.removeItem('urano_last_vault');
             }}
             className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[5px] text-[13px] text-urano-muted hover:text-urano-text hover:bg-[var(--interactive-hover)] transition-colors cursor-pointer text-left"
