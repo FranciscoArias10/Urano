@@ -3,6 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
 import { Minus, Square, Copy, X } from 'lucide-react';
 import { useT } from '../../stores/localeStore';
+import { useVaultStore } from '../../stores/vaultStore';
 
 /**
  * Native window controls backed by the Tauri window API.
@@ -77,6 +78,10 @@ export const WindowControls: React.FC = () => {
 
   const handleClose = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    const { isDirty, activeFile, saveCurrentFile } = useVaultStore.getState();
+    if (isDirty && activeFile) {
+      await saveCurrentFile();
+    }
     try {
       const current = getCurrentWindow();
       if (current.label === 'main') {
