@@ -119,16 +119,19 @@ export const TabBar: React.FC<TabBarProps> = ({
       {
         title: t('common.close'),
         icon: <X size={14} />,
+        disabled: Boolean(tab.pinned),
         action: () => onCloseTab(tab.id),
       },
       {
         title: t('tabs.closeOthers'),
         icon: <X size={14} />,
+        disabled: !tabs.some((t) => t.id !== tab.id && !t.pinned),
         action: () => onCloseOtherTabs?.(tab.id),
       },
       {
         title: t('tabs.closeAll'),
         icon: <X size={14} />,
+        disabled: !tabs.some((t) => !t.pinned),
         action: () => onCloseAllTabs?.(),
       },
       { type: 'separator' },
@@ -253,8 +256,8 @@ export const TabBar: React.FC<TabBarProps> = ({
                   title={label}
                   onClick={() => onSelectTab(tab.id)}
                   onAuxClick={(e) => {
-                    /* middle click closes the tab (Urano behaviour) */
-                    if (e.button === 1) {
+                    /* middle click closes unpinned tabs (Urano behaviour) */
+                    if (e.button === 1 && !tab.pinned) {
                       e.preventDefault();
                       onCloseTab(tab.id);
                     }
@@ -317,13 +320,6 @@ export const TabBar: React.FC<TabBarProps> = ({
             className="workspace-tab-header-spacer"
             data-tauri-drag-region
             title={t('tabs.dragToMoveWindow')}
-            onDoubleClick={async () => {
-              try {
-                await getCurrentWindow().toggleMaximize();
-              } catch {
-                await invoke('toggle_maximize_window').catch(() => {});
-              }
-            }}
           />
 
           {/* Tab list dropdown ------------------------------------------ */}
