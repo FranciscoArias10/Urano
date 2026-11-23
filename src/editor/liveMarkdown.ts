@@ -8,6 +8,7 @@ import {
 } from '@codemirror/view';
 import { Range } from '@codemirror/state';
 import { t } from '../locales/i18n';
+import { getFencedCodeLineSet } from './codeRangeUtils';
 
 // Line decorations for Urano-style typography
 const h1Line = Decoration.line({ class: 'cm-h1-line' });
@@ -139,12 +140,17 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
       const widgets: Range<Decoration>[] = [];
       const sel = view.state.selection.main;
       const doc = view.state.doc;
+      const codeLines = getFencedCodeLineSet(doc);
 
       for (const { from, to } of view.visibleRanges) {
         let pos = from;
         while (pos <= to) {
           if (pos > doc.length) break;
           const line = doc.lineAt(pos);
+          if (codeLines.has(line.number)) {
+            pos = line.to + 1;
+            continue;
+          }
           const text = line.text;
           const trimmed = text.trim();
 
@@ -215,19 +221,45 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
           // Track ranges occupied by inline tokens to prevent overlaps
           const occupied: [number, number][] = [];
           const isOverlapping = (s: number, e: number) =>
-            occupied.some(([os, oe]) => (s >= os && s < oe) || (e > os && e <= oe));
+            occupied.some(([os, oe]) => s < oe && e > os);
+
+          // 4 (moved first). Inline Code: `code`
+          const codeRegex = /(?<!`)`([^`\n]+)`(?!`)/g;
+          let cMatch: RegExpExecArray | null;
+          while ((cMatch = codeRegex.exec(text)) !== null) {
+            const start = line.from + cMatch.index;
+            const end = start + cMatch[0].length;
+            if (isOverlapping(start, end)) continue;
+            occupied.push([start, end]);
+
+            const isCursorInside = !sel.empty
+              ? sel.from < end && sel.to > start
+              : sel.head > start && sel.head < end;
+
+            if (isCursorInside) {
+              widgets.push(codeInlineMark.range(start + 1, end - 1));
+            } else {
+              widgets.push(hideDelimiter.range(start, start + 1));
+              widgets.push(codeInlineMark.range(start + 1, end - 1));
+              widgets.push(hideDelimiter.range(end - 1, end));
+            }
+          }
 
           // Pre-occupy image embed ranges (![[...]] and ![...](...))
           const imgWikiRegex = /!\[\[([^\]]+)\]\]/g;
           let iwMatch: RegExpExecArray | null;
           while ((iwMatch = imgWikiRegex.exec(text)) !== null) {
-            occupied.push([line.from + iwMatch.index, line.from + iwMatch.index + iwMatch[0].length]);
+            const s = line.from + iwMatch.index;
+            const e = s + iwMatch[0].length;
+            if (!isOverlapping(s, e)) occupied.push([s, e]);
           }
 
           const imgMdRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
           let imMatch: RegExpExecArray | null;
           while ((imMatch = imgMdRegex.exec(text)) !== null) {
-            occupied.push([line.from + imMatch.index, line.from + imMatch.index + imMatch[0].length]);
+            const s = line.from + imMatch.index;
+            const e = s + imMatch[0].length;
+            if (!isOverlapping(s, e)) occupied.push([s, e]);
           }
 
           // 2. Bold: **text** or __text__
@@ -274,32 +306,12 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
             }
           }
 
-          // 4. Inline Code: `code`
-          const codeRegex = /(?<!`)`([^`\n]+)`(?!`)/g;
-          let cMatch: RegExpExecArray | null;
-          while ((cMatch = codeRegex.exec(text)) !== null) {
-            const start = line.from + cMatch.index;
-            const end = start + cMatch[0].length;
-            if (isOverlapping(start, end)) continue;
-            occupied.push([start, end]);
-
-            const isCursorInside = !sel.empty
-              ? sel.from < end && sel.to > start
-              : sel.head > start && sel.head < end;
-
-            if (isCursorInside) {
-              widgets.push(codeInlineMark.range(start + 1, end - 1));
-            } else {
-              widgets.push(hideDelimiter.range(start, start + 1));
-              widgets.push(codeInlineMark.range(start + 1, end - 1));
-              widgets.push(hideDelimiter.range(end - 1, end));
-            }
-          }
-
           // 5. Highlights: /==(🔴|🟠|🟡|🟢|🔵|🟣)?([^=\n]+)==/g
           const hlRegex = /==(🔴|🟠|🟡|🟢|🔵|🟣)?([^=\n]+)==/g;
           let hMatch: RegExpExecArray | null;
           while ((hMatch = hlRegex.exec(text)) !== null) {
+            if (!hMatch[2] || hMatch[2].trim().length === 0) continue;
+
             const start = line.from + hMatch.index;
             const end = start + hMatch[0].length;
             if (isOverlapping(start, end)) continue;
@@ -315,22 +327,21 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
               : sel.head > start && sel.head < end;
 
             if (isCursorInside) {
-              // Cursor ESTÁ dentro del resaltado (al hacer clic sobre él):
-              // Muestra los signos == y el círculo 🔵 (==🔵esto va a estar resaltado==)
-              // y aplica Decoration.mark del color de fondo al RANGO COMPLETO [start, end]
               widgets.push(markDeco.range(start, end));
             } else {
-              // Cursor NO está dentro de este resaltado (Cursor FUERA):
-              // Esconde el == inicial y el círculo de color (==🔵) con Decoration.replace({})
-              // Esconde el == final con Decoration.replace({})
-              // Mantiene Decoration.mark sobre el texto limpio
               let openLen = 2 + circleEmoji.length;
-              if (text.charAt(start + openLen - line.from) === ' ') {
+              if (
+                circleEmoji.length > 0 &&
+                text.charAt(start + openLen - line.from) === ' ' &&
+                start + openLen + 1 < end - 2
+              ) {
                 openLen += 1;
               }
-              widgets.push(hideDelimiter.range(start, start + openLen));
-              widgets.push(markDeco.range(start + openLen, end - 2));
-              widgets.push(hideDelimiter.range(end - 2, end));
+              if (start + openLen < end - 2) {
+                widgets.push(hideDelimiter.range(start, start + openLen));
+                widgets.push(markDeco.range(start + openLen, end - 2));
+                widgets.push(hideDelimiter.range(end - 2, end));
+              }
             }
           }
 
@@ -353,7 +364,7 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
 
             if (isCursorInside) {
               widgets.push(markDeco.range(start, end));
-            } else {
+            } else if (start + openTagLen < end - closeTagLen) {
               widgets.push(hideDelimiter.range(start, start + openTagLen));
               widgets.push(markDeco.range(start + openTagLen, end - closeTagLen));
               widgets.push(hideDelimiter.range(end - closeTagLen, end));
@@ -361,7 +372,7 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
           }
 
           // 6. Italic: *text* or _text_ (must be after bold to avoid matching inside **text**)
-          const italicRegex = /(?:(?<!\*)\*([^\*]+)\*(?!\*)|(?<!_)_([^_]+)_(?!_))/g;
+          const italicRegex = /(?:(?<!\*)\*([^\*]+)\*(?!\*)|(?<![\w_])_([^_]+)_(?![\w_]))/g;
           let iMatch: RegExpExecArray | null;
           while ((iMatch = italicRegex.exec(text)) !== null) {
             const start = line.from + iMatch.index;
