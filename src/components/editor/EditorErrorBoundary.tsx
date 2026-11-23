@@ -98,6 +98,12 @@ export class EditorErrorBoundary extends Component<Props, State> {
     } catch {}
   }
 
+  componentDidUpdate(prevProps: Props) {
+    if (prevProps.noteName !== this.props.noteName && this.state.hasError) {
+      this.setState({ hasError: false, error: null, errorInfo: null });
+    }
+  }
+
   handleRetry = () => {
     this.setState({ hasError: false, error: null, errorInfo: null });
   };

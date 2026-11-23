@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { EditorState, Compartment, RangeSetBuilder, Prec } from '@codemirror/state';
+import { EditorState, Compartment, RangeSetBuilder, Prec, Annotation, Transaction } from '@codemirror/state';
 import {
   EditorView,
   keymap,
@@ -36,6 +36,7 @@ import { getStorageAdapter, toUint8Array } from '../../services/storageAdapter';
 import { themeService } from '../../services/themeService';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore } from '../../stores/vaultStore';
+import { FILE_RENAMED_EVENT } from '../../services/linkRefactorService';
 import { getHeadingSectionAtPos } from '../../services/noteComposerService';
 import { getRelativeVaultPath, isPathExcluded, isSamePath, normalizePath } from '../../utils/pathUtils';
 import { UranoMenu, MenuItemData } from '../common/UranoMenu';
@@ -100,6 +101,8 @@ interface EditorProps {
   viewMode?: 'live-preview' | 'reading' | 'source';
 }
 
+const externalSyncAnnotation = Annotation.define<boolean>();
+
 // Module-level reference to the active EditorView
 let globalActiveEditorView: EditorView | null = null;
 export const getActiveEditorView = (): EditorView | null => {
@@ -118,6 +121,7 @@ export const Editor: React.FC<EditorProps> = ({
   const currentPathRef = useRef<string | null>(null);
   const inlineTitleRef = useRef<HTMLInputElement>(null);
   const lastDispatchedDocRef = useRef<string>('');
+  const isRenamingTitleRef = useRef<boolean>(false);
 
   // Independent CodeMirror 6 Compartments for dynamic reconfiguration without recreating the view
   const livePreviewCompartment = useRef(new Compartment());
@@ -561,27 +565,83 @@ export const Editor: React.FC<EditorProps> = ({
     }
   }, [shouldSelectTitleOnOpen, autoFocusTitle, activeFile, setShouldSelectTitleOnOpen, setAutoFocusTitle]);
 
+  // Keep currentPathRef synced on file renames so editor state and Ctrl+Z history survive rename
+  useEffect(() => {
+    const handleFileRenamed = (e: Event) => {
+      const detail = (e as CustomEvent<{ oldPath?: string; newPath?: string }>).detail;
+      if (!detail?.oldPath || !detail?.newPath) return;
+      if (currentPathRef.current && isSamePath(currentPathRef.current, detail.oldPath)) {
+        currentPathRef.current = detail.newPath;
+      }
+    };
+    window.addEventListener(FILE_RENAMED_EVENT, handleFileRenamed);
+    return () => window.removeEventListener(FILE_RENAMED_EVENT, handleFileRenamed);
+  }, []);
+
+  // Destroy CodeMirror instance on unmount
+  useEffect(() => {
+    return () => {
+      if (viewRef.current) {
+        const view = viewRef.current;
+        if (globalActiveEditorView === view) {
+          globalActiveEditorView = null;
+        }
+        if ((window as any).__uranoEditorView === view) {
+          (window as any).__uranoEditorView = null;
+        }
+        view.destroy();
+        viewRef.current = null;
+        currentPathRef.current = null;
+      }
+    };
+  }, []);
+
   // Create or switch editor document
   useEffect(() => {
-    if (!editorRef.current || !activeFile) return;
+    const destroyExistingView = () => {
+      if (viewRef.current) {
+        const prev = viewRef.current;
+        if (globalActiveEditorView === prev) {
+          globalActiveEditorView = null;
+        }
+        if ((window as any).__uranoEditorView === prev) {
+          (window as any).__uranoEditorView = null;
+        }
+        prev.destroy();
+        viewRef.current = null;
+      }
+    };
 
-    // If activeFile path changed due to inline renaming, preserve editor state & cursor
+    if (!editorRef.current || !activeFile) {
+      destroyExistingView();
+      currentPathRef.current = null;
+      return;
+    }
+
+    if (isLoading) {
+      if (
+        viewRef.current &&
+        currentPathRef.current &&
+        !isSamePath(currentPathRef.current, activeFile)
+      ) {
+        destroyExistingView();
+        currentPathRef.current = null;
+      }
+      return;
+    }
+
+    // If activeFile matches the already-mounted EditorView (e.g. after inline rename), keep state & Ctrl+Z history
     if (
       viewRef.current &&
       currentPathRef.current &&
-      isSamePath(currentPathRef.current, activeFile) &&
-      viewRef.current.state.doc.toString() === fileContent
+      isSamePath(currentPathRef.current, activeFile)
     ) {
       currentPathRef.current = activeFile;
       return;
     }
 
+    destroyExistingView();
     currentPathRef.current = activeFile;
-
-    if (viewRef.current) {
-      viewRef.current.destroy();
-      viewRef.current = null;
-    }
 
     const state = EditorState.create({
       doc: fileContent,
@@ -665,9 +725,14 @@ export const Editor: React.FC<EditorProps> = ({
         EditorView.lineWrapping,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
+            const isExternalSync = update.transactions.some((tr) =>
+              Boolean(tr.annotation(externalSyncAnnotation))
+            );
             const newDoc = update.state.doc.toString();
             lastDispatchedDocRef.current = newDoc;
-            updateContent(newDoc);
+            if (!isExternalSync) {
+              updateContent(newDoc);
+            }
           }
 
           // Check [[ wikilink autocompletion
@@ -708,18 +773,7 @@ export const Editor: React.FC<EditorProps> = ({
     globalActiveEditorView = view;
     (window as any).__uranoEditorView = view;
     lastDispatchedDocRef.current = fileContent;
-
-    return () => {
-      if (globalActiveEditorView === view) {
-        globalActiveEditorView = null;
-      }
-      if ((window as any).__uranoEditorView === view) {
-        (window as any).__uranoEditorView = null;
-      }
-      view.destroy();
-      viewRef.current = null;
-    };
-  }, [activeFile]);
+  }, [activeFile, isLoading]);
 
   // Toggle Live Preview <-> Source Mode without recreating the editor:
   // reconfigures the compartment holding every Live Preview decoration.
@@ -791,18 +845,29 @@ export const Editor: React.FC<EditorProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customDictionary]);
 
-  // Synchronize doc if file content was changed externally
+  // Synchronize doc if file content was changed externally (without polluting Ctrl+Z or marking dirty)
   useEffect(() => {
-    if (viewRef.current && activeFile) {
-      const currentDoc = viewRef.current.state.doc.toString();
-      if (currentDoc !== fileContent && lastDispatchedDocRef.current !== fileContent) {
-        lastDispatchedDocRef.current = fileContent;
-        viewRef.current.dispatch({
-          changes: { from: 0, to: currentDoc.length, insert: fileContent },
-        });
-      }
+    if (
+      isLoading ||
+      !viewRef.current ||
+      !activeFile ||
+      !currentPathRef.current ||
+      !isSamePath(currentPathRef.current, activeFile)
+    ) {
+      return;
     }
-  }, [fileContent, activeFile]);
+    const currentDoc = viewRef.current.state.doc.toString();
+    if (currentDoc !== fileContent && lastDispatchedDocRef.current !== fileContent) {
+      lastDispatchedDocRef.current = fileContent;
+      viewRef.current.dispatch({
+        changes: { from: 0, to: currentDoc.length, insert: fileContent },
+        annotations: [
+          Transaction.addToHistory.of(false),
+          externalSyncAnnotation.of(true),
+        ],
+      });
+    }
+  }, [fileContent, activeFile, isLoading]);
 
   // Insert autocompleted wikilink
   const insertWikilink = (noteName: string) => {
@@ -1003,23 +1068,36 @@ export const Editor: React.FC<EditorProps> = ({
     };
   }, [onOpenInNewTab, deleteItem, showNotice, t]);
 
+  const commitInlineTitleRename = async (): Promise<boolean> => {
+    if (!activeFile || !activeFile.trim() || isRenamingTitleRef.current) return true;
+    const newTitle = draftTitle.trim();
+    if (!newTitle) {
+      setDraftTitle(cleanTitle);
+      return true;
+    }
+    if (newTitle === cleanTitle) return true;
+
+    isRenamingTitleRef.current = true;
+    try {
+      const result = await renameNoteWithLinkRefactor(activeFile, newTitle);
+      if (!result.success) {
+        showNotice(result.error || t('editor.notices.invalidFileName'), 4000, 'error');
+        setDraftTitle(cleanTitle);
+        return false;
+      }
+      return true;
+    } finally {
+      isRenamingTitleRef.current = false;
+    }
+  };
+
   // Handle .inline-title keyboard events (Enter / Tab / ArrowDown / Escape)
   const handleTitleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!activeFile || !activeFile.trim()) return;
     if (e.key === 'Enter' || e.key === 'Tab' || e.key === 'ArrowDown') {
       e.preventDefault();
-      const newTitle = draftTitle.trim();
-
-      if (newTitle && newTitle !== cleanTitle) {
-        const result = await renameNoteWithLinkRefactor(activeFile, newTitle);
-        if (!result.success) {
-          showNotice(result.error || t('editor.notices.invalidFileName'), 4000, 'error');
-          setDraftTitle(cleanTitle);
-          return;
-        }
-      } else if (!newTitle) {
-        setDraftTitle(cleanTitle);
-      }
+      const ok = await commitInlineTitleRename();
+      if (!ok) return;
 
       // Smoothly transition focus to beginning of CodeMirror 6 editor
       if (viewRef.current) {
@@ -1038,20 +1116,7 @@ export const Editor: React.FC<EditorProps> = ({
 
   // Handle .inline-title onBlur (auto-commit rename)
   const handleTitleBlur = async () => {
-    if (!activeFile || !activeFile.trim()) return;
-    const newTitle = draftTitle.trim();
-    if (!newTitle) {
-      setDraftTitle(cleanTitle);
-      return;
-    }
-
-    if (newTitle !== cleanTitle) {
-      const result = await renameNoteWithLinkRefactor(activeFile, newTitle);
-      if (!result.success) {
-        showNotice(result.error || t('editor.notices.invalidFileName'), 4000, 'error');
-        setDraftTitle(cleanTitle);
-      }
-    }
+    await commitInlineTitleRename();
   };
 
   // Intelligent Urano-like toggle formatting
@@ -2136,29 +2201,75 @@ export const Editor: React.FC<EditorProps> = ({
 
   // Right-click context menu handler matching Urano specification
   const handleContextMenu = async (e: React.MouseEvent) => {
+    if (editorMode === 'reading') return;
+
     const target = e.target as HTMLElement;
     if (target.closest('.urano-table-editor') || target.closest('.cm-table-widget')) {
       return;
     }
     e.preventDefault();
 
-    // If no text is selected or right-click is outside active selection, move cursor
-    if (viewRef.current) {
-      const sel = viewRef.current.state.selection.main;
-      let clickPos = viewRef.current.posAtCoords({ x: e.clientX, y: e.clientY });
-      if (clickPos === null) {
-        clickPos = viewRef.current.state.doc.length;
-      }
-      if (clickPos !== null) {
-        if (sel.empty || clickPos < sel.from || clickPos > sel.to) {
-          viewRef.current.dispatch({
-            selection: { anchor: clickPos, head: clickPos },
-          });
+    const currentView = viewRef.current || getActiveEditorView();
+
+    // Resolve DOM positions BEFORE moving the selection (moving selection can rebuild
+    // Live Preview decorations under the pointer and detach target nodes)
+    let clickedWikilink: string | null = null;
+    const wikilinkEl = target.closest('.cm-wikilink');
+    if (wikilinkEl && currentView) {
+      try {
+        const pos = currentView.posAtDOM(wikilinkEl);
+        const line = currentView.state.doc.lineAt(pos);
+        const regex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+        let match: RegExpExecArray | null;
+        while ((match = regex.exec(line.text)) !== null) {
+          const start = line.from + match.index;
+          const end = start + match[0].length;
+          if (pos >= start && pos <= end) {
+            clickedWikilink = match[1].trim();
+            break;
+          }
         }
+      } catch {
+        // Ignorar si posAtDOM no resuelve
       }
     }
 
-    const currentView = viewRef.current || getActiveEditorView();
+    const spellErrorEl = target.closest('.cm-spell-error');
+    const misspelledWord = spellErrorEl
+      ? spellErrorEl.getAttribute('data-word') || spellErrorEl.textContent?.trim() || ''
+      : '';
+    let wordRange: { from: number; to: number } | null = null;
+    if (spellErrorEl && misspelledWord && currentView) {
+      try {
+        const pos = currentView.posAtDOM(spellErrorEl);
+        const line = currentView.state.doc.lineAt(pos);
+        const text = line.text;
+        let idx = 0;
+        while ((idx = text.indexOf(misspelledWord, idx)) !== -1) {
+          const candidateFrom = line.from + idx;
+          const candidateTo = candidateFrom + misspelledWord.length;
+          if (pos >= candidateFrom && pos <= candidateTo) {
+            wordRange = { from: candidateFrom, to: candidateTo };
+            break;
+          }
+          idx += Math.max(1, misspelledWord.length);
+        }
+      } catch {
+        // Ignorar si posAtDOM no resuelve
+      }
+    }
+
+    // If right-click is inside CodeMirror canvas outside active selection, move cursor
+    if (currentView && editorRef.current?.contains(target)) {
+      const sel = currentView.state.selection.main;
+      const clickPos = currentView.posAtCoords({ x: e.clientX, y: e.clientY });
+      if (clickPos !== null && (sel.empty || clickPos < sel.from || clickPos > sel.to)) {
+        currentView.dispatch({
+          selection: { anchor: clickPos, head: clickPos },
+        });
+      }
+    }
+
     const activeSel = currentView ? currentView.state.selection.main : null;
     const hasSelection = Boolean(activeSel && !activeSel.empty);
     const selectedText =
@@ -2166,95 +2277,50 @@ export const Editor: React.FC<EditorProps> = ({
         ? currentView.state.sliceDoc(activeSel!.from, activeSel!.to)
         : '';
 
-    // Check if right-clicked on [[Wikilink]]
-    let clickedWikilink: string | null = null;
-    const wikilinkEl = target.closest('.cm-wikilink');
-    if (wikilinkEl && currentView) {
-      const pos = currentView.posAtDOM(wikilinkEl);
-      const line = currentView.state.doc.lineAt(pos);
-      const regex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
-      let match: RegExpExecArray | null;
-      while ((match = regex.exec(line.text)) !== null) {
-        const start = line.from + match.index;
-        const end = start + match[0].length;
-        if (pos >= start && pos <= end) {
-          clickedWikilink = match[1].trim();
-          break;
-        }
-      }
-    }
-
     const items: MenuItemData[] = [];
 
     // 0. Corrección ortográfica (Sugerencias nativas de enchant/spellbook + Añadir al diccionario)
-    const spellErrorEl = target.closest('.cm-spell-error');
-    if (spellErrorEl) {
-      const misspelledWord =
-        spellErrorEl.getAttribute('data-word') || spellErrorEl.textContent?.trim() || '';
-      if (misspelledWord) {
-        const currentLang = useSettingsStore.getState().settings.language || 'en';
-        const suggestions: string[] = await invoke<string[]>('suggest_word', {
-          word: misspelledWord,
-          lang: currentLang,
-        }).catch(() => []);
+    if (misspelledWord) {
+      const currentLang = useSettingsStore.getState().settings.language || 'en';
+      const suggestions: string[] = await invoke<string[]>('suggest_word', {
+        word: misspelledWord,
+        lang: currentLang,
+      }).catch(() => []);
 
-        // Calcular rango exacto en el documento de la palabra subrayada
-        let wordRange: { from: number; to: number } | null = null;
-        if (currentView) {
-          try {
-            const pos = currentView.posAtDOM(spellErrorEl);
-            const line = currentView.state.doc.lineAt(pos);
-            const text = line.text;
-            let idx = 0;
-            while ((idx = text.indexOf(misspelledWord, idx)) !== -1) {
-              const candidateFrom = line.from + idx;
-              const candidateTo = candidateFrom + misspelledWord.length;
-              if (pos >= candidateFrom && pos <= candidateTo) {
-                wordRange = { from: candidateFrom, to: candidateTo };
-                break;
-              }
-              idx += Math.max(1, misspelledWord.length);
-            }
-          } catch {
-            // Ignorar si posAtDOM no resuelve
-          }
-        }
-
-        if (suggestions.length === 0) {
-          items.push({
-            title: t('editor.contextMenu.noSuggestions'),
-            disabled: true,
-          });
-        } else {
-          for (const sug of suggestions) {
-            items.push({
-              title: sug,
-              icon: <Repeat size={14} />,
-              action: () => {
-                if (currentView && wordRange) {
-                  currentView.dispatch({
-                    changes: { from: wordRange.from, to: wordRange.to, insert: sug },
-                    selection: { anchor: wordRange.from + sug.length },
-                  });
-                }
-              },
-            });
-          }
-        }
-
+      if (suggestions.length === 0) {
         items.push({
-          title: t('editor.contextMenu.addToDictionary'),
-          icon: <BookPlus size={14} />,
-          action: () => {
-            void useSettingsStore.getState().addWordToDictionary(misspelledWord);
-            if (currentView) {
-              currentView.dispatch({ effects: triggerSpellCheckEffect.of(true) });
-            }
-          },
+          title: t('editor.contextMenu.noSuggestions'),
+          disabled: true,
         });
-
-        items.push({ type: 'separator' });
+      } else {
+        for (const sug of suggestions) {
+          items.push({
+            title: sug,
+            icon: <Repeat size={14} />,
+            action: () => {
+              if (currentView && wordRange) {
+                currentView.dispatch({
+                  changes: { from: wordRange.from, to: wordRange.to, insert: sug },
+                  selection: { anchor: wordRange.from + sug.length },
+                });
+              }
+            },
+          });
+        }
       }
+
+      items.push({
+        title: t('editor.contextMenu.addToDictionary'),
+        icon: <BookPlus size={14} />,
+        action: () => {
+          void useSettingsStore.getState().addWordToDictionary(misspelledWord);
+          if (currentView) {
+            currentView.dispatch({ effects: triggerSpellCheckEffect.of(true) });
+          }
+        },
+      });
+
+      items.push({ type: 'separator' });
     }
 
     // Optional Wikilink Options if clicked specifically on a [[Wikilink]]

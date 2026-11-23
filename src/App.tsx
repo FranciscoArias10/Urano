@@ -1981,7 +1981,10 @@ const MainApp: React.FC = () => {
             ) : (activeFile && isImagePath(activeFile)) || activeTab?.type === 'image' ? (
               <ImageView filePath={activeFile || activeTab?.filePath || ''} />
             ) : activeFile ? (
-              <EditorErrorBoundary noteName={activeFileName || t('common.untitled')}>
+              <EditorErrorBoundary
+                noteName={activeFileName || t('common.untitled')}
+                onOpenReadingMode={() => handleChangeViewMode('reading')}
+              >
                 <Editor
                   onWikilinkClick={handleWikilinkClick}
                   onOpenInNewTab={handleOpenInNewTab}

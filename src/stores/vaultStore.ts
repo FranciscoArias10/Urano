@@ -806,14 +806,17 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       await saveCurrentFile();
     }
 
+    const isSameActive = Boolean(activeFile && isSamePath(activeFile, targetPath));
     const reqId = ++selectFileRequestId;
     const parts = targetPath.replace(/\\/g, '/').split('/');
     const activeFileName = parts[parts.length - 1] || t('vault.defaultNoteName');
 
-    // Update activeFile immediately and synchronously to prevent any tab/editor ping-pong or mismatch
+    // Update activeFile immediately and synchronously to prevent any tab/editor ping-pong or mismatch,
+    // clearing stale content from the previous note before the new read completes.
     set({
       activeFile: targetPath,
       activeFileName,
+      ...(isSameActive ? {} : { fileContent: '', isDirty: false }),
       isLoading: true,
     });
 
