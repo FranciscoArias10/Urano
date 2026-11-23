@@ -19,6 +19,11 @@ import { useNoticeStore } from '../components/common/Notice';
 import { t } from '../locales/i18n';
 import { FileItem } from '../types';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
+import {
+  getFencedCodeLineSet,
+  getInlineCodeRangesInLine,
+  isRangeOverlapping,
+} from './codeRangeUtils';
 
 /** Resize constraints (pixels) */
 const MIN_IMAGE_WIDTH = 50;
@@ -715,15 +720,24 @@ export function createImageExtension(options?: ImageExtensionOptions) {
       /** Pre-resolve blob URLs for all image embeds currently in the viewport */
       prefetchVisibleImages(view: EditorView) {
         const doc = view.state.doc;
+        const codeLines = getFencedCodeLineSet(doc);
         for (const { from, to } of view.visibleRanges) {
           let pos = from;
           while (pos <= to && pos <= doc.length) {
             const line = doc.lineAt(pos);
+            if (codeLines.has(line.number)) {
+              pos = line.to + 1;
+              continue;
+            }
             const text = line.text;
+            const inlineCodeRanges = getInlineCodeRangesInLine(text, line.from);
             // Quick scan for image patterns
             WIKILINK_IMAGE_REGEX.lastIndex = 0;
             let m: RegExpExecArray | null;
             while ((m = WIKILINK_IMAGE_REGEX.exec(text)) !== null) {
+              const start = line.from + m.index;
+              const end = start + m[0].length;
+              if (isRangeOverlapping(start, end, inlineCodeRanges)) continue;
               const parts = m[1].trim().split('|');
               const rawTarget = parts[0].trim();
               if (isImagePath(rawTarget)) {
@@ -735,6 +749,9 @@ export function createImageExtension(options?: ImageExtensionOptions) {
             }
             MD_IMAGE_REGEX.lastIndex = 0;
             while ((m = MD_IMAGE_REGEX.exec(text)) !== null) {
+              const start = line.from + m.index;
+              const end = start + m[0].length;
+              if (isRangeOverlapping(start, end, inlineCodeRanges)) continue;
               const targetUrl = m[2].trim();
               if (isImagePath(targetUrl) && !/^(https?:|data:|blob:)/i.test(targetUrl)) {
                 const resolved = resolveVaultImagePath(targetUrl);
@@ -752,13 +769,19 @@ export function createImageExtension(options?: ImageExtensionOptions) {
         const widgets: Range<Decoration>[] = [];
         const sel = view.state.selection.main;
         const doc = view.state.doc;
+        const codeLines = getFencedCodeLineSet(doc);
 
         for (const { from, to } of view.visibleRanges) {
           let pos = from;
           while (pos <= to) {
             if (pos > doc.length) break;
             const line = doc.lineAt(pos);
+            if (codeLines.has(line.number)) {
+              pos = line.to + 1;
+              continue;
+            }
             const text = line.text;
+            const inlineCodeRanges = getInlineCodeRangesInLine(text, line.from);
 
             // 1. Check Wikilink image embed: ![[imagen.png]] or ![[imagen.png|300]]
             let wikiMatch: RegExpExecArray | null;
@@ -773,6 +796,10 @@ export function createImageExtension(options?: ImageExtensionOptions) {
               const rawTarget = parts[0];
 
               if (isImagePath(rawTarget)) {
+                const start = line.from + wikiMatch.index;
+                const end = start + fullMatch.length;
+                if (isRangeOverlapping(start, end, inlineCodeRanges)) continue;
+
                 let width = 0;
                 let height = 0;
                 let alt = '';
@@ -787,8 +814,6 @@ export function createImageExtension(options?: ImageExtensionOptions) {
                   }
                 }
 
-                const start = line.from + wikiMatch.index;
-                const end = start + fullMatch.length;
                 const resolved = resolveVaultImagePath(rawTarget);
 
                 // Cursor is actively inside this image embed range
@@ -839,9 +864,11 @@ export function createImageExtension(options?: ImageExtensionOptions) {
               const isLocalImg = isImagePath(targetUrl);
 
               if (isWeb || isLocalImg) {
-                const { width, height, alt } = parseImageEmbed(altOrDim);
                 const start = line.from + mdMatch.index;
                 const end = start + fullMatch.length;
+                if (isRangeOverlapping(start, end, inlineCodeRanges)) continue;
+
+                const { width, height, alt } = parseImageEmbed(altOrDim);
                 const resolved = isWeb ? targetUrl : resolveVaultImagePath(targetUrl);
 
                 const isCursorInside = sel.from <= end && sel.to >= start;

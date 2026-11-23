@@ -9,6 +9,11 @@ import {
 import { Range } from '@codemirror/state';
 import { isImagePath } from '../services/storageAdapter';
 import { t } from '../locales/i18n';
+import {
+  getFencedCodeLineSet,
+  getInlineCodeRangesInLine,
+  isRangeOverlapping,
+} from './codeRangeUtils';
 
 // Los textos traducidos se insertan vía innerHTML: escapar por si un paquete de idioma
 // de la bóveda (.urano/locales) trae marcado.
@@ -74,7 +79,7 @@ class BaseEmbedWidget extends WidgetType {
 
     const desc = document.createElement('div');
     desc.className = 'pt-2 text-[11px] text-stone-400 flex items-center justify-between';
-    desc.innerHTML = `<span>${escapeHtml(t('editor.baseEmbed.description'))}</span><span class="text-stone-500 font-mono text-[10px]">${this.fileName}</span>`;
+    desc.innerHTML = `<span>${escapeHtml(t('editor.baseEmbed.description'))}</span><span class="text-stone-500 font-mono text-[10px]">${escapeHtml(this.fileName)}</span>`;
     card.appendChild(desc);
 
     card.addEventListener('click', (e) => {
@@ -118,14 +123,20 @@ export function createWikilinksExtension(handler?: WikilinkHandler) {
         const widgets: Range<Decoration>[] = [];
         const sel = view.state.selection.main;
         const doc = view.state.doc;
+        const codeLines = getFencedCodeLineSet(doc);
 
         for (const { from, to } of view.visibleRanges) {
           let pos = from;
           while (pos <= to) {
             if (pos > doc.length) break;
             const line = doc.lineAt(pos);
+            if (codeLines.has(line.number)) {
+              pos = line.to + 1;
+              continue;
+            }
             const text = line.text;
             const isCursorOnLine = sel.from <= line.to && sel.to >= line.from;
+            const inlineCodeRanges = getInlineCodeRangesInLine(text, line.from);
 
             // Check if entire line is an embedded .base file: ![[...base]]
             const baseEmbedMatch = text.trim().match(/^!\[\[([^\]|]+)\.base\]\]$/i);
@@ -156,6 +167,9 @@ export function createWikilinksExtension(handler?: WikilinkHandler) {
 
               const start = line.from + match.index;
               const end = start + match[0].length;
+              if (isRangeOverlapping(start, end, inlineCodeRanges)) {
+                continue;
+              }
               widgets.push(
                 Decoration.mark({
                   class: 'cm-wikilink',
@@ -177,9 +191,10 @@ export function createWikilinksExtension(handler?: WikilinkHandler) {
       decorations: (v) => v.decorations,
       eventHandlers: {
         click: (e, view) => {
-          const target = e.target as HTMLElement;
-          if (target && target.classList.contains('cm-wikilink')) {
-            const pos = view.posAtDOM(target);
+          const target = e.target as HTMLElement | null;
+          const wikilinkEl = target?.closest('.cm-wikilink') as HTMLElement | null;
+          if (wikilinkEl) {
+            const pos = view.posAtDOM(wikilinkEl);
             const line = view.state.doc.lineAt(pos);
             const text = line.text;
 

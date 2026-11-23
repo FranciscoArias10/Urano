@@ -1,6 +1,7 @@
 import { EditorView } from '@codemirror/view';
 import { EditorSelection, Prec } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
+import { getFencedCodeLineSet } from './codeRangeUtils';
 
 export interface TokenInfo {
   tokenStart: number;
@@ -16,20 +17,20 @@ const INLINE_PATTERNS: {
   regex: RegExp;
   getDelims: (m: RegExpExecArray) => { openLen: number; closeLen: number };
 }[] = [
-  // 1. Bold: **text** or __text__
+  // 1. Inline Code first so markdown symbols inside `code` are ignored
+  {
+    regex: /(?<!`)`([^`\n]+)`(?!`)/g,
+    getDelims: () => ({ openLen: 1, closeLen: 1 }),
+  },
+  // 2. Bold: **text** or __text__
   {
     regex: /(?:\*\*([^\*\n]+)\*\*|__([^_\n]+)__)/g,
     getDelims: () => ({ openLen: 2, closeLen: 2 }),
   },
-  // 2. Strikethrough: ~~text~~
+  // 3. Strikethrough: ~~text~~
   {
     regex: /~~([^~\n]+)~~/g,
     getDelims: () => ({ openLen: 2, closeLen: 2 }),
-  },
-  // 3. Inline Code: `text`
-  {
-    regex: /(?<!`)`([^`\n]+)`(?!`)/g,
-    getDelims: () => ({ openLen: 1, closeLen: 1 }),
   },
   // 4. Highlight: ==text== or ==🔴text==
   {
@@ -47,7 +48,7 @@ const INLINE_PATTERNS: {
   },
   // 6. Italic: *text* or _text_
   {
-    regex: /(?:(?<!\*)\*([^\*\n]+)\*(?!\*)|(?<!_)_([^_\n]+)_(?!_))/g,
+    regex: /(?:(?<!\*)\*([^\*\n]+)\*(?!\*)|(?<![\w_])_([^_\n]+)_(?![\w_]))/g,
     getDelims: () => ({ openLen: 1, closeLen: 1 }),
   },
   // 7. Math inline: $text$
@@ -65,6 +66,7 @@ const INLINE_PATTERNS: {
 export function getLineTokens(lineText: string, lineFrom: number): TokenInfo[] {
   const tokens: TokenInfo[] = [];
   for (const { regex, getDelims } of INLINE_PATTERNS) {
+    regex.lastIndex = 0;
     let match: RegExpExecArray | null;
     while ((match = regex.exec(lineText)) !== null) {
       const tokenStart = lineFrom + match.index;
@@ -72,12 +74,11 @@ export function getLineTokens(lineText: string, lineFrom: number): TokenInfo[] {
       const { openLen, closeLen } = getDelims(match);
       const contentStart = tokenStart + openLen;
       const contentEnd = tokenEnd - closeLen;
+      if (contentStart >= contentEnd) continue;
 
       // Avoid overlapping with already found tokens
       const overlaps = tokens.some(
-        (t) =>
-          (tokenStart >= t.tokenStart && tokenStart < t.tokenEnd) ||
-          (tokenEnd > t.tokenStart && tokenEnd <= t.tokenEnd)
+        (t) => tokenStart < t.tokenEnd && tokenEnd > t.tokenStart
       );
       if (!overlaps) {
         tokens.push({
@@ -118,6 +119,7 @@ export function getAdjustedFormattingClickPos(
 
   const doc = view.state.doc;
   const line = doc.lineAt(clickPos);
+  if (getFencedCodeLineSet(doc).has(line.number)) return null;
   const clickX = event.clientX;
 
   const tokens = getLineTokens(line.text, line.from);
@@ -185,6 +187,7 @@ export function smartFormattingArrowKeys(view: EditorView, isRight: boolean): bo
   const pos = sel.head;
   const doc = view.state.doc;
   const line = doc.lineAt(pos);
+  if (getFencedCodeLineSet(doc).has(line.number)) return false;
   const tokens = getLineTokens(line.text, line.from);
 
   for (const token of tokens) {
