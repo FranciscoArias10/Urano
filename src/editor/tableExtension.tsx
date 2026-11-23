@@ -3,6 +3,7 @@ import { EditorView, Decoration, DecorationSet, WidgetType } from '@codemirror/v
 import { MenuItemData } from '../components/common/UranoMenu';
 import { useNoticeStore } from '../components/common/Notice';
 import { t } from '../locales/i18n';
+import { getFencedCodeLineSet } from './codeRangeUtils';
 import {
   Rows,
   Columns,
@@ -136,10 +137,15 @@ export function serializeTable(
 
 export function findAllTables(doc: Text): ParsedTable[] {
   const tables: ParsedTable[] = [];
+  const codeLines = getFencedCodeLineSet(doc);
   let i = 1;
   const lineCount = doc.lines;
 
   while (i < lineCount) {
+    if (codeLines.has(i) || codeLines.has(i + 1)) {
+      i++;
+      continue;
+    }
     const line1 = doc.line(i).text;
     const line2 = doc.line(i + 1).text;
 
@@ -159,10 +165,12 @@ export function findAllTables(doc: Text): ParsedTable[] {
       let endLine = i + 1;
 
       for (let r = i + 2; r <= lineCount; r++) {
+        if (codeLines.has(r)) break;
         const nextText = doc.line(r).text;
         // If followed by another separator, it is the start of a next table
         if (
           r < lineCount &&
+          !codeLines.has(r + 1) &&
           isTableRow(nextText) &&
           isTableSeparator(doc.line(r + 1).text)
         ) {
@@ -233,12 +241,23 @@ export function findTargetTable(
 
 export class TableWidget extends WidgetType {
   domNode: HTMLElement | null = null;
+  private commitTimer: ReturnType<typeof setTimeout> | null = null;
+  private isDestroyed = false;
 
   constructor(
     readonly tableData: ParsedTable,
     readonly tableIndex: number
   ) {
     super();
+  }
+
+  destroy(): void {
+    this.isDestroyed = true;
+    if (this.commitTimer !== null) {
+      clearTimeout(this.commitTimer);
+      this.commitTimer = null;
+    }
+    this.domNode = null;
   }
 
   eq(other: TableWidget): boolean {
@@ -283,13 +302,13 @@ export class TableWidget extends WidgetType {
   }
 
   toDOM(view: EditorView): HTMLElement {
+    this.isDestroyed = false;
     let from = this.tableData.from;
     const { headers, alignments, rows } = this.tableData;
 
     let currentHeaders = [...headers];
     let currentAlignments = [...alignments];
     let currentRows = rows.map((r) => [...r]);
-    let commitTimer: any = null;
 
     const container = document.createElement('div');
     container.className =
@@ -306,14 +325,17 @@ export class TableWidget extends WidgetType {
       'urano-table-editor w-full border-collapse text-sm bg-transparent';
 
     const commitChanges = (immediateFocus?: { row: number; col: number }) => {
-      if (commitTimer) {
-        clearTimeout(commitTimer);
-        commitTimer = null;
+      if (this.commitTimer !== null) {
+        clearTimeout(this.commitTimer);
+        this.commitTimer = null;
       }
 
-      const activeView = (window as any).__uranoEditorView || view;
-      if (!activeView) {
-        console.error('[Urano Table] No active EditorView found');
+      if (this.isDestroyed || (this.domNode && !this.domNode.isConnected)) {
+        return;
+      }
+
+      const activeView = view.dom.isConnected ? view : (window as any).__uranoEditorView;
+      if (!activeView || !activeView.dom.isConnected) {
         return;
       }
 
@@ -348,8 +370,9 @@ export class TableWidget extends WidgetType {
     };
 
     const scheduleCommit = () => {
-      if (commitTimer) clearTimeout(commitTimer);
-      commitTimer = setTimeout(() => {
+      if (this.commitTimer !== null) clearTimeout(this.commitTimer);
+      this.commitTimer = setTimeout(() => {
+        this.commitTimer = null;
         commitChanges();
       }, 600);
     };
@@ -686,8 +709,12 @@ export class TableWidget extends WidgetType {
           icon: <Trash2 size={14} />,
           isWarning: true,
           action: () => {
-            const activeView = (window as any).__uranoEditorView || view;
-            if (!activeView) return;
+            if (this.commitTimer !== null) {
+              clearTimeout(this.commitTimer);
+              this.commitTimer = null;
+            }
+            const activeView = view.dom.isConnected ? view : (window as any).__uranoEditorView;
+            if (!activeView || !activeView.dom.isConnected) return;
             const doc = activeView.state.doc;
             const tbl = findTargetTable(doc, from, this.tableIndex);
             if (!tbl) return;
