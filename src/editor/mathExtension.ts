@@ -7,6 +7,7 @@ import {
 import { StateField, RangeSetBuilder, EditorState } from '@codemirror/state';
 import katex from 'katex';
 import { t } from '../locales/i18n';
+import { getAllCodeRanges, isRangeOverlapping } from './codeRangeUtils';
 
 /**
  * Widget for multiline block equations ($$ ... $$)
@@ -66,11 +67,14 @@ class MathBlockWidget extends WidgetType {
       e.stopPropagation();
       if (this.isExpanded) {
         // Estado 1 -> collapse by moving cursor outside the $$ ... $$ block
-        const afterPos = Math.min(
-          view.state.doc.length,
-          this.endPos + (view.state.doc.sliceString(this.endPos, this.endPos + 1) === '\n' ? 1 : 0)
-        );
-        view.dispatch({ selection: { anchor: afterPos } });
+        const docLen = view.state.doc.length;
+        if (this.endPos >= docLen) {
+          const beforePos = this.startPos > 0 ? this.startPos - 1 : docLen;
+          view.dispatch({ selection: { anchor: beforePos } });
+        } else {
+          const afterPos = Math.min(docLen, this.endPos + 1);
+          view.dispatch({ selection: { anchor: afterPos } });
+        }
       } else {
         // Estado 2 -> expand by moving cursor inside the formula lines
         const formulaLinePos = Math.min(
@@ -88,7 +92,7 @@ class MathBlockWidget extends WidgetType {
     // KaTeX Rendered Output
     const mathEl = document.createElement('div');
     mathEl.className = 'cm-katex-math-render overflow-x-auto w-full text-center py-1';
-    mathEl.style.cssText = 'color: #fff7ed; font-size: 1.25em;';
+    mathEl.style.cssText = 'color: var(--text-normal); font-size: 1.25em;';
     try {
       katex.render(this.math.trim(), mathEl, {
         displayMode: true,
@@ -231,6 +235,7 @@ function buildMathDecorations(state: EditorState): DecorationSet {
 
   const entries: DecoEntry[] = [];
   const coveredRanges: [number, number][] = [];
+  const codeRanges = getAllCodeRanges(doc);
 
   // 1. Block Math: $$ ... $$ (supports multi-line equations)
   const blockRegex = /\$\$([\s\S]+?)\$\$/g;
@@ -242,6 +247,7 @@ function buildMathDecorations(state: EditorState): DecorationSet {
     const mathContent = blockMatch[1].trim();
 
     if (mathContent.length === 0) continue;
+    if (isRangeOverlapping(start, end, codeRanges)) continue;
     coveredRanges.push([start, end]);
 
     const isInside = selection.from <= end && selection.to >= start;
@@ -289,6 +295,7 @@ function buildMathDecorations(state: EditorState): DecorationSet {
     const mathContent = inlineMatch[1].trim();
 
     if (mathContent.length === 0) continue;
+    if (isRangeOverlapping(start, end, codeRanges)) continue;
 
     const isOverlapping = coveredRanges.some(
       ([bStart, bEnd]) => start >= bStart && end <= bEnd
