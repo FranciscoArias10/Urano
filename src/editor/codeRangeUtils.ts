@@ -123,3 +123,4 @@ export function isRangeOverlapping(
 ): boolean {
   return ranges.some(([rFrom, rTo]) => from < rTo && to > rFrom);
 }
+
