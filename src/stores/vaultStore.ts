@@ -483,11 +483,41 @@ interface VaultState {
   getUnresolvedLinks: () => string[];
   loadAllNotesContent: () => Promise<void>;
   rebuildVaultCache: () => Promise<void>;
-  closeActiveFile: () => void;
+  closeActiveFile: () => Promise<void>;
   toggleEmbeddedBacklinksForNote: (filePath: string, defaultVal: boolean) => void;
   clearEmbeddedBacklinksOverrides: () => void;
   setAutoFocusTitle: (focus: boolean) => void;
   setShouldSelectTitleOnOpen: (focus: boolean) => void;
+}
+
+export function isNativeVaultFile(filePath: string): boolean {
+  if (!filePath) return false;
+  const lower = filePath.toLowerCase();
+  return (
+    lower.endsWith('.md') ||
+    lower.endsWith('.markdown') ||
+    lower.endsWith('.canvas') ||
+    lower.endsWith('.base') ||
+    isImagePath(filePath)
+  );
+}
+
+let selectFileRequestId = 0;
+
+async function flushDirtyFileToDisk(
+  filePath: string,
+  content: string,
+  activeVault: string | null,
+  vaultName: string | null
+): Promise<void> {
+  if (!filePath || !filePath.trim() || isImagePath(filePath)) return;
+  try {
+    await invoke('write_file', { filePath, content });
+    useSettingsStore.getState().recordSnapshot(filePath, content);
+    triggerAutoSync(activeVault, vaultName);
+  } catch (err) {
+    console.error('Error al guardar cambios pendientes:', err);
+  }
 }
 
 function getInitialRecentVaults(): RecentVault[] {
@@ -645,6 +675,17 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
   setVault: async (vaultPath: string) => {
     try {
+      const prevState = get();
+      if (prevState.isDirty && prevState.activeFile) {
+        await flushDirtyFileToDisk(
+          prevState.activeFile,
+          prevState.fileContent,
+          prevState.activeVault,
+          prevState.vaultName
+        );
+      }
+      selectFileRequestId++;
+
       set({ isLoading: true, loadingMessage: 'Cargando bóveda...' });
       const settings = useSettingsStore.getState().settings;
       const detectAll = settings.detectAllFileExtensions;
@@ -752,14 +793,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     }
 
     // Check if the file is natively supported in Urano's editor/viewers
-    const isNative =
-      targetPath.endsWith('.md') ||
-      targetPath.endsWith('.markdown') ||
-      targetPath.endsWith('.canvas') ||
-      targetPath.endsWith('.base') ||
-      isImagePath(targetPath);
-
-    if (!isNative) {
+    if (!isNativeVaultFile(targetPath)) {
       try {
         await invoke('open_file_in_default_app', { filePath: targetPath });
       } catch (err) {
@@ -772,6 +806,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       await saveCurrentFile();
     }
 
+    const reqId = ++selectFileRequestId;
     const parts = targetPath.replace(/\\/g, '/').split('/');
     const activeFileName = parts[parts.length - 1] || t('vault.defaultNoteName');
 
@@ -793,6 +828,8 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       const isImg = isImagePath(targetPath);
       const content = isImg ? '' : await invoke<string>('read_file', { filePath: targetPath });
 
+      if (reqId !== selectFileRequestId) return;
+
       set({
         fileContent: content,
         isDirty: false,
@@ -803,7 +840,9 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         useSettingsStore.getState().recordSnapshot(targetPath, content);
       }
     } catch (err) {
-      set({ isLoading: false });
+      if (reqId === selectFileRequestId) {
+        set({ fileContent: '', isDirty: false, isLoading: false });
+      }
       console.error('Error al leer archivo:', err);
     }
   },
@@ -812,20 +851,26 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     return get().selectFile(filePath);
   },
 
-  closeActiveFile: () => {
+  closeActiveFile: async () => {
+    const { activeFile, fileContent, isDirty, activeVault, vaultName } = get();
+    selectFileRequestId++;
+
     set({
       activeFile: null,
       activeFileName: null,
       fileContent: '',
       isDirty: false,
     });
-    const { activeVault } = get();
     if (activeVault) {
       try {
         const normVault = normalizePath(activeVault);
         localStorage.removeItem(`urano_last_file_${normVault}`);
         localStorage.removeItem(`urano_last_file_${activeVault}`);
       } catch {}
+    }
+
+    if (isDirty && activeFile) {
+      await flushDirtyFileToDisk(activeFile, fileContent, activeVault, vaultName);
     }
   },
 
@@ -864,10 +909,19 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   saveCurrentFile: async () => {
     const { activeFile, fileContent } = get();
     if (!activeFile || !activeFile.trim() || isImagePath(activeFile)) return;
+    const savingPath = activeFile;
+    const savingContent = fileContent;
     try {
-      await invoke('write_file', { filePath: activeFile, content: fileContent });
-      useSettingsStore.getState().recordSnapshot(activeFile, fileContent);
-      set({ isDirty: false });
+      await invoke('write_file', { filePath: savingPath, content: savingContent });
+      useSettingsStore.getState().recordSnapshot(savingPath, savingContent);
+      const latest = get();
+      if (
+        latest.activeFile &&
+        isSamePath(latest.activeFile, savingPath) &&
+        latest.fileContent === savingContent
+      ) {
+        set({ isDirty: false });
+      }
       get().loadAllNotesContent();
       triggerAutoSync(get().activeVault, get().vaultName);
     } catch (err) {
