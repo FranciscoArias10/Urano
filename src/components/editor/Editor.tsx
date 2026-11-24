@@ -486,16 +486,20 @@ export const Editor: React.FC<EditorProps> = ({
     const currentDoc = viewRef.current ? viewRef.current.state.doc.toString() : fileContent;
     const lines = currentDoc.split('\n');
     if (lineIndex >= 0 && lineIndex < lines.length) {
-      lines[lineIndex] = lines[lineIndex].replace(
-        /^(\s*[-*+]\s+\[)([ xX])(\])/,
+      const originalLine = lines[lineIndex];
+      const updatedLine = originalLine.replace(
+        /^(\s*(?:[-*+]|\d+[.)])\s+\[)([ xX])(\])/,
         `$1${newChecked ? 'x' : ' '}$3`
       );
+      if (updatedLine === originalLine) return;
+      lines[lineIndex] = updatedLine;
       const newDoc = lines.join('\n');
       lastDispatchedDocRef.current = newDoc;
       updateContent(newDoc);
       if (viewRef.current) {
         viewRef.current.dispatch({
           changes: { from: 0, to: viewRef.current.state.doc.length, insert: newDoc },
+          annotations: [externalSyncAnnotation.of(true)],
         });
       }
     }
@@ -2201,10 +2205,9 @@ export const Editor: React.FC<EditorProps> = ({
 
   // Right-click context menu handler matching Urano specification
   const handleContextMenu = async (e: React.MouseEvent) => {
-    if (editorMode === 'reading') return;
-
-    const target = e.target as HTMLElement;
-    if (target.closest('.urano-table-editor') || target.closest('.cm-table-widget')) {
+    const target = e.target as HTMLElement | null;
+    if (editorMode === 'reading' || target?.closest('.markdown-reading-view')) return;
+    if (!target || target.closest('.urano-table-editor') || target.closest('.cm-table-widget')) {
       return;
     }
     e.preventDefault();
@@ -2736,6 +2739,7 @@ export const Editor: React.FC<EditorProps> = ({
             readableLineLength={readableLineLength}
             strictLineBreaks={strictLineBreaks}
             showIndentationGuides={showIndentationGuides}
+            propertiesInDocument={propertiesInDocument}
             onWikilinkClick={onWikilinkClick}
             onTaskToggle={handleTaskToggle}
             footerContent={
