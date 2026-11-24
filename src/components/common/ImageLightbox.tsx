@@ -1,6 +1,19 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { X, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { useT } from '../../stores/localeStore';
+import {
+  computeWheelZoomState,
+  clampImagePan,
+  ZoomViewState,
+  ZoomBoundsInput,
+} from '../../utils/imageZoomUtils';
+
+export function shouldCloseLightboxOnBackdropClick(
+  backdropMouseDown: boolean,
+  suppressAfterPan: boolean
+): boolean {
+  return backdropMouseDown && !suppressAfterPan;
+}
 
 export interface LightboxImage {
   src: string;
@@ -38,16 +51,36 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
 }) => {
   const t = useT();
   const [index, setIndex] = useState(activeIndex);
-  const [scale, setScale] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [viewState, setViewState] = useState<ZoomViewState>({
+    scale: 1,
+    offset: { x: 0, y: 0 },
+  });
+  const scale = viewState.scale;
+  const offset = viewState.offset;
   const [isPanning, setIsPanning] = useState(false);
 
+  const lightboxRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const panStartRef = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
+  const backdropMouseDownRef = useRef(false);
+  const suppressNextBackdropClickRef = useRef(false);
   const activeImage = images[index];
 
   const reset = useCallback(() => {
-    setScale(1);
-    setOffset({ x: 0, y: 0 });
+    setViewState({ scale: 1, offset: { x: 0, y: 0 } });
+  }, []);
+
+  const getZoomBounds = useCallback((): ZoomBoundsInput | undefined => {
+    const rect = lightboxRef.current?.getBoundingClientRect();
+    if (!rect) return undefined;
+    return {
+      viewportWidth: rect.width,
+      viewportHeight: rect.height,
+      baseWidth: imgRef.current?.offsetWidth || undefined,
+      baseHeight: imgRef.current?.offsetHeight || undefined,
+      minScale: MIN_SCALE,
+      maxScale: MAX_SCALE,
+    };
   }, []);
 
   // Keep the rendered index in sync when the caller opens a different image
@@ -76,25 +109,32 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
     return () => window.removeEventListener('keydown', onKeyDown, true);
   }, [images.length, onClose, reset]);
 
-  // Wheel zoom: scale around the pointer so the pixel under the cursor stays put
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
+  // Non-passive wheel zoom: single atomic state update prevents StrictMode double-pan
+  useEffect(() => {
+    const el = lightboxRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const rect = el.getBoundingClientRect();
+      const px = e.clientX - rect.left - rect.width / 2;
+      const py = e.clientY - rect.top - rect.height / 2;
+      const bounds = getZoomBounds();
+      setViewState((prev) => computeWheelZoomState(prev, e.deltaY, px, py, bounds));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [getZoomBounds, activeImage]);
+
+  const handleDoubleClick = (e: React.MouseEvent<HTMLImageElement>) => {
     e.stopPropagation();
-    const rect = e.currentTarget.getBoundingClientRect();
-    const px = e.clientX - rect.left - rect.width / 2;
-    const py = e.clientY - rect.top - rect.height / 2;
-
-    setScale((prev) => {
-      const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, prev * (e.deltaY < 0 ? 1.15 : 1 / 1.15)));
-      const ratio = next / prev;
-      setOffset((o) => ({ x: px - (px - o.x) * ratio, y: py - (py - o.y) * ratio }));
-      return next;
-    });
-  };
-
-  const handleDoubleClick = () => {
-    if (scale === 1) {
-      setScale(2);
+    if (viewState.scale === 1) {
+      const rect = lightboxRef.current?.getBoundingClientRect();
+      const px = rect ? e.clientX - rect.left - rect.width / 2 : 0;
+      const py = rect ? e.clientY - rect.top - rect.height / 2 : 0;
+      setViewState((prev) =>
+        computeWheelZoomState(prev, -1, px, py, getZoomBounds(), 2, 0.5)
+      );
     } else {
       reset();
     }
@@ -103,6 +143,8 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
   const handleMouseDown = (e: React.MouseEvent<HTMLImageElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    backdropMouseDownRef.current = false;
+    suppressNextBackdropClickRef.current = true;
     setIsPanning(true);
     panStartRef.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y };
   };
@@ -111,8 +153,13 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
   useEffect(() => {
     if (!isPanning) return;
     const onMove = (e: MouseEvent) => {
+      const bounds = getZoomBounds();
       const { x, y, ox, oy } = panStartRef.current;
-      setOffset({ x: ox + (e.clientX - x), y: oy + (e.clientY - y) });
+      const raw = { x: ox + (e.clientX - x), y: oy + (e.clientY - y) };
+      setViewState((prev) => ({
+        ...prev,
+        offset: clampImagePan(raw, prev.scale, bounds),
+      }));
     };
     const onUp = () => setIsPanning(false);
     window.addEventListener('mousemove', onMove);
@@ -121,9 +168,33 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
-  }, [isPanning]);
+  }, [isPanning, getZoomBounds]);
 
   if (!activeImage) return null;
+
+  const handleBackdropMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const isBackdrop =
+      target === e.currentTarget ||
+      target.classList.contains('image-lightbox-bg') ||
+      target.classList.contains('image-lightbox-media');
+    backdropMouseDownRef.current = isBackdrop;
+    if (isBackdrop) {
+      suppressNextBackdropClickRef.current = false;
+    }
+  };
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const shouldClose = shouldCloseLightboxOnBackdropClick(
+      backdropMouseDownRef.current,
+      suppressNextBackdropClickRef.current
+    );
+    backdropMouseDownRef.current = false;
+    suppressNextBackdropClickRef.current = false;
+    if (shouldClose && e.target !== imgRef.current) {
+      onClose();
+    }
+  };
 
   const handleOpenInNewTab = () => {
     const path = activeImage.filePath;
@@ -135,11 +206,12 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
 
   return (
     <div
+      ref={lightboxRef}
       className="image-lightbox"
       role="dialog"
       aria-modal="true"
-      onClick={onClose}
-      onWheel={handleWheel}
+      onMouseDown={handleBackdropMouseDown}
+      onClick={handleBackdropClick}
     >
       <div className="image-lightbox-bg" />
 
@@ -155,7 +227,11 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
         <button
           className="image-lightbox-action"
           title={t('lightbox.zoomOut')}
-          onClick={() => setScale((s) => Math.max(MIN_SCALE, s / 1.25))}
+          onClick={() =>
+            setViewState((prev) =>
+              computeWheelZoomState(prev, 1, 0, 0, getZoomBounds(), 1.25, 1 / 1.25)
+            )
+          }
         >
           <ZoomOut size={16} />
         </button>
@@ -163,7 +239,11 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
         <button
           className="image-lightbox-action"
           title={t('lightbox.zoomIn')}
-          onClick={() => setScale((s) => Math.min(MAX_SCALE, s * 1.25))}
+          onClick={() =>
+            setViewState((prev) =>
+              computeWheelZoomState(prev, -1, 0, 0, getZoomBounds(), 1.25, 1 / 1.25)
+            )
+          }
         >
           <ZoomIn size={16} />
         </button>
@@ -178,6 +258,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
       {/* Media */}
       <div className="image-lightbox-media">
         <img
+          ref={imgRef}
           src={activeImage.src}
           alt={activeImage.alt || ''}
           draggable={false}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ZoomIn,
   ZoomOut,
@@ -11,6 +11,17 @@ import {
   getStorageAdapter,
   getImageFormatTag,
 } from '../../services/storageAdapter';
+import {
+  loadImageBlobFromSource,
+  copyImageBlobToClipboard,
+} from '../../editor/imageExtension';
+import { isSamePath } from '../../utils/pathUtils';
+import {
+  computeWheelZoomState,
+  clampImagePan,
+  ZoomViewState,
+  ZoomBoundsInput,
+} from '../../utils/imageZoomUtils';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useNoticeStore } from '../common/Notice';
 import { useT } from '../../stores/localeStore';
@@ -28,19 +39,36 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
   const t = useT();
 
   const [imageUrl, setImageUrl] = useState<string>('');
-  const [scale, setScale] = useState<number>(1);
-  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [viewState, setViewState] = useState<ZoomViewState>({
+    scale: 1,
+    offset: { x: 0, y: 0 },
+  });
+  const scale = viewState.scale;
+  const pan = viewState.offset;
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
   const [fileSizeBytes, setFileSizeBytes] = useState<number | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+  const panStartRef = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
 
   const fileName = filePath.split(/[/\\]/).pop() || t('image.defaultName');
   const formatTag = getImageFormatTag(fileName) || 'IMG';
+
+  const getZoomBounds = useCallback((): ZoomBoundsInput | undefined => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return undefined;
+    return {
+      viewportWidth: rect.width,
+      viewportHeight: rect.height,
+      baseWidth: imgRef.current?.offsetWidth || dimensions?.width,
+      baseHeight: imgRef.current?.offsetHeight || dimensions?.height,
+      minScale: 0.1,
+      maxScale: 10,
+    };
+  }, [dimensions]);
 
   // 1. Resolve image url through StorageAdapter
   useEffect(() => {
@@ -57,9 +85,9 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
     };
     loadUrl();
 
-    // Reset pan & zoom when file changes
-    setScale(1);
-    setPan({ x: 0, y: 0 });
+    // Reset dimensions, pan & zoom when file changes
+    setDimensions(null);
+    setViewState({ scale: 1, offset: { x: 0, y: 0 } });
 
     return () => {
       active = false;
@@ -70,7 +98,7 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
   useEffect(() => {
     const findSize = (items: FileItem[]): number | null => {
       for (const item of items) {
-        if (item.path === filePath && item.size !== undefined) {
+        if (isSamePath(item.path, filePath) && item.size !== undefined) {
           return item.size;
         }
         if (item.children) {
@@ -100,96 +128,73 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
     });
   };
 
-  // Pan controls
+  // Pan controls (window listeners keep drag active even outside container)
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0 || e.button === 1) {
+      e.preventDefault();
       setIsDragging(true);
-      setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+      panStartRef.current = { x: e.clientX, y: e.clientY, ox: pan.x, oy: pan.y };
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging) {
-      setPan({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
-      });
-    }
-  };
+  useEffect(() => {
+    if (!isDragging) return;
+    const onMove = (e: MouseEvent) => {
+      const bounds = getZoomBounds();
+      const raw = {
+        x: panStartRef.current.ox + (e.clientX - panStartRef.current.x),
+        y: panStartRef.current.oy + (e.clientY - panStartRef.current.y),
+      };
+      setViewState((prev) => ({
+        ...prev,
+        offset: clampImagePan(raw, prev.scale, bounds),
+      }));
+    };
+    const onUp = () => setIsDragging(false);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [isDragging, getZoomBounds]);
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  // Wheel zoom centered towards cursor
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const factor = e.deltaY < 0 ? 1.15 : 0.85;
-    const newScale = Math.min(Math.max(scale * factor, 0.1), 10);
-
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
+  // Non-passive wheel zoom centered towards cursor without drift at scale limits
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
       const mouseX = e.clientX - rect.left - rect.width / 2;
       const mouseY = e.clientY - rect.top - rect.height / 2;
+      const bounds = getZoomBounds();
+      setViewState((prev) => computeWheelZoomState(prev, e.deltaY, mouseX, mouseY, bounds));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [getZoomBounds]);
 
-      // Compensate pan
-      const newPanX = pan.x - mouseX * (factor - 1);
-      const newPanY = pan.y - mouseY * (factor - 1);
-
-      setPan({ x: newPanX, y: newPanY });
-    }
-
-    setScale(newScale);
-  };
-
-  const handleZoomIn = () => setScale((s) => Math.min(s * 1.25, 10));
-  const handleZoomOut = () => setScale((s) => Math.max(s * 0.8, 0.1));
-  const handleResetZoom = () => {
-    setScale(1);
-    setPan({ x: 0, y: 0 });
-  };
+  const handleZoomIn = () =>
+    setViewState((prev) => computeWheelZoomState(prev, -1, 0, 0, getZoomBounds(), 1.25, 0.8));
+  const handleZoomOut = () =>
+    setViewState((prev) => computeWheelZoomState(prev, 1, 0, 0, getZoomBounds(), 1.25, 0.8));
+  const handleResetZoom = () => setViewState({ scale: 1, offset: { x: 0, y: 0 } });
   const handleFitZoom = () => {
     if (containerRef.current && dimensions) {
       const rect = containerRef.current.getBoundingClientRect();
       const scaleX = (rect.width - 80) / dimensions.width;
       const scaleY = (rect.height - 80) / dimensions.height;
       const fit = Math.min(Math.min(scaleX, scaleY), 1);
-      setScale(Math.max(fit, 0.1));
-      setPan({ x: 0, y: 0 });
+      setViewState({ scale: Math.max(fit, 0.1), offset: { x: 0, y: 0 } });
     }
   };
 
   // Context menu actions
   const handleCopyImage = async () => {
     try {
-      const blob = await getStorageAdapter().readBinary(filePath);
-      let pngBlob = blob;
-
-      if (blob.type !== 'image/png') {
-        const img = new Image();
-        const url = URL.createObjectURL(blob);
-        await new Promise((res, rej) => {
-          img.onload = res;
-          img.onerror = rej;
-          img.src = url;
-        });
-
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth || img.width;
-        canvas.height = img.naturalHeight || img.height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0);
-        URL.revokeObjectURL(url);
-
-        const converted = await new Promise<Blob | null>((res) =>
-          canvas.toBlob(res, 'image/png')
-        );
-        if (converted) pngBlob = converted;
-      }
-
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': pngBlob }),
-      ]);
+      const blob = await loadImageBlobFromSource(imageUrl, filePath);
+      await copyImageBlobToClipboard(blob);
       showNotice(t('image.notices.copied'), 2000, 'success');
     } catch (err) {
       console.error('Error copying image:', err);
@@ -230,10 +235,6 @@ export const ImageView: React.FC<ImageViewProps> = ({ filePath }) => {
     <div
       ref={containerRef}
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onWheel={handleWheel}
       onContextMenu={(e) => {
         e.preventDefault();
         setContextMenu({ x: e.clientX, y: e.clientY });
