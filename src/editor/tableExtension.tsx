@@ -36,6 +36,23 @@ export interface ParsedTable {
   rawText: string;
 }
 
+interface TableDomState {
+  from: number;
+  tableIndex: number;
+  headers: string[];
+  alignments: ('left' | 'center' | 'right')[];
+  rows: string[][];
+  lastCommittedRawText: string;
+  lastDispatchedMarkdown: string | null;
+  commitTimer: ReturnType<typeof setTimeout> | null;
+  isDestroyed: boolean;
+  forceDomSync: boolean;
+  view: EditorView;
+  focusCell: (row: number, col: number, cursorAtEnd?: boolean) => void;
+}
+
+const tableDomState = new WeakMap<HTMLElement, TableDomState>();
+
 let pendingTableFocus: {
   tableIndex: number;
   row: number;
@@ -48,14 +65,62 @@ export function setPendingTableFocus(
   pendingTableFocus = focus;
 }
 
+function isTrailingPipeEscaped(trimmed: string): boolean {
+  let backslashes = 0;
+  for (let i = trimmed.length - 2; i >= 0 && trimmed[i] === '\\'; i--) {
+    backslashes++;
+  }
+  return backslashes % 2 === 1;
+}
+
+function splitEscapedPipeCells(text: string): string[] {
+  const raw = text.trim();
+  const inner =
+    raw.startsWith('|') && raw.endsWith('|') && !isTrailingPipeEscaped(raw)
+      ? raw.slice(1, -1)
+      : raw;
+  const cells: string[] = [];
+  let current = '';
+
+  for (let i = 0; i < inner.length; i++) {
+    const ch = inner[i];
+    if (ch === '\\' && i + 1 < inner.length) {
+      const next = inner[i + 1];
+      if (next === '|') {
+        current += '|';
+        i++;
+        continue;
+      }
+      if (next === '\\') {
+        current += '\\\\';
+        i++;
+        continue;
+      }
+    }
+    if (ch === '|') {
+      cells.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  cells.push(current.trim());
+  return cells;
+}
+
+export function countTableCells(text: string): number {
+  return splitEscapedPipeCells(text).length;
+}
+
 export function isTableRow(text: string): boolean {
   const t = text.trim();
-  return t.startsWith('|') && t.endsWith('|') && t.indexOf('|', 1) !== -1;
+  if (!t.startsWith('|') || !t.endsWith('|') || t.length < 2) return false;
+  return !isTrailingPipeEscaped(t);
 }
 
 export function isTableSeparator(text: string): boolean {
   const t = text.trim();
-  if (!t.startsWith('|') || !t.endsWith('|')) return false;
+  if (!t.startsWith('|') || !t.endsWith('|') || isTrailingPipeEscaped(t)) return false;
   const cells = t.slice(1, -1).split('|');
   if (cells.length < 1) return false;
   return cells.every((c) => /^\s*:?-{1,}:?\s*$/.test(c));
@@ -80,27 +145,11 @@ export function parseAlignments(
   return result;
 }
 
-export function parseTableRowCells(text: string, count: number): string[] {
-  const raw = text.trim();
-  const inner = raw.startsWith('|') && raw.endsWith('|') ? raw.slice(1, -1) : raw;
-  const cells: string[] = [];
-  let current = '';
-  let escaped = false;
-  for (let i = 0; i < inner.length; i++) {
-    const ch = inner[i];
-    if (ch === '\\' && !escaped) {
-      escaped = true;
-      current += ch;
-    } else if (ch === '|' && !escaped) {
-      cells.push(current.trim());
-      current = '';
-    } else {
-      escaped = false;
-      current += ch;
-    }
+export function parseTableRowCells(text: string, count?: number): string[] {
+  const cells = splitEscapedPipeCells(text);
+  if (count === undefined) {
+    return cells;
   }
-  cells.push(current.trim());
-
   while (cells.length < count) {
     cells.push('');
   }
@@ -152,12 +201,7 @@ export function findAllTables(doc: Text): ParsedTable[] {
     if (isTableRow(line1) && isTableSeparator(line2)) {
       const headerLine = line1;
       const sepLine = line2;
-      const initialHeaderCells = headerLine
-        .trim()
-        .slice(1, -1)
-        .split('|')
-        .map((c) => c.trim());
-      const colCount = Math.max(initialHeaderCells.length, 1);
+      const colCount = Math.max(countTableCells(headerLine), 1);
       const headers = parseTableRowCells(headerLine, colCount);
       const alignments = parseAlignments(sepLine, colCount);
 
@@ -214,19 +258,46 @@ export function findAllTables(doc: Text): ParsedTable[] {
 export function findTargetTable(
   doc: Text,
   widgetFrom: number,
-  widgetIndex: number
+  widgetIndex: number,
+  expectedRawText?: string,
+  domPos?: number | null
 ): ParsedTable | null {
   const tables = findAllTables(doc);
   if (tables.length === 0) return null;
 
-  // 1. Direct match by exact 'from' position
-  const exact = tables.find((t) => t.from === widgetFrom);
-  if (exact) return exact;
+  // 1. Live DOM position inside a parsed table
+  if (typeof domPos === 'number' && domPos >= 0) {
+    const byDomPos = tables.find((t) => domPos >= t.from && domPos <= t.to);
+    if (byDomPos && (!expectedRawText || byDomPos.rawText === expectedRawText)) {
+      return byDomPos;
+    }
+  }
 
-  // 2. Direct match by table index if bounds fit
+  // 2. Direct match by exact 'from' position (verified against expectedRawText when provided)
+  const exact = tables.find((t) => t.from === widgetFrom);
+  if (exact && (!expectedRawText || exact.rawText === expectedRawText)) {
+    return exact;
+  }
+
+  // 3. Match by expectedRawText; if missing, refuse to overwrite a different table
+  if (expectedRawText) {
+    const rawMatches = tables.filter((t) => t.rawText === expectedRawText);
+    if (rawMatches.length === 0) return null;
+    let closestMatch = rawMatches[0];
+    let minDiff = Math.abs(rawMatches[0].from - widgetFrom);
+    for (let i = 1; i < rawMatches.length; i++) {
+      const diff = Math.abs(rawMatches[i].from - widgetFrom);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestMatch = rawMatches[i];
+      }
+    }
+    return closestMatch;
+  }
+
+  // 4. Legacy fallback when caller omits expectedRawText
   if (tables[widgetIndex]) return tables[widgetIndex];
 
-  // 3. Proximity fallback
   let closest = tables[0];
   let minDiff = Math.abs(tables[0].from - widgetFrom);
   for (let i = 1; i < tables.length; i++) {
@@ -241,8 +312,6 @@ export function findTargetTable(
 
 export class TableWidget extends WidgetType {
   domNode: HTMLElement | null = null;
-  private commitTimer: ReturnType<typeof setTimeout> | null = null;
-  private isDestroyed = false;
 
   constructor(
     readonly tableData: ParsedTable,
@@ -251,50 +320,89 @@ export class TableWidget extends WidgetType {
     super();
   }
 
-  destroy(): void {
-    this.isDestroyed = true;
-    if (this.commitTimer !== null) {
-      clearTimeout(this.commitTimer);
-      this.commitTimer = null;
+  destroy(dom: HTMLElement): void {
+    const state = tableDomState.get(dom);
+    if (state) {
+      state.isDestroyed = true;
+      if (state.commitTimer !== null) {
+        clearTimeout(state.commitTimer);
+        state.commitTimer = null;
+      }
     }
     this.domNode = null;
   }
 
   eq(other: TableWidget): boolean {
-    if (this.tableData.rawText === other.tableData.rawText) {
-      return true;
-    }
-    // Prevent destroying DOM and losing focus while user is editing inside cells
-    const activeEl = document.activeElement;
-    if (activeEl && activeEl.classList.contains('urano-table-cell-content')) {
-      const activeWidgetEl = activeEl.closest('.cm-table-widget') as HTMLElement | null;
-      if (activeWidgetEl) {
-        const activeTableIndex = activeWidgetEl.getAttribute('data-table-index');
-        const activeTableFrom = activeWidgetEl.getAttribute('data-table-from');
-        const isThisTable =
-          (this.domNode && activeWidgetEl === this.domNode) ||
-          activeTableIndex === String(this.tableIndex) ||
-          activeTableFrom === String(this.tableData.from);
-
-        if (isThisTable) {
-          if (
-            this.tableData.headers.length === other.tableData.headers.length &&
-            this.tableData.rows.length === other.tableData.rows.length &&
-            JSON.stringify(this.tableData.alignments) ===
-              JSON.stringify(other.tableData.alignments)
-          ) {
-            other.domNode = activeWidgetEl;
-            this.domNode = activeWidgetEl;
-            return true;
-          }
-        }
-      }
-    }
-    return false;
+    return (
+      this.tableData.rawText === other.tableData.rawText &&
+      this.tableIndex === other.tableIndex
+    );
   }
 
-  updateDOM(): boolean {
-    return false;
+  updateDOM(dom: HTMLElement): boolean {
+    const state = tableDomState.get(dom);
+    if (!state || state.isDestroyed) {
+      return false;
+    }
+
+    // Rebuild full table DOM when row/column structure changes
+    if (
+      state.headers.length !== this.tableData.headers.length ||
+      state.rows.length !== this.tableData.rows.length
+    ) {
+      return false;
+    }
+
+    const shouldSyncActiveCell =
+      state.forceDomSync || state.lastDispatchedMarkdown !== this.tableData.rawText;
+
+    state.from = this.tableData.from;
+    state.tableIndex = this.tableIndex;
+    state.headers = [...this.tableData.headers];
+    state.alignments = [...this.tableData.alignments];
+    state.rows = this.tableData.rows.map((r) => [...r]);
+    state.lastCommittedRawText = this.tableData.rawText;
+    state.forceDomSync = false;
+
+    dom.setAttribute('data-table-from', String(this.tableData.from));
+    dom.setAttribute('data-table-index', String(this.tableIndex));
+
+    const activeEl = document.activeElement;
+    const cells = dom.querySelectorAll('.urano-table-cell');
+    cells.forEach((cellEl) => {
+      const td = cellEl as HTMLElement;
+      const rAttr = td.getAttribute('data-row');
+      const cAttr = td.getAttribute('data-col');
+      if (rAttr === null || cAttr === null) return;
+      const row = Number(rAttr);
+      const col = Number(cAttr);
+      td.style.textAlign = this.tableData.alignments[col] || 'left';
+
+      const contentEl = td.querySelector('.urano-table-cell-content') as HTMLElement | null;
+      if (!contentEl) return;
+
+      if (!shouldSyncActiveCell && activeEl === contentEl) {
+        return;
+      }
+
+      const nextValue =
+        row === 0
+          ? (this.tableData.headers[col] ?? '')
+          : (this.tableData.rows[row - 1]?.[col] ?? '');
+      contentEl.innerText = nextValue;
+    });
+
+    if (pendingTableFocus && pendingTableFocus.tableIndex === this.tableIndex) {
+      const target = pendingTableFocus;
+      pendingTableFocus = null;
+      setTimeout(() => {
+        if (!state.isDestroyed && dom.isConnected) {
+          state.focusCell(target.row, target.col);
+        }
+      }, 25);
+    }
+
+    return true;
   }
 
   ignoreEvent(): boolean {
@@ -302,88 +410,22 @@ export class TableWidget extends WidgetType {
   }
 
   toDOM(view: EditorView): HTMLElement {
-    this.isDestroyed = false;
-    let from = this.tableData.from;
     const { headers, alignments, rows } = this.tableData;
-
-    let currentHeaders = [...headers];
-    let currentAlignments = [...alignments];
-    let currentRows = rows.map((r) => [...r]);
 
     const container = document.createElement('div');
     container.className =
       'cm-embed-block cm-table-widget urano-table-container my-4 max-w-full overflow-x-auto select-text';
-    container.setAttribute('data-table-from', String(from));
+    container.setAttribute('data-table-from', String(this.tableData.from));
     container.setAttribute('data-table-index', String(this.tableIndex));
     this.domNode = container;
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'urano-table-wrapper relative inline-block min-w-full';
-
-    const table = document.createElement('table');
-    table.className =
-      'urano-table-editor w-full border-collapse text-sm bg-transparent';
-
-    const commitChanges = (immediateFocus?: { row: number; col: number }) => {
-      if (this.commitTimer !== null) {
-        clearTimeout(this.commitTimer);
-        this.commitTimer = null;
-      }
-
-      if (this.isDestroyed || (this.domNode && !this.domNode.isConnected)) {
-        return;
-      }
-
-      const activeView = view.dom.isConnected ? view : (window as any).__uranoEditorView;
-      if (!activeView || !activeView.dom.isConnected) {
-        return;
-      }
-
-      const doc = activeView.state.doc;
-      const tbl = findTargetTable(doc, from, this.tableIndex);
-      if (!tbl) {
-        console.warn('[Urano Table] Table not found in doc for from:', from);
-        return;
-      }
-
-      from = tbl.from;
-      container.setAttribute('data-table-from', String(from));
-
-      const newMarkdown = serializeTable(
-        currentHeaders,
-        currentAlignments,
-        currentRows
-      );
-      if (newMarkdown === tbl.rawText) return;
-
-      if (immediateFocus) {
-        pendingTableFocus = {
-          tableIndex: this.tableIndex,
-          row: immediateFocus.row,
-          col: immediateFocus.col,
-        };
-      }
-
-      activeView.dispatch({
-        changes: { from: tbl.from, to: tbl.to, insert: newMarkdown },
-      });
-    };
-
-    const scheduleCommit = () => {
-      if (this.commitTimer !== null) clearTimeout(this.commitTimer);
-      this.commitTimer = setTimeout(() => {
-        this.commitTimer = null;
-        commitChanges();
-      }, 600);
-    };
 
     const focusCell = (row: number, col: number, cursorAtEnd = true) => {
       const cellEl = container.querySelector(
         `[data-row="${row}"][data-col="${col}"].urano-table-cell-content`
-      ) as HTMLElement;
+      ) as HTMLElement | null;
       if (!cellEl) return;
       cellEl.focus();
-      if (cursorAtEnd && cellEl.childNodes.length > 0) {
+      if (cursorAtEnd && cellEl.childNodes.length > 0 && typeof document.createRange === 'function') {
         const range = document.createRange();
         const sel = window.getSelection();
         range.selectNodeContents(cellEl);
@@ -393,12 +435,104 @@ export class TableWidget extends WidgetType {
       }
     };
 
+    const domState: TableDomState = {
+      from: this.tableData.from,
+      tableIndex: this.tableIndex,
+      headers: [...headers],
+      alignments: [...alignments],
+      rows: rows.map((r) => [...r]),
+      lastCommittedRawText: this.tableData.rawText,
+      lastDispatchedMarkdown: null,
+      commitTimer: null,
+      isDestroyed: false,
+      forceDomSync: false,
+      view,
+      focusCell,
+    };
+    tableDomState.set(container, domState);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'urano-table-wrapper relative inline-block min-w-full';
+
+    const table = document.createElement('table');
+    table.className =
+      'urano-table-editor w-full border-collapse text-sm bg-transparent';
+
+    const commitChanges = (
+      immediateFocus?: { row: number; col: number },
+      forceDomSync = false
+    ) => {
+      if (domState.commitTimer !== null) {
+        clearTimeout(domState.commitTimer);
+        domState.commitTimer = null;
+      }
+
+      if (domState.isDestroyed || !container.isConnected || !domState.view.dom?.isConnected) {
+        return;
+      }
+
+      let domPos: number | null = null;
+      try {
+        domPos = domState.view.posAtDOM(container);
+      } catch {
+        domPos = null;
+      }
+
+      const doc = domState.view.state.doc;
+      const tbl = findTargetTable(
+        doc,
+        domState.from,
+        domState.tableIndex,
+        domState.lastCommittedRawText,
+        domPos
+      );
+      if (!tbl) {
+        console.warn('[Urano Table] Table not found in doc for from:', domState.from);
+        return;
+      }
+
+      domState.from = tbl.from;
+      container.setAttribute('data-table-from', String(domState.from));
+
+      const newMarkdown = serializeTable(
+        domState.headers,
+        domState.alignments,
+        domState.rows
+      );
+      if (newMarkdown === tbl.rawText) return;
+
+      domState.forceDomSync = forceDomSync;
+      domState.lastDispatchedMarkdown = newMarkdown;
+      domState.lastCommittedRawText = newMarkdown;
+
+      if (immediateFocus) {
+        pendingTableFocus = {
+          tableIndex: domState.tableIndex,
+          row: immediateFocus.row,
+          col: immediateFocus.col,
+        };
+      }
+
+      domState.view.dispatch({
+        changes: { from: tbl.from, to: tbl.to, insert: newMarkdown },
+      });
+    };
+
+    const scheduleCommit = () => {
+      if (domState.isDestroyed) return;
+      if (domState.commitTimer !== null) clearTimeout(domState.commitTimer);
+      domState.commitTimer = setTimeout(() => {
+        domState.commitTimer = null;
+        commitChanges();
+      }, 600);
+    };
+
     const openTableMenu = (e: MouseEvent, row: number, col: number) => {
       e.preventDefault();
       e.stopPropagation();
 
-      const totalCols = currentHeaders.length;
-      const totalRows = currentRows.length + 1; // 1 header + body rows
+      const totalCols = domState.headers.length;
+      const totalRows = domState.rows.length + 1; // 1 header + body rows
 
       const items: MenuItemData[] = [
         // Fila Submenu (1:1 with Urano)
@@ -411,14 +545,14 @@ export class TableWidget extends WidgetType {
               icon: <ArrowUp size={14} />,
               action: () => {
                 if (row === 0) {
-                  const oldHeader = [...currentHeaders];
-                  currentHeaders = currentHeaders.map(() => '');
-                  currentRows = [oldHeader, ...currentRows];
-                  commitChanges({ row: 0, col });
+                  const oldHeader = [...domState.headers];
+                  domState.headers = domState.headers.map(() => '');
+                  domState.rows = [oldHeader, ...domState.rows];
+                  commitChanges({ row: 0, col }, true);
                 } else {
                   const newRow = new Array(totalCols).fill('');
-                  currentRows.splice(row - 1, 0, newRow);
-                  commitChanges({ row, col });
+                  domState.rows.splice(row - 1, 0, newRow);
+                  commitChanges({ row, col }, true);
                 }
               },
             },
@@ -428,11 +562,11 @@ export class TableWidget extends WidgetType {
               action: () => {
                 const newRow = new Array(totalCols).fill('');
                 if (row === 0) {
-                  currentRows.splice(0, 0, newRow);
-                  commitChanges({ row: 1, col });
+                  domState.rows.splice(0, 0, newRow);
+                  commitChanges({ row: 1, col }, true);
                 } else {
-                  currentRows.splice(row, 0, newRow);
-                  commitChanges({ row: row + 1, col });
+                  domState.rows.splice(row, 0, newRow);
+                  commitChanges({ row: row + 1, col }, true);
                 }
               },
             },
@@ -442,10 +576,10 @@ export class TableWidget extends WidgetType {
               disabled: row <= 1,
               action: () => {
                 if (row > 1) {
-                  const temp = currentRows[row - 1];
-                  currentRows[row - 1] = currentRows[row - 2];
-                  currentRows[row - 2] = temp;
-                  commitChanges({ row: row - 1, col });
+                  const temp = domState.rows[row - 1];
+                  domState.rows[row - 1] = domState.rows[row - 2];
+                  domState.rows[row - 2] = temp;
+                  commitChanges({ row: row - 1, col }, true);
                 }
               },
             },
@@ -455,10 +589,10 @@ export class TableWidget extends WidgetType {
               disabled: row === 0 || row >= totalRows - 1,
               action: () => {
                 if (row > 0 && row < totalRows - 1) {
-                  const temp = currentRows[row - 1];
-                  currentRows[row - 1] = currentRows[row];
-                  currentRows[row] = temp;
-                  commitChanges({ row: row + 1, col });
+                  const temp = domState.rows[row - 1];
+                  domState.rows[row - 1] = domState.rows[row];
+                  domState.rows[row] = temp;
+                  commitChanges({ row: row + 1, col }, true);
                 }
               },
             },
@@ -467,12 +601,12 @@ export class TableWidget extends WidgetType {
               icon: <Copy size={14} />,
               action: () => {
                 if (row === 0) {
-                  currentRows = [[...currentHeaders], ...currentRows];
-                  commitChanges({ row: 1, col });
+                  domState.rows = [[...domState.headers], ...domState.rows];
+                  commitChanges({ row: 1, col }, true);
                 } else {
-                  const dup = [...currentRows[row - 1]];
-                  currentRows.splice(row, 0, dup);
-                  commitChanges({ row: row + 1, col });
+                  const dup = [...domState.rows[row - 1]];
+                  domState.rows.splice(row, 0, dup);
+                  commitChanges({ row: row + 1, col }, true);
                 }
               },
             },
@@ -481,17 +615,17 @@ export class TableWidget extends WidgetType {
               icon: <Trash2 size={14} />,
               action: () => {
                 if (row === 0) {
-                  if (currentRows.length > 0) {
-                    currentHeaders = currentRows[0];
-                    currentRows = currentRows.slice(1);
-                    commitChanges({ row: 0, col });
+                  if (domState.rows.length > 0) {
+                    domState.headers = domState.rows[0];
+                    domState.rows = domState.rows.slice(1);
+                    commitChanges({ row: 0, col }, true);
                   } else {
-                    currentHeaders = currentHeaders.map(() => '');
-                    commitChanges({ row: 0, col });
+                    domState.headers = domState.headers.map(() => '');
+                    commitChanges({ row: 0, col }, true);
                   }
                 } else {
-                  currentRows.splice(row - 1, 1);
-                  commitChanges({ row: Math.min(row, currentRows.length), col });
+                  domState.rows.splice(row - 1, 1);
+                  commitChanges({ row: Math.min(row, domState.rows.length), col }, true);
                 }
               },
             },
@@ -506,20 +640,20 @@ export class TableWidget extends WidgetType {
               title: t('table.addColumnLeft'),
               icon: <ArrowLeft size={14} />,
               action: () => {
-                currentHeaders.splice(col, 0, '');
-                currentAlignments.splice(col, 0, 'left');
-                for (const r of currentRows) r.splice(col, 0, '');
-                commitChanges({ row, col });
+                domState.headers.splice(col, 0, '');
+                domState.alignments.splice(col, 0, 'left');
+                for (const r of domState.rows) r.splice(col, 0, '');
+                commitChanges({ row, col }, true);
               },
             },
             {
               title: t('table.addColumnRight'),
               icon: <ArrowRight size={14} />,
               action: () => {
-                currentHeaders.splice(col + 1, 0, '');
-                currentAlignments.splice(col + 1, 0, 'left');
-                for (const r of currentRows) r.splice(col + 1, 0, '');
-                commitChanges({ row, col: col + 1 });
+                domState.headers.splice(col + 1, 0, '');
+                domState.alignments.splice(col + 1, 0, 'left');
+                for (const r of domState.rows) r.splice(col + 1, 0, '');
+                commitChanges({ row, col: col + 1 }, true);
               },
             },
             {
@@ -528,20 +662,20 @@ export class TableWidget extends WidgetType {
               disabled: col === 0,
               action: () => {
                 if (col > 0) {
-                  const th = currentHeaders[col];
-                  currentHeaders[col] = currentHeaders[col - 1];
-                  currentHeaders[col - 1] = th;
+                  const th = domState.headers[col];
+                  domState.headers[col] = domState.headers[col - 1];
+                  domState.headers[col - 1] = th;
 
-                  const ta = currentAlignments[col];
-                  currentAlignments[col] = currentAlignments[col - 1];
-                  currentAlignments[col - 1] = ta;
+                  const ta = domState.alignments[col];
+                  domState.alignments[col] = domState.alignments[col - 1];
+                  domState.alignments[col - 1] = ta;
 
-                  for (const r of currentRows) {
+                  for (const r of domState.rows) {
                     const temp = r[col];
                     r[col] = r[col - 1];
                     r[col - 1] = temp;
                   }
-                  commitChanges({ row, col: col - 1 });
+                  commitChanges({ row, col: col - 1 }, true);
                 }
               },
             },
@@ -551,20 +685,20 @@ export class TableWidget extends WidgetType {
               disabled: col >= totalCols - 1,
               action: () => {
                 if (col < totalCols - 1) {
-                  const th = currentHeaders[col];
-                  currentHeaders[col] = currentHeaders[col + 1];
-                  currentHeaders[col + 1] = th;
+                  const th = domState.headers[col];
+                  domState.headers[col] = domState.headers[col + 1];
+                  domState.headers[col + 1] = th;
 
-                  const ta = currentAlignments[col];
-                  currentAlignments[col] = currentAlignments[col + 1];
-                  currentAlignments[col + 1] = ta;
+                  const ta = domState.alignments[col];
+                  domState.alignments[col] = domState.alignments[col + 1];
+                  domState.alignments[col + 1] = ta;
 
-                  for (const r of currentRows) {
+                  for (const r of domState.rows) {
                     const temp = r[col];
                     r[col] = r[col + 1];
                     r[col + 1] = temp;
                   }
-                  commitChanges({ row, col: col + 1 });
+                  commitChanges({ row, col: col + 1 }, true);
                 }
               },
             },
@@ -572,12 +706,12 @@ export class TableWidget extends WidgetType {
               title: t('table.duplicateColumn'),
               icon: <Copy size={14} />,
               action: () => {
-                currentHeaders.splice(col + 1, 0, currentHeaders[col]);
-                currentAlignments.splice(col + 1, 0, currentAlignments[col]);
-                for (const r of currentRows) {
+                domState.headers.splice(col + 1, 0, domState.headers[col]);
+                domState.alignments.splice(col + 1, 0, domState.alignments[col]);
+                for (const r of domState.rows) {
                   r.splice(col + 1, 0, r[col]);
                 }
-                commitChanges({ row, col: col + 1 });
+                commitChanges({ row, col: col + 1 }, true);
               },
             },
             {
@@ -586,15 +720,15 @@ export class TableWidget extends WidgetType {
               disabled: totalCols <= 1,
               action: () => {
                 if (totalCols > 1) {
-                  currentHeaders.splice(col, 1);
-                  currentAlignments.splice(col, 1);
-                  for (const r of currentRows) {
+                  domState.headers.splice(col, 1);
+                  domState.alignments.splice(col, 1);
+                  for (const r of domState.rows) {
                     r.splice(col, 1);
                   }
                   commitChanges({
                     row,
-                    col: Math.min(col, currentHeaders.length - 1),
-                  });
+                    col: Math.min(col, domState.headers.length - 1),
+                  }, true);
                 }
               },
             },
@@ -609,24 +743,24 @@ export class TableWidget extends WidgetType {
               title: t('table.alignLeft'),
               icon: <AlignLeft size={14} />,
               action: () => {
-                currentAlignments[col] = 'left';
-                commitChanges({ row, col });
+                domState.alignments[col] = 'left';
+                commitChanges({ row, col }, true);
               },
             },
             {
               title: t('table.alignCenter'),
               icon: <AlignCenter size={14} />,
               action: () => {
-                currentAlignments[col] = 'center';
-                commitChanges({ row, col });
+                domState.alignments[col] = 'center';
+                commitChanges({ row, col }, true);
               },
             },
             {
               title: t('table.alignRight'),
               icon: <AlignRight size={14} />,
               action: () => {
-                currentAlignments[col] = 'right';
-                commitChanges({ row, col });
+                domState.alignments[col] = 'right';
+                commitChanges({ row, col }, true);
               },
             },
           ],
@@ -640,24 +774,24 @@ export class TableWidget extends WidgetType {
               title: t('table.sortAscending'),
               icon: <ArrowUpDown size={14} />,
               action: () => {
-                currentRows.sort((a, b) =>
+                domState.rows.sort((a, b) =>
                   (a[col] || '').localeCompare(b[col] || '', undefined, {
                     numeric: true,
                   })
                 );
-                commitChanges({ row, col });
+                commitChanges({ row, col }, true);
               },
             },
             {
               title: t('table.sortDescending'),
               icon: <ArrowUpDown size={14} />,
               action: () => {
-                currentRows.sort((a, b) =>
+                domState.rows.sort((a, b) =>
                   (b[col] || '').localeCompare(a[col] || '', undefined, {
                     numeric: true,
                   })
                 );
-                commitChanges({ row, col });
+                commitChanges({ row, col }, true);
               },
             },
           ],
@@ -669,11 +803,11 @@ export class TableWidget extends WidgetType {
           icon: <Scissors size={14} />,
           action: () => {
             const cellVal =
-              row === 0 ? currentHeaders[col] : currentRows[row - 1][col];
+              row === 0 ? domState.headers[col] : domState.rows[row - 1][col];
             navigator.clipboard.writeText(cellVal);
-            if (row === 0) currentHeaders[col] = '';
-            else currentRows[row - 1][col] = '';
-            commitChanges({ row, col });
+            if (row === 0) domState.headers[col] = '';
+            else domState.rows[row - 1][col] = '';
+            commitChanges({ row, col }, true);
           },
         },
         {
@@ -682,7 +816,7 @@ export class TableWidget extends WidgetType {
           icon: <Copy size={14} />,
           action: () => {
             const cellVal =
-              row === 0 ? currentHeaders[col] : currentRows[row - 1][col];
+              row === 0 ? domState.headers[col] : domState.rows[row - 1][col];
             navigator.clipboard.writeText(cellVal);
             useNoticeStore.getState().showNotice(t('table.notices.cellCopied'), 2000, 'success');
           },
@@ -695,9 +829,9 @@ export class TableWidget extends WidgetType {
             try {
               const text = await navigator.clipboard.readText();
               const clean = text.replace(/[\r\n]+/g, ' ').trim();
-              if (row === 0) currentHeaders[col] = clean;
-              else currentRows[row - 1][col] = clean;
-              commitChanges({ row, col });
+              if (row === 0) domState.headers[col] = clean;
+              else domState.rows[row - 1][col] = clean;
+              commitChanges({ row, col }, true);
             } catch (err) {
               console.error('Error al pegar:', err);
             }
@@ -709,25 +843,40 @@ export class TableWidget extends WidgetType {
           icon: <Trash2 size={14} />,
           isWarning: true,
           action: () => {
-            if (this.commitTimer !== null) {
-              clearTimeout(this.commitTimer);
-              this.commitTimer = null;
+            if (domState.commitTimer !== null) {
+              clearTimeout(domState.commitTimer);
+              domState.commitTimer = null;
             }
-            const activeView = view.dom.isConnected ? view : (window as any).__uranoEditorView;
-            if (!activeView || !activeView.dom.isConnected) return;
-            const doc = activeView.state.doc;
-            const tbl = findTargetTable(doc, from, this.tableIndex);
+            if (domState.isDestroyed || !domState.view.dom?.isConnected) return;
+
+            let domPos: number | null = null;
+            try {
+              domPos = domState.view.posAtDOM(container);
+            } catch {
+              domPos = null;
+            }
+
+            const doc = domState.view.state.doc;
+            const tbl = findTargetTable(
+              doc,
+              domState.from,
+              domState.tableIndex,
+              domState.lastCommittedRawText,
+              domPos
+            );
             if (!tbl) return;
+
+            domState.isDestroyed = true;
 
             let endPos = tbl.to;
             if (
-              endPos < activeView.state.doc.length &&
-              activeView.state.sliceDoc(endPos, endPos + 1) === '\n'
+              endPos < doc.length &&
+              domState.view.state.sliceDoc(endPos, endPos + 1) === '\n'
             ) {
               endPos += 1;
             }
 
-            activeView.dispatch({
+            domState.view.dispatch({
               changes: { from: tbl.from, to: endPos, insert: '' },
               selection: { anchor: tbl.from },
             });
@@ -764,11 +913,11 @@ export class TableWidget extends WidgetType {
 
       // Cell Input (auto-sync value)
       cellContent.addEventListener('input', () => {
-        const val = cellContent.innerText.replace(/[\r\n]+/g, ' ');
+        const val = (cellContent.innerText ?? cellContent.textContent ?? '').replace(/[\r\n]+/g, ' ');
         if (row === 0) {
-          currentHeaders[col] = val;
+          domState.headers[col] = val;
         } else {
-          currentRows[row - 1][col] = val;
+          domState.rows[row - 1][col] = val;
         }
         scheduleCommit();
       });
@@ -780,8 +929,8 @@ export class TableWidget extends WidgetType {
 
       // Keyboard Navigation (Exact 1:1 with Urano)
       cellContent.addEventListener('keydown', (e: KeyboardEvent) => {
-        const totalRows = currentRows.length + 1;
-        const totalCols = currentHeaders.length;
+        const totalRows = domState.rows.length + 1;
+        const totalCols = domState.headers.length;
 
         if (e.key === 'Tab') {
           e.preventDefault();
@@ -802,8 +951,8 @@ export class TableWidget extends WidgetType {
               focusCell(row + 1, 0);
             } else {
               // Last cell in table -> Add new row!
-              currentRows.push(new Array(totalCols).fill(''));
-              commitChanges({ row: totalRows, col: 0 });
+              domState.rows.push(new Array(totalCols).fill(''));
+              commitChanges({ row: totalRows, col: 0 }, true);
             }
           }
           return;
@@ -818,8 +967,8 @@ export class TableWidget extends WidgetType {
             focusCell(row + 1, col);
           } else {
             // Last row -> Add new row below and focus same column
-            currentRows.push(new Array(totalCols).fill(''));
-            commitChanges({ row: totalRows, col });
+            domState.rows.push(new Array(totalCols).fill(''));
+            commitChanges({ row: totalRows, col }, true);
           }
           return;
         }
@@ -957,12 +1106,12 @@ export class TableWidget extends WidgetType {
         colAdding = false;
       }, 300);
 
-      currentHeaders.push('');
-      currentAlignments.push('left');
-      for (const r of currentRows) {
+      domState.headers.push('');
+      domState.alignments.push('left');
+      for (const r of domState.rows) {
         r.push('');
       }
-      commitChanges({ row: 0, col: currentHeaders.length - 1 });
+      commitChanges({ row: 0, col: domState.headers.length - 1 }, true);
     };
     addColBtn.addEventListener('mousedown', handleAddCol);
     addColBtn.addEventListener('click', handleAddCol);
@@ -986,9 +1135,9 @@ export class TableWidget extends WidgetType {
         rowAdding = false;
       }, 300);
 
-      const newRow = new Array(currentHeaders.length).fill('');
-      currentRows.push(newRow);
-      commitChanges({ row: currentRows.length, col: 0 });
+      const newRow = new Array(domState.headers.length).fill('');
+      domState.rows.push(newRow);
+      commitChanges({ row: domState.rows.length, col: 0 }, true);
     };
     addRowBtn.addEventListener('mousedown', handleAddRow);
     addRowBtn.addEventListener('click', handleAddRow);
@@ -1001,17 +1150,8 @@ export class TableWidget extends WidgetType {
       const target = pendingTableFocus;
       pendingTableFocus = null;
       setTimeout(() => {
-        const targetCell = container.querySelector(
-          `[data-row="${target.row}"][data-col="${target.col}"].urano-table-cell-content`
-        ) as HTMLElement;
-        if (targetCell) {
-          targetCell.focus();
-          const range = document.createRange();
-          const sel = window.getSelection();
-          range.selectNodeContents(targetCell);
-          range.collapse(false);
-          sel?.removeAllRanges();
-          sel?.addRange(range);
+        if (!domState.isDestroyed && container.isConnected) {
+          focusCell(target.row, target.col);
         }
       }, 25);
     }
