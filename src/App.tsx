@@ -25,6 +25,8 @@ import {
   getRelativeVaultFolderSegments,
   isSamePath,
   resolveFilePathInVault,
+  resolveVaultLinkTarget,
+  parseLinkTargetParts,
   normalizePath,
 } from './utils/pathUtils';
 import { FILE_RENAMED_EVENT, FileRenamedDetail } from './services/linkRefactorService';
@@ -1224,28 +1226,33 @@ const MainApp: React.FC = () => {
 
   // Open note in a new tab (or to the right)
   const handleOpenInNewTab = (filePathOrName: string) => {
-    let targetPath = filePathOrName;
-    if (!isNativeVaultFile(targetPath)) {
-      const findInTree = (items: typeof fileTree): string | null => {
-        for (const item of items) {
-          if (
-            !item.isDir &&
-            (item.name.toLowerCase() === filePathOrName.toLowerCase() ||
-              item.name.replace(/\.(md|markdown|canvas|base)$/i, '').toLowerCase() ===
-                filePathOrName.toLowerCase())
-          ) {
-            return item.path;
-          }
-          if (item.children) {
-            const f = findInTree(item.children);
-            if (f) return f;
-          }
-        }
-        return null;
-      };
-      const found = findInTree(fileTree);
-      targetPath =
-        found || (activeVault ? `${activeVault}/${filePathOrName}.md` : `${filePathOrName}.md`);
+    const parsed = parseLinkTargetParts(filePathOrName);
+    if (!parsed.targetPath || parsed.isExternalUrl) return;
+
+    const resolved = resolveVaultLinkTarget(filePathOrName, fileTree, activeVault);
+    let targetPath = resolved || '';
+    let shouldCreateMissing = false;
+
+    if (!targetPath) {
+      const normVault = activeVault ? normalizePath(activeVault) : '';
+      let rel = parsed.targetPath;
+      if (normVault && rel.toLowerCase().startsWith(`${normVault.toLowerCase()}/`)) {
+        rel = rel.slice(normVault.length + 1);
+      }
+      rel = rel.replace(/^(\.\/)+/, '').replace(/^\/+/, '');
+      if (!rel) return;
+
+      const base = rel.split('/').pop() || '';
+      const hasExt = /\.[a-z][a-z0-9_-]*$/i.test(base);
+      if (hasExt && !isNativeVaultFile(rel)) {
+        const externalTarget = resolveFilePathInVault(rel, fileTree, activeVault);
+        void selectFile(externalTarget);
+        return;
+      }
+
+      const relWithExt = /\.(md|markdown|canvas|base)$/i.test(rel) ? rel : `${rel}.md`;
+      targetPath = normVault ? `${normVault}/${relWithExt}`.replace(/\/+/g, '/') : relWithExt;
+      shouldCreateMissing = true;
     }
 
     if (!isNativeVaultFile(targetPath)) {
@@ -1264,9 +1271,19 @@ const MainApp: React.FC = () => {
     setTabs((prev) => [...prev, newTab]);
     recordVisit(tabId, targetPath);
     const alwaysFocus = useSettingsStore.getState().settings.alwaysFocusNewTabs;
-    if (alwaysFocus) {
+    if (shouldCreateMissing) {
+      if (alwaysFocus) {
+        reuseActiveTabRef.current = false;
+        setActiveTabId(tabId);
+        void openOrCreateWikilink(filePathOrName);
+      } else {
+        void invoke('create_file', { filePath: targetPath })
+          .then(() => useVaultStore.getState().refreshTree())
+          .catch(() => {});
+      }
+    } else if (alwaysFocus) {
       setActiveTabId(tabId);
-      selectFile(targetPath);
+      void selectFile(targetPath);
     }
   };
 
