@@ -1234,6 +1234,11 @@
     "notFound": "La nota «{name}» aún no ha sido creada.",
     "openNote": "Abrir nota"
   },
+  "readingView": {
+    "properties": "Propiedades",
+    "copied": "Copiado",
+    "blockedLink": "Enlace inseguro bloqueado"
+  },
   "search": {
     "placeholder": "Buscar en todas las notas...",
     "matchOne": "{count} coincidencia",

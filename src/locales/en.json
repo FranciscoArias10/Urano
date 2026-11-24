@@ -1234,6 +1234,11 @@
     "notFound": "Note \"{name}\" has not been created yet.",
     "openNote": "Open note"
   },
+  "readingView": {
+    "properties": "Properties",
+    "copied": "Copied",
+    "blockedLink": "Blocked unsafe link"
+  },
   "search": {
     "placeholder": "Search in all notes...",
     "matchOne": "{count} match",
