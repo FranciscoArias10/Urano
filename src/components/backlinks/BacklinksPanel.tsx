@@ -1,12 +1,159 @@
 import React, { useState, useMemo } from 'react';
 import { ArrowLeftRight, ArrowDownLeft, ArrowUpRight, FileText, ChevronRight, PlusCircle, X } from 'lucide-react';
 import { useT } from '../../stores/localeStore';
+import { useVaultStore } from '../../stores/vaultStore';
+import { FileItem } from '../../types';
+import {
+  getRelativeVaultPath,
+  isSamePath,
+  parseLinkTargetParts,
+  resolveVaultLinkTarget,
+} from '../../utils/pathUtils';
+
+export interface IncomingBacklinkItem {
+  path: string;
+  name: string;
+  snippet: string;
+}
+
+export interface OutgoingLinkItem {
+  targetName: string;
+  resolvedPath: string | null;
+}
+
+export function computeIncomingBacklinks(params: {
+  activeFile: string | null;
+  activeFileName: string | null;
+  notesContentMap: Record<string, string>;
+  fileTree: FileItem[];
+  activeVault: string | null;
+  fallbackSnippet?: string;
+}): IncomingBacklinkItem[] {
+  const { activeFile, activeFileName, notesContentMap, fileTree, activeVault, fallbackSnippet } = params;
+  const activeBaseName = activeFileName ? activeFileName.replace(/\.(md|markdown)$/i, '') : '';
+  if (!activeFile || !activeBaseName) return [];
+
+  const results: IncomingBacklinkItem[] = [];
+  const targetLower = activeBaseName.toLowerCase();
+  const activeRelPathLower = getRelativeVaultPath(activeFile, activeVault || '').toLowerCase();
+
+  const targetMatchesActive = (rawTarget: string): boolean => {
+    const { targetPath, isExternalUrl } = parseLinkTargetParts(rawTarget);
+    if (!targetPath || isExternalUrl) return false;
+    const resolved = resolveVaultLinkTarget(rawTarget, fileTree, activeVault);
+    if (resolved) {
+      return isSamePath(resolved, activeFile);
+    }
+    const normRel = targetPath
+      .replace(/^(\.\/)+/, '')
+      .replace(/^\/+/, '')
+      .replace(/\.(md|markdown)$/i, '')
+      .toLowerCase();
+    if (activeRelPathLower && normRel === activeRelPathLower) return true;
+    return !normRel.includes('/') && normRel === targetLower;
+  };
+
+  for (const [path, content] of Object.entries(notesContentMap)) {
+    if (isSamePath(path, activeFile)) continue;
+
+    const lines = content.split('\n');
+    let inCodeFence = false;
+    for (const rawLine of lines) {
+      const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
+      if (line.trim().startsWith('```')) {
+        inCodeFence = !inCodeFence;
+        continue;
+      }
+      if (inCodeFence) continue;
+
+      let foundInLine = false;
+      const wikiMatch = /\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g;
+      let match: RegExpExecArray | null;
+      while ((match = wikiMatch.exec(line)) !== null) {
+        if (targetMatchesActive(match[1])) {
+          foundInLine = true;
+          break;
+        }
+      }
+
+      if (!foundInLine) {
+        const mdMatchRe = /(?<!!)\[[^\]]*\]\(([^)]+)\)/g;
+        while ((match = mdMatchRe.exec(line)) !== null) {
+          const href = match[1].trim().replace(/^<|>$/g, '').split(/\s+/)[0] || '';
+          if (targetMatchesActive(href)) {
+            foundInLine = true;
+            break;
+          }
+        }
+      }
+
+      if (foundInLine) {
+        const parts = path.replace(/\\/g, '/').split('/');
+        const name = parts[parts.length - 1].replace(/\.(md|markdown)$/i, '');
+        results.push({
+          path,
+          name,
+          snippet: line.trim() || fallbackSnippet || `[[${activeBaseName}]]`,
+        });
+        break; // One entry per file
+      }
+    }
+  }
+
+  return results;
+}
+
+export function computeOutgoingLinks(params: {
+  fileContent: string;
+  notesContentMap: Record<string, string>;
+  fileTree: FileItem[];
+  activeVault: string | null;
+}): OutgoingLinkItem[] {
+  const { fileContent, notesContentMap, fileTree, activeVault } = params;
+  if (!fileContent) return [];
+
+  const linksMap = new Map<string, OutgoingLinkItem>();
+  const sanitized = fileContent.replace(/```[\s\S]*?```/g, '');
+  const wikiRegex = /(?<!!)\[\[([^\]|#\r\n]+)(?:#[^\]|\r\n]+)?(?:\|[^\]\r\n]+)?\]\]/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = wikiRegex.exec(sanitized)) !== null) {
+    const targetName = match[1].trim();
+    const targetLower = targetName.toLowerCase();
+    if (!targetName || linksMap.has(targetLower)) continue;
+
+    let resolvedPath = resolveVaultLinkTarget(targetName, fileTree, activeVault);
+    if (!resolvedPath) {
+      const cleanTarget = targetName
+        .replace(/\\/g, '/')
+        .replace(/^\.\//, '')
+        .replace(/\.(md|markdown)$/i, '')
+        .toLowerCase();
+      for (const candidatePath of Object.keys(notesContentMap)) {
+        const rel = getRelativeVaultPath(candidatePath, activeVault || '').toLowerCase();
+        if (
+          rel === cleanTarget ||
+          (!cleanTarget.includes('/') && rel.split('/').pop() === cleanTarget)
+        ) {
+          resolvedPath = candidatePath;
+          break;
+        }
+      }
+    }
+
+    linksMap.set(targetLower, { targetName, resolvedPath });
+  }
+
+  return Array.from(linksMap.values());
+}
 
 interface BacklinksPanelProps {
   activeFile: string | null;
   activeFileName: string | null;
   fileContent: string;
   notesContentMap: Record<string, string>;
+  fileTree?: FileItem[];
+  activeVault?: string | null;
   onOpenNote: (pathOrName: string) => void;
   onClose: () => void;
 }
@@ -16,81 +163,48 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
   activeFileName,
   fileContent,
   notesContentMap,
+  fileTree: propFileTree,
+  activeVault: propActiveVault,
   onOpenNote,
   onClose,
 }) => {
   const t = useT();
   const [activeTab, setActiveTab] = useState<'incoming' | 'outgoing'>('incoming');
+  const storeFileTree = useVaultStore((s) => s.fileTree);
+  const storeActiveVault = useVaultStore((s) => s.activeVault);
+  const fileTree = propFileTree ?? storeFileTree;
+  const activeVault = propActiveVault !== undefined ? propActiveVault : storeActiveVault;
 
   const activeBaseName = useMemo(() => {
     if (!activeFileName) return '';
-    return activeFileName.replace(/\.md$/i, '');
+    return activeFileName.replace(/\.(md|markdown)$/i, '');
   }, [activeFileName]);
 
-  // Compute incoming backlinks
-  const incomingLinks = useMemo(() => {
-    if (!activeBaseName) return [];
-    const results: { path: string; name: string; snippet: string }[] = [];
-    const targetLower = activeBaseName.toLowerCase();
+  const fallbackSnippet = activeBaseName ? t('backlinks.linkTo', { name: activeBaseName }) : '';
 
-    for (const [path, content] of Object.entries(notesContentMap)) {
-      if (path === activeFile) continue;
+  const incomingLinks = useMemo(
+    () =>
+      computeIncomingBacklinks({
+        activeFile,
+        activeFileName,
+        notesContentMap,
+        fileTree,
+        activeVault,
+        fallbackSnippet,
+      }),
+    [activeFile, activeFileName, notesContentMap, fileTree, activeVault, fallbackSnippet]
+  );
 
-      const lines = content.split('\n');
-      for (const line of lines) {
-        // Match [[Target...]]
-        const wikiMatch = /\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g;
-        let match;
-        let foundInLine = false;
-        while ((match = wikiMatch.exec(line)) !== null) {
-          if (match[1].trim().toLowerCase() === targetLower) {
-            foundInLine = true;
-            break;
-          }
-        }
-
-        if (foundInLine) {
-          const parts = path.replace(/\\/g, '/').split('/');
-          const name = parts[parts.length - 1].replace(/\.md$/i, '');
-          results.push({
-            path,
-            name,
-            snippet: line.trim() || t('backlinks.linkTo', { name: activeBaseName }),
-          });
-          break; // One entry per file
-        }
-      }
-    }
-    return results;
-  }, [activeFile, activeBaseName, notesContentMap, t]);
-
-  // Compute outgoing links from the active file's content
-  const outgoingLinks = useMemo(() => {
-    if (!fileContent) return [];
-    const linksMap = new Map<string, { targetName: string; resolvedPath: string | null }>();
-    const wikiRegex = /\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g;
-    let match;
-
-    // Build map of lower-case base name -> path for resolution
-    const vaultNotes = new Map<string, string>();
-    for (const path of Object.keys(notesContentMap)) {
-      const parts = path.replace(/\\/g, '/').split('/');
-      const base = parts[parts.length - 1].replace(/\.md$/i, '').toLowerCase();
-      vaultNotes.set(base, path);
-    }
-
-    while ((match = wikiRegex.exec(fileContent)) !== null) {
-      const targetName = match[1].trim();
-      const targetLower = targetName.toLowerCase();
-      const resolvedPath = vaultNotes.get(targetLower) || null;
-
-      if (!linksMap.has(targetLower)) {
-        linksMap.set(targetLower, { targetName, resolvedPath });
-      }
-    }
-
-    return Array.from(linksMap.values());
-  }, [fileContent, notesContentMap]);
+  const outgoingLinks = useMemo(
+    () =>
+      computeOutgoingLinks({
+        fileContent,
+        notesContentMap,
+        fileTree,
+        activeVault,
+      }),
+    [fileContent, notesContentMap, fileTree, activeVault]
+  );
 
   // Empty states embed a styled <code> element: split the sentence around the placeholder
   const [noIncomingBefore, noIncomingAfter] = t('backlinks.noIncoming').split('{link}');
