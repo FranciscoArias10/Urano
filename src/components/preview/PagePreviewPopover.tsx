@@ -11,7 +11,9 @@ import type { FileItem } from '../../types';
 import {
   getCleanFileName,
   isSamePath,
+  parseLinkTargetParts,
   resolveFilePathInVault,
+  resolveVaultLinkTarget,
 } from '../../utils/pathUtils';
 
 export const PAGE_PREVIEW_HOVER_EVENT = 'urano:page-preview-hover';
@@ -60,33 +62,14 @@ export function isValidPreviewContext(value: string | null): value is PagePrevie
   return value !== null && VALID_PREVIEW_CONTEXTS.has(value);
 }
 
-function findExistingFileInTree(target: string, items: FileItem[]): FileItem | null {
-  for (const item of items) {
-    if (!item.isDir && isSamePath(item.path, target)) {
-      return item;
-    }
-    if (item.children) {
-      const found = findExistingFileInTree(target, item.children);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-/**
- * Resolves a wikilink note name or vault file path into an existing vault file (if present)
- * and a clean display title for the popover header.
- */
 export function resolvePreviewTarget(
   rawTarget: string,
   fileTree: FileItem[],
   activeVault: string | null
 ): ResolvedPreviewTarget {
-  const withoutAlias = rawTarget.split('|')[0].trim();
-  const [noteTarget] = withoutAlias.split('#');
-  const cleanTarget = noteTarget.trim();
+  const { targetPath, isExternalUrl } = parseLinkTargetParts(rawTarget);
 
-  if (!cleanTarget) {
+  if (!targetPath || isExternalUrl) {
     return {
       rawTarget,
       resolvedPath: null,
@@ -96,12 +79,10 @@ export function resolvePreviewTarget(
     };
   }
 
-  const matchedItem = findExistingFileInTree(cleanTarget, fileTree);
-  const candidatePath = matchedItem
-    ? matchedItem.path
-    : resolveFilePathInVault(cleanTarget, fileTree, activeVault);
-  const resolvedPath = matchedItem ? matchedItem.path : candidatePath || null;
-  const checkTarget = (matchedItem?.path || cleanTarget).toLowerCase();
+  const resolvedFromTree = resolveVaultLinkTarget(rawTarget, fileTree, activeVault);
+  const resolvedPath =
+    resolvedFromTree || resolveFilePathInVault(targetPath, fileTree, activeVault) || null;
+  const checkTarget = (resolvedFromTree || targetPath).toLowerCase();
   const hasNonMdExt = /\.(canvas|base|png|jpe?g|gif|webp|svg|bmp|ico|pdf|mp3|mp4|wav|webm)$/i.test(
     checkTarget
   );
@@ -109,8 +90,8 @@ export function resolvePreviewTarget(
   return {
     rawTarget,
     resolvedPath,
-    displayTitle: getCleanFileName(matchedItem?.path || cleanTarget) || cleanTarget,
-    isExisting: Boolean(matchedItem),
+    displayTitle: getCleanFileName(resolvedFromTree || targetPath) || targetPath,
+    isExisting: Boolean(resolvedFromTree),
     isMarkdown: !hasNonMdExt,
   };
 }
