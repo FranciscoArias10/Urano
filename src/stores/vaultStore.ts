@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { FileItem, SortOrder, BookmarkItem } from '../types';
 import { isImagePath } from '../services/storageAdapter';
-import { renameImageInCache } from '../editor/imageExtension';
+import { renameImageInCache, clearImageBlobUrlCache } from '../editor/imageExtension';
 import { useSettingsStore, resolveNewFileDir, resolveNewCanvasDir } from './settingsStore';
 import { useSyncStore } from './syncStore';
 import { useNoticeStore } from '../components/common/Notice';
@@ -729,6 +729,9 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         );
       }
       selectFileRequestId++;
+      if (!prevState.activeVault || !isSamePath(prevState.activeVault, vaultPath)) {
+        clearImageBlobUrlCache();
+      }
 
       set({ isLoading: true, loadingMessage: 'Cargando bóveda...' });
       const settings = useSettingsStore.getState().settings;

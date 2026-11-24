@@ -27,12 +27,13 @@ import {
   createImageExtension,
   createImageDropPasteHandler,
   copyImageBlobToClipboard,
+  loadImageBlobFromSource,
   procesarPegadoDeImagen,
   getImageWidgetState,
   type ImageEmbedInfo,
 } from '../../editor/imageExtension';
 import { spellcheckExtension, triggerSpellCheckEffect } from '../../editor/spellcheckExtension';
-import { getStorageAdapter, toUint8Array } from '../../services/storageAdapter';
+import { toUint8Array } from '../../services/storageAdapter';
 import { themeService } from '../../services/themeService';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore } from '../../stores/vaultStore';
@@ -1009,13 +1010,7 @@ export const Editor: React.FC<EditorProps> = ({
           icon: <Copy size={14} />,
           action: async () => {
             try {
-              let blob: Blob;
-              if (src.startsWith('blob:') || src.startsWith('data:')) {
-                const res = await fetch(src);
-                blob = await res.blob();
-              } else {
-                blob = await getStorageAdapter().readBinary(filePath);
-              }
+              const blob = await loadImageBlobFromSource(src, filePath);
               await copyImageBlobToClipboard(blob);
               showNotice(t('editor.notices.imageCopied'), 2000, 'success');
             } catch (err) {

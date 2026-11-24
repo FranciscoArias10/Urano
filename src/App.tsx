@@ -19,6 +19,7 @@ import { GraphView } from './components/graph/GraphView';
 import { CanvasView } from './components/canvas/CanvasView';
 import { BaseView } from './components/base/BaseView';
 import { ImageView } from './components/image/ImageView';
+import { clearImageBlobUrlCache } from './editor/imageExtension';
 import { isImagePath } from './services/storageAdapter';
 import {
   getRelativeVaultPath,
@@ -2243,6 +2244,7 @@ const MainApp: React.FC = () => {
             onClick={async () => {
               setVaultSwitcherAnchor(null);
               await useVaultStore.getState().closeActiveFile();
+              clearImageBlobUrlCache();
               useVaultStore.setState({
                 activeVault: null,
                 vaultName: null,

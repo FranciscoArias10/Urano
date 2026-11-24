@@ -24,6 +24,11 @@ import {
   getInlineCodeRangesInLine,
   isRangeOverlapping,
 } from './codeRangeUtils';
+import {
+  normalizePath,
+  resolveVaultLinkTarget,
+  parseLinkTargetParts,
+} from '../utils/pathUtils';
 
 /** Resize constraints (pixels) */
 const MIN_IMAGE_WIDTH = 50;
@@ -90,6 +95,65 @@ const MD_IMAGE_REGEX = /!\[([^\]]*)\]\(([^)]+)\)/g;
  * Global cache of resolved image Object URLs to prevent flicker on CM6 rebuilds
  */
 export const imageBlobUrlCache = new Map<string, string>();
+const pendingSavedAttachmentPaths = new Map<string, string>();
+
+function getCanonicalCacheKey(filePath: string): string {
+  if (/^(https?:|blob:|data:|asset:)/i.test(filePath)) {
+    return filePath;
+  }
+  return normalizePath(filePath).toLowerCase();
+}
+
+/**
+ * Looks up a cached URL strictly by canonical resolved path or explicit external URL
+ * (never by unscoped bare filename, avoiding cross-folder / cross-vault collisions).
+ */
+export function getCachedImageUrl(
+  resolvedPath?: string | null,
+  rawTarget?: string | null
+): string | null {
+  if (rawTarget && /^(https?:|blob:|data:|asset:)/i.test(rawTarget)) {
+    return rawTarget;
+  }
+  if (resolvedPath) {
+    const byCanon = imageBlobUrlCache.get(getCanonicalCacheKey(resolvedPath));
+    if (byCanon) return byCanon;
+    const byExact = imageBlobUrlCache.get(resolvedPath);
+    if (byExact) return byExact;
+  }
+  return null;
+}
+
+function cacheImageUrl(resolvedPath: string, url: string): void {
+  if (!resolvedPath || !url) return;
+  imageBlobUrlCache.set(getCanonicalCacheKey(resolvedPath), url);
+  imageBlobUrlCache.set(resolvedPath, url);
+}
+
+/**
+ * Revokes all cached ObjectURLs and clears in-memory image caches plus the
+ * underlying StorageAdapter cache. Should be called when switching or closing vaults.
+ */
+export function clearImageBlobUrlCache(): void {
+  const revoked = new Set<string>();
+  for (const url of imageBlobUrlCache.values()) {
+    if (url.startsWith('blob:') && !revoked.has(url)) {
+      revoked.add(url);
+      try {
+        URL.revokeObjectURL(url);
+      } catch {
+        // Ignore in non-DOM environments
+      }
+    }
+  }
+  imageBlobUrlCache.clear();
+  pendingSavedAttachmentPaths.clear();
+  try {
+    getStorageAdapter().clearCache?.();
+  } catch {
+    // Ignore if adapter is unavailable
+  }
+}
 
 /**
  * Re-keys the image cache when a file is renamed so CodeMirror 6 widgets and
@@ -100,20 +164,22 @@ export const imageBlobUrlCache = new Map<string, string>();
  * keys get a fresh `convertFileSrc(newPath)` instead.
  */
 export function renameImageInCache(oldPath: string, newPath: string): void {
-  const normOld = oldPath.replace(/\\/g, '/');
-  const normNew = newPath.replace(/\\/g, '/');
+  const normOld = normalizePath(oldPath);
+  const normNew = normalizePath(newPath);
+  const canonOld = getCanonicalCacheKey(oldPath);
   const oldFileName = normOld.split('/').pop() || '';
   const newFileName = normNew.split('/').pop() || '';
   if (!isImagePath(newFileName) && !isImagePath(oldFileName)) return;
 
   const cachedUrl =
+    imageBlobUrlCache.get(canonOld) ||
     imageBlobUrlCache.get(oldPath) ||
-    imageBlobUrlCache.get(normOld) ||
-    imageBlobUrlCache.get(oldFileName);
+    imageBlobUrlCache.get(normOld);
 
+  imageBlobUrlCache.delete(canonOld);
   imageBlobUrlCache.delete(oldPath);
   imageBlobUrlCache.delete(normOld);
-  imageBlobUrlCache.delete(oldFileName);
+  pendingSavedAttachmentPaths.delete(canonOld);
 
   let newUrl: string | undefined;
   if (cachedUrl && /^(blob:|data:)/i.test(cachedUrl)) {
@@ -127,9 +193,10 @@ export function renameImageInCache(oldPath: string, newPath: string): void {
   }
 
   if (newUrl) {
-    imageBlobUrlCache.set(newPath, newUrl);
-    imageBlobUrlCache.set(normNew, newUrl);
-    imageBlobUrlCache.set(newFileName, newUrl);
+    cacheImageUrl(newPath, newUrl);
+    if (normNew !== newPath) {
+      imageBlobUrlCache.set(normNew, newUrl);
+    }
   }
 }
 
@@ -141,19 +208,15 @@ export function getSyncImageUrl(targetPathOrUrl: string, resolvedFilePath?: stri
   if (/^(https?:|blob:|data:|asset:)/i.test(targetPathOrUrl)) {
     return targetPathOrUrl;
   }
-  const targetKey = resolvedFilePath || targetPathOrUrl;
-  const cached =
-    imageBlobUrlCache.get(targetKey) ||
-    imageBlobUrlCache.get(targetPathOrUrl) ||
-    (resolvedFilePath ? imageBlobUrlCache.get(resolvedFilePath) : undefined);
+  const effectivePath = resolvedFilePath || resolveVaultImagePath(targetPathOrUrl);
+  const cached = getCachedImageUrl(effectivePath, targetPathOrUrl);
   if (cached) return cached;
 
-  if (resolvedFilePath && !/^(https?:|blob:|data:|asset:)/i.test(resolvedFilePath)) {
+  if (effectivePath && !/^(https?:|blob:|data:|asset:)/i.test(effectivePath)) {
     try {
-      const assetUrl = convertFileSrc(resolvedFilePath);
+      const assetUrl = convertFileSrc(effectivePath);
       if (assetUrl) {
-        imageBlobUrlCache.set(resolvedFilePath, assetUrl);
-        imageBlobUrlCache.set(targetPathOrUrl, assetUrl);
+        cacheImageUrl(effectivePath, assetUrl);
         return assetUrl;
       }
     } catch {
@@ -167,38 +230,57 @@ export function getSyncImageUrl(targetPathOrUrl: string, resolvedFilePath?: stri
  * Resolves absolute path of an image within active vault and fileTree
  */
 export function resolveVaultImagePath(rawTarget: string): string {
-  if (/^(https?:|blob:|data:)/i.test(rawTarget)) {
+  if (!rawTarget) return '';
+  if (/^(https?:|blob:|data:|asset:)/i.test(rawTarget)) {
     return rawTarget;
   }
 
-  const { fileTree, activeVault } = useVaultStore.getState();
+  const { fileTree, files, activeVault } = useVaultStore.getState();
+  const combinedItems = files.length > 0 ? [...fileTree, ...files] : fileTree;
+  const resolvedFromVault = resolveVaultLinkTarget(rawTarget, combinedItems, activeVault);
+  if (resolvedFromVault) {
+    return resolvedFromVault;
+  }
 
-  const traverse = (items: FileItem[]): string | null => {
-    for (const item of items) {
-      if (
-        item.name.toLowerCase() === rawTarget.toLowerCase() ||
-        item.path.endsWith(rawTarget)
-      ) {
-        return item.path;
-      }
-      if (item.children) {
-        const found = traverse(item.children);
-        if (found) return found;
+  const cleanParsed = parseLinkTargetParts(rawTarget).targetPath || rawTarget.split('|')[0].trim();
+  const cleanRel = cleanParsed.replace(/^(\.\/)+/, '').replace(/^\/+/, '');
+  const lowerCleanRel = normalizePath(cleanRel).toLowerCase();
+
+  // Resolve freshly pasted/dropped files scoped to the active vault before refreshTree finishes
+  if (pendingSavedAttachmentPaths.size > 0 && lowerCleanRel) {
+    const normVaultPrefix = activeVault ? `${normalizePath(activeVault).toLowerCase()}/` : '';
+    const hasDir = lowerCleanRel.includes('/');
+    for (const [canonPending, fullPending] of pendingSavedAttachmentPaths) {
+      if (normVaultPrefix && !canonPending.startsWith(normVaultPrefix)) continue;
+      if (hasDir) {
+        if (
+          canonPending === `${normVaultPrefix}${lowerCleanRel}` ||
+          canonPending.endsWith(`/${lowerCleanRel}`)
+        ) {
+          return fullPending;
+        }
+      } else {
+        const pendingBase = canonPending.split('/').pop() || '';
+        if (pendingBase === lowerCleanRel) {
+          return fullPending;
+        }
       }
     }
-    return null;
-  };
+  }
 
-  const matched = traverse(fileTree);
-  if (matched) return matched;
+  const normClean = normalizePath(cleanParsed);
+  if (/^[a-zA-Z]:\//.test(normClean) || normClean.startsWith('/')) {
+    return activeVault?.includes('\\') ? normClean.replace(/\//g, '\\') : normClean;
+  }
 
   if (activeVault) {
     const separator = activeVault.includes('\\') ? '\\' : '/';
     const cleanVault = activeVault.endsWith(separator) ? activeVault.slice(0, -1) : activeVault;
-    return `${cleanVault}${separator}${rawTarget}`;
+    const relJoined = cleanRel.replace(/[\\/]+/g, separator);
+    return relJoined ? `${cleanVault}${separator}${relJoined}` : cleanVault;
   }
 
-  return rawTarget;
+  return cleanParsed;
 }
 
 /**
@@ -207,7 +289,7 @@ export function resolveVaultImagePath(rawTarget: string): string {
  */
 export async function resolveImageBlobUrl(rawPathOrName: string): Promise<string> {
   if (!rawPathOrName) return '';
-  if (/^(https?:|blob:|data:)/i.test(rawPathOrName)) {
+  if (/^(https?:|blob:|data:|asset:)/i.test(rawPathOrName)) {
     return rawPathOrName;
   }
 
@@ -217,20 +299,17 @@ export async function resolveImageBlobUrl(rawPathOrName: string): Promise<string
   // 2. Resolve real absolute path in vault
   const absolutePath = resolveVaultImagePath(rawTarget);
 
-  // Check memory cache first
-  if (imageBlobUrlCache.has(absolutePath)) {
-    return imageBlobUrlCache.get(absolutePath)!;
-  }
-  if (imageBlobUrlCache.has(rawTarget)) {
-    return imageBlobUrlCache.get(rawTarget)!;
+  // Check memory cache first (never by unscoped bare filename)
+  const existing = getCachedImageUrl(absolutePath, rawTarget);
+  if (existing) {
+    return existing;
   }
 
   // 3. Fast Tauri Asset Protocol conversion: streams directly from disk via Rust with 0ms IPC overhead
   try {
     const assetUrl = convertFileSrc(absolutePath);
     if (assetUrl) {
-      imageBlobUrlCache.set(absolutePath, assetUrl);
-      imageBlobUrlCache.set(rawTarget, assetUrl);
+      cacheImageUrl(absolutePath, assetUrl);
       return assetUrl;
     }
   } catch (err) {
@@ -241,13 +320,46 @@ export async function resolveImageBlobUrl(rawPathOrName: string): Promise<string
   try {
     const blob = await getStorageAdapter().readBinary(absolutePath);
     const blobUrl = URL.createObjectURL(blob);
-    imageBlobUrlCache.set(absolutePath, blobUrl);
-    imageBlobUrlCache.set(rawTarget, blobUrl);
+    cacheImageUrl(absolutePath, blobUrl);
     return blobUrl;
   } catch (err) {
     console.error(`[Urano] Error cargando binario de imagen para "${absolutePath}":`, err);
     return '';
   }
+}
+
+/**
+ * Loads an image Blob uniformly for both remote URLs (`https://`, `blob:`, `data:`)
+ * and vault-local files (via StorageAdapter or asset fallback).
+ */
+export async function loadImageBlobFromSource(
+  src?: string | null,
+  filePath?: string | null
+): Promise<Blob> {
+  const trimmedSrc = (src || '').trim();
+  const trimmedPath = (filePath || '').trim();
+
+  if (/^(https?:|blob:|data:)/i.test(trimmedSrc)) {
+    const res = await fetch(trimmedSrc);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch image (${res.status})`);
+    }
+    return await res.blob();
+  }
+
+  if (trimmedPath && !/^(https?:|blob:|data:|asset:)/i.test(trimmedPath)) {
+    return await getStorageAdapter().readBinary(trimmedPath);
+  }
+
+  if (trimmedSrc) {
+    const res = await fetch(trimmedSrc);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch image (${res.status})`);
+    }
+    return await res.blob();
+  }
+
+  throw new Error('No image source or file path available');
 }
 
 /**
@@ -258,28 +370,113 @@ export async function copyImageBlobToClipboard(blob: Blob): Promise<void> {
   if (blob.type !== 'image/png') {
     const img = new Image();
     const url = URL.createObjectURL(blob);
-    await new Promise((res, rej) => {
-      img.onload = res;
-      img.onerror = rej;
-      img.src = url;
-    });
+    try {
+      await new Promise((res, rej) => {
+        img.onload = res;
+        img.onerror = rej;
+        img.src = url;
+      });
 
-    const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth || img.width;
-    canvas.height = img.naturalHeight || img.height;
-    const ctx = canvas.getContext('2d');
-    ctx?.drawImage(img, 0, 0);
-    URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0);
 
-    const converted = await new Promise<Blob | null>((res) =>
-      canvas.toBlob(res, 'image/png')
-    );
-    if (converted) pngBlob = converted;
+      const converted = await new Promise<Blob | null>((res) =>
+        canvas.toBlob(res, 'image/png')
+      );
+      if (converted) pngBlob = converted;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
   }
 
   await navigator.clipboard.write([
     new ClipboardItem({ 'image/png': pngBlob }),
   ]);
+}
+
+/**
+ * Computes a collision-free filename inside `targetDir` against `existingItems`
+ * and any `reservedNames` already allocated in the current batch.
+ */
+export function getUniqueAttachmentName(
+  targetDir: string,
+  desiredFileName: string,
+  existingItems: FileItem[],
+  reservedNames?: Set<string>
+): string {
+  const cleanDesired = desiredFileName.replace(/[\\/:*?"<>|]/g, '_').trim() || 'image.png';
+  const dotIdx = cleanDesired.lastIndexOf('.');
+  const baseName = dotIdx > 0 ? cleanDesired.slice(0, dotIdx) : cleanDesired;
+  const ext = dotIdx > 0 ? cleanDesired.slice(dotIdx) : '';
+
+  const normTargetDir = normalizePath(targetDir).toLowerCase();
+  const existingLower = new Set<string>();
+  if (reservedNames) {
+    for (const name of reservedNames) existingLower.add(name.toLowerCase());
+  }
+
+  const walk = (items: FileItem[]) => {
+    for (const item of items) {
+      if (!item.isDir) {
+        const normItem = normalizePath(item.path);
+        const lastSlash = normItem.lastIndexOf('/');
+        const itemDir = (lastSlash >= 0 ? normItem.slice(0, lastSlash) : '').toLowerCase();
+        if (itemDir === normTargetDir) {
+          existingLower.add(item.name.toLowerCase());
+        }
+      }
+      if (item.children?.length) {
+        walk(item.children);
+      }
+    }
+  };
+  walk(existingItems || []);
+
+  let candidate = cleanDesired;
+  let counter = 1;
+  while (existingLower.has(candidate.toLowerCase())) {
+    candidate = `${baseName} ${counter}${ext}`;
+    counter++;
+  }
+  reservedNames?.add(candidate.toLowerCase());
+  return candidate;
+}
+
+function allocateUniqueAttachmentTarget(
+  targetDir: string,
+  desiredFileName: string,
+  separator: string,
+  batchReserved?: Set<string>
+): { fileName: string; fullPath: string } {
+  const { fileTree, files } = useVaultStore.getState();
+  const normTargetDir = normalizePath(targetDir).toLowerCase();
+  const combinedReserved = new Set<string>(batchReserved || []);
+
+  for (const [canonPending, fullPending] of pendingSavedAttachmentPaths) {
+    const lastSlash = canonPending.lastIndexOf('/');
+    const pendingDir = lastSlash >= 0 ? canonPending.slice(0, lastSlash) : '';
+    if (pendingDir === normTargetDir) {
+      const pendingName = normalizePath(fullPending).split('/').pop() || '';
+      if (pendingName) combinedReserved.add(pendingName.toLowerCase());
+    }
+  }
+
+  const existingItems = files.length > 0 ? [...fileTree, ...files] : fileTree;
+  const fileName = getUniqueAttachmentName(
+    targetDir,
+    desiredFileName,
+    existingItems,
+    combinedReserved
+  );
+  batchReserved?.add(fileName.toLowerCase());
+
+  const cleanDir = targetDir.endsWith(separator) ? targetDir.slice(0, -1) : targetDir;
+  const fullPath = `${cleanDir}${separator}${fileName}`;
+  pendingSavedAttachmentPaths.set(getCanonicalCacheKey(fullPath), fullPath);
+  return { fileName, fullPath };
 }
 
 export interface ImageEmbedInfo {
@@ -472,26 +669,9 @@ export class ImageWidget extends WidgetType {
 
     applyImageDimensions(img, width, height);
 
-    // Synchronously check memory cache first to eliminate any flicker
+    // Synchronously check cache / convert via Tauri asset protocol (0ms)
     const targetKey = resolvedFilePath || targetPathOrUrl;
-    let cachedUrl =
-      imageBlobUrlCache.get(targetKey) ||
-      imageBlobUrlCache.get(targetPathOrUrl) ||
-      (resolvedFilePath ? imageBlobUrlCache.get(resolvedFilePath) : undefined);
-
-    // If not yet in cache, convert synchronously via Tauri asset protocol (0ms)
-    if (!cachedUrl && resolvedFilePath && !/^(https?:|blob:|data:|asset:)/i.test(resolvedFilePath)) {
-      try {
-        const assetUrl = convertFileSrc(resolvedFilePath);
-        if (assetUrl) {
-          cachedUrl = assetUrl;
-          imageBlobUrlCache.set(resolvedFilePath, assetUrl);
-          imageBlobUrlCache.set(targetPathOrUrl, assetUrl);
-        }
-      } catch {
-        // Fallback
-      }
-    }
+    const cachedUrl = getSyncImageUrl(targetPathOrUrl, resolvedFilePath);
 
     if (cachedUrl) {
       img.src = cachedUrl;
@@ -742,7 +922,7 @@ export function createImageExtension(options?: ImageExtensionOptions) {
               const rawTarget = parts[0].trim();
               if (isImagePath(rawTarget)) {
                 const resolved = resolveVaultImagePath(rawTarget);
-                if (!imageBlobUrlCache.has(resolved) && !imageBlobUrlCache.has(rawTarget)) {
+                if (!getCachedImageUrl(resolved, rawTarget)) {
                   resolveImageBlobUrl(rawTarget); // fire-and-forget prefetch
                 }
               }
@@ -755,7 +935,7 @@ export function createImageExtension(options?: ImageExtensionOptions) {
               const targetUrl = m[2].trim();
               if (isImagePath(targetUrl) && !/^(https?:|data:|blob:)/i.test(targetUrl)) {
                 const resolved = resolveVaultImagePath(targetUrl);
-                if (!imageBlobUrlCache.has(resolved) && !imageBlobUrlCache.has(targetUrl)) {
+                if (!getCachedImageUrl(resolved, targetUrl)) {
                   resolveImageBlobUrl(targetUrl);
                 }
               }
@@ -960,7 +1140,7 @@ export async function saveClipboardImageToVault(file: File): Promise<string | nu
       ext = parts[parts.length - 1].toLowerCase();
     }
 
-    const nombreImagen = `Pasted Image ${timestamp}.${ext}`;
+    const desiredName = `Pasted Image ${timestamp}.${ext}`;
     const { activeVault, refreshTree } = useVaultStore.getState();
 
     if (!activeVault) {
@@ -971,28 +1151,47 @@ export async function saveClipboardImageToVault(file: File): Promise<string | nu
     // Destination follows Settings → Files and links → "Default location for new attachments"
     const separator = activeVault.includes('\\') ? '\\' : '/';
     const targetDir = resolveAttachmentDir(activeVault, useVaultStore.getState().activeFile);
-    const rutaDestino = `${targetDir}${separator}${nombreImagen}`;
+    const { fileName: nombreImagen, fullPath: rutaDestino } = allocateUniqueAttachmentTarget(
+      targetDir,
+      desiredName,
+      separator
+    );
+    const canonDestinoKey = getCanonicalCacheKey(rutaDestino);
 
-    // Convert file to Uint8Array for writing
-    const arrayBuffer = await file.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
+    let memoryUrl = '';
+    try {
+      // Convert file to Uint8Array for writing
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
 
-    // Pre-cache immediate blob URL in memory so the image renders instantly
-    const mime = file.type || getImageMimeType(nombreImagen);
-    const memoryBlob = new Blob([uint8Array], { type: mime });
-    const memoryUrl = URL.createObjectURL(memoryBlob);
-    imageBlobUrlCache.set(rutaDestino, memoryUrl);
-    imageBlobUrlCache.set(nombreImagen, memoryUrl);
+      // Pre-cache immediate blob URL in memory under canonical path so the image renders instantly
+      const mime = file.type || getImageMimeType(nombreImagen);
+      const memoryBlob = new Blob([uint8Array], { type: mime });
+      memoryUrl = URL.createObjectURL(memoryBlob);
+      cacheImageUrl(rutaDestino, memoryUrl);
 
-    // Save physically to disk using storageAdapter (raw bytes over IPC, no JSON)
-    const adapter = getStorageAdapter();
-    await adapter.writeBinary(rutaDestino, uint8Array);
-    console.log('[Urano] Imagen guardada físicamente en disco:', rutaDestino);
+      // Save physically to disk using storageAdapter (raw bytes over IPC, no JSON)
+      const adapter = getStorageAdapter();
+      await adapter.writeBinary(rutaDestino, uint8Array);
+      console.log('[Urano] Imagen guardada físicamente en disco:', rutaDestino);
 
-    // Refresh the explorer in the background: a full vault listing must never block the UI
-    refreshTree().catch((err) => console.warn('[Urano] refreshTree tras pegado falló:', err));
+      // Refresh the explorer in the background: a full vault listing must never block the UI
+      refreshTree()
+        .catch((err) => console.warn('[Urano] refreshTree tras pegado falló:', err))
+        .finally(() => {
+          pendingSavedAttachmentPaths.delete(canonDestinoKey);
+        });
 
-    return nombreImagen;
+      return nombreImagen;
+    } catch (writeErr) {
+      pendingSavedAttachmentPaths.delete(canonDestinoKey);
+      imageBlobUrlCache.delete(canonDestinoKey);
+      imageBlobUrlCache.delete(rutaDestino);
+      if (memoryUrl.startsWith('blob:')) {
+        try { URL.revokeObjectURL(memoryUrl); } catch {}
+      }
+      throw writeErr;
+    }
   } catch (err) {
     console.error('[Urano] Error guardando la imagen del portapapeles:', err);
     useNoticeStore
@@ -1155,26 +1354,52 @@ export function createImageDropPasteHandler() {
 
         const separator = activeVault.includes('\\') ? '\\' : '/';
         const targetDir = resolveAttachmentDir(activeVault, useVaultStore.getState().activeFile);
+        const batchReserved = new Set<string>();
+        const pendingKeys: string[] = [];
 
         Promise.all(
           imageFiles.map(async (file) => {
-            const fullPath = `${targetDir}${separator}${file.name}`;
-            const arrayBuffer = await file.arrayBuffer();
-            const uint8Array = new Uint8Array(arrayBuffer);
+            const { fileName: savedName, fullPath } = allocateUniqueAttachmentTarget(
+              targetDir,
+              file.name,
+              separator,
+              batchReserved
+            );
+            const canonKey = getCanonicalCacheKey(fullPath);
+            pendingKeys.push(canonKey);
 
-            // Pre-cache blob url
-            const mime = file.type || getImageMimeType(file.name);
-            const blob = new Blob([uint8Array], { type: mime });
-            const bUrl = URL.createObjectURL(blob);
-            imageBlobUrlCache.set(fullPath, bUrl);
-            imageBlobUrlCache.set(file.name, bUrl);
+            let bUrl = '';
+            try {
+              const arrayBuffer = await file.arrayBuffer();
+              const uint8Array = new Uint8Array(arrayBuffer);
 
-            await getStorageAdapter().writeBinary(fullPath, uint8Array);
-            return file.name;
+              // Pre-cache canonical blob url without bare filename collisions
+              const mime = file.type || getImageMimeType(savedName);
+              const blob = new Blob([uint8Array], { type: mime });
+              bUrl = URL.createObjectURL(blob);
+              cacheImageUrl(fullPath, bUrl);
+
+              await getStorageAdapter().writeBinary(fullPath, uint8Array);
+              return savedName;
+            } catch (err) {
+              pendingSavedAttachmentPaths.delete(canonKey);
+              imageBlobUrlCache.delete(canonKey);
+              imageBlobUrlCache.delete(fullPath);
+              if (bUrl.startsWith('blob:')) {
+                try { URL.revokeObjectURL(bUrl); } catch {}
+              }
+              throw err;
+            }
           })
         )
           .then(async (savedNames) => {
-            await refreshTree();
+            try {
+              await refreshTree();
+            } finally {
+              for (const key of pendingKeys) {
+                pendingSavedAttachmentPaths.delete(key);
+              }
+            }
             const useWiki = useSettingsStore.getState().settings.useWikilinks;
             const insertText =
               '\n' +

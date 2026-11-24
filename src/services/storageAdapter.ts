@@ -7,6 +7,7 @@ export interface StorageAdapter {
   getResourcePath(path: string): Promise<string>;
   read(path: string): Promise<string>;
   write(path: string, content: string): Promise<void>;
+  clearCache?(): void;
 }
 
 export const IMAGE_EXTENSIONS = [
@@ -187,6 +188,10 @@ export class LocalAdapter implements StorageAdapter {
  */
 export class GoogleDriveAdapter implements StorageAdapter {
   private localFallback = new LocalAdapter();
+
+  clearCache(): void {
+    this.localFallback.clearCache();
+  }
 
   async writeBinary(path: string, data: ArrayBuffer | Blob | Uint8Array): Promise<void> {
     // Write locally first so sync engine can mirror to Drive
