@@ -18,15 +18,107 @@ import {
   parseAlignments,
   parseTableRowCells,
 } from '../../editor/tableExtension';
+import { useT } from '../../stores/localeStore';
+
+/* ------------------------------------------------------------------ */
+/* URL & Image Sanitization                                            */
+/* ------------------------------------------------------------------ */
+
+const CONTROL_CHARS_RE = /[\u0000-\u001f\u007f]+/g;
+const ALLOWED_EXTERNAL_SCHEMES = new Set([
+  'http:',
+  'https:',
+  'mailto:',
+  'tel:',
+  'obsidian:',
+  'urano:',
+]);
+const INTERNAL_NOTE_EXT_RE = /\.(md|markdown|canvas|base)(?:[#?].*)?$/i;
+const SAFE_RASTER_DATA_IMAGE_RE =
+  /^data:image\/(?:png|jpeg|jpg|gif|webp|avif|bmp);/i;
+
+export function sanitizeExternalUrl(
+  rawUrl: string
+): { kind: 'external' | 'internal'; href: string } | null {
+  const cleaned = (rawUrl || '').replace(CONTROL_CHARS_RE, '').trim();
+  if (!cleaned) return null;
+
+  if (cleaned.startsWith('#')) {
+    return { kind: 'external', href: cleaned };
+  }
+
+  const schemeMatch = cleaned.match(/^([a-zA-Z][a-zA-Z0-9+.-]*:)/);
+  if (schemeMatch) {
+    const scheme = schemeMatch[1].toLowerCase();
+    if (ALLOWED_EXTERNAL_SCHEMES.has(scheme)) {
+      return { kind: 'external', href: cleaned };
+    }
+    return null;
+  }
+
+  if (cleaned.startsWith('//')) {
+    return null;
+  }
+
+  if (INTERNAL_NOTE_EXT_RE.test(cleaned)) {
+    try {
+      return { kind: 'internal', href: decodeURIComponent(cleaned) };
+    } catch {
+      return { kind: 'internal', href: cleaned };
+    }
+  }
+
+  return null;
+}
+
+export function sanitizeImageTarget(rawTarget: string): string | null {
+  const cleaned = (rawTarget || '').replace(CONTROL_CHARS_RE, '').trim();
+  if (!cleaned) return null;
+
+  const schemeMatch = cleaned.match(/^([a-zA-Z][a-zA-Z0-9+.-]*:)/);
+  if (schemeMatch) {
+    const scheme = schemeMatch[1].toLowerCase();
+    if (
+      scheme === 'http:' ||
+      scheme === 'https:' ||
+      scheme === 'blob:' ||
+      scheme === 'asset:'
+    ) {
+      return cleaned;
+    }
+    if (scheme === 'data:') {
+      return SAFE_RASTER_DATA_IMAGE_RE.test(cleaned) ? cleaned : null;
+    }
+    return null;
+  }
+
+  if (cleaned.startsWith('//')) return null;
+  return cleaned;
+}
 
 /* ------------------------------------------------------------------ */
 /* Frontmatter Parser                                                  */
 /* ------------------------------------------------------------------ */
 
+export type FrontmatterValue = string | string[];
+
 export interface ParsedDocument {
-  frontmatter: Record<string, string> | null;
+  frontmatter: Record<string, FrontmatterValue> | null;
   rawFrontmatter: string | null;
   body: string;
+  bodyStartLineOffset: number;
+}
+
+function unquoteYamlScalar(raw: string): string {
+  const val = raw.trim();
+  if (
+    val.length >= 2 &&
+    ((val.startsWith('"') && val.endsWith('"')) ||
+      (val.startsWith("'") && val.endsWith("'")))
+  ) {
+    return val.slice(1, -1);
+  }
+  return val;
 }
 
 /**
@@ -35,21 +127,21 @@ export interface ParsedDocument {
  * Requirements:
  * 1. Must start on line 1 with `^---\r?\n`.
  * 2. Must have a closing `\r?\n---\r?\n` (or `\r?\n---$`).
- * 3. Content between delimiters must follow key: value YAML structure.
+ * 3. Content between delimiters must follow key: value / list YAML structure.
  *
- * If the user simply typed `---` as a divider / horizontal rule, or if there is
- * no valid closed YAML block at the top, the entire text is preserved in `body`
- * so that `---` is rendered as an `<hr />` and NO content is lost or hidden.
+ * Also returns `bodyStartLineOffset` (number of lines occupied by the stripped
+ * frontmatter header) so line-indexed features such as task checkboxes modify
+ * the exact line in the full source document.
  */
 export function parseDocumentFrontmatter(source: string): ParsedDocument {
   if (!source) {
-    return { frontmatter: null, rawFrontmatter: null, body: '' };
+    return { frontmatter: null, rawFrontmatter: null, body: '', bodyStartLineOffset: 0 };
   }
 
   // Must begin on line 1 with `---`
   const startMatch = source.match(/^---\r?\n/);
   if (!startMatch) {
-    return { frontmatter: null, rawFrontmatter: null, body: source };
+    return { frontmatter: null, rawFrontmatter: null, body: source, bodyStartLineOffset: 0 };
   }
 
   const rest = source.slice(startMatch[0].length);
@@ -57,26 +149,62 @@ export function parseDocumentFrontmatter(source: string): ParsedDocument {
   const endMatch = rest.match(/\r?\n---\r?\n|\r?\n---$/);
   if (!endMatch || endMatch.index === undefined) {
     // No closing delimiter found -> treat initial `---` as content (<hr />)
-    return { frontmatter: null, rawFrontmatter: null, body: source };
+    return { frontmatter: null, rawFrontmatter: null, body: source, bodyStartLineOffset: 0 };
   }
 
   const rawYaml = rest.slice(0, endMatch.index);
-  const remainingBody = rest.slice(endMatch.index + endMatch[0].length);
+  const frontmatterEndOffset = startMatch[0].length + endMatch.index + endMatch[0].length;
+  const remainingBody = source.slice(frontmatterEndOffset);
+  const bodyStartLineOffset = source.slice(0, frontmatterEndOffset).split('\n').length - 1;
 
-  // Validate that lines inside rawYaml look like valid YAML (key-value, comments, lists, or blanks)
+  // Validate and parse YAML (Unicode keys, scalar values, inline arrays, multi-line lists)
   const lines = rawYaml.split(/\r?\n/);
+  const parsedMap: Record<string, FrontmatterValue> = {};
   let hasValidKey = false;
   let isYaml = true;
+  let currentListKey: string | null = null;
 
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
-    if (/^[\w\-. ]+:\s*/.test(trimmed)) {
+
+    // Check list item before key-value so `- foo:bar` under a list isn't misread as a key
+    const listItemMatch = trimmed.match(/^-\s+(.*)$/);
+    if (listItemMatch) {
+      if (!currentListKey) {
+        isYaml = false;
+        break;
+      }
+      const existing = parsedMap[currentListKey];
+      const itemVal = unquoteYamlScalar(listItemMatch[1]);
+      if (Array.isArray(existing)) {
+        existing.push(itemVal);
+      } else {
+        parsedMap[currentListKey] = existing ? [existing, itemVal] : [itemVal];
+      }
+      continue;
+    }
+
+    const kv = trimmed.match(/^([\p{L}\p{N}_\-./ ]+?):\s*(.*)$/u);
+    if (kv) {
       hasValidKey = true;
-    } else if (/^-\s+/.test(trimmed)) {
-      // List item in YAML
+      const key = kv[1].trim();
+      const rawVal = kv[2].trim();
+
+      if (rawVal === '') {
+        parsedMap[key] = [];
+        currentListKey = key;
+      } else if (rawVal.startsWith('[') && rawVal.endsWith(']')) {
+        const inner = rawVal.slice(1, -1).trim();
+        parsedMap[key] = inner
+          ? inner.split(',').map((part) => unquoteYamlScalar(part)).filter(Boolean)
+          : [];
+        currentListKey = null;
+      } else {
+        parsedMap[key] = unquoteYamlScalar(rawVal);
+        currentListKey = null;
+      }
     } else {
-      // Plain sentence or prose that is not YAML
       isYaml = false;
       break;
     }
@@ -84,28 +212,14 @@ export function parseDocumentFrontmatter(source: string): ParsedDocument {
 
   if (!isYaml || !hasValidKey) {
     // Not valid YAML frontmatter -> do not crop or hide anything!
-    return { frontmatter: null, rawFrontmatter: null, body: source };
-  }
-
-  // Parse key-value pairs
-  const parsedMap: Record<string, string> = {};
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const kv = trimmed.match(/^([\w\-. ]+):\s*(.*)$/);
-    if (kv) {
-      let val = kv[2].trim();
-      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-        val = val.slice(1, -1);
-      }
-      parsedMap[kv[1].trim()] = val;
-    }
+    return { frontmatter: null, rawFrontmatter: null, body: source, bodyStartLineOffset: 0 };
   }
 
   return {
     frontmatter: parsedMap,
     rawFrontmatter: rawYaml,
     body: remainingBody,
+    bodyStartLineOffset,
   };
 }
 
@@ -170,7 +284,7 @@ function isBlockStart(line: string): boolean {
   );
 }
 
-export function parseMarkdownBlocks(source: string): MarkdownBlock[] {
+export function parseMarkdownBlocks(source: string, lineOffset = 0): MarkdownBlock[] {
   const lines = (source || '').replace(/\r\n/g, '\n').split('\n');
   const blocks: MarkdownBlock[] = [];
   let i = 0;
@@ -297,6 +411,10 @@ export function parseMarkdownBlocks(source: string): MarkdownBlock[] {
           break;
         }
         const indent = m[1].replace(/\t/g, '  ').length;
+        const itemOrdered = /\d/.test(m[2]);
+        if (items.length > 0 && indent === 0 && itemOrdered !== ordered) {
+          break;
+        }
         let text = m[3];
         let checked: boolean | undefined;
         const task = TASK_RE.exec(text);
@@ -305,7 +423,7 @@ export function parseMarkdownBlocks(source: string): MarkdownBlock[] {
           text = task[2];
         }
         items.push({
-          rawLineIndex: i,
+          rawLineIndex: i + lineOffset,
           text,
           checked,
           level: Math.floor(indent / 2),
@@ -342,10 +460,12 @@ export function parseMarkdownBlocks(source: string): MarkdownBlock[] {
 interface InlineContext {
   onWikilinkClick?: (target: string) => void;
   linkContext?: 'preview' | 'properties';
+  blockedLinkLabel?: string;
 }
 
+// Inline code runs first so markdown inside `code` is preserved verbatim
 const INLINE_RE =
-  /(!\[\[[^\]]+\]\])|(!\[[^\]]*\]\([^)]+\))|(\[\[[^\]]+\]\])|(\[[^\]]*\]\([^)]+\))|(\*\*\*[^*\n]+\*\*\*)|(\*\*[^*\n]+\*\*)|(__[^_\n]+__)|(~~[^~\n]+~~)|(==[^=\n]+==)|(`[^`\n]+`)|(\$[^$\n]+\$)|(\*[^*\n]+\*)|(_[^_\n]+_)/g;
+  /(`[^`\n]+`)|(!\[\[[^\]]+\]\])|(!\[[^\]]*\]\([^)]+\))|(\[\[[^\]]+\]\])|(\[[^\]]*\]\([^)]+\))|(\*\*\*[^*\n]+\*\*\*)|(\*\*[^*\n]+\*\*)|(__[^_\n]+__)|(~~[^~\n]+~~)|(==[^=\n]+==)|(\$[^$\n]+\$)|(\*[^*\n]+\*)|((?<![\w_])_[^_\n]+_(?![\w_]))/g;
 
 const ReadingImage: React.FC<{
   target: string;
@@ -441,33 +561,53 @@ function renderInline(text: string, ctx: InlineContext, keyPrefix: string): Reac
     const token = match[0];
     const key = `${keyPrefix}-i${index++}`;
 
-    if (token.startsWith('![[')) {
+    if (token.startsWith('`')) {
+      nodes.push(
+        <code key={key} className="bg-urano-secondary px-1.5 py-0.5 rounded font-mono text-sm">
+          {token.slice(1, -1)}
+        </code>
+      );
+    } else if (token.startsWith('![[')) {
       // Vault image embed: ![[file.png|300]]
       const inner = token.slice(3, -2);
       const { width, height, alt } = parseImageEmbed(inner);
-      nodes.push(
-        <ReadingImage
-          key={key}
-          target={inner.split('|')[0].trim()}
-          alt={alt}
-          width={width || undefined}
-          height={height || undefined}
-        />
-      );
-    } else if (token.startsWith('![')) {
-      // Markdown image: ![alt](url)
-      const m = /^!\[([^\]]*)\]\(([^)]+)\)$/.exec(token);
-      if (m) {
-        const { width, height } = parseImageEmbed(m[1]);
+      const safeTarget = sanitizeImageTarget(inner.split('|')[0]);
+      if (safeTarget) {
         nodes.push(
           <ReadingImage
             key={key}
-            target={m[2].trim()}
-            alt={m[1]}
+            target={safeTarget}
+            alt={alt}
             width={width || undefined}
             height={height || undefined}
           />
         );
+      } else {
+        nodes.push(token);
+      }
+    } else if (token.startsWith('![')) {
+      // Markdown image: ![alt](url)
+      const m = /^!\[([^\]]*)\]\(([^)]+)\)$/.exec(token);
+      if (m) {
+        const safeTarget = sanitizeImageTarget(m[2]);
+        if (safeTarget) {
+          const { width, height } = parseImageEmbed(m[1]);
+          nodes.push(
+            <ReadingImage
+              key={key}
+              target={safeTarget}
+              alt={m[1]}
+              width={width || undefined}
+              height={height || undefined}
+            />
+          );
+        } else {
+          nodes.push(
+            <span key={key} className="text-urano-muted" title={ctx.blockedLinkLabel}>
+              {m[1] || token}
+            </span>
+          );
+        }
       }
     } else if (token.startsWith('[[') && !token.startsWith('![[')) {
       // Wikilink: [[note|alias]]
@@ -490,21 +630,49 @@ function renderInline(text: string, ctx: InlineContext, keyPrefix: string): Reac
         </a>
       );
     } else if (token.startsWith('[')) {
-      // External link: [text](url)
+      // External or relative markdown link: [text](url)
       const m = /^\[([^\]]*)\]\(([^)]+)\)$/.exec(token);
       if (m) {
-        nodes.push(
-          <a
-            key={key}
-            className="external-link text-orange-400 hover:text-orange-300 underline cursor-pointer"
-            href={m[2]}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {m[1]}
-          </a>
-        );
+        const sanitized = sanitizeExternalUrl(m[2]);
+        if (!sanitized) {
+          nodes.push(
+            <span
+              key={key}
+              className="external-link-blocked text-urano-muted"
+              title={ctx.blockedLinkLabel}
+            >
+              {m[1]}
+            </span>
+          );
+        } else if (sanitized.kind === 'internal') {
+          nodes.push(
+            <a
+              key={key}
+              className="internal-link text-orange-400 hover:text-orange-300 underline cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                ctx.onWikilinkClick?.(sanitized.href);
+              }}
+              title={sanitized.href}
+            >
+              {m[1]}
+            </a>
+          );
+        } else {
+          nodes.push(
+            <a
+              key={key}
+              className="external-link text-orange-400 hover:text-orange-300 underline cursor-pointer"
+              href={sanitized.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {m[1]}
+            </a>
+          );
+        }
       }
     } else if (token.startsWith('***')) {
       nodes.push(
@@ -517,17 +685,16 @@ function renderInline(text: string, ctx: InlineContext, keyPrefix: string): Reac
     } else if (token.startsWith('~~')) {
       nodes.push(<del key={key}>{token.slice(2, -2)}</del>);
     } else if (token.startsWith('==')) {
-      nodes.push(
-        <mark key={key} className="bg-yellow-500/20 text-yellow-200 px-1 rounded">
-          {token.slice(2, -2)}
-        </mark>
-      );
-    } else if (token.startsWith('`')) {
-      nodes.push(
-        <code key={key} className="bg-urano-secondary px-1.5 py-0.5 rounded font-mono text-sm">
-          {token.slice(1, -1)}
-        </code>
-      );
+      const inner = token.slice(2, -2);
+      if (inner.trim().length === 0) {
+        nodes.push(token);
+      } else {
+        nodes.push(
+          <mark key={key} className="bg-yellow-500/20 text-yellow-200 px-1 rounded">
+            {inner}
+          </mark>
+        );
+      }
     } else if (token.startsWith('$')) {
       nodes.push(<InlineMath key={key} tex={token.slice(1, -1)} />);
     } else if (token.startsWith('*') || token.startsWith('_')) {
@@ -584,6 +751,7 @@ export interface ReadingViewProps {
   readableLineLength: boolean;
   strictLineBreaks: boolean;
   showIndentationGuides?: boolean;
+  propertiesInDocument?: 'visible' | 'hidden' | 'source';
   onWikilinkClick?: (noteName: string) => void;
   onTaskToggle?: (rawLineIndex: number, newChecked: boolean) => void;
   footerContent?: React.ReactNode;
@@ -596,24 +764,30 @@ export const ReadingView: React.FC<ReadingViewProps> = ({
   readableLineLength,
   strictLineBreaks,
   showIndentationGuides = true,
+  propertiesInDocument = 'visible',
   onWikilinkClick,
   onTaskToggle,
   footerContent,
 }) => {
+  const t = useT();
   const [copiedCodeKey, setCopiedCodeKey] = useState<string | null>(null);
 
   // 1. Parse YAML Frontmatter safely (keeps `---` if horizontal rule or unclosed)
-  const { frontmatter, body } = useMemo(
+  const { frontmatter, rawFrontmatter, body, bodyStartLineOffset } = useMemo(
     () => parseDocumentFrontmatter(content || ''),
     [content]
   );
 
-  // 2. Parse Markdown Blocks
-  const blocks = useMemo(() => parseMarkdownBlocks(body), [body]);
+  // 2. Parse Markdown Blocks using exact full-document line offset
+  const blocks = useMemo(
+    () => parseMarkdownBlocks(body, bodyStartLineOffset),
+    [body, bodyStartLineOffset]
+  );
 
+  const blockedLinkLabel = t('readingView.blockedLink');
   const ctx: InlineContext = useMemo(
-    () => ({ onWikilinkClick }),
-    [onWikilinkClick]
+    () => ({ onWikilinkClick, blockedLinkLabel }),
+    [onWikilinkClick, blockedLinkLabel]
   );
 
   const handleCopyCode = (code: string, key: string) => {
@@ -701,26 +875,53 @@ export const ReadingView: React.FC<ReadingViewProps> = ({
             </div>
           )}
 
-          {/* Frontmatter Metadata Container (if valid YAML exists) */}
-          {frontmatter && Object.keys(frontmatter).length > 0 && (
-            <div
-              className="metadata-container border border-urano-border rounded-lg p-3 mb-6 bg-urano-secondary/30 text-xs"
+          {/* Frontmatter Metadata Container (respecting propertiesInDocument) */}
+          {propertiesInDocument === 'source' && rawFrontmatter !== null ? (
+            <pre
+              className="metadata-source-block markdown-rendered-codeblock"
               data-page-preview-area="properties"
             >
-              <div className="text-[11px] font-semibold uppercase text-urano-muted tracking-wider mb-2">
-                Propiedades
+              <code>{`---\n${rawFrontmatter}\n---`}</code>
+            </pre>
+          ) : (
+            propertiesInDocument !== 'hidden' &&
+            frontmatter &&
+            Object.keys(frontmatter).length > 0 && (
+              <div
+                className="metadata-container border border-urano-border rounded-lg p-3 mb-6 bg-urano-secondary/30 text-xs"
+                data-page-preview-area="properties"
+              >
+                <div className="text-[11px] font-semibold uppercase text-urano-muted tracking-wider mb-2">
+                  {t('readingView.properties')}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {Object.entries(frontmatter).map(([k, v]) => (
+                    <div key={k} className="flex items-start gap-3">
+                      <span className="text-urano-muted font-medium w-28 shrink-0 truncate">
+                        {k}
+                      </span>
+                      <div className="text-urano-text font-mono flex flex-wrap gap-1 min-w-0">
+                        {Array.isArray(v)
+                          ? v.map((item, idx) => (
+                              <span key={`${k}-v${idx}`} className="metadata-property-pill">
+                                {renderInline(
+                                  String(item),
+                                  { ...ctx, linkContext: 'properties' },
+                                  `fm-${k}-${idx}`
+                                )}
+                              </span>
+                            ))
+                          : renderInline(
+                              String(v),
+                              { ...ctx, linkContext: 'properties' },
+                              `fm-${k}`
+                            )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-col gap-1.5">
-                {Object.entries(frontmatter).map(([k, v]) => (
-                  <div key={k} className="flex items-center gap-3">
-                    <span className="text-urano-muted font-medium w-28 truncate">{k}</span>
-                    <span className="text-urano-text font-mono truncate">
-                      {renderInline(String(v), { ...ctx, linkContext: 'properties' }, `fm-${k}`)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            )
           )}
 
           {/* Rendered Markdown Blocks */}
@@ -754,17 +955,17 @@ export const ReadingView: React.FC<ReadingViewProps> = ({
                       type="button"
                       onClick={() => handleCopyCode(block.code, key)}
                       className="copy-code-button absolute top-2 right-2 px-2 py-0.5 text-[11px] bg-urano-hover rounded text-urano-muted hover:text-white transition-opacity opacity-0 group-hover:opacity-100 flex items-center gap-1 cursor-pointer"
-                      title="Copiar código"
+                      title={t('codeBlock.copyCode')}
                     >
                       {copiedCodeKey === key ? (
                         <>
                           <Check size={12} className="text-green-400" />
-                          <span>Copiado</span>
+                          <span>{t('readingView.copied')}</span>
                         </>
                       ) : (
                         <>
                           <Copy size={12} />
-                          <span>Copiar</span>
+                          <span>{t('common.copy')}</span>
                         </>
                       )}
                     </button>
@@ -805,41 +1006,55 @@ export const ReadingView: React.FC<ReadingViewProps> = ({
                   </blockquote>
                 );
 
-              case 'list':
+              case 'list': {
+                const ListTag = block.ordered ? 'ol' : 'ul';
                 return (
-                  <ul
+                  <ListTag
                     key={key}
                     className={block.ordered ? 'markdown-rendered-ol' : 'markdown-rendered-ul'}
                   >
-                    {block.items.map((item, ii) => (
-                      <li
-                        key={`${key}-l${ii}`}
-                        className={`markdown-rendered-li flex items-start ${
-                          item.level > 0 ? 'is-nested-list-item' : ''
-                        }`}
-                        data-level={item.level}
-                        style={
-                          {
-                            paddingLeft: `${item.level * 20}px`,
-                            '--nest-level': item.level,
-                          } as React.CSSProperties
-                        }
-                      >
-                        {item.checked !== undefined ? (
-                          <input
-                            type="checkbox"
-                            checked={item.checked}
-                            onChange={(e) => onTaskToggle?.(item.rawLineIndex, e.target.checked)}
-                            className="task-list-item-checkbox mr-2 mt-1 cursor-pointer accent-orange-500 rounded"
-                          />
-                        ) : null}
-                        <span className={item.checked ? 'line-through text-urano-muted flex-1' : 'flex-1'}>
-                          {renderInline(item.text, ctx, `${key}-l${ii}`)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                    {block.items.map((item, ii) => {
+                      const isTask = item.checked !== undefined;
+                      const contentNodes = renderInline(item.text, ctx, `${key}-l${ii}`);
+                      return (
+                        <li
+                          key={`${key}-l${ii}`}
+                          className={`markdown-rendered-li ${
+                            isTask ? 'task-list-item' : ''
+                          } ${item.level > 0 ? 'is-nested-list-item' : ''}`}
+                          data-level={item.level}
+                          style={
+                            {
+                              marginLeft: item.level > 0 ? `${item.level * 20}px` : undefined,
+                              '--nest-level': item.level,
+                            } as React.CSSProperties
+                          }
+                        >
+                          {isTask ? (
+                            <span className="task-list-item-row">
+                              <input
+                                type="checkbox"
+                                checked={item.checked}
+                                onChange={(e) => onTaskToggle?.(item.rawLineIndex, e.target.checked)}
+                                className="task-list-item-checkbox mt-1 cursor-pointer accent-orange-500 rounded"
+                              />
+                              <span
+                                className={
+                                  item.checked ? 'line-through text-urano-muted flex-1' : 'flex-1'
+                                }
+                              >
+                                {contentNodes}
+                              </span>
+                            </span>
+                          ) : (
+                            contentNodes
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ListTag>
                 );
+              }
 
               case 'table':
                 return (
