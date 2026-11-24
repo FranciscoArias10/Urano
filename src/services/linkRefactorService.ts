@@ -65,9 +65,14 @@ export interface FileRenamedDetail {
   newBaseName: string;
 }
 
+export interface MovedFilePair {
+  oldPath: string;
+  newPath: string;
+}
+
 export const FILE_RENAMED_EVENT = 'urano-file-renamed';
 
-const normalizePath = (p: string) => p.replace(/\\/g, '/');
+const normalizePath = (p: string) => p.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/\/$/, '');
 
 export function splitPath(path: string): { dir: string; fileName: string; baseName: string; ext: string } {
   const normalized = normalizePath(path);
@@ -81,6 +86,70 @@ export function splitPath(path: string): { dir: string; fileName: string; baseNa
 }
 
 /**
+ * Computes exact character ranges `[from, to)` for fenced code blocks (```) and
+ * inline code spans (`...`) while preserving `\r\n` vs `\n` offsets verbatim.
+ */
+function collectCodeMaskRanges(text: string): [number, number][] {
+  const masked: [number, number][] = [];
+  let pos = 0;
+  let inFence = false;
+  let fenceStart = 0;
+
+  while (pos <= text.length) {
+    const nlIdx = text.indexOf('\n', pos);
+    const lineEnd = nlIdx === -1 ? text.length : nlIdx;
+    const rawLine = text.slice(pos, lineEnd);
+    const trimmed = rawLine.trim();
+
+    if (trimmed.startsWith('```')) {
+      if (!inFence) {
+        inFence = true;
+        fenceStart = pos;
+      } else {
+        inFence = false;
+        masked.push([fenceStart, lineEnd]);
+      }
+    } else if (!inFence) {
+      const inlineRe = /(?<!`)`([^`\r\n]+)`(?!`)/g;
+      let m: RegExpExecArray | null;
+      while ((m = inlineRe.exec(rawLine)) !== null) {
+        masked.push([pos + m.index, pos + m.index + m[0].length]);
+      }
+    }
+
+    if (nlIdx === -1) break;
+    pos = nlIdx + 1;
+  }
+
+  if (inFence) {
+    masked.push([fenceStart, text.length]);
+  }
+
+  return masked;
+}
+
+function isRangeMasked(from: number, to: number, masked: [number, number][]): boolean {
+  return masked.some(([mFrom, mTo]) => from < mTo && to > mFrom);
+}
+
+/**
+ * Separates optional Markdown link title or angle brackets (e.g. `<Sub/Nota Dos.md> "Title"`)
+ * into the bare target portion and the preserved suffix (title + closing punctuation).
+ */
+function splitMarkdownTargetAndSuffix(rawAfterParen: string): {
+  rawTarget: string;
+  trailingTitle: string;
+} | null {
+  const match = rawAfterParen.match(/^(\s*(?:<[^>]+>|[^\s)]+))([\s\S]*)$/);
+  if (!match) return null;
+  let target = match[1].trim();
+  if (target.startsWith('<') && target.endsWith('>')) {
+    target = target.slice(1, -1).trim();
+  }
+  return { rawTarget: target, trailingTitle: match[2] };
+}
+
+/**
  * Given a link target (e.g. `folder/oldName.png`, `oldName`), returns the
  * replacement target when it points to `oldPath`, or null if unrelated.
  * Mirrors Urano: a target written without extension stays without it for
@@ -90,10 +159,16 @@ function resolveReplacementTarget(
   rawTarget: string,
   oldPath: string,
   newPath: string,
-  isMarkdownLink = false
+  isMarkdownLink = false,
+  vaultRoot?: string
 ): string | null {
   const trimmed = rawTarget.trim();
-  if (!trimmed || /^[a-z][a-z0-9+.-]*:/i.test(trimmed)) {
+  if (
+    !trimmed ||
+    trimmed.startsWith('#') ||
+    trimmed.startsWith('//') ||
+    /^[a-z][a-z0-9+.-]*:/i.test(trimmed)
+  ) {
     return null;
   }
 
@@ -137,6 +212,18 @@ function resolveReplacementTarget(
 
     if (lowerOldDir === lowerNewDir) {
       nextDirPrefix = `${targetDir}/`;
+    } else if (vaultRoot) {
+      const normRoot = normalizePath(vaultRoot);
+      const lowerRoot = normRoot.toLowerCase();
+      if (lowerNewDir === lowerRoot) {
+        nextDirPrefix = '';
+      } else if (lowerNewDir.startsWith(`${lowerRoot}/`)) {
+        const relNew = newDir.slice(normRoot.length).replace(/^\/+/, '');
+        nextDirPrefix = relNew ? `${relNew}/` : '';
+      } else {
+        const newDirName = newDir.split('/').filter(Boolean).pop() || '';
+        nextDirPrefix = newDirName ? `${newDirName}/` : '';
+      }
     } else {
       const rootPrefixLen = oldDir.length - lowerTargetDir.length;
       const rootPrefix = oldDir.slice(0, rootPrefixLen).replace(/\/+$/, '');
@@ -147,6 +234,9 @@ function resolveReplacementTarget(
       ) {
         const relNewDir = newDir.slice(rootPrefix.length).replace(/^\/+/, '');
         nextDirPrefix = relNewDir ? `${relNewDir}/` : '';
+      } else if (lowerNewDir && lowerOldDir.startsWith(`${lowerNewDir}/`)) {
+        // Moved up into an ancestor directory (e.g. vault root)
+        nextDirPrefix = '';
       } else {
         const newDirName = newDir.split('/').filter(Boolean).pop() || '';
         nextDirPrefix = newDirName ? `${newDirName}/` : '';
@@ -165,36 +255,55 @@ function resolveReplacementTarget(
 /**
  * Finds every wikilink / embed / markdown link that points to `oldPath` and
  * returns the exact ranges to replace. Aliases (`|Alias`), dimensions (`|300`)
- * and heading anchors (`#heading`) are preserved untouched.
+ * and heading anchors (`#heading`) are preserved untouched, and code spans/blocks are skipped.
  */
-export function findLinkReplacements(text: string, oldPath: string, newPath: string): LinkReplacement[] {
+export function findLinkReplacements(
+  text: string,
+  oldPath: string,
+  newPath: string,
+  vaultRoot?: string
+): LinkReplacement[] {
   const replacements: LinkReplacement[] = [];
+  const maskedRanges = collectCodeMaskRanges(text);
 
   // 1. Wikilinks & Embeds: [[target]] / ![[target]] / ![[target|300]] / [[target#head|alias]]
   const wikilinkRegex = /(!?\[\[)([^\]|#]+)(.*?)(\]\])/g;
   let m: RegExpExecArray | null;
   while ((m = wikilinkRegex.exec(text)) !== null) {
-    const [full, prefix, rawTarget, rest, suffix] = m;
-    const replacement = resolveReplacementTarget(rawTarget, oldPath, newPath, false);
+    const from = m.index;
+    const to = from + m[0].length;
+    if (isRangeMasked(from, to, maskedRanges)) continue;
+    const [, prefix, rawTarget, rest, suffix] = m;
+    const replacement = resolveReplacementTarget(rawTarget, oldPath, newPath, false, vaultRoot);
     if (replacement === null) continue;
-    replacements.push({
-      from: m.index,
-      to: m.index + full.length,
-      insert: `${prefix}${replacement}${rest}${suffix}`,
-    });
+    const insert = `${prefix}${replacement}${rest}${suffix}`;
+    if (insert === m[0]) continue;
+    replacements.push({ from, to, insert });
   }
 
-  // 2. Standard markdown links: [alias](target) / ![alt](target)
+  // 2. Standard markdown links: [alias](target) / ![alt](target "title")
   const mdLinkRegex = /(!?\[[^\]]*\]\()([^)#]+)(.*?\))/g;
   while ((m = mdLinkRegex.exec(text)) !== null) {
-    const [full, prefix, rawTarget, rest] = m;
-    const replacement = resolveReplacementTarget(rawTarget, oldPath, newPath, true);
+    const from = m.index;
+    const to = from + m[0].length;
+    if (isRangeMasked(from, to, maskedRanges)) continue;
+    const [, prefix, rawTargetGroup, rest] = m;
+    const parsedTarget = splitMarkdownTargetAndSuffix(rawTargetGroup);
+    if (!parsedTarget) continue;
+    const replacement = resolveReplacementTarget(
+      parsedTarget.rawTarget,
+      oldPath,
+      newPath,
+      true,
+      vaultRoot
+    );
     if (replacement === null) continue;
-    replacements.push({
-      from: m.index,
-      to: m.index + full.length,
-      insert: `${prefix}${replacement}${rest}`,
-    });
+    const wrappedReplacement = rawTargetGroup.trimStart().startsWith('<')
+      ? `<${replacement}>`
+      : replacement;
+    const insert = `${prefix}${wrappedReplacement}${parsedTarget.trailingTitle}${rest}`;
+    if (insert === m[0]) continue;
+    replacements.push({ from, to, insert });
   }
 
   // Sort and drop overlaps (keep the earliest match)
@@ -228,9 +337,10 @@ export function applyReplacements(text: string, replacements: LinkReplacement[])
 export function replaceLinksInMarkdown(
   text: string,
   oldPath: string,
-  newPath: string
+  newPath: string,
+  vaultRoot?: string
 ): { updatedText: string; count: number } {
-  const replacements = findLinkReplacements(text, oldPath, newPath);
+  const replacements = findLinkReplacements(text, oldPath, newPath, vaultRoot);
   return { updatedText: applyReplacements(text, replacements), count: replacements.length };
 }
 
@@ -240,7 +350,8 @@ export function replaceLinksInMarkdown(
 export function replaceLinksInCanvas(
   content: string,
   oldPath: string,
-  newPath: string
+  newPath: string,
+  vaultRoot?: string
 ): { updatedContent: string; count: number } {
   try {
     const canvasObj = JSON.parse(content);
@@ -250,14 +361,20 @@ export function replaceLinksInCanvas(
     if (Array.isArray(canvasObj.nodes)) {
       for (const node of canvasObj.nodes) {
         if (node.type === 'file' && typeof node.file === 'string') {
-          const replacement = resolveReplacementTarget(node.file, oldPath, newPath, false);
+          const replacement = resolveReplacementTarget(
+            node.file,
+            oldPath,
+            newPath,
+            false,
+            vaultRoot
+          );
           if (replacement !== null && replacement !== node.file) {
             node.file = replacement;
             count++;
             changed = true;
           }
         } else if (node.type === 'text' && typeof node.text === 'string') {
-          const res = replaceLinksInMarkdown(node.text, oldPath, newPath);
+          const res = replaceLinksInMarkdown(node.text, oldPath, newPath, vaultRoot);
           if (res.count > 0) {
             node.text = res.updatedText;
             count += res.count;
@@ -276,20 +393,14 @@ export function replaceLinksInCanvas(
     return { updatedContent: content, count: 0 };
   } catch {
     // Fallback if not valid JSON
-    const res = replaceLinksInMarkdown(content, oldPath, newPath);
+    const res = replaceLinksInMarkdown(content, oldPath, newPath, vaultRoot);
     return { updatedContent: res.updatedText, count: res.count };
   }
 }
 
-/**
- * Scans the entire vault (all .md and .canvas files) for backlinks/embeds pointing to oldPath.
- * Returns exact counts: totalLinks and totalFiles, plus prepared changes.
- */
-export async function scanAffectedLinks(
-  vaultPath: string,
-  oldPath: string,
-  newPath: string
-): Promise<LinkScanResult> {
+async function readAllVaultNotesWithUnsavedEdits(
+  vaultPath: string
+): Promise<Record<string, string>> {
   let notesMap: Record<string, string> = {};
 
   try {
@@ -303,39 +414,50 @@ export async function scanAffectedLinks(
 
   // The active note may hold unsaved edits: scan what the user actually sees.
   const { activeFile, fileContent, isDirty } = useVaultStore.getState();
-  if (activeFile && isDirty && Object.prototype.hasOwnProperty.call(notesMap, activeFile)) {
-    notesMap = { ...notesMap, [activeFile]: fileContent };
+  if (activeFile && isDirty) {
+    const normActive = normalizePath(activeFile).toLowerCase();
+    const existingKey = Object.keys(notesMap).find(
+      (k) => normalizePath(k).toLowerCase() === normActive
+    );
+    notesMap = { ...notesMap, [existingKey || activeFile]: fileContent };
   }
 
+  return notesMap;
+}
+
+/**
+ * Scans the entire vault (all .md and .canvas files) for backlinks/embeds pointing to `oldPath`.
+ * Returns exact counts: totalLinks and totalFiles, plus prepared changes.
+ */
+export async function scanAffectedLinks(
+  vaultPath: string,
+  oldPath: string,
+  newPath: string
+): Promise<LinkScanResult> {
+  const notesMap = await readAllVaultNotesWithUnsavedEdits(vaultPath);
   const changes: AffectedFileChange[] = [];
   let totalLinks = 0;
-  const normOld = normalizePath(oldPath);
+  const normOld = normalizePath(oldPath).toLowerCase();
 
   for (const [filePath, content] of Object.entries(notesMap)) {
-    // Skip scanning the file itself
-    if (normalizePath(filePath) === normOld) {
+    if (normalizePath(filePath).toLowerCase() === normOld) {
       continue;
     }
 
     const isCanvas = filePath.toLowerCase().endsWith('.canvas');
-    let updatedContent: string;
-    let count: number;
-    if (isCanvas) {
-      const c = replaceLinksInCanvas(content, oldPath, newPath);
-      updatedContent = c.updatedContent;
-      count = c.count;
-    } else {
-      const r = replaceLinksInMarkdown(content, oldPath, newPath);
-      updatedContent = r.updatedText;
-      count = r.count;
-    }
+    const { updatedText, count } = isCanvas
+      ? (() => {
+          const c = replaceLinksInCanvas(content, oldPath, newPath, vaultPath);
+          return { updatedText: c.updatedContent, count: c.count };
+        })()
+      : replaceLinksInMarkdown(content, oldPath, newPath, vaultPath);
 
-    if (count > 0 && updatedContent !== content) {
+    if (count > 0 && updatedText !== content) {
       totalLinks += count;
       changes.push({
         filePath,
         originalContent: content,
-        newContent: updatedContent,
+        newContent: updatedText,
         count,
       });
     }
@@ -349,16 +471,115 @@ export async function scanAffectedLinks(
 }
 
 /**
+ * Scans links across the vault after renaming/moving a folder containing multiple files.
+ * Applies all moved-file pair replacements sequentially per note so notes linking to multiple
+ * moved files get all links updated together.
+ */
+export async function scanFolderLinkRefactor(
+  vaultPath: string,
+  filePairs: MovedFilePair[],
+  remapMovedFilePath?: (oldFilePath: string) => string | null
+): Promise<LinkScanResult> {
+  if (filePairs.length === 0) {
+    return { totalLinks: 0, totalFiles: 0, changes: [] };
+  }
+
+  const notesMap = await readAllVaultNotesWithUnsavedEdits(vaultPath);
+  const changes: AffectedFileChange[] = [];
+  let totalLinks = 0;
+
+  for (const [rawFilePath, originalContent] of Object.entries(notesMap)) {
+    const targetFilePath = remapMovedFilePath?.(rawFilePath) ?? rawFilePath;
+    const isCanvas = targetFilePath.toLowerCase().endsWith('.canvas');
+    let workingContent = originalContent;
+    let fileCount = 0;
+
+    for (const pair of filePairs) {
+      if (isCanvas) {
+        const res = replaceLinksInCanvas(workingContent, pair.oldPath, pair.newPath, vaultPath);
+        workingContent = res.updatedContent;
+        fileCount += res.count;
+      } else {
+        const res = replaceLinksInMarkdown(workingContent, pair.oldPath, pair.newPath, vaultPath);
+        workingContent = res.updatedText;
+        fileCount += res.count;
+      }
+    }
+
+    if (fileCount > 0 && workingContent !== originalContent) {
+      totalLinks += fileCount;
+      changes.push({
+        filePath: targetFilePath,
+        originalContent,
+        newContent: workingContent,
+        count: fileCount,
+      });
+    }
+  }
+
+  return {
+    totalLinks,
+    totalFiles: changes.length,
+    changes,
+  };
+}
+
+/**
+ * Applies precomputed link changes to disk, `notesContentMap`, and live CodeMirror 6 if active.
+ */
+export async function applyLinkChanges(
+  changes: AffectedFileChange[],
+  liveReplacementPairs?: MovedFilePair[]
+): Promise<void> {
+  if (changes.length === 0) return;
+
+  const { activeFile, activeVault, notesContentMap } = useVaultStore.getState();
+  const updatedMap = { ...notesContentMap };
+  const normActive = activeFile ? normalizePath(activeFile).toLowerCase() : null;
+  const vaultRoot = activeVault || undefined;
+
+  for (const change of changes) {
+    try {
+      let contentToWrite = change.newContent;
+      const isActiveNote =
+        normActive !== null && normActive === normalizePath(change.filePath).toLowerCase();
+
+      if (isActiveNote && !change.filePath.toLowerCase().endsWith('.canvas')) {
+        const view = getActiveEditorView();
+        if (view && liveReplacementPairs?.length) {
+          for (const pair of liveReplacementPairs) {
+            const liveDoc = view.state.doc.toString();
+            const ranges = findLinkReplacements(liveDoc, pair.oldPath, pair.newPath, vaultRoot);
+            if (ranges.length > 0) {
+              view.dispatch({ changes: ranges });
+            }
+          }
+          contentToWrite = view.state.doc.toString();
+        }
+        useVaultStore.setState({ fileContent: contentToWrite, isDirty: false });
+      }
+
+      await invoke('write_file', { filePath: change.filePath, content: contentToWrite });
+      updatedMap[change.filePath] = contentToWrite;
+    } catch (err) {
+      console.error(`Error updating links in ${change.filePath}:`, err);
+    }
+  }
+
+  useVaultStore.setState({ notesContentMap: updatedMap });
+}
+
+/**
  * Returns a copy of the file tree where the item at `oldPath` is renamed to `newPath`.
  * Lets the sidebar, breadcrumbs and image resolver see the new name instantly,
  * before the asynchronous `refreshTree()` round-trip completes.
  */
 export function renameInFileTree(tree: FileItem[], oldPath: string, newPath: string): FileItem[] {
-  const normOld = normalizePath(oldPath);
+  const normOld = normalizePath(oldPath).toLowerCase();
   const { fileName } = splitPath(newPath);
   const walk = (items: FileItem[]): FileItem[] =>
     items.map((item) => {
-      if (normalizePath(item.path) === normOld) {
+      if (normalizePath(item.path).toLowerCase() === normOld) {
         return { ...item, path: newPath, name: fileName };
       }
       if (item.children && item.children.length > 0) {
@@ -385,9 +606,15 @@ async function applyPhysicalRename(oldPath: string, newPath: string): Promise<vo
   // 3. Patch in-memory state synchronously (tree, content map, active file)
   const { activeFile, notesContentMap, fileTree } = useVaultStore.getState();
   const updatedMap = { ...notesContentMap };
-  if (Object.prototype.hasOwnProperty.call(updatedMap, oldPath)) {
-    updatedMap[newPath] = updatedMap[oldPath];
-    delete updatedMap[oldPath];
+  const normOld = normalizePath(oldPath).toLowerCase();
+  const matchedKey = Object.keys(updatedMap).find(
+    (k) => normalizePath(k).toLowerCase() === normOld
+  );
+  if (matchedKey) {
+    updatedMap[newPath] = updatedMap[matchedKey];
+    if (matchedKey !== newPath) {
+      delete updatedMap[matchedKey];
+    }
   }
 
   // Tabs/breadcrumbs listen to this event. Dispatch BEFORE re-pointing activeFile so
@@ -395,7 +622,7 @@ async function applyPhysicalRename(oldPath: string, newPath: string): Promise<vo
   const detail: FileRenamedDetail = { oldPath, newPath, newFileName, newBaseName };
   window.dispatchEvent(new CustomEvent<FileRenamedDetail>(FILE_RENAMED_EVENT, { detail }));
 
-  const isActive = !!activeFile && normalizePath(activeFile) === normalizePath(oldPath);
+  const isActive = !!activeFile && normalizePath(activeFile).toLowerCase() === normOld;
   useVaultStore.setState({
     fileTree: renameInFileTree(fileTree, oldPath, newPath),
     notesContentMap: updatedMap,
@@ -413,41 +640,7 @@ export async function executeLinkRefactor(
   newPath: string
 ): Promise<void> {
   await applyPhysicalRename(oldPath, newPath);
-
-  const { activeFile, notesContentMap } = useVaultStore.getState();
-  const updatedMap = { ...notesContentMap };
-  const normActive = activeFile ? normalizePath(activeFile) : null;
-
-  for (const change of plan.changes) {
-    try {
-      let contentToWrite = change.newContent;
-      const isActiveNote = normActive !== null && normActive === normalizePath(change.filePath);
-
-      // Live update of the open CodeMirror 6 document: replace only the link ranges,
-      // so cursor, scroll position and undo history survive.
-      if (isActiveNote && !change.filePath.toLowerCase().endsWith('.canvas')) {
-        const view = getActiveEditorView();
-        if (view) {
-          const liveDoc = view.state.doc.toString();
-          const ranges = findLinkReplacements(liveDoc, oldPath, newPath);
-          if (ranges.length > 0) {
-            view.dispatch({ changes: ranges });
-          }
-          contentToWrite = view.state.doc.toString();
-        }
-        useVaultStore.setState({ fileContent: contentToWrite, isDirty: false });
-      }
-
-      await invoke('write_file', { filePath: change.filePath, content: contentToWrite });
-      updatedMap[change.filePath] = contentToWrite;
-    } catch (err) {
-      console.error(`Error updating links in ${change.filePath}:`, err);
-    }
-  }
-
-  useVaultStore.setState({ notesContentMap: updatedMap });
-
-  // Sync sidebar with disk (sizes, mtimes, sort order)
+  await applyLinkChanges(plan.changes, [{ oldPath, newPath }]);
   await useVaultStore.getState().refreshTree();
 }
 
