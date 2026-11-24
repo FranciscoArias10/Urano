@@ -2,15 +2,19 @@ import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { FileItem, SortOrder, BookmarkItem } from '../types';
 import { isImagePath } from '../services/storageAdapter';
+import { renameImageInCache } from '../editor/imageExtension';
 import { useSettingsStore, resolveNewFileDir, resolveNewCanvasDir } from './settingsStore';
 import { useSyncStore } from './syncStore';
 import { useNoticeStore } from '../components/common/Notice';
 import { t } from '../locales/i18n';
 import {
   scanAffectedLinks,
+  scanFolderLinkRefactor,
+  applyLinkChanges,
   executeLinkRefactor,
   executeFileRenameOnly,
   LinkScanResult,
+  MovedFilePair,
   setAlwaysUpdateLinksPref,
   FILE_RENAMED_EVENT,
   FileRenamedDetail,
@@ -19,6 +23,8 @@ import {
   normalizePath,
   isSamePath,
   resolveFilePathInVault,
+  resolveVaultLinkTarget,
+  parseLinkTargetParts,
   getRelativeVaultPath,
 } from '../utils/pathUtils';
 import { useLocaleStore } from './localeStore';
@@ -33,6 +39,44 @@ const triggerAutoSync = (vaultPath?: string | null, vaultName?: string | null) =
     useSyncStore.getState().notifyVaultChanged(vaultPath, vaultName || undefined);
   }
 };
+
+function findTreeItemByPath(items: FileItem[], targetPath: string): FileItem | null {
+  const normTarget = normalizePath(targetPath).toLowerCase();
+  for (const item of items) {
+    if (normalizePath(item.path).toLowerCase() === normTarget) {
+      return item;
+    }
+    if (item.children?.length) {
+      const found = findTreeItemByPath(item.children, targetPath);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function buildMovedFilePairs(
+  fileTree: FileItem[],
+  oldPath: string,
+  newPath: string
+): MovedFilePair[] {
+  const item = findTreeItemByPath(fileTree, oldPath);
+  if (item?.isDir) {
+    const pairs: MovedFilePair[] = [];
+    const walkChildren = (nodes: FileItem[]) => {
+      for (const node of nodes) {
+        if (node.isDir) {
+          if (node.children?.length) walkChildren(node.children);
+        } else {
+          const remapped = remapPathPrefix(node.path, oldPath, newPath);
+          if (remapped) pairs.push({ oldPath: node.path, newPath: remapped });
+        }
+      }
+    };
+    walkChildren(item.children || []);
+    return pairs;
+  }
+  return [{ oldPath, newPath: normalizePath(newPath) }];
+}
 
 function findFileInTreeByPath(items: FileItem[], targetPath: string): string | null {
   for (const item of items) {
@@ -934,16 +978,27 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
   createNote: async (parentPath: string, name: string): Promise<string> => {
     const { activeVault, activeFile } = get();
-    let targetDir = parentPath;
-    if (activeVault && (!targetDir || targetDir === activeVault)) {
-      targetDir = resolveNewFileDir(activeVault, activeFile);
+    const cleanInput = normalizePath(name).replace(/^\/+/, '');
+    const cleanName = /\.(md|markdown|canvas|base)$/i.test(cleanInput)
+      ? cleanInput
+      : `${cleanInput}.md`;
+
+    let targetDir = normalizePath(parentPath);
+    if (
+      activeVault &&
+      (!targetDir || isSamePath(targetDir, activeVault)) &&
+      !cleanInput.includes('/')
+    ) {
+      targetDir = normalizePath(resolveNewFileDir(activeVault, activeFile));
     }
-    if (activeVault && targetDir && targetDir !== activeVault) {
+
+    const normVault = activeVault ? normalizePath(activeVault) : '';
+    if (targetDir && (!normVault || !isSamePath(targetDir, normVault))) {
       try {
         await invoke('create_folder', { folderPath: targetDir });
       } catch {}
     }
-    const cleanName = name.endsWith('.md') ? name : `${name}.md`;
+
     const fullPath = `${targetDir}/${cleanName}`.replace(/\/+/g, '/');
     await invoke('create_file', { filePath: fullPath });
     await get().refreshTree();
@@ -1251,7 +1306,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     return '';
   },
 
-  // Move item (drag and drop into folder)
+  // Move item (drag and drop into folder or Move File menu action)
   moveItem: async (sourcePath: string, targetFolderPath: string) => {
     const normSource = normalizePath(sourcePath);
     const normTargetDir = normalizePath(targetFolderPath);
@@ -1259,11 +1314,35 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     const newPath = `${normTargetDir}/${fileName}`.replace(/\/+/g, '/');
     if (isSamePath(normSource, newPath)) return;
 
+    const { fileTree, activeFile, notesContentMap, activeVault, vaultName } = get();
+    const collision = findTreeItemByPath(fileTree, newPath);
+    if (collision && normalizePath(collision.path).toLowerCase() === newPath.toLowerCase()) {
+      throw new Error(t('vault.errors.nameExists'));
+    }
+
+    const movedPairs = buildMovedFilePairs(fileTree, sourcePath, newPath);
+    const alwaysUpdate = useSettingsStore.getState().settings.alwaysUpdateLinks;
+    const scanResult =
+      activeVault && alwaysUpdate && movedPairs.length > 0
+        ? await scanFolderLinkRefactor(activeVault, movedPairs, (fp) =>
+            remapPathPrefix(fp, sourcePath, newPath)
+          )
+        : null;
+
     await invoke('rename_item', { oldPath: sourcePath, newPath });
-    const { fileTree, activeFile, notesContentMap } = get();
+    for (const pair of movedPairs) {
+      renameImageInCache(pair.oldPath, pair.newPath);
+    }
+
     set(buildPrefixRenamePatch(sourcePath, newPath, fileTree, activeFile, notesContentMap));
+
+    if (scanResult && scanResult.changes.length > 0) {
+      await applyLinkChanges(scanResult.changes, movedPairs);
+      notifyLinksUpdated(scanResult);
+    }
+
     await get().refreshTree();
-    triggerAutoSync(get().activeVault, get().vaultName);
+    triggerAutoSync(activeVault, vaultName);
   },
 
   // Urano prompt-free folder creation
@@ -1554,49 +1633,57 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   },
 
   renameItem: async (oldPath: string, newPath: string) => {
+    const { fileTree, activeFile, notesContentMap, activeVault, vaultName } = get();
+    const movedPairs = buildMovedFilePairs(fileTree, oldPath, newPath);
+    const alwaysUpdate = useSettingsStore.getState().settings.alwaysUpdateLinks;
+    const scanResult =
+      activeVault && alwaysUpdate && movedPairs.length > 0
+        ? await scanFolderLinkRefactor(activeVault, movedPairs, (fp) =>
+            remapPathPrefix(fp, oldPath, newPath)
+          )
+        : null;
+
     await invoke('rename_item', { oldPath, newPath });
-    const { fileTree, activeFile, notesContentMap } = get();
+    for (const pair of movedPairs) {
+      renameImageInCache(pair.oldPath, pair.newPath);
+    }
+
     set(buildPrefixRenamePatch(oldPath, newPath, fileTree, activeFile, notesContentMap));
+
+    if (scanResult && scanResult.changes.length > 0) {
+      await applyLinkChanges(scanResult.changes, movedPairs);
+      notifyLinksUpdated(scanResult);
+    }
+
     await get().refreshTree();
-    triggerAutoSync(get().activeVault, get().vaultName);
+    triggerAutoSync(activeVault, vaultName);
   },
 
   openOrCreateWikilink: async (noteName: string): Promise<string> => {
     const { activeVault, fileTree, selectFile, createNote } = get();
-    if (!activeVault) return '';
+    if (!activeVault || !noteName || !noteName.trim()) return '';
 
-    const findNote = (items: FileItem[]): string | null => {
-      for (const item of items) {
-        if (!item.isDir) {
-          const nameWithoutExt = item.name.replace(/\.(md|canvas|base)$/i, '');
-          if (
-            nameWithoutExt.toLowerCase() === noteName.toLowerCase() ||
-            item.name.toLowerCase() === noteName.toLowerCase()
-          ) {
-            return item.path;
-          }
-        } else if (item.children) {
-          const found = findNote(item.children);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
+    const { targetPath, isExternalUrl } = parseLinkTargetParts(noteName);
+    if (!targetPath || isExternalUrl) return '';
 
-    const existingPath = findNote(fileTree);
+    const existingPath = resolveVaultLinkTarget(noteName, fileTree, activeVault);
     if (existingPath) {
       await selectFile(existingPath);
       return existingPath;
-    } else {
-      const isBase = noteName.toLowerCase().endsWith('.base');
-      const isCanvas = noteName.toLowerCase().endsWith('.canvas');
-      const fileName = isBase || isCanvas || noteName.toLowerCase().endsWith('.md')
-        ? noteName
-        : `${noteName}.md`;
-      const newPath = await createNote(activeVault, fileName);
-      await selectFile(newPath);
-      return newPath;
     }
+
+    const normVault = normalizePath(activeVault);
+    let relTarget = targetPath;
+    if (relTarget.toLowerCase().startsWith(`${normVault.toLowerCase()}/`)) {
+      relTarget = relTarget.slice(normVault.length + 1);
+    }
+    relTarget = relTarget.replace(/^(\.\/)+/, '').replace(/^\/+/, '');
+    if (!relTarget || /^[a-zA-Z]:[/\\]?$/.test(relTarget)) return '';
+
+    const fileName = /\.(md|markdown|canvas|base)$/i.test(relTarget)
+      ? relTarget
+      : `${relTarget}.md`;
+    return createNote(activeVault, fileName);
   },
 
   getUnresolvedLinks: () => {
