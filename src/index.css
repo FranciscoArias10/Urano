@@ -3245,6 +3245,29 @@ body.is-translucent aside.bg-urano-sidebar {
   visibility: visible;
 }
 
+.markdown-rendered li.task-list-item,
+.markdown-preview-view li.task-list-item {
+  list-style-type: none;
+}
+
+.markdown-rendered .task-list-item-row,
+.markdown-preview-view .task-list-item-row {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.metadata-property-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+  font-size: 11px;
+}
+
 .markdown-rendered blockquote, .markdown-preview-view blockquote {
   border-left: 3px solid var(--interactive-accent);
   padding: 6px 14px;
