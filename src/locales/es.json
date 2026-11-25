@@ -771,6 +771,7 @@
     "defaultName": "Base de datos",
     "indexedNotes": "{shown} de {total} notas indexadas",
     "filterPlaceholder": "Filtrar por nombre, carpeta o etiqueta...",
+    "loadError": "No se pudo leer el archivo .base (JSON inválido o ilegible).",
     "newNote": "Nueva nota",
     "noResults": "No se encontraron notas que coincidan con la búsqueda.",
     "columns": {
@@ -1158,7 +1159,17 @@
     "stats": "({notes} notas, {links} enlaces)",
     "zoomIn": "Acercar",
     "zoomOut": "Alejar",
-    "resetView": "Restablecer vista"
+    "resetView": "Restablecer vista",
+    "filters": "Filtros",
+    "search": "Buscar...",
+    "tags": "Etiquetas",
+    "attachments": "Archivos adjuntos",
+    "orphans": "Nodos huérfanos",
+    "settings": "Ajustes del grafo",
+    "repel": "Fuerza de repulsión",
+    "linkDistance": "Distancia de enlace",
+    "nodeSize": "Tamaño de nodo",
+    "linkWidth": "Grosor de línea"
   },
   "header": {
     "selectVaultFolder": "Seleccionar carpeta de bóveda para Urano",

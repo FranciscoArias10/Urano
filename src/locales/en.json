@@ -771,6 +771,7 @@
     "defaultName": "Database",
     "indexedNotes": "{shown} of {total} indexed notes",
     "filterPlaceholder": "Filter by name, folder or tag...",
+    "loadError": "Could not read the .base file (invalid JSON or unreadable).",
     "newNote": "New note",
     "noResults": "No notes match your search.",
     "columns": {
@@ -1158,7 +1159,17 @@
     "stats": "({notes} notes, {links} links)",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
-    "resetView": "Reset view"
+    "resetView": "Reset view",
+    "filters": "Filters",
+    "search": "Search...",
+    "tags": "Tags",
+    "attachments": "Attachments",
+    "orphans": "Orphan nodes",
+    "settings": "Graph settings",
+    "repel": "Repel force",
+    "linkDistance": "Link distance",
+    "nodeSize": "Node size",
+    "linkWidth": "Link thickness"
   },
   "header": {
     "selectVaultFolder": "Select vault folder for Urano",
