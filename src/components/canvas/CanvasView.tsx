@@ -59,6 +59,7 @@ import {
 import { isSamePath } from '../../utils/pathUtils';
 import {
   appendNodeWithPendingEdge,
+  isCanvasNodeEditable,
   parseCanvasContent,
   resolveCanvasVaultFile,
   resolveContextMenuSelection,
@@ -767,6 +768,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   // Aplica uno de los 6 colores del Canvas a un nodo (botón "Color").
   const handleSetNodeColor = useCallback(
     (nodeId: string, colorKey?: string) => {
+      if (readonlyRef.current) return;
       applyChange((prev) => ({
         ...prev,
         nodes: prev.nodes.map((n) => {
@@ -777,6 +779,27 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       }));
     },
     [applyChange]
+  );
+
+  const handleBeginColorPreview = useCallback(() => {
+    if (readonlyRef.current) return;
+    pushHistory(canvasDataRef.current);
+  }, [pushHistory]);
+
+  const handlePreviewNodeColor = useCallback(
+    (nodeId: string, colorKey?: string) => {
+      if (readonlyRef.current) return;
+      const prev = canvasDataRef.current;
+      persistCanvas({
+        ...prev,
+        nodes: prev.nodes.map((n) => {
+          if (n.id !== nodeId) return n;
+          const { color: _oldColor, ...rest } = n;
+          return colorKey ? { ...rest, color: colorKey } : rest;
+        }),
+      });
+    },
+    [persistCanvas]
   );
 
   // Reset zoom to 100%
@@ -1830,6 +1853,61 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     }
   };
 
+  // Libera cualquier arrastre activo si el botón del ratón se suelta fuera del lienzo
+  const isAnyPointerDragActive =
+    isPanning ||
+    draggingNodeId !== null ||
+    resizingHandle !== null ||
+    selectionBox !== null ||
+    connectingFrom !== null;
+
+  useEffect(() => {
+    if (!isAnyPointerDragActive) return;
+    const onWindowMouseUp = (ev: MouseEvent) => {
+      if (containerRef.current && containerRef.current.contains(ev.target as Node)) {
+        return;
+      }
+      setSnapGuides(null);
+      ctrlDragMenuRef.current = null;
+      if (isPanning) setIsPanning(false);
+      if (selectionBox) setSelectionBox(null);
+      if (draggingNodeId) {
+        const moved = dragMovedRef.current;
+        dragMovedRef.current = false;
+        setDraggingNodeId(null);
+        if (moved) {
+          if (dragOriginDataRef.current) pushHistory(dragOriginDataRef.current);
+          persistCanvas(canvasDataRef.current);
+        }
+        dragOriginDataRef.current = null;
+      }
+      if (resizingHandle) {
+        setResizingHandle(null);
+        resizeStartNodeRef.current = null;
+        if (resizeOriginDataRef.current) {
+          pushHistory(resizeOriginDataRef.current);
+          resizeOriginDataRef.current = null;
+        }
+        persistCanvas(canvasDataRef.current);
+      }
+      if (connectingFrom) {
+        setConnectingFrom(null);
+        setConnectingMouseWorld(null);
+      }
+    };
+    window.addEventListener('mouseup', onWindowMouseUp);
+    return () => window.removeEventListener('mouseup', onWindowMouseUp);
+  }, [
+    isAnyPointerDragActive,
+    isPanning,
+    selectionBox,
+    draggingNodeId,
+    resizingHandle,
+    connectingFrom,
+    pushHistory,
+    persistCanvas,
+  ]);
+
   // Node Drag Initiation
   const handleStartDragNode = (node: CanvasNode, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -2147,12 +2225,15 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         return;
       }
 
-      items.push(
-        {
+      if (isCanvasNodeEditable(clickedNode)) {
+        items.push({
           title: t('common.edit'),
           icon: <Edit2 size={14} />,
           action: () => setEditingNodeId(clickedNode.id),
-        },
+        });
+      }
+
+      items.push(
         {
           title: t('canvas.menu.color'),
           icon: <Palette size={14} />,
@@ -2383,12 +2464,26 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
           edge={selectedEdge}
           position={floatingMenuPos}
           onDelete={deleteSelected}
+          onBeginColorPreview={handleBeginColorPreview}
+          onPreviewColor={(colorKey) => {
+            const prev = canvasDataRef.current;
+            persistCanvas({
+              ...prev,
+              edges: prev.edges.map((e) => {
+                if (e.id !== selectedEdge.id) return e;
+                const { color: _old, ...rest } = e;
+                return colorKey ? { ...rest, color: colorKey } : rest;
+              }),
+            });
+          }}
           onSetColor={(colorKey) => {
             applyChange((prev) => ({
               ...prev,
-              edges: prev.edges.map((e) =>
-                e.id === selectedEdge.id ? { ...e, color: colorKey } : e
-              ),
+              edges: prev.edges.map((e) => {
+                if (e.id !== selectedEdge.id) return e;
+                const { color: _old, ...rest } = e;
+                return colorKey ? { ...rest, color: colorKey } : rest;
+              }),
             }));
           }}
           onToggleEdgeArrow={
@@ -2642,6 +2737,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
             }}
             onDeleteNode={handleDeleteNode}
             onSetNodeColor={handleSetNodeColor}
+            onBeginColorPreview={handleBeginColorPreview}
+            onPreviewNodeColor={handlePreviewNodeColor}
             onZoomToNode={handleZoomToNode}
             cardLabelMode={canvasCardLabel}
             hideContent={hideCardContentByZoom && editingNodeId !== node.id}

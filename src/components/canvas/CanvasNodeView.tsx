@@ -33,6 +33,10 @@ interface CanvasNodeViewProps {
   onDeleteNode?: (nodeId: string) => void;
   /** Aplica uno de los 6 colores del Canvas (botón "Color"). */
   onSetNodeColor?: (nodeId: string, colorKey?: string) => void;
+  /** Captura una instantánea única en Undo antes de arrastrar la rueda de color. */
+  onBeginColorPreview?: () => void;
+  /** Actualiza el color en vivo sin apilar entradas repetidas en Undo. */
+  onPreviewNodeColor?: (nodeId: string, colorKey?: string) => void;
   /** Centra la cámara y ajusta el zoom para encuadrar el nodo. */
   onZoomToNode?: (nodeId: string) => void;
   /** Cuándo mostrar la etiqueta de la tarjeta (`always` | `hover` | `never`). */
@@ -84,6 +88,8 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
   setIsEditingText: parentSetIsEditing,
   onDeleteNode,
   onSetNodeColor,
+  onBeginColorPreview,
+  onPreviewNodeColor,
   onZoomToNode,
   cardLabelMode = 'always',
   hideContent = false,
@@ -187,7 +193,19 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
   };
 
   const isGroup = node.type === 'group';
-  const isLodHidden = hideContent && !isGroup && !isEditing;
+  const canEditTextBody = isTextNode || isNoteFile;
+  const effectiveIsEditing = isEditing && canEditTextBody;
+  const isLodHidden = hideContent && !isGroup && !effectiveIsEditing;
+
+  // Si el padre solicita editar un grupo (ej. clic derecho → Editar), abrir edición de etiqueta
+  useEffect(() => {
+    if (isEditing && !canEditTextBody) {
+      if (isGroup && !readonly) {
+        setIsEditingGroupLabel(true);
+      }
+      setIsEditing(false);
+    }
+  }, [isEditing, canEditTextBody, isGroup, readonly, setIsEditing]);
 
   const getLodSummary = (): string => {
     if (isFileNode) return noteTitle(filePath) || baseName(filePath);
@@ -207,10 +225,10 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
   const [hoverSide, setHoverSide] = useState<CanvasNodeSide | null>(null);
   const connectionSide: CanvasNodeSide = hoverSide ?? 'bottom';
   const showConnectionPoint =
-    !readonly && !isGroup && !isEditing && (isSelected || hoverSide !== null);
+    !readonly && !isGroup && !effectiveIsEditing && (isSelected || hoverSide !== null);
 
   const handleNodeMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (readonly || isGroup || isEditing) return;
+    if (readonly || isGroup || effectiveIsEditing) return;
     const rect = e.currentTarget.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
 
@@ -355,7 +373,7 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
     <div
       className={`canvas-node ${isGroup ? 'canvas-node-group' : ''} ${
         isSelected ? 'is-selected' : ''
-      } ${isDragging ? 'is-dragging' : ''} ${isEditing ? 'is-editing' : ''} ${
+      } ${isDragging ? 'is-dragging' : ''} ${effectiveIsEditing ? 'is-editing' : ''} ${
         hasTheme ? 'is-themed' : ''
       } ${isLodHidden ? 'is-lod-hidden' : ''}`}
       style={{
@@ -372,7 +390,7 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
         if (readonly) return;
         // En edición (o sobre un control nativo) no se arrastra el nodo, pero
         // tampoco dejamos que el canvas interprete el clic como fondo.
-        if (isEditing || isEditingGroupLabel || isInteractiveCanvasTarget(e.target)) {
+        if (effectiveIsEditing || isEditingGroupLabel || isInteractiveCanvasTarget(e.target)) {
           e.stopPropagation();
           return;
         }
@@ -497,8 +515,8 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
         </div>
       </div>
 
-      {/* 8 Resizers (4 lados + 4 esquinas) */}
-      {!readonly && !isGroup && (
+      {/* 8 Resizers (4 lados + 4 esquinas, incluidos grupos) */}
+      {!readonly && (
         <>
           {(['n', 'e', 's', 'w'] as const).map((side) => (
             <div
@@ -549,8 +567,10 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
           node={node}
           onDelete={() => onDeleteNode?.(node.id)}
           onSetColor={(colorKey) => onSetNodeColor?.(node.id, colorKey)}
+          onBeginColorPreview={onBeginColorPreview}
+          onPreviewColor={(colorKey) => onPreviewNodeColor?.(node.id, colorKey)}
           onZoomToSelection={() => onZoomToNode?.(node.id)}
-          onEdit={handleMenuEdit}
+          onEdit={canEdit ? handleMenuEdit : undefined}
         />
       )}
     </div>

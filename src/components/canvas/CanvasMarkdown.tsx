@@ -180,7 +180,7 @@ export function parseMarkdownBlocks(source: string): Block[] {
       }
       const callout = CALLOUT_RE.exec(buf[0] || '');
       if (callout) {
-        const rest = [callout[3], ...buf.slice(1)].filter(Boolean).join('\n');
+        const rest = buf.slice(1).join('\n');
         blocks.push({
           kind: 'quote',
           text: rest,

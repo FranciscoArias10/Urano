@@ -29,6 +29,10 @@ interface CanvasFloatingMenuProps {
   position?: { x: number; y: number };
   onDelete: () => void;
   onSetColor: (colorKey?: string) => void;
+  /** Registra una única instantánea en el historial antes de arrastrar la rueda de color. */
+  onBeginColorPreview?: () => void;
+  /** Actualiza el color en vivo sin apilar entradas repetidas en el historial Undo. */
+  onPreviewColor?: (colorKey?: string) => void;
   /** Centra la cámara y ajusta el zoom para encuadrar el nodo. */
   onZoomToSelection?: () => void;
   /** Activa el modo de edición de texto dentro de la tarjeta. */
@@ -52,6 +56,8 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
   position,
   onDelete,
   onSetColor,
+  onBeginColorPreview,
+  onPreviewColor,
   onZoomToSelection,
   onEdit,
   onToggleEdgeArrow,
@@ -60,6 +66,7 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
   const t = useT();
   const [showColorPicker, setShowColorPicker] = useState(false);
   const customColorInputRef = useRef<HTMLInputElement>(null);
+  const previewSessionActiveRef = useRef(false);
 
   const currentColor = node?.color || edge?.color;
   const isCustomColor = isCustomCanvasColor(currentColor);
@@ -171,13 +178,27 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
                 aria-label={t('canvas.colors.pickCustomColor')}
                 onChange={(e) => {
                   e.stopPropagation();
-                  onSetColor(e.target.value);
+                  const val = e.target.value;
+                  if (previewSessionActiveRef.current && onPreviewColor) {
+                    previewSessionActiveRef.current = false;
+                    onPreviewColor(val);
+                  } else {
+                    onSetColor(val);
+                  }
                   setShowColorPicker(false);
                 }}
                 onInput={(e) => {
                   e.stopPropagation();
-                  // Actualización en vivo mientras se mueve el selector nativo.
-                  onSetColor((e.target as HTMLInputElement).value);
+                  const val = (e.target as HTMLInputElement).value;
+                  if (onPreviewColor) {
+                    if (!previewSessionActiveRef.current) {
+                      previewSessionActiveRef.current = true;
+                      onBeginColorPreview?.();
+                    }
+                    onPreviewColor(val);
+                  } else {
+                    onSetColor(val);
+                  }
                 }}
                 onClick={(e) => e.stopPropagation()}
               />
@@ -199,8 +220,8 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
         </Tooltip>
       )}
 
-      {/* 4. Editar (siempre presente en la barra de un nodo) */}
-      {node && (
+      {/* 4. Editar (solo para nodos con texto/etiqueta editable) */}
+      {node && onEdit && (
         <Tooltip content={t('common.edit')} position="top">
           <button className="canvas-menu-button" onClick={onEdit} aria-label={t('common.edit')}>
             <SquarePen size={16} />

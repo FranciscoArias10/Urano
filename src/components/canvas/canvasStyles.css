@@ -745,12 +745,14 @@ body.theme-dark .canvas-node-group .canvas-node-content,
 }
 
 .canvas-arrow-head {
-  fill: currentColor;
+  fill: context-stroke;
 }
 
-/* Etiqueta de la arista */
+/* Etiqueta de la arista centrada exactamente en el punto medio de la curva */
 .canvas-path-label {
   position: absolute;
+  left: 50%;
+  top: 50%;
   transform: translate(-50%, -50%);
   background-color: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
