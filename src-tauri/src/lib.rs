@@ -10,7 +10,6 @@ use std::sync::Arc;
 pub fn run() {
     // `.env` (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET) before anything reads the environment.
     commands::drive_sync::load_dotenv();
-    commands::spellcheck::setup_hunspell_dictionaries();
 
     let oauth_service = Arc::new(OAuthService::new());
 
@@ -34,6 +33,12 @@ pub fn run() {
         })
         .setup(|app| {
             use tauri::Manager;
+
+            // Diccionarios Hunspell: registrar resource_dir() antes de buscarlos (builds instalados en Windows)
+            if let Ok(resource_dir) = app.path().resource_dir() {
+                commands::spellcheck::register_resource_dir(resource_dir);
+            }
+            commands::spellcheck::setup_hunspell_dictionaries();
 
             if cfg!(debug_assertions) {
                 app.handle().plugin(
