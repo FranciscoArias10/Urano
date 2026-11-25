@@ -1,21 +1,14 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, X, FileText, ChevronRight, ChevronDown } from 'lucide-react';
 import { useVaultStore } from '../../stores/vaultStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { useT } from '../../stores/localeStore';
-
-interface MatchSnippet {
-  lineNum: number;
-  lineText: string;
-  before: string;
-  match: string;
-  after: string;
-}
-
-interface FileSearchResult {
-  filePath: string;
-  fileName: string;
-  matches: MatchSnippet[];
-}
+import {
+  buildGlobalSearchResults,
+  FileSearchResult,
+  requestEditorJump,
+  SearchMatchSnippet,
+} from './searchEngine';
 
 interface GlobalSearchPanelProps {
   onOpenFile?: (filePath: string) => void;
@@ -23,66 +16,57 @@ interface GlobalSearchPanelProps {
 
 export const GlobalSearchPanel: React.FC<GlobalSearchPanelProps> = ({ onOpenFile }) => {
   const t = useT();
-  const { notesContentMap, selectFile } = useVaultStore();
+  const { notesContentMap, activeVault, activeFile, fileContent, selectFile } = useVaultStore();
+  const userIgnoreFilters = useSettingsStore((s) => s.settings.userIgnoreFilters) || [];
   const [query, setQuery] = useState(() => (window as any).__uranoInitialSearchQuery || '');
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    inputRef.current?.focus();
     const handleSearchEvent = (e: Event) => {
-      const customEvent = e as CustomEvent<{ query: string }>;
-      if (customEvent.detail?.query) {
+      const customEvent = e as CustomEvent<{ query?: string }>;
+      if (customEvent.detail?.query !== undefined) {
         setQuery(customEvent.detail.query);
         (window as any).__uranoInitialSearchQuery = customEvent.detail.query;
       }
+      setTimeout(() => inputRef.current?.focus(), 0);
     };
     window.addEventListener('urano-search', handleSearchEvent);
     return () => window.removeEventListener('urano-search', handleSearchEvent);
   }, []);
 
-  const searchResults: FileSearchResult[] = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-
-    const results: FileSearchResult[] = [];
-
-    for (const [filePath, content] of Object.entries(notesContentMap)) {
-      const fileName = filePath.substring(filePath.lastIndexOf('/') + 1).replace(/\.md$/i, '');
-      const lines = content.split('\n');
-      const matches: MatchSnippet[] = [];
-
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const lowerLine = line.toLowerCase();
-        let idx = lowerLine.indexOf(q);
-
-        if (idx !== -1) {
-          const matchLen = q.length;
-          const start = Math.max(0, idx - 30);
-          const end = Math.min(line.length, idx + matchLen + 30);
-
-          matches.push({
-            lineNum: i + 1,
-            lineText: line.trim(),
-            before: line.slice(start, idx),
-            match: line.slice(idx, idx + matchLen),
-            after: line.slice(idx + matchLen, end),
-          });
-        }
-      }
-
-      if (matches.length > 0) {
-        results.push({ filePath, fileName, matches });
-      }
-    }
-
-    return results;
-  }, [query, notesContentMap]);
+  const searchResults: FileSearchResult[] = useMemo(
+    () =>
+      buildGlobalSearchResults(query, notesContentMap, {
+        activeVault,
+        activeFile,
+        activeFileContent: fileContent,
+        ignoreFilters: userIgnoreFilters,
+      }),
+    [query, notesContentMap, activeVault, activeFile, fileContent, userIgnoreFilters]
+  );
 
   const toggleCollapse = (filePath: string) => {
     setCollapsedFiles((prev) => ({
       ...prev,
       [filePath]: !prev[filePath],
     }));
+  };
+
+  const handleMatchClick = (filePath: string, match: SearchMatchSnippet) => {
+    // Queue jump BEFORE opening so newly mounted or already-open Editor jumps to the exact match
+    requestEditorJump({
+      filePath,
+      lineNum: match.lineNum,
+      colStart: match.colStart,
+      colEnd: match.colEnd,
+    });
+    if (onOpenFile) {
+      onOpenFile(filePath);
+    } else {
+      void selectFile(filePath);
+    }
   };
 
   const totalMatches = useMemo(() => {
@@ -96,15 +80,23 @@ export const GlobalSearchPanel: React.FC<GlobalSearchPanelProps> = ({ onOpenFile
         <div className="flex items-center gap-2 bg-urano-sidebar px-2.5 py-1.5 rounded-md border border-urano-border text-xs">
           <Search size={13} className="text-urano-muted shrink-0" />
           <input
+            ref={inputRef}
             type="text"
             placeholder={t('search.placeholder')}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              (window as any).__uranoInitialSearchQuery = e.target.value;
+            }}
             className="w-full bg-transparent text-urano-text outline-none placeholder-stone-500"
           />
           {query && (
             <button
-              onClick={() => setQuery('')}
+              onClick={() => {
+                setQuery('');
+                (window as any).__uranoInitialSearchQuery = '';
+                inputRef.current?.focus();
+              }}
               className="text-urano-muted hover:text-urano-text"
             >
               <X size={12} />
@@ -112,7 +104,7 @@ export const GlobalSearchPanel: React.FC<GlobalSearchPanelProps> = ({ onOpenFile
           )}
         </div>
 
-        {query && (
+        {query.trim() && (
           <div className="mt-2 text-[11px] text-urano-muted flex items-center justify-between">
             <span>
               {t('search.summary', {
@@ -130,7 +122,7 @@ export const GlobalSearchPanel: React.FC<GlobalSearchPanelProps> = ({ onOpenFile
 
       {/* Results List */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {!query ? (
+        {!query.trim() ? (
           <div className="p-4 text-center text-xs text-urano-faint">
             {t('search.emptyHint')}
           </div>
@@ -143,20 +135,32 @@ export const GlobalSearchPanel: React.FC<GlobalSearchPanelProps> = ({ onOpenFile
             const isCollapsed = Boolean(collapsedFiles[res.filePath]);
 
             return (
-              <div key={res.filePath} className="rounded-md overflow-hidden bg-urano-sidebar/60 border border-urano-border">
+              <div
+                key={res.filePath}
+                className="rounded-md overflow-hidden bg-urano-sidebar/60 border border-urano-border"
+              >
                 {/* File Header */}
                 <div
                   data-page-preview-context="search"
                   data-page-preview-target={res.filePath}
                   onClick={() => toggleCollapse(res.filePath)}
-                  className="flex items-center justify-between px-2.5 py-1.5 cursor-pointer hover:bg-[var(--interactive-hover)] text-xs text-urano-text font-medium"
+                  className="flex items-center justify-between px-2.5 py-1.5 cursor-pointer hover:bg-[var(--interactive-hover)] text-xs text-urano-text font-medium gap-2"
                 >
-                  <div className="flex items-center gap-1.5 truncate">
-                    {isCollapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    {isCollapsed ? (
+                      <ChevronRight size={13} className="shrink-0" />
+                    ) : (
+                      <ChevronDown size={13} className="shrink-0" />
+                    )}
                     <FileText size={13} className="text-orange-400 shrink-0" />
                     <span className="truncate">{res.fileName}</span>
+                    {res.folderPath && (
+                      <span className="text-[10px] text-urano-faint truncate">
+                        {res.folderPath}
+                      </span>
+                    )}
                   </div>
-                  <span className="text-[10px] bg-[var(--interactive-normal)] text-urano-muted px-1.5 py-0.2 rounded-full border border-urano-border font-mono">
+                  <span className="text-[10px] bg-[var(--interactive-normal)] text-urano-muted px-1.5 py-0.2 rounded-full border border-urano-border font-mono shrink-0">
                     {res.matches.length}
                   </span>
                 </div>
@@ -166,26 +170,26 @@ export const GlobalSearchPanel: React.FC<GlobalSearchPanelProps> = ({ onOpenFile
                   <div className="divide-y divide-white/5 border-t border-urano-border">
                     {res.matches.map((m, idx) => (
                       <div
-                        key={idx}
+                        key={`${m.lineNum}-${m.colStart}-${idx}`}
                         data-page-preview-context="search"
                         data-page-preview-target={res.filePath}
-                        onClick={() => {
-                          if (onOpenFile) {
-                            onOpenFile(res.filePath);
-                          } else {
-                            selectFile(res.filePath);
-                          }
-                        }}
-                        className="px-3 py-1.5 hover:bg-orange-500/10 cursor-pointer text-[11px] text-urano-muted transition-colors"
+                        onClick={() => handleMatchClick(res.filePath, m)}
+                        className="px-3 py-1.5 hover:bg-orange-500/10 cursor-pointer text-[11px] text-urano-muted transition-colors break-words"
                       >
                         <span className="text-urano-faint font-mono mr-1.5">
                           {t('search.lineNumber', { line: m.lineNum })}
                         </span>
-                        <span>...{m.before}</span>
+                        <span>
+                          {m.hasLeadingEllipsis ? '...' : ''}
+                          {m.before}
+                        </span>
                         <span className="text-orange-400 font-semibold bg-orange-500/20 px-0.5 rounded">
                           {m.match}
                         </span>
-                        <span>{m.after}...</span>
+                        <span>
+                          {m.after}
+                          {m.hasTrailingEllipsis ? '...' : ''}
+                        </span>
                       </div>
                     ))}
                   </div>
