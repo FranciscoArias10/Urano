@@ -351,9 +351,10 @@ export const Editor: React.FC<EditorProps> = ({
       ])
     ),
     EditorView.contentAttributes.of({
-      spellcheck: s.spellcheck ? 'true' : 'false',
+      spellcheck: 'false',
       autocorrect: 'on',
       autocapitalize: 'on',
+      lang: s.language || 'en',
       contenteditable: 'true',
     }),
     ...(s.autoPairBrackets || s.autoPairMarkdown ? [closeBrackets()] : []),
@@ -740,26 +741,35 @@ export const Editor: React.FC<EditorProps> = ({
             }
           }
 
-          // Check [[ wikilink autocompletion
-          const sel = update.state.selection.main;
-          if (sel.empty) {
-            const pos = sel.head;
-            const line = update.state.doc.lineAt(pos);
-            const textBefore = line.text.slice(0, pos - line.from);
-            const openIdx = textBefore.lastIndexOf('[[');
+          // Check [[ wikilink autocompletion only on doc/selection changes so async
+          // decoration effects (e.g. spellcheck) never reset the active suggestion index.
+          if (update.docChanged || update.selectionSet) {
+            const sel = update.state.selection.main;
+            if (sel.empty) {
+              const pos = sel.head;
+              const line = update.state.doc.lineAt(pos);
+              const textBefore = line.text.slice(0, pos - line.from);
+              const openIdx = textBefore.lastIndexOf('[[');
 
-            if (openIdx !== -1 && !textBefore.slice(openIdx).includes(']]')) {
-              const query = textBefore.slice(openIdx + 2);
-              setSuggestQuery(query);
-              setSuggestIndex(0);
-              setShowSuggest(true);
-
-              const coords = update.view.coordsAtPos(pos);
-              if (coords) {
-                setSuggestCoords({
-                  top: coords.bottom + 6,
-                  left: Math.max(20, Math.min(coords.left, window.innerWidth - 280)),
+              if (openIdx !== -1 && !textBefore.slice(openIdx).includes(']]')) {
+                const query = textBefore.slice(openIdx + 2);
+                setSuggestQuery((prev) => {
+                  if (prev !== query) {
+                    setSuggestIndex(0);
+                  }
+                  return query;
                 });
+                setShowSuggest(true);
+
+                const coords = update.view.coordsAtPos(pos);
+                if (coords) {
+                  setSuggestCoords({
+                    top: coords.bottom + 6,
+                    left: Math.max(20, Math.min(coords.left, window.innerWidth - 280)),
+                  });
+                }
+              } else {
+                setShowSuggest(false);
               }
             } else {
               setShowSuggest(false);
@@ -2239,14 +2249,18 @@ export const Editor: React.FC<EditorProps> = ({
     let wordRange: { from: number; to: number } | null = null;
     if (spellErrorEl && misspelledWord && currentView) {
       try {
-        const pos = currentView.posAtDOM(spellErrorEl);
-        const line = currentView.state.doc.lineAt(pos);
+        const domPos = currentView.posAtDOM(spellErrorEl);
+        const coordsPos = currentView.posAtCoords({ x: e.clientX, y: e.clientY }) ?? domPos;
+        const line = currentView.state.doc.lineAt(domPos);
         const text = line.text;
         let idx = 0;
         while ((idx = text.indexOf(misspelledWord, idx)) !== -1) {
           const candidateFrom = line.from + idx;
           const candidateTo = candidateFrom + misspelledWord.length;
-          if (pos >= candidateFrom && pos <= candidateTo) {
+          if (
+            (domPos >= candidateFrom && domPos <= candidateTo) ||
+            (coordsPos >= candidateFrom && coordsPos <= candidateTo)
+          ) {
             wordRange = { from: candidateFrom, to: candidateTo };
             break;
           }
