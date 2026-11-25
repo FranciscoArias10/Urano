@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import {
   Table,
   Search,
@@ -16,6 +17,17 @@ import {
 import { useVaultStore } from '../../stores/vaultStore';
 import { useT } from '../../stores/localeStore';
 import { FileItem } from '../../types';
+import { getCleanFileName } from '../../utils/pathUtils';
+import {
+  BaseColumnId,
+  BaseConfig,
+  BaseSortField,
+  defaultBaseConfig,
+  parseBaseConfig,
+  serializeBaseConfig,
+} from './baseConfig';
+
+const SAVE_DEBOUNCE_MS = 400;
 
 interface BaseViewProps {
   filePath: string;
@@ -33,9 +45,72 @@ interface NoteRow {
 export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
   const { fileTree, notesContentMap, selectFile, createUntitledNote } = useVaultStore();
   const t = useT();
-  const [filterQuery, setFilterQuery] = useState('');
-  const [sortField, setSortField] = useState<'name' | 'folder' | 'mtime' | 'size'>('name');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [config, setConfig] = useState<BaseConfig>(() => defaultBaseConfig());
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
+
+  const configRef = useRef<BaseConfig>(config);
+  const pendingSaveRef = useRef<{ path: string; content: string } | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushSave = useCallback(async () => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    const pending = pendingSaveRef.current;
+    if (!pending) return;
+    pendingSaveRef.current = null;
+    try {
+      await invoke('write_file', { filePath: pending.path, content: pending.content });
+    } catch (err) {
+      console.error('Error al guardar la base:', pending.path, err);
+    }
+  }, []);
+
+  // Load .base content from disk whenever the file changes
+  useEffect(() => {
+    let cancelled = false;
+    setLoadState('loading');
+
+    (async () => {
+      try {
+        const raw = await invoke<string>('read_file', { filePath });
+        if (cancelled) return;
+        const parsed = parseBaseConfig(raw);
+        configRef.current = parsed;
+        setConfig(parsed);
+        setLoadState('ready');
+      } catch (err) {
+        if (cancelled) return;
+        console.error('Error al leer la base:', filePath, err);
+        // Never overwrite a file we could not parse
+        setLoadState('error');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      void flushSave();
+    };
+  }, [filePath, flushSave]);
+
+  const updateConfig = useCallback(
+    (patch: Partial<BaseConfig>) => {
+      if (loadState !== 'ready') return;
+      const next = { ...configRef.current, ...patch };
+      configRef.current = next;
+      setConfig(next);
+      pendingSaveRef.current = { path: filePath, content: serializeBaseConfig(next) };
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => void flushSave(), SAVE_DEBOUNCE_MS);
+    },
+    [filePath, loadState, flushSave]
+  );
+
+  const filterQuery = config.query;
+  const sortField: BaseSortField = config.sort[0]?.field ?? 'name';
+  const sortDirection = config.sort[0]?.order ?? 'asc';
+  const visibleColumns = useMemo(() => new Set<BaseColumnId>(config.columns), [config.columns]);
 
   // Flatten all files from fileTree
   const allNotes = useMemo(() => {
@@ -55,7 +130,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
 
           list.push({
             path: item.path,
-            name: item.name.replace(/\.md$/i, ''),
+            name: getCleanFileName(item.name),
             folder: folderPath || '/',
             tags,
             mtime: item.mtime ? item.mtime * 1000 : Date.now(),
@@ -96,12 +171,11 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
     return result;
   }, [allNotes, filterQuery, sortField, sortDirection]);
 
-  const toggleSort = (field: 'name' | 'folder' | 'mtime' | 'size') => {
+  const toggleSort = (field: BaseSortField) => {
     if (sortField === field) {
-      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      updateConfig({ sort: [{ field, order: sortDirection === 'asc' ? 'desc' : 'asc' }] });
     } else {
-      setSortField(field);
-      setSortDirection('asc');
+      updateConfig({ sort: [{ field, order: 'asc' }] });
     }
   };
 
@@ -121,7 +195,16 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
     });
   };
 
-  const baseName = filePath.split('/').pop()?.replace(/\.base$/i, '') || t('base.defaultName');
+  const baseName = getCleanFileName(filePath) || t('base.defaultName');
+
+  if (loadState === 'error') {
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-full bg-urano-sidebar text-urano-muted text-xs gap-1">
+        <span className="font-semibold text-urano-text">{baseName}</span>
+        <span>{t('base.loadError')}</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-full h-full bg-urano-sidebar text-urano-text select-none overflow-hidden">
@@ -147,7 +230,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
               type="text"
               placeholder={t('base.filterPlaceholder')}
               value={filterQuery}
-              onChange={(e) => setFilterQuery(e.target.value)}
+              onChange={(e) => updateConfig({ query: e.target.value })}
               className="bg-transparent text-urano-text outline-none w-64 placeholder-stone-500"
             />
           </div>
@@ -169,88 +252,98 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
           {/* Table Headers */}
           <thead className="sticky top-0 bg-urano-sidebar border-b border-urano-border text-urano-muted z-10">
             <tr>
-              <th
-                onClick={() => toggleSort('name')}
-                className="px-6 py-3 font-semibold cursor-pointer hover:text-urano-text transition-colors min-w-[220px]"
-              >
-                <div className="flex items-center gap-1.5">
-                  <FileText size={13} />
-                  <span>{t('base.columns.name')}</span>
-                  {sortField === 'name' ? (
-                    sortDirection === 'asc' ? (
-                      <ArrowUp size={12} className="text-orange-500" />
+              {visibleColumns.has('name') && (
+                <th
+                  onClick={() => toggleSort('name')}
+                  className="px-6 py-3 font-semibold cursor-pointer hover:text-urano-text transition-colors min-w-[220px]"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <FileText size={13} />
+                    <span>{t('base.columns.name')}</span>
+                    {sortField === 'name' ? (
+                      sortDirection === 'asc' ? (
+                        <ArrowUp size={12} className="text-orange-500" />
+                      ) : (
+                        <ArrowDown size={12} className="text-orange-500" />
+                      )
                     ) : (
-                      <ArrowDown size={12} className="text-orange-500" />
-                    )
-                  ) : (
-                    <ArrowUpDown size={11} className="opacity-30" />
-                  )}
-                </div>
-              </th>
+                      <ArrowUpDown size={11} className="opacity-30" />
+                    )}
+                  </div>
+                </th>
+              )}
 
-              <th
-                onClick={() => toggleSort('folder')}
-                className="px-4 py-3 font-semibold cursor-pointer hover:text-urano-text transition-colors min-w-[150px]"
-              >
-                <div className="flex items-center gap-1.5">
-                  <Folder size={13} />
-                  <span>{t('base.columns.folder')}</span>
-                  {sortField === 'folder' ? (
-                    sortDirection === 'asc' ? (
-                      <ArrowUp size={12} className="text-orange-500" />
+              {visibleColumns.has('folder') && (
+                <th
+                  onClick={() => toggleSort('folder')}
+                  className="px-4 py-3 font-semibold cursor-pointer hover:text-urano-text transition-colors min-w-[150px]"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Folder size={13} />
+                    <span>{t('base.columns.folder')}</span>
+                    {sortField === 'folder' ? (
+                      sortDirection === 'asc' ? (
+                        <ArrowUp size={12} className="text-orange-500" />
+                      ) : (
+                        <ArrowDown size={12} className="text-orange-500" />
+                      )
                     ) : (
-                      <ArrowDown size={12} className="text-orange-500" />
-                    )
-                  ) : (
-                    <ArrowUpDown size={11} className="opacity-30" />
-                  )}
-                </div>
-              </th>
+                      <ArrowUpDown size={11} className="opacity-30" />
+                    )}
+                  </div>
+                </th>
+              )}
 
-              <th className="px-4 py-3 font-semibold min-w-[180px]">
-                <div className="flex items-center gap-1.5">
-                  <Tag size={13} />
-                  <span>{t('base.columns.tags')}</span>
-                </div>
-              </th>
+              {visibleColumns.has('tags') && (
+                <th className="px-4 py-3 font-semibold min-w-[180px]">
+                  <div className="flex items-center gap-1.5">
+                    <Tag size={13} />
+                    <span>{t('base.columns.tags')}</span>
+                  </div>
+                </th>
+              )}
 
-              <th
-                onClick={() => toggleSort('mtime')}
-                className="px-4 py-3 font-semibold cursor-pointer hover:text-urano-text transition-colors min-w-[160px]"
-              >
-                <div className="flex items-center gap-1.5">
-                  <Clock size={13} />
-                  <span>{t('base.columns.modified')}</span>
-                  {sortField === 'mtime' ? (
-                    sortDirection === 'asc' ? (
-                      <ArrowUp size={12} className="text-orange-500" />
+              {visibleColumns.has('mtime') && (
+                <th
+                  onClick={() => toggleSort('mtime')}
+                  className="px-4 py-3 font-semibold cursor-pointer hover:text-urano-text transition-colors min-w-[160px]"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Clock size={13} />
+                    <span>{t('base.columns.modified')}</span>
+                    {sortField === 'mtime' ? (
+                      sortDirection === 'asc' ? (
+                        <ArrowUp size={12} className="text-orange-500" />
+                      ) : (
+                        <ArrowDown size={12} className="text-orange-500" />
+                      )
                     ) : (
-                      <ArrowDown size={12} className="text-orange-500" />
-                    )
-                  ) : (
-                    <ArrowUpDown size={11} className="opacity-30" />
-                  )}
-                </div>
-              </th>
+                      <ArrowUpDown size={11} className="opacity-30" />
+                    )}
+                  </div>
+                </th>
+              )}
 
-              <th
-                onClick={() => toggleSort('size')}
-                className="px-4 py-3 font-semibold cursor-pointer hover:text-urano-text transition-colors w-24"
-              >
-                <div className="flex items-center gap-1.5">
-                  <HardDrive size={13} />
-                  <span>{t('base.columns.size')}</span>
-                  {sortField === 'size' ? (
-                    sortDirection === 'asc' ? (
-                      <ArrowUp size={12} className="text-orange-500" />
+              {visibleColumns.has('size') && (
+                <th
+                  onClick={() => toggleSort('size')}
+                  className="px-4 py-3 font-semibold cursor-pointer hover:text-urano-text transition-colors w-24"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <HardDrive size={13} />
+                    <span>{t('base.columns.size')}</span>
+                    {sortField === 'size' ? (
+                      sortDirection === 'asc' ? (
+                        <ArrowUp size={12} className="text-orange-500" />
+                      ) : (
+                        <ArrowDown size={12} className="text-orange-500" />
+                      )
                     ) : (
-                      <ArrowDown size={12} className="text-orange-500" />
-                    )
-                  ) : (
-                    <ArrowUpDown size={11} className="opacity-30" />
-                  )}
-                </div>
-              </th>
+                      <ArrowUpDown size={11} className="opacity-30" />
+                    )}
+                  </div>
+                </th>
+              )}
             </tr>
           </thead>
 
@@ -258,7 +351,7 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
           <tbody className="divide-y divide-[#262626]">
             {displayedNotes.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-12 text-center text-urano-faint">
+                <td colSpan={Math.max(visibleColumns.size, 1)} className="py-12 text-center text-urano-faint">
                   {t('base.noResults')}
                 </td>
               </tr>
@@ -272,46 +365,56 @@ export const BaseView: React.FC<BaseViewProps> = ({ filePath }) => {
                   className="hover:bg-[var(--interactive-hover)] cursor-pointer transition-colors group"
                 >
                   {/* Name */}
-                  <td className="px-6 py-2.5 font-medium text-urano-text group-hover:text-orange-400 transition-colors flex items-center justify-between">
-                    <span className="truncate">{note.name}</span>
-                    <ExternalLink
-                      size={12}
-                      className="opacity-0 group-hover:opacity-60 text-orange-400 shrink-0 ml-2"
-                    />
-                  </td>
+                  {visibleColumns.has('name') && (
+                    <td className="px-6 py-2.5 font-medium text-urano-text group-hover:text-orange-400 transition-colors flex items-center justify-between">
+                      <span className="truncate">{note.name}</span>
+                      <ExternalLink
+                        size={12}
+                        className="opacity-0 group-hover:opacity-60 text-orange-400 shrink-0 ml-2"
+                      />
+                    </td>
+                  )}
 
                   {/* Folder */}
-                  <td className="px-4 py-2.5 text-urano-muted truncate">
-                    {note.folder}
-                  </td>
+                  {visibleColumns.has('folder') && (
+                    <td className="px-4 py-2.5 text-urano-muted truncate">
+                      {note.folder}
+                    </td>
+                  )}
 
                   {/* Tags */}
-                  <td className="px-4 py-2.5">
-                    <div className="flex flex-wrap gap-1">
-                      {note.tags.length > 0 ? (
-                        note.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="bg-[var(--interactive-normal)] text-urano-text text-[10px] px-1.5 py-0.5 rounded border border-urano-border"
-                          >
-                            #{tag}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-urano-faint">—</span>
-                      )}
-                    </div>
-                  </td>
+                  {visibleColumns.has('tags') && (
+                    <td className="px-4 py-2.5">
+                      <div className="flex flex-wrap gap-1">
+                        {note.tags.length > 0 ? (
+                          note.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="bg-[var(--interactive-normal)] text-urano-text text-[10px] px-1.5 py-0.5 rounded border border-urano-border"
+                            >
+                              #{tag}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-urano-faint">—</span>
+                        )}
+                      </div>
+                    </td>
+                  )}
 
                   {/* Mtime */}
-                  <td className="px-4 py-2.5 text-urano-muted text-[11px] font-mono">
-                    {formatDate(note.mtime)}
-                  </td>
+                  {visibleColumns.has('mtime') && (
+                    <td className="px-4 py-2.5 text-urano-muted text-[11px] font-mono">
+                      {formatDate(note.mtime)}
+                    </td>
+                  )}
 
                   {/* Size */}
-                  <td className="px-4 py-2.5 text-urano-muted text-[11px] font-mono">
-                    {formatSize(note.size)}
-                  </td>
+                  {visibleColumns.has('size') && (
+                    <td className="px-4 py-2.5 text-urano-muted text-[11px] font-mono">
+                      {formatSize(note.size)}
+                    </td>
+                  )}
                 </tr>
               ))
             )}

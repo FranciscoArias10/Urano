@@ -7,6 +7,7 @@ import { useSettingsStore, resolveNewFileDir, resolveNewCanvasDir } from './sett
 import { useSyncStore } from './syncStore';
 import { useNoticeStore } from '../components/common/Notice';
 import { t } from '../locales/i18n';
+import { defaultBaseConfig, serializeBaseConfig } from '../components/base/baseConfig';
 import {
   scanAffectedLinks,
   scanFolderLinkRefactor,
@@ -108,6 +109,45 @@ function collectExistingNamesInDir(fileTree: FileItem[], targetDir: string): Set
   };
   walk(fileTree);
   return existingNames;
+}
+
+/**
+ * Crea un archivo `.base` con nombre único dentro de `targetDir`.
+ * El nombre se elige contra el árbol (comparación normalizada, válida en Windows) y,
+ * si aun así ya existe en disco (árbol desactualizado), se reintenta con el siguiente número.
+ */
+async function createBaseOnDisk(
+  fileTree: FileItem[],
+  targetDir: string
+): Promise<{ path: string; name: string; fileName: string }> {
+  const normTargetDir = normalizePath(targetDir);
+  const existingNames = collectExistingNamesInDir(fileTree, normTargetDir);
+  const untitled = t('common.untitled');
+  const MAX_ATTEMPTS = 200;
+
+  let counter = 0;
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++, counter++) {
+    const fileName = counter === 0 ? `${untitled}.base` : `${untitled} ${counter}.base`;
+    if (existingNames.has(fileName.toLowerCase())) continue;
+
+    const name = fileName.replace(/\.base$/i, '');
+    const fullPath = `${normTargetDir}/${fileName}`.replace(/\/+/g, '/');
+    try {
+      await invoke('create_file', { filePath: fullPath });
+    } catch (err) {
+      // "El archivo ya existe": el árbol estaba desactualizado, probar el siguiente nombre
+      lastError = err;
+      existingNames.add(fileName.toLowerCase());
+      continue;
+    }
+    await invoke('write_file', {
+      filePath: fullPath,
+      content: serializeBaseConfig(defaultBaseConfig(name)),
+    });
+    return { path: fullPath, name, fileName };
+  }
+  throw lastError ?? new Error('No se pudo crear la base');
 }
 
 function isPathOrDescendant(candidate: string | null | undefined, targetPrefix: string): boolean {
@@ -1104,81 +1144,27 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
   // Urano Base creation (.base format)
   createUntitledBase: async (parentPath?: string): Promise<{ path: string; name: string }> => {
-    const { activeVault, fileTree, refreshTree, selectFile } = get();
+    const { activeVault, refreshTree, selectFile } = get();
     const targetDir = parentPath || activeVault;
     if (!targetDir) return { path: '', name: '' };
 
-    const normTargetDir = normalizePath(targetDir);
-    const existingNames = collectExistingNamesInDir(fileTree, normTargetDir);
-
-    const untitled = t('common.untitled');
-    let candidateName = `${untitled}.base`;
-    let counter = 1;
-    while (existingNames.has(candidateName.toLowerCase())) {
-      candidateName = `${untitled} ${counter}.base`;
-      counter++;
-    }
-
-    const fullPath = `${normTargetDir}/${candidateName}`.replace(/\/+/g, '/');
-    const initialBase = JSON.stringify(
-      {
-        title: candidateName.replace(/\.base$/, ''),
-        filters: [],
-        sort: [{ field: 'name', order: 'asc' }],
-        columns: ['name', 'folder', 'tags', 'mtime', 'size'],
-      },
-      null,
-      2
-    );
-
-    await invoke('create_file', { filePath: fullPath });
-    await invoke('write_file', { filePath: fullPath, content: initialBase });
-
+    const created = await createBaseOnDisk(get().fileTree, targetDir);
     await refreshTree();
-    await selectFile(fullPath);
+    await selectFile(created.path);
     set({ autoFocusTitle: true, shouldSelectTitleOnOpen: true });
 
-    return { path: fullPath, name: candidateName.replace(/\.base$/, '') };
+    return { path: created.path, name: created.name };
   },
 
   // Create .base file without changing active note (for inline embed)
   createBaseFile: async (parentPath?: string): Promise<{ path: string; name: string; fileName: string }> => {
-    const { activeVault, fileTree, refreshTree } = get();
+    const { activeVault, refreshTree } = get();
     const targetDir = parentPath || activeVault;
     if (!targetDir) return { path: '', name: '', fileName: '' };
 
-    const normTargetDir = normalizePath(targetDir);
-    const existingNames = collectExistingNamesInDir(fileTree, normTargetDir);
-
-    const untitled = t('common.untitled');
-    let candidateName = `${untitled}.base`;
-    let counter = 1;
-    while (existingNames.has(candidateName.toLowerCase())) {
-      candidateName = `${untitled} ${counter}.base`;
-      counter++;
-    }
-
-    const fullPath = `${normTargetDir}/${candidateName}`.replace(/\/+/g, '/');
-    const initialBase = JSON.stringify(
-      {
-        title: candidateName.replace(/\.base$/, ''),
-        filters: [],
-        sort: [{ field: 'name', order: 'asc' }],
-        columns: ['name', 'folder', 'tags', 'mtime', 'size'],
-      },
-      null,
-      2
-    );
-
-    await invoke('create_file', { filePath: fullPath });
-    await invoke('write_file', { filePath: fullPath, content: initialBase });
+    const created = await createBaseOnDisk(get().fileTree, targetDir);
     await refreshTree();
-
-    return {
-      path: fullPath,
-      name: candidateName.replace(/\.base$/, ''),
-      fileName: candidateName,
-    };
+    return created;
   },
 
   // Open or create today's daily note respecting dailyNotesFormat, dailyNotesFolder, and template
