@@ -13,6 +13,7 @@ interface CanvasEdgeViewProps {
   fromNode: CanvasNode;
   toNode: CanvasNode;
   isSelected: boolean;
+  readonly?: boolean;
   onSelect: (e: React.MouseEvent) => void;
   onContextMenu: (e: React.MouseEvent) => void;
   onUpdateLabel?: (edgeId: string, label: string) => void;
@@ -25,6 +26,7 @@ export const CanvasEdgeView: React.FC<CanvasEdgeViewProps> = ({
   fromNode,
   toNode,
   isSelected,
+  readonly = false,
   onSelect,
   onContextMenu,
   onUpdateLabel,
@@ -89,7 +91,7 @@ export const CanvasEdgeView: React.FC<CanvasEdgeViewProps> = ({
       />
 
       {/* Edge label at midpoint */}
-      {(edge.label || isEditing) && (
+      {(edge.label || (isEditing && !readonly)) && (
         <foreignObject
           x={midpoint.x - 75}
           y={midpoint.y - 15}
@@ -97,7 +99,7 @@ export const CanvasEdgeView: React.FC<CanvasEdgeViewProps> = ({
           height="30"
           className="overflow-visible pointer-events-auto"
         >
-          {isEditing ? (
+          {isEditing && !readonly ? (
             <input
               type="text"
               autoFocus
@@ -105,7 +107,7 @@ export const CanvasEdgeView: React.FC<CanvasEdgeViewProps> = ({
               onChange={(e) => setLabelText(e.target.value)}
               onBlur={handleLabelBlur}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleLabelBlur();
+                if (e.key === 'Enter' || e.key === 'Escape') handleLabelBlur();
               }}
               className="canvas-path-label bg-urano-bg text-urano-text border border-orange-500 text-[11px] px-2 py-0.5 rounded outline-none w-full text-center"
             />
@@ -114,7 +116,7 @@ export const CanvasEdgeView: React.FC<CanvasEdgeViewProps> = ({
               className="canvas-path-label"
               onDoubleClick={(e) => {
                 e.stopPropagation();
-                setIsEditing(true);
+                if (!readonly) setIsEditing(true);
               }}
             >
               {edge.label}

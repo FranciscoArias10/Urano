@@ -287,6 +287,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState<CanvasPoint>({ x: 0, y: 0 });
   const [readonly, setReadonly] = useState(false);
+  const readonlyRef = useRef(false);
+  readonlyRef.current = readonly;
   const [snapToGrid, setSnapToGrid] = useState(canvasSnapToGrid);
   const [snapGuides, setSnapGuides] = useState<SnapGuideLines | null>(null);
   const ctrlDragMenuRef = useRef<{ startX: number; startY: number } | null>(null);
@@ -639,6 +641,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   }, []);
 
   const handleUndo = useCallback(() => {
+    if (readonlyRef.current) return;
     const { past, future } = historyRef.current;
     if (past.length === 0) return;
     const previous = past[past.length - 1];
@@ -652,6 +655,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   }, [persistCanvas]);
 
   const handleRedo = useCallback(() => {
+    if (readonlyRef.current) return;
     const { past, future } = historyRef.current;
     if (future.length === 0) return;
     const next = future[0];
@@ -800,6 +804,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       targetNodeIds: ReadonlySet<string> = selectedNodeIds,
       targetEdgeId: string | null = selectedEdgeId
     ) => {
+      if (readonlyRef.current) return;
       if (targetNodeIds.size === 0 && !targetEdgeId) return;
       setSelectedNodeIds((prev) => {
         const remaining = new Set([...prev].filter((id) => !targetNodeIds.has(id)));
@@ -839,8 +844,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         setIsHoldingSpace(true);
       }
 
-      // Deshacer / Rehacer
-      if ((e.ctrlKey || e.metaKey) && !inEditable) {
+      // Deshacer / Rehacer / Duplicar (bloqueados en solo lectura)
+      if ((e.ctrlKey || e.metaKey) && !inEditable && !readonly) {
         const key = e.key.toLowerCase();
         if (key === 'z' && !e.shiftKey) {
           e.preventDefault();
@@ -852,11 +857,18 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
           handleRedo();
           return;
         }
+        if (key === 'd' && !e.shiftKey) {
+          if (selectedNodeIds.size > 0) {
+            e.preventDefault();
+            handleDuplicateSelection(selectedNodeIds);
+          }
+          return;
+        }
       }
 
-      // Delete / Backspace
+      // Delete / Backspace (bloqueado en solo lectura)
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (inEditable) return;
+        if (inEditable || readonly) return;
         if (selectedNodeIds.size > 0 || selectedEdgeId) {
           e.preventDefault();
           deleteSelected();
@@ -901,6 +913,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, [
+    readonly,
     isHoldingSpace,
     selectedNodeIds,
     selectedEdgeId,
@@ -2035,46 +2048,56 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   /* Menú contextual                                                      */
   /* ------------------------------------------------------------------ */
 
-  const buildBackgroundContextMenuItems = (worldPos: CanvasPoint): MenuItemData[] => [
-    {
-      title: t('canvas.menu.newCard'),
-      icon: <StickyNote size={14} />,
-      action: () => handleAddTextCard(worldPos),
-    },
-    {
-      title: t('canvas.menu.newNote'),
-      icon: <FileText size={14} />,
-      action: () => handleAddNoteCard(worldPos),
-    },
-    {
-      title: t('canvas.menu.newMedia'),
-      icon: <FileImage size={14} />,
-      action: () => handleAddMediaCard(worldPos),
-    },
-    {
-      title: t('canvas.menu.newGroup'),
-      icon: <FolderPlus size={14} />,
-      action: () => handleAddGroup(worldPos),
-    },
-    {
-      title: t('canvas.menu.newWebPage'),
-      icon: <Link2 size={14} />,
-      action: () => handleAddLinkCard(worldPos),
-    },
-    { type: 'separator' },
-    {
-      title: t('canvas.menu.selectAll'),
-      shortcut: 'Ctrl+A',
-      icon: <CheckSquare size={14} />,
-      action: () => setSelectedNodeIds(new Set(canvasData.nodes.map((n) => n.id))),
-    },
-    {
-      title: t('canvas.menu.zoomToFit'),
-      shortcut: 'Shift+1',
-      icon: <Maximize size={14} />,
-      action: handleZoomToFit,
-    },
-  ];
+  const buildBackgroundContextMenuItems = (worldPos: CanvasPoint): MenuItemData[] => {
+    const viewItems: MenuItemData[] = [
+      {
+        title: t('canvas.menu.selectAll'),
+        shortcut: 'Ctrl+A',
+        icon: <CheckSquare size={14} />,
+        action: () => setSelectedNodeIds(new Set(canvasData.nodes.map((n) => n.id))),
+      },
+      {
+        title: t('canvas.menu.zoomToFit'),
+        shortcut: 'Shift+1',
+        icon: <Maximize size={14} />,
+        action: handleZoomToFit,
+      },
+    ];
+
+    if (readonly) {
+      return viewItems;
+    }
+
+    return [
+      {
+        title: t('canvas.menu.newCard'),
+        icon: <StickyNote size={14} />,
+        action: () => handleAddTextCard(worldPos),
+      },
+      {
+        title: t('canvas.menu.newNote'),
+        icon: <FileText size={14} />,
+        action: () => handleAddNoteCard(worldPos),
+      },
+      {
+        title: t('canvas.menu.newMedia'),
+        icon: <FileImage size={14} />,
+        action: () => handleAddMediaCard(worldPos),
+      },
+      {
+        title: t('canvas.menu.newGroup'),
+        icon: <FolderPlus size={14} />,
+        action: () => handleAddGroup(worldPos),
+      },
+      {
+        title: t('canvas.menu.newWebPage'),
+        icon: <Link2 size={14} />,
+        action: () => handleAddLinkCard(worldPos),
+      },
+      { type: 'separator' },
+      ...viewItems,
+    ];
+  };
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -2093,6 +2116,19 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       const targetIds = resolveContextMenuSelection(selectedNodeIds, clickedNode.id);
       setSelectedNodeIds(targetIds);
       setSelectedEdgeId(null);
+
+      if (readonly) {
+        items.push(
+          {
+            title: t('canvas.menu.zoomToSelection'),
+            icon: <Maximize size={14} />,
+            action: () => handleZoomToNode(clickedNode.id),
+          },
+          ...buildBackgroundContextMenuItems(worldPos)
+        );
+        setContextMenu({ x: e.clientX, y: e.clientY, items });
+        return;
+      }
 
       items.push(
         {
@@ -2281,13 +2317,26 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         zoom={zoom}
         readonly={readonly}
         snapToGrid={snapToGrid}
-        canUndo={canUndo}
-        canRedo={canRedo}
+        canUndo={!readonly && canUndo}
+        canRedo={!readonly && canRedo}
         onZoomIn={() => zoomAtViewportCenter(1.15)}
         onZoomOut={() => zoomAtViewportCenter(1 / 1.15)}
         onZoomToFit={handleZoomToFit}
         onResetZoom={handleResetZoom}
-        onToggleReadonly={() => setReadonly(!readonly)}
+        onToggleReadonly={() => {
+          const next = !readonly;
+          if (next) {
+            setEditingNodeId(null);
+            setEditingEdgeId(null);
+            setDraggingNodeId(null);
+            setResizingHandle(null);
+            setConnectingFrom(null);
+            setConnectingMouseWorld(null);
+            cancelPendingEdgeDrop();
+            setContextMenu(null);
+          }
+          setReadonly(next);
+        }}
         onToggleSnapToGrid={() => {
           const next = !snapToGrid;
           setSnapToGrid(next);
@@ -2388,6 +2437,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
                 fromNode={from}
                 toNode={to}
                 isSelected={selectedEdgeId === edge.id}
+                readonly={readonly}
                 onSelect={(e) => {
                   e.stopPropagation();
                   setSelectedEdgeId(edge.id);
@@ -2398,6 +2448,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
                   e.stopPropagation();
                   setSelectedEdgeId(edge.id);
                   setSelectedNodeIds(new Set());
+                  if (readonly) {
+                    setContextMenu(null);
+                    return;
+                  }
                   setContextMenu({
                     x: e.clientX,
                     y: e.clientY,
