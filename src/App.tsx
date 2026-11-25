@@ -39,6 +39,7 @@ import {
 import { FileRecoveryModal } from './components/recovery/FileRecoveryModal';
 import { UpdateLinksModal } from './components/common/UpdateLinksModal';
 import { GlobalSearchPanel } from './components/search/GlobalSearchPanel';
+import { URANO_EDITOR_JUMP_EVENT } from './components/search/searchEngine';
 import { BookmarksPanel } from './components/bookmarks/BookmarksPanel';
 import { Tooltip } from './components/common/Tooltip';
 import { BacklinksPanel } from './components/backlinks/BacklinksPanel';
@@ -955,13 +956,19 @@ const MainApp: React.FC = () => {
       setShowTemplateModal(true);
     };
 
+    const handleUranoEditorJump = () => {
+      setViewMode((prev) => (prev === 'reading' ? lastEditingModeRef.current || 'live-preview' : prev));
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('urano-search', handleUranoSearch);
     window.addEventListener('urano-open-templates', handleUranoTemplates);
+    window.addEventListener(URANO_EDITOR_JUMP_EVENT, handleUranoEditorJump);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('urano-search', handleUranoSearch);
       window.removeEventListener('urano-open-templates', handleUranoTemplates);
+      window.removeEventListener(URANO_EDITOR_JUMP_EVENT, handleUranoEditorJump);
     };
   }, [activeVault]);
 

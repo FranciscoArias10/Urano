@@ -1,5 +1,13 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { EditorState, Compartment, RangeSetBuilder, Prec, Annotation, Transaction } from '@codemirror/state';
+import {
+  EditorState,
+  EditorSelection,
+  Compartment,
+  RangeSetBuilder,
+  Prec,
+  Annotation,
+  Transaction,
+} from '@codemirror/state';
 import {
   EditorView,
   keymap,
@@ -33,6 +41,13 @@ import {
   type ImageEmbedInfo,
 } from '../../editor/imageExtension';
 import { spellcheckExtension, triggerSpellCheckEffect } from '../../editor/spellcheckExtension';
+import {
+  clearPendingEditorJump,
+  computeJumpSelectionInDoc,
+  peekPendingEditorJump,
+  PendingEditorJump,
+  URANO_EDITOR_JUMP_EVENT,
+} from '../search/searchEngine';
 import { toUint8Array } from '../../services/storageAdapter';
 import { themeService } from '../../services/themeService';
 import { invoke } from '@tauri-apps/api/core';
@@ -788,7 +803,57 @@ export const Editor: React.FC<EditorProps> = ({
     globalActiveEditorView = view;
     (window as any).__uranoEditorView = view;
     lastDispatchedDocRef.current = fileContent;
+
+    const initialJump = peekPendingEditorJump(activeFile);
+    if (initialJump) {
+      requestAnimationFrame(() => {
+        if (viewRef.current === view) {
+          const { anchor, head } = computeJumpSelectionInDoc(view.state.doc, initialJump);
+          clearPendingEditorJump(initialJump.requestId);
+          view.dispatch({
+            selection: { anchor, head },
+            effects: EditorView.scrollIntoView(EditorSelection.range(anchor, head), {
+              y: 'center',
+            }),
+          });
+          view.focus();
+        }
+      });
+    }
   }, [activeFile, isLoading]);
+
+  // Jump to line/column when clicking a match in Global Search (same note or after leaving Reading View)
+  useEffect(() => {
+    const applyJump = (view: EditorView, jump: PendingEditorJump) => {
+      const { anchor, head } = computeJumpSelectionInDoc(view.state.doc, jump);
+      clearPendingEditorJump(jump.requestId);
+      view.dispatch({
+        selection: { anchor, head },
+        effects: EditorView.scrollIntoView(EditorSelection.range(anchor, head), {
+          y: 'center',
+        }),
+      });
+      view.focus();
+    };
+
+    const onEditorJump = () => {
+      if (isLoading || editorMode === 'reading' || !viewRef.current) return;
+      const pending = peekPendingEditorJump(activeFile);
+      if (!pending) return;
+      applyJump(viewRef.current, pending);
+    };
+
+    window.addEventListener(URANO_EDITOR_JUMP_EVENT, onEditorJump);
+    if (editorMode !== 'reading' && !isLoading && viewRef.current) {
+      const pending = peekPendingEditorJump(activeFile);
+      if (pending) {
+        requestAnimationFrame(() => {
+          if (viewRef.current) applyJump(viewRef.current, pending);
+        });
+      }
+    }
+    return () => window.removeEventListener(URANO_EDITOR_JUMP_EVENT, onEditorJump);
+  }, [activeFile, isLoading, editorMode]);
 
   // Toggle Live Preview <-> Source Mode without recreating the editor:
   // reconfigures the compartment holding every Live Preview decoration.
