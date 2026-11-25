@@ -53,7 +53,11 @@ import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { isImagePath, toUint8Array } from '../../services/storageAdapter';
 import { resolveImageBlobUrl, saveClipboardImageToVault } from '../../editor/imageExtension';
 import { isSamePath } from '../../utils/pathUtils';
-import { appendNodeWithPendingEdge, parseCanvasContent } from './canvasOperations';
+import {
+  appendNodeWithPendingEdge,
+  parseCanvasContent,
+  resolveContextMenuSelection,
+} from './canvasOperations';
 import './canvasStyles.css';
 
 interface CanvasViewProps {
@@ -790,20 +794,36 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   /* Atajos de teclado                                                    */
   /* ------------------------------------------------------------------ */
 
-  // Delete currently selected nodes and/or edge
+  // Delete specified (or currently selected) nodes and/or edge
+  const deleteSelection = useCallback(
+    (
+      targetNodeIds: ReadonlySet<string> = selectedNodeIds,
+      targetEdgeId: string | null = selectedEdgeId
+    ) => {
+      if (targetNodeIds.size === 0 && !targetEdgeId) return;
+      setSelectedNodeIds((prev) => {
+        const remaining = new Set([...prev].filter((id) => !targetNodeIds.has(id)));
+        return remaining;
+      });
+      setSelectedEdgeId((prev) => (prev === targetEdgeId ? null : prev));
+      setEditingNodeId((prev) => (prev && targetNodeIds.has(prev) ? null : prev));
+      setEditingEdgeId((prev) => (prev && prev === targetEdgeId ? null : prev));
+      applyChange((prev) => ({
+        nodes: prev.nodes.filter((n) => !targetNodeIds.has(n.id)),
+        edges: prev.edges.filter(
+          (e) =>
+            !targetNodeIds.has(e.fromNode) &&
+            !targetNodeIds.has(e.toNode) &&
+            e.id !== targetEdgeId
+        ),
+      }));
+    },
+    [selectedNodeIds, selectedEdgeId, applyChange]
+  );
+
   const deleteSelected = useCallback(() => {
-    setSelectedNodeIds(new Set());
-    setSelectedEdgeId(null);
-    applyChange((prev) => ({
-      nodes: prev.nodes.filter((n) => !selectedNodeIds.has(n.id)),
-      edges: prev.edges.filter(
-        (e) =>
-          !selectedNodeIds.has(e.fromNode) &&
-          !selectedNodeIds.has(e.toNode) &&
-          e.id !== selectedEdgeId
-      ),
-    }));
-  }, [selectedNodeIds, selectedEdgeId, applyChange]);
+    deleteSelection(selectedNodeIds, selectedEdgeId);
+  }, [deleteSelection, selectedNodeIds, selectedEdgeId]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1350,9 +1370,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   };
 
   // Group selected nodes
-  const handleGroupSelection = () => {
-    if (selectedNodeIds.size === 0) return;
-    const selectedNodes = canvasData.nodes.filter((n) => selectedNodeIds.has(n.id));
+  const handleGroupSelection = (targetNodeIds: ReadonlySet<string> = selectedNodeIds) => {
+    if (targetNodeIds.size === 0) return;
+    const selectedNodes = canvasDataRef.current.nodes.filter((n) => targetNodeIds.has(n.id));
     const bbox = getBoundingBox(selectedNodes);
     if (!bbox) return;
 
@@ -1373,8 +1393,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   };
 
   // Duplicate selection
-  const handleDuplicateSelection = () => {
-    if (selectedNodeIds.size === 0) return;
+  const handleDuplicateSelection = (targetNodeIds: ReadonlySet<string> = selectedNodeIds) => {
+    if (targetNodeIds.size === 0) return;
     const offset = 40;
     const duplicatedNodes: CanvasNode[] = [];
     const duplicatedEdges: CanvasEdge[] = [];
@@ -1383,7 +1403,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       const idMap = new Map<string, string>();
 
       for (const node of prev.nodes) {
-        if (selectedNodeIds.has(node.id)) {
+        if (targetNodeIds.has(node.id)) {
           const newId = generateCanvasId();
           idMap.set(node.id, newId);
           duplicatedNodes.push({
@@ -2061,7 +2081,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     e.stopPropagation();
 
     const worldPos = screenToWorld(e.clientX, e.clientY);
-    const clickedNode = canvasData.nodes.find((n) => {
+    // Hit-test from top-most rendered node to bottom-most (cards above groups)
+    const clickedNode = [...sortedNodes].reverse().find((n) => {
       const b = getNodeBBox(n);
       return worldPos.x >= b.minX && worldPos.x <= b.maxX && worldPos.y >= b.minY && worldPos.y <= b.maxY;
     });
@@ -2069,9 +2090,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     const items: MenuItemData[] = [];
 
     if (clickedNode) {
-      if (!selectedNodeIds.has(clickedNode.id)) {
-        setSelectedNodeIds(new Set([clickedNode.id]));
-      }
+      const targetIds = resolveContextMenuSelection(selectedNodeIds, clickedNode.id);
+      setSelectedNodeIds(targetIds);
+      setSelectedEdgeId(null);
 
       items.push(
         {
@@ -2088,9 +2109,11 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
               action: () => {
                 applyChange((prev) => ({
                   ...prev,
-                  nodes: prev.nodes.map((n) =>
-                    selectedNodeIds.has(n.id) ? { ...n, color: undefined } : n
-                  ),
+                  nodes: prev.nodes.map((n) => {
+                    if (!targetIds.has(n.id)) return n;
+                    const { color: _oldColor, ...rest } = n;
+                    return rest;
+                  }),
                 }));
               },
             },
@@ -2106,7 +2129,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
                 applyChange((prev) => ({
                   ...prev,
                   nodes: prev.nodes.map((n) =>
-                    selectedNodeIds.has(n.id) ? { ...n, color: k } : n
+                    targetIds.has(n.id) ? { ...n, color: k } : n
                   ),
                 }));
               },
@@ -2127,13 +2150,13 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         {
           title: t('canvas.menu.createGroupFromSelection'),
           icon: <FolderPlus size={14} />,
-          action: handleGroupSelection,
+          action: () => handleGroupSelection(targetIds),
         },
         {
           title: t('common.duplicate'),
           shortcut: 'Ctrl+D',
           icon: <Copy size={14} />,
-          action: handleDuplicateSelection,
+          action: () => handleDuplicateSelection(targetIds),
         },
         { type: 'separator' },
         {
@@ -2141,7 +2164,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
           shortcut: t('canvas.keys.delete'),
           icon: <Trash2 size={14} />,
           isWarning: true,
-          action: deleteSelected,
+          action: () => deleteSelection(targetIds, null),
         }
       );
     } else {
@@ -2371,9 +2394,65 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
                   setSelectedNodeIds(new Set());
                 }}
                 onContextMenu={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   setSelectedEdgeId(edge.id);
                   setSelectedNodeIds(new Set());
+                  setContextMenu({
+                    x: e.clientX,
+                    y: e.clientY,
+                    items: [
+                      {
+                        title: t('canvas.menu.editLabel'),
+                        icon: <Edit2 size={14} />,
+                        action: () => setEditingEdgeId(edge.id),
+                      },
+                      {
+                        title: t('canvas.menu.color'),
+                        icon: <Palette size={14} />,
+                        submenu: [
+                          {
+                            title: t('canvas.colors.default'),
+                            action: () => {
+                              applyChange((prev) => ({
+                                ...prev,
+                                edges: prev.edges.map((eg) => {
+                                  if (eg.id !== edge.id) return eg;
+                                  const { color: _old, ...rest } = eg;
+                                  return rest;
+                                }),
+                              }));
+                            },
+                          },
+                          ...Object.entries(CANVAS_COLORS).map(([k, col]) => ({
+                            title: t(col.nameKey),
+                            icon: (
+                              <span
+                                className="w-3 h-3 rounded-full inline-block"
+                                style={{ backgroundColor: col.hex }}
+                              />
+                            ),
+                            action: () => {
+                              applyChange((prev) => ({
+                                ...prev,
+                                edges: prev.edges.map((eg) =>
+                                  eg.id === edge.id ? { ...eg, color: k } : eg
+                                ),
+                              }));
+                            },
+                          })),
+                        ],
+                      },
+                      { type: 'separator' },
+                      {
+                        title: t('common.delete'),
+                        shortcut: t('canvas.keys.delete'),
+                        icon: <Trash2 size={14} />,
+                        isWarning: true,
+                        action: () => deleteSelection(new Set(), edge.id),
+                      },
+                    ],
+                  });
                 }}
                 onUpdateLabel={(edgeId, label) => {
                   applyChange((prev) => ({
