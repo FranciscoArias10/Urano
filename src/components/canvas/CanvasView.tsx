@@ -52,6 +52,8 @@ import { VaultFileModal, VaultFileModalMode } from './VaultFileModal';
 import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { isImagePath, toUint8Array } from '../../services/storageAdapter';
 import { resolveImageBlobUrl, saveClipboardImageToVault } from '../../editor/imageExtension';
+import { isSamePath } from '../../utils/pathUtils';
+import { parseCanvasContent } from './canvasOperations';
 import './canvasStyles.css';
 
 interface CanvasViewProps {
@@ -260,7 +262,6 @@ function getImageNaturalSize(url: string): Promise<{ width: number; height: numb
 
 export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   const {
-    fileContent,
     updateContent,
     selectFile,
     refreshTree,
@@ -367,6 +368,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadedFilePathRef = useRef<string | null>(null);
+  const hasLoadErrorRef = useRef<boolean>(false);
+  const loadRequestIdRef = useRef<number>(0);
+  const pendingSaveRef = useRef<{ filePath: string; serialized: string } | null>(null);
 
   /* ------------------------------------------------------------------ */
   /* Viewport (zoom + pan) con escritura coalescida por frame            */
@@ -455,55 +460,122 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   /* Persistencia                                                         */
   /* ------------------------------------------------------------------ */
 
-  // 1. Load and parse JSON Canvas 1.0 from fileContent or disk
+  const flushPendingCanvasSave = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    const pending = pendingSaveRef.current;
+    if (!pending) return;
+    pendingSaveRef.current = null;
+    const { filePath: targetPath, serialized } = pending;
+    if (isSamePath(useVaultStore.getState().activeFile, targetPath)) {
+      updateContent(serialized);
+    }
+    invoke('write_file', { filePath: targetPath, content: serialized }).catch((e) => {
+      console.error('Error al guardar canvas pendiente en disco:', e);
+    });
+  }, [updateContent]);
+
   useEffect(() => {
-    let mounted = true;
+    return () => {
+      flushPendingCanvasSave();
+    };
+  }, [flushPendingCanvasSave]);
+
+  // 1. Load and parse JSON Canvas 1.0 strictly from disk for `filePath` (never stale `fileContent`)
+  useEffect(() => {
+    if (!filePath) return;
+
+    // Flush any unsaved debounced changes for the previous canvas before switching
+    flushPendingCanvasSave();
+
+    loadedFilePathRef.current = null;
+    hasLoadErrorRef.current = false;
+    const reqId = ++loadRequestIdRef.current;
+
+    // Reset transient interaction state from any previous canvas
+    setSelectedNodeIds(new Set());
+    setSelectedEdgeId(null);
+    setEditingNodeId(null);
+    setEditingEdgeId(null);
+    setDraggingNodeId(null);
+    setResizingHandle(null);
+    setSelectionBox(null);
+    setConnectingFrom(null);
+    setConnectingMouseWorld(null);
+    pendingEdgeDropRef.current = null;
+    setPendingEdgeDrop(null);
+    setEdgeDropMenu(null);
+    setContextMenu(null);
+
     const loadData = async () => {
+      let rawFromDisk = '';
       try {
-        let contentToParse = fileContent;
-        if (!contentToParse || !contentToParse.trim()) {
-          try {
-            contentToParse = await invoke<string>('read_file', { filePath });
-          } catch (e) {
-            contentToParse = '{"nodes":[],"edges":[]}';
-          }
-        }
-        if (mounted && contentToParse) {
-          const parsed = JSON.parse(contentToParse);
-          setCanvasData({
-            nodes: Array.isArray(parsed.nodes) ? parsed.nodes : [],
-            edges: Array.isArray(parsed.edges) ? parsed.edges : [],
-          });
-          historyRef.current = { past: [], future: [] };
-          forceHistoryRender((v) => v + 1);
-        }
-      } catch (err) {
-        console.warn('Error al parsear archivo .canvas:', err);
-        setCanvasData({ nodes: [], edges: [] });
+        rawFromDisk = await invoke<string>('read_file', { filePath });
+      } catch {
+        // Brand-new or not-yet-written canvas starts empty
+        rawFromDisk = '';
+      }
+
+      if (reqId !== loadRequestIdRef.current) return;
+
+      const { data, isInvalidNonEmptyJson } = parseCanvasContent(rawFromDisk);
+      if (isInvalidNonEmptyJson) {
+        console.warn('[Canvas] Archivo .canvas inválido; se bloquea sobrescritura automática:', filePath);
+        hasLoadErrorRef.current = true;
+        loadedFilePathRef.current = filePath;
+        canvasDataRef.current = data;
+        setCanvasData(data);
+        historyRef.current = { past: [], future: [] };
+        forceHistoryRender((v) => v + 1);
+        return;
+      }
+
+      loadedFilePathRef.current = filePath;
+      canvasDataRef.current = data;
+      setCanvasData(data);
+      historyRef.current = { past: [], future: [] };
+      forceHistoryRender((v) => v + 1);
+
+      if (isSamePath(useVaultStore.getState().activeFile, filePath)) {
+        useVaultStore.setState({
+          fileContent: rawFromDisk || '{"nodes":[],"edges":[]}',
+          isDirty: false,
+        });
       }
     };
-    loadData();
-    return () => {
-      mounted = false;
-    };
-  }, [filePath]);
 
-  // 2. Persist with Debounce (300ms)
+    void loadData();
+  }, [filePath, flushPendingCanvasSave]);
+
+  // 2. Persist with Debounce (300ms), bound strictly to the loaded canvas path
   const persistCanvas = useCallback(
     (newData: CanvasData) => {
+      const targetPath = loadedFilePathRef.current;
+      if (!targetPath || hasLoadErrorRef.current || !isSamePath(targetPath, filePath)) {
+        return;
+      }
       canvasDataRef.current = newData;
       setCanvasData(newData);
+
+      const serialized = JSON.stringify(newData, null, 2);
+      pendingSaveRef.current = { filePath: targetPath, serialized };
+      if (isSamePath(useVaultStore.getState().activeFile, targetPath)) {
+        updateContent(serialized);
+      }
+
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
-      saveTimeoutRef.current = setTimeout(async () => {
-        try {
-          const serialized = JSON.stringify(newData, null, 2);
-          updateContent(serialized);
-          await invoke('write_file', { filePath, content: serialized });
-        } catch (e) {
+      saveTimeoutRef.current = setTimeout(() => {
+        saveTimeoutRef.current = null;
+        const pending = pendingSaveRef.current;
+        if (!pending || !isSamePath(pending.filePath, targetPath)) return;
+        pendingSaveRef.current = null;
+        invoke('write_file', { filePath: targetPath, content: pending.serialized }).catch((e) => {
           console.error('Error al guardar canvas en disco:', e);
-        }
+        });
       }, 300);
     },
     [filePath, updateContent]
