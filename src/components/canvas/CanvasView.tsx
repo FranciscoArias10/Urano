@@ -53,7 +53,7 @@ import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { isImagePath, toUint8Array } from '../../services/storageAdapter';
 import { resolveImageBlobUrl, saveClipboardImageToVault } from '../../editor/imageExtension';
 import { isSamePath } from '../../utils/pathUtils';
-import { parseCanvasContent } from './canvasOperations';
+import { appendNodeWithPendingEdge, parseCanvasContent } from './canvasOperations';
 import './canvasStyles.css';
 
 interface CanvasViewProps {
@@ -634,35 +634,6 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     keepPendingOnMenuCloseRef.current = false;
   }, []);
 
-  /**
-   * Conecta el nodo recién creado con el nodo origen de la flecha pendiente.
-   * Se usa el lado de la nueva tarjeta que mira hacia el origen (lado opuesto
-   * a la dirección en la que se arrastró la flecha).
-   */
-  const connectPendingEdge = useCallback(
-    (newNodeId: string) => {
-      const pending = pendingEdgeDropRef.current;
-      if (!pending) return;
-      const source = canvasDataRef.current.nodes.find((n) => n.id === pending.sourceNodeId);
-      const target = canvasDataRef.current.nodes.find((n) => n.id === newNodeId);
-
-      if (source && target) {
-        const newEdge: CanvasEdge = {
-          id: generateCanvasId(),
-          fromNode: source.id,
-          fromSide: pending.sourceSide,
-          toNode: target.id,
-          toSide: facingSide(getNodeBBox(source), getNodeBBox(target)),
-          toEnd: 'arrow',
-        };
-        applyChange((prev) => ({ ...prev, edges: [...prev.edges, newEdge] }));
-      }
-
-      cancelPendingEdgeDrop();
-    },
-    [applyChange, cancelPendingEdgeDrop]
-  );
-
   const handleUndo = useCallback(() => {
     const { past, future } = historyRef.current;
     if (past.length === 0) return;
@@ -1140,9 +1111,14 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   /* Creación de nodos                                                   */
   /* ------------------------------------------------------------------ */
 
-  /** Inserta un nodo de texto (vacío y en modo edición). */
+  /** Inserta un nodo de texto (vacío y en modo edición), conectando opcionalmente la flecha pendiente en un solo paso. */
   const createTextNode = useCallback(
-    (pos: CanvasPoint, text = '', autoEdit = true) => {
+    (
+      pos: CanvasPoint,
+      text = '',
+      autoEdit = true,
+      pendingEdge?: { sourceNodeId: string; sourceSide: CanvasNodeSide } | null
+    ) => {
       const id = generateCanvasId();
       const newNode: CanvasNode = {
         id,
@@ -1153,7 +1129,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         width: DEFAULT_TEXT_NODE_SIZE.width,
         height: DEFAULT_TEXT_NODE_SIZE.height,
       };
-      applyChange((prev) => ({ ...prev, nodes: [...prev.nodes, newNode] }));
+      applyChange((prev) => appendNodeWithPendingEdge(prev, newNode, pendingEdge ?? null).data);
       setSelectedNodeIds(new Set([id]));
       setSelectedEdgeId(null);
       if (autoEdit) setEditingNodeId(id);
@@ -1162,15 +1138,19 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     [applyChange]
   );
 
-  /** Inserta un nodo de archivo (nota o imagen) respetando el tamaño natural. */
+  /** Inserta un nodo de archivo (nota o imagen) respetando el tamaño natural y cualquier flecha pendiente. */
   const createFileNode = useCallback(
-    async (filePath: string, pos: CanvasPoint) => {
+    async (
+      targetFilePath: string,
+      pos: CanvasPoint,
+      pendingEdge?: { sourceNodeId: string; sourceSide: CanvasNodeSide } | null
+    ) => {
       const id = generateCanvasId();
       let width = DEFAULT_FILE_NODE_SIZE.width;
       let height = DEFAULT_FILE_NODE_SIZE.height;
 
-      if (isImagePath(filePath)) {
-        const url = await resolveImageBlobUrl(filePath);
+      if (isImagePath(targetFilePath)) {
+        const url = await resolveImageBlobUrl(targetFilePath);
         const natural = await getImageNaturalSize(url);
         if (natural && natural.width > 0 && natural.height > 0) {
           // Respeta la proporción original de la imagen al insertarla
@@ -1187,13 +1167,13 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       const newNode: CanvasNode = {
         id,
         type: 'file',
-        file: filePath,
+        file: targetFilePath,
         x: pos.x - width / 2,
         y: pos.y - height / 2,
         width,
         height,
       };
-      applyChange((prev) => ({ ...prev, nodes: [...prev.nodes, newNode] }));
+      applyChange((prev) => appendNodeWithPendingEdge(prev, newNode, pendingEdge ?? null).data);
       setSelectedNodeIds(new Set([id]));
       setSelectedEdgeId(null);
       return id;
@@ -1226,17 +1206,18 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
   const handleSelectVaultFile = useCallback(
     async (vaultFilePath: string) => {
-      // La selección del modal es válida aunque el modal se cierre justo
-      // después: conservamos la flecha pendiente hasta terminar de crear el nodo.
+      // Capturar síncronamente la flecha pendiente ANTES del `await` porque
+      // VaultFileModal invoca `onClose()` inmediatamente después de `onSelectFile()`.
       vaultSelectionCommittedRef.current = true;
-      const pos = pendingDropPosRef.current || getVisibleCenter();
+      const capturedPending = pendingEdgeDropRef.current;
+      const pos = pendingDropPosRef.current || capturedPending?.world || getVisibleCenter();
       pendingDropPosRef.current = null;
-      const newNodeId = await createFileNode(vaultFilePath, pos);
-      if (pendingEdgeDropRef.current) {
-        connectPendingEdge(newNodeId);
+      if (capturedPending) {
+        cancelPendingEdgeDrop();
       }
+      await createFileNode(vaultFilePath, pos, capturedPending);
     },
-    [createFileNode, getVisibleCenter, connectPendingEdge]
+    [createFileNode, getVisibleCenter, cancelPendingEdgeDrop]
   );
 
   /* ------------------------------------------------------------------ */
@@ -1246,9 +1227,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   const handleEdgeDropAddCard = useCallback(() => {
     const pending = pendingEdgeDropRef.current;
     if (!pending) return;
-    const newCardId = createTextNode(pending.world);
-    connectPendingEdge(newCardId);
-  }, [createTextNode, connectPendingEdge]);
+    cancelPendingEdgeDrop();
+    createTextNode(pending.world, '', true, pending);
+  }, [createTextNode, cancelPendingEdgeDrop]);
 
   const handleEdgeDropAddNote = useCallback(() => {
     const pending = pendingEdgeDropRef.current;
@@ -1300,7 +1281,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   );
 
   const handleAddGroup = useCallback(
-    (customPos?: CanvasPoint) => {
+    (
+      customPos?: CanvasPoint,
+      pendingEdge?: { sourceNodeId: string; sourceSide: CanvasNodeSide } | null
+    ) => {
       const pos = customPos || getVisibleCenter();
       const id = generateCanvasId();
       const newGroup: CanvasGroupNode = {
@@ -1312,7 +1296,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         width: 500,
         height: 400,
       };
-      applyChange((prev) => ({ ...prev, nodes: [...prev.nodes, newGroup] }));
+      applyChange((prev) => appendNodeWithPendingEdge(prev, newGroup, pendingEdge ?? null).data);
       setSelectedNodeIds(new Set([id]));
       return id;
     },
@@ -1322,9 +1306,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   const handleEdgeDropAddGroup = useCallback(() => {
     const pending = pendingEdgeDropRef.current;
     if (!pending) return;
-    const newGroupId = handleAddGroup(pending.world);
-    connectPendingEdge(newGroupId);
-  }, [handleAddGroup, connectPendingEdge]);
+    cancelPendingEdgeDrop();
+    handleAddGroup(pending.world, pending);
+  }, [handleAddGroup, cancelPendingEdgeDrop]);
 
   // Convert selected text card to real Markdown note in vault
   const handleConvertTextCardToFile = async (node: CanvasNode) => {
@@ -2520,12 +2504,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         isOpen={vaultModal.open}
         mode={vaultModal.mode}
         onClose={() => {
-          const wasPending = Boolean(pendingEdgeDropRef.current);
-          if (wasPending && !vaultSelectionCommittedRef.current) {
-            // El usuario cerró el selector sin elegir nada: cancelar todo.
-            cancelPendingEdgeDrop();
-          } else if (wasPending) {
-            // Ya se creó el nodo desde handleSelectVaultFile.
+          if (pendingEdgeDropRef.current && !vaultSelectionCommittedRef.current) {
+            // El usuario cerró el selector sin elegir nada: cancelar flecha pendiente.
             cancelPendingEdgeDrop();
           }
           vaultSelectionCommittedRef.current = false;
