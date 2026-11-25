@@ -201,9 +201,10 @@ export function resolveVaultLinkTarget(
   fileTree: FileItem[],
   activeVault?: string | null
 ): string | null {
-  const { targetPath, isExternalUrl } = parseLinkTargetParts(rawTarget);
-  if (!targetPath || isExternalUrl) return null;
+  return resolveLinkAgainstFiles(rawTarget, flattenTreeFiles(fileTree), activeVault);
+}
 
+function flattenTreeFiles(fileTree: FileItem[]): FileItem[] {
   const allFiles: FileItem[] = [];
   const walk = (items: FileItem[]) => {
     for (const item of items) {
@@ -212,6 +213,34 @@ export function resolveVaultLinkTarget(
     }
   };
   walk(fileTree || []);
+  return allFiles;
+}
+
+/**
+ * Crea un resolvedor de enlaces que aplana el árbol una sola vez y cachea los resultados.
+ * Úsalo cuando haya que resolver muchos enlaces contra el mismo árbol (backlinks, grafo, etc.).
+ */
+export function createVaultLinkResolver(
+  fileTree: FileItem[],
+  activeVault?: string | null
+): (rawTarget: string) => string | null {
+  const allFiles = flattenTreeFiles(fileTree);
+  const cache = new Map<string, string | null>();
+  return (rawTarget: string) => {
+    if (cache.has(rawTarget)) return cache.get(rawTarget) ?? null;
+    const resolved = resolveLinkAgainstFiles(rawTarget, allFiles, activeVault);
+    cache.set(rawTarget, resolved);
+    return resolved;
+  };
+}
+
+function resolveLinkAgainstFiles(
+  rawTarget: string,
+  allFiles: FileItem[],
+  activeVault?: string | null
+): string | null {
+  const { targetPath, isExternalUrl } = parseLinkTargetParts(rawTarget);
+  if (!targetPath || isExternalUrl) return null;
   if (allFiles.length === 0) return null;
 
   const lowerFullTarget = targetPath.toLowerCase();

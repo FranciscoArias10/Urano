@@ -20,6 +20,15 @@ import {
   isSamePath,
   normalizePath,
 } from '../../utils/pathUtils';
+import {
+  analyzeLines,
+  findInlineCodeRanges,
+  findProtectedInlineRanges,
+  isRangeOverlapping,
+} from './mentionScan';
+import { useStableNotesContent } from './useStableNotes';
+
+const EMPTY_FILTERS: string[] = [];
 
 export type BacklinkSortOrder =
   | 'alphabetical'
@@ -72,19 +81,6 @@ function normalizeLinkTarget(raw: string): string {
   return decoded.replace(/\.md$/i, '').toLowerCase();
 }
 
-function isRangeMasked(
-  start: number,
-  end: number,
-  maskedRanges: Array<[number, number]>
-): boolean {
-  for (const [mStart, mEnd] of maskedRanges) {
-    if (start < mEnd && end > mStart) {
-      return true;
-    }
-  }
-  return false;
-}
-
 const WORD_CHAR_RE = /[\p{L}\p{N}_]/u;
 
 function hasValidBoundaries(line: string, start: number, end: number): boolean {
@@ -97,6 +93,123 @@ function hasValidBoundaries(line: string, start: number, end: number): boolean {
     if (WORD_CHAR_RE.test(line[end])) return false;
   }
   return true;
+}
+
+/**
+ * Escanea una nota y devuelve las menciones enlazadas y sin enlazar de `title`.
+ * Las menciones sin enlazar nunca incluyen texto dentro de frontmatter, bloques de código,
+ * código en línea, matemáticas, comentarios, URLs, HTML ni etiquetas (convertirlas
+ * corrompería el contenido).
+ */
+export function scanContentMentions(
+  content: string,
+  targetTitleLower: string,
+  targetRelLower: string
+): { linkedMatches: MentionMatch[]; unlinkedMatches: MentionMatch[] } {
+  const lines = content.split('\n');
+  const lineContexts = analyzeLines(lines);
+
+  const linkedMatches: MentionMatch[] = [];
+  const unlinkedMatches: MentionMatch[] = [];
+
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    const rawLine = lines[lineIndex];
+    const lineText = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
+    if (!lineText) continue;
+
+    const ctx = lineContexts[lineIndex];
+    if (ctx.inProtectedBlock) continue;
+
+    const codeRanges = findInlineCodeRanges(lineText);
+    const maskedRanges: Array<[number, number]> = [];
+
+    // 1. Scan wikilinks: [[Target]], [[Target|Alias]], [[Target#Heading]]
+    const wikiRegex = /\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/g;
+    let wikiMatch: RegExpExecArray | null;
+    while ((wikiMatch = wikiRegex.exec(lineText)) !== null) {
+      const matchStart = wikiMatch.index;
+      const matchEnd = matchStart + wikiMatch[0].length;
+      maskedRanges.push([matchStart, matchEnd]);
+      if (isRangeOverlapping(matchStart, matchEnd, codeRanges)) continue;
+
+      const normalizedTarget = normalizeLinkTarget(wikiMatch[1]);
+      if (
+        normalizedTarget === targetTitleLower ||
+        (targetRelLower && normalizedTarget === targetRelLower)
+      ) {
+        linkedMatches.push({
+          lineIndex,
+          lineNumber: lineIndex + 1,
+          lineText,
+          matchStart,
+          matchEnd,
+          matchedText: wikiMatch[0],
+        });
+      }
+    }
+
+    // 2. Scan Markdown links: [text](Note.md) / [text](folder/Note.md#section)
+    const mdLinkRegex = /(!?)\[([^\]]*)\]\(([^)]+)\)/g;
+    let mdMatch: RegExpExecArray | null;
+    while ((mdMatch = mdLinkRegex.exec(lineText)) !== null) {
+      const matchStart = mdMatch.index;
+      const matchEnd = matchStart + mdMatch[0].length;
+      maskedRanges.push([matchStart, matchEnd]);
+      if (isRangeOverlapping(matchStart, matchEnd, codeRanges)) continue;
+
+      // Skip embeds (![...](...))
+      if (mdMatch[1] === '!') continue;
+
+      const rawHref = mdMatch[3].trim().replace(/^<|>$/g, '').split(/\s+/)[0] || '';
+      if (/^(https?:|mailto:|obsidian:|urano:|file:)/i.test(rawHref)) continue;
+
+      const normalizedHref = normalizeLinkTarget(rawHref);
+      if (
+        normalizedHref === targetTitleLower ||
+        (targetRelLower && normalizedHref === targetRelLower)
+      ) {
+        linkedMatches.push({
+          lineIndex,
+          lineNumber: lineIndex + 1,
+          lineText,
+          matchStart,
+          matchEnd,
+          matchedText: mdMatch[0],
+        });
+      }
+    }
+
+    // 3. Plain-text unlinked mentions, only in regular prose
+    if (ctx.inFrontmatter || ctx.isDefinition) continue;
+
+    maskedRanges.push(...findProtectedInlineRanges(lineText));
+
+    const lowerLine = lineText.toLowerCase();
+    let searchPos = 0;
+    while (searchPos <= lowerLine.length - targetTitleLower.length) {
+      const foundIdx = lowerLine.indexOf(targetTitleLower, searchPos);
+      if (foundIdx === -1) break;
+      const endIdx = foundIdx + targetTitleLower.length;
+
+      if (
+        !isRangeOverlapping(foundIdx, endIdx, maskedRanges) &&
+        hasValidBoundaries(lineText, foundIdx, endIdx)
+      ) {
+        unlinkedMatches.push({
+          lineIndex,
+          lineNumber: lineIndex + 1,
+          lineText,
+          matchStart: foundIdx,
+          matchEnd: endIdx,
+          matchedText: lineText.slice(foundIdx, endIdx),
+        });
+      }
+
+      searchPos = endIdx;
+    }
+  }
+
+  return { linkedMatches, unlinkedMatches };
 }
 
 export function scanBacklinkMentions(
@@ -127,116 +240,22 @@ export function scanBacklinkMentions(
     if (!filePath || isSamePath(filePath, activeFile)) continue;
     if (!filePath.toLowerCase().endsWith('.md')) continue;
     if (isPathExcluded(filePath, userIgnoreFilters)) continue;
+    // Atajo: sin el título en el texto no puede haber menciones
+    if (!content.toLowerCase().includes(targetTitleLower)) continue;
 
     const fileName = getCleanFileName(filePath);
     const mtime = mtimeMap[normalizePath(filePath)] || 0;
-    const lines = content.split('\n');
-
-    const linkedMatches: MentionMatch[] = [];
-    const unlinkedMatches: MentionMatch[] = [];
-
-    for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-      const rawLine = lines[lineIndex];
-      const lineText = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
-      if (!lineText) continue;
-
-      const maskedRanges: Array<[number, number]> = [];
-
-      // 1. Scan wikilinks: [[Target]], [[Target|Alias]], [[Target#Heading]]
-      const wikiRegex = /\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/g;
-      let wikiMatch: RegExpExecArray | null;
-      while ((wikiMatch = wikiRegex.exec(lineText)) !== null) {
-        const matchStart = wikiMatch.index;
-        const matchEnd = matchStart + wikiMatch[0].length;
-        maskedRanges.push([matchStart, matchEnd]);
-
-        const normalizedTarget = normalizeLinkTarget(wikiMatch[1]);
-        if (
-          normalizedTarget === targetTitleLower ||
-          (targetRelLower && normalizedTarget === targetRelLower)
-        ) {
-          linkedMatches.push({
-            lineIndex,
-            lineNumber: lineIndex + 1,
-            lineText,
-            matchStart,
-            matchEnd,
-            matchedText: wikiMatch[0],
-          });
-        }
-      }
-
-      // 2. Scan Markdown links: [text](Note.md) / [text](folder/Note.md#section)
-      const mdLinkRegex = /(!?)\[([^\]]*)\]\(([^)]+)\)/g;
-      let mdMatch: RegExpExecArray | null;
-      while ((mdMatch = mdLinkRegex.exec(lineText)) !== null) {
-        const matchStart = mdMatch.index;
-        const matchEnd = matchStart + mdMatch[0].length;
-        maskedRanges.push([matchStart, matchEnd]);
-
-        // Skip embeds (![...](...))
-        if (mdMatch[1] === '!') continue;
-
-        const rawHref = mdMatch[3].trim().replace(/^<|>$/g, '').split(/\s+/)[0] || '';
-        if (/^(https?:|mailto:|obsidian:|urano:|file:)/i.test(rawHref)) continue;
-
-        const normalizedHref = normalizeLinkTarget(rawHref);
-        if (
-          normalizedHref === targetTitleLower ||
-          (targetRelLower && normalizedHref === targetRelLower)
-        ) {
-          linkedMatches.push({
-            lineIndex,
-            lineNumber: lineIndex + 1,
-            lineText,
-            matchStart,
-            matchEnd,
-            matchedText: mdMatch[0],
-          });
-        }
-      }
-
-      // 3. Scan plain-text unlinked mentions outside [[...]] and [...](...)
-      const lowerLine = lineText.toLowerCase();
-      let searchPos = 0;
-      while (searchPos <= lowerLine.length - targetTitleLower.length) {
-        const foundIdx = lowerLine.indexOf(targetTitleLower, searchPos);
-        if (foundIdx === -1) break;
-        const endIdx = foundIdx + targetTitleLower.length;
-
-        if (
-          !isRangeMasked(foundIdx, endIdx, maskedRanges) &&
-          hasValidBoundaries(lineText, foundIdx, endIdx)
-        ) {
-          unlinkedMatches.push({
-            lineIndex,
-            lineNumber: lineIndex + 1,
-            lineText,
-            matchStart: foundIdx,
-            matchEnd: endIdx,
-            matchedText: lineText.slice(foundIdx, endIdx),
-          });
-        }
-
-        searchPos = endIdx;
-      }
-    }
+    const { linkedMatches, unlinkedMatches } = scanContentMentions(
+      content,
+      targetTitleLower,
+      targetRelLower
+    );
 
     if (linkedMatches.length > 0) {
-      linkedGroups.push({
-        filePath,
-        fileName,
-        mtime,
-        matches: linkedMatches,
-      });
+      linkedGroups.push({ filePath, fileName, mtime, matches: linkedMatches });
     }
     if (unlinkedMatches.length > 0) {
-      unlinkedGroups.push({
-        filePath,
-        fileName,
-        mtime,
-        matches: unlinkedMatches,
-      });
+      unlinkedGroups.push({ filePath, fileName, mtime, matches: unlinkedMatches });
     }
   }
 
@@ -304,11 +323,14 @@ export const EmbeddedBacklinks: React.FC<EmbeddedBacklinksProps> = ({
 }) => {
   const t = useT();
   const activeVault = useVaultStore((s) => s.activeVault);
-  const notesContentMap = useVaultStore((s) => s.notesContentMap);
+  const rawNotesContentMap = useVaultStore((s) => s.notesContentMap);
+  // Escribir en la nota activa no debe re-escanear toda la bóveda
+  const notesContentMap = useStableNotesContent(rawNotesContentMap, activeFile);
   const fileTree = useVaultStore((s) => s.fileTree);
   const selectFile = useVaultStore((s) => s.selectFile);
   const updateNoteContent = useVaultStore((s) => s.updateNoteContent);
-  const userIgnoreFilters = useSettingsStore((s) => s.settings.userIgnoreFilters) || [];
+  const userIgnoreFilters =
+    useSettingsStore((s) => s.settings.userIgnoreFilters) || EMPTY_FILTERS;
 
   const [showSearch, setShowSearch] = useState(false);
   const [filterQuery, setFilterQuery] = useState('');
@@ -380,28 +402,39 @@ export const EmbeddedBacklinks: React.FC<EmbeddedBacklinksProps> = ({
     const currentContent = latestMap[filePath] ?? notesContentMap[filePath];
     if (typeof currentContent !== 'string') return;
 
-    const lines = currentContent.split('\n');
-    if (match.lineIndex < 0 || match.lineIndex >= lines.length) return;
+    // Revalidar contra el contenido actual: la mención debe seguir existiendo y estar en prosa
+    // (no en frontmatter, código, URL, etc.) para no corromper el archivo.
+    const targetRelLower = getRelativeVaultPath(activeFile, activeVault || '')
+      .trim()
+      .toLowerCase();
+    const { unlinkedMatches } = scanContentMentions(
+      currentContent,
+      targetTitle.toLowerCase(),
+      targetRelLower
+    );
+    const stillValid = unlinkedMatches.some(
+      (m) =>
+        m.lineIndex === match.lineIndex &&
+        m.matchStart === match.matchStart &&
+        m.matchEnd === match.matchEnd
+    );
+    if (!stillValid) return;
 
+    const lines = currentContent.split('\n');
     const rawLine = lines[match.lineIndex];
     const hasCarriageReturn = rawLine.endsWith('\r');
     const lineBody = hasCarriageReturn ? rawLine.slice(0, -1) : rawLine;
 
-    if (
-      match.matchStart < 0 ||
-      match.matchEnd > lineBody.length ||
-      lineBody.slice(match.matchStart, match.matchEnd).toLowerCase() !==
-        targetTitle.toLowerCase()
-    ) {
-      return;
-    }
+    // Conservar el texto original (mayúsculas/minúsculas) como alias si difiere del título
+    const original = lineBody.slice(match.matchStart, match.matchEnd);
+    const replacement =
+      original === targetTitle ? `[[${targetTitle}]]` : `[[${targetTitle}|${original}]]`;
 
-    const updatedLine =
+    lines[match.lineIndex] =
       lineBody.slice(0, match.matchStart) +
-      `[[${targetTitle}]]` +
+      replacement +
       lineBody.slice(match.matchEnd) +
       (hasCarriageReturn ? '\r' : '');
-    lines[match.lineIndex] = updatedLine;
 
     await updateNoteContent(filePath, lines.join('\n'));
   };

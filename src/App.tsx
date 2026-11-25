@@ -2110,6 +2110,7 @@ const MainApp: React.FC = () => {
             fileContent={fileContent}
             notesContentMap={notesContentMap}
             onOpenNote={(pathOrName) => openOrCreateWikilink(pathOrName)}
+            onOpenPath={handleOpenFile}
             onClose={() => setShowBacklinks(false)}
           />
         )}

@@ -4,11 +4,12 @@ import { useT } from '../../stores/localeStore';
 import { useVaultStore } from '../../stores/vaultStore';
 import { FileItem } from '../../types';
 import {
+  createVaultLinkResolver,
   getRelativeVaultPath,
   isSamePath,
   parseLinkTargetParts,
-  resolveVaultLinkTarget,
 } from '../../utils/pathUtils';
+import { useDebouncedValue, useStableNotesContent } from './useStableNotes';
 
 export interface IncomingBacklinkItem {
   path: string;
@@ -37,10 +38,13 @@ export function computeIncomingBacklinks(params: {
   const targetLower = activeBaseName.toLowerCase();
   const activeRelPathLower = getRelativeVaultPath(activeFile, activeVault || '').toLowerCase();
 
+  // El árbol se aplana una sola vez y los destinos repetidos se resuelven desde caché
+  const resolveLink = createVaultLinkResolver(fileTree, activeVault);
+
   const targetMatchesActive = (rawTarget: string): boolean => {
     const { targetPath, isExternalUrl } = parseLinkTargetParts(rawTarget);
     if (!targetPath || isExternalUrl) return false;
-    const resolved = resolveVaultLinkTarget(rawTarget, fileTree, activeVault);
+    const resolved = resolveLink(rawTarget);
     if (resolved) {
       return isSamePath(resolved, activeFile);
     }
@@ -113,6 +117,7 @@ export function computeOutgoingLinks(params: {
   if (!fileContent) return [];
 
   const linksMap = new Map<string, OutgoingLinkItem>();
+  const resolveLink = createVaultLinkResolver(fileTree, activeVault);
   const sanitized = fileContent.replace(/```[\s\S]*?```/g, '');
   const wikiRegex = /(?<!!)\[\[([^\]|#\r\n]+)(?:#[^\]|\r\n]+)?(?:\|[^\]\r\n]+)?\]\]/g;
   let match: RegExpExecArray | null;
@@ -122,7 +127,7 @@ export function computeOutgoingLinks(params: {
     const targetLower = targetName.toLowerCase();
     if (!targetName || linksMap.has(targetLower)) continue;
 
-    let resolvedPath = resolveVaultLinkTarget(targetName, fileTree, activeVault);
+    let resolvedPath = resolveLink(targetName);
     if (!resolvedPath) {
       const cleanTarget = targetName
         .replace(/\\/g, '/')
@@ -154,7 +159,10 @@ interface BacklinksPanelProps {
   notesContentMap: Record<string, string>;
   fileTree?: FileItem[];
   activeVault?: string | null;
+  /** Abre/crea una nota a partir de un nombre de wikilink (puede no existir aún). */
   onOpenNote: (pathOrName: string) => void;
+  /** Abre un archivo existente a partir de su ruta real (sin interpretarla como enlace). */
+  onOpenPath?: (filePath: string) => void;
   onClose: () => void;
 }
 
@@ -162,10 +170,11 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
   activeFile,
   activeFileName,
   fileContent,
-  notesContentMap,
+  notesContentMap: rawNotesContentMap,
   fileTree: propFileTree,
   activeVault: propActiveVault,
   onOpenNote,
+  onOpenPath,
   onClose,
 }) => {
   const t = useT();
@@ -173,6 +182,17 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
   const storeFileTree = useVaultStore((s) => s.fileTree);
   const storeActiveVault = useVaultStore((s) => s.activeVault);
   const fileTree = propFileTree ?? storeFileTree;
+  const selectFile = useVaultStore((s) => s.selectFile);
+
+  // Escribir en la nota activa no debe re-escanear toda la bóveda ni recalcular enlaces por tecla
+  const notesContentMap = useStableNotesContent(rawNotesContentMap, activeFile);
+  const debouncedFileContent = useDebouncedValue(fileContent, 250);
+
+  // Las rutas reales de archivo no deben pasar por el parser de enlaces (`#`, `%`, `|` en nombres)
+  const openExistingPath = (filePath: string) => {
+    if (onOpenPath) onOpenPath(filePath);
+    else void selectFile(filePath);
+  };
   const activeVault = propActiveVault !== undefined ? propActiveVault : storeActiveVault;
 
   const activeBaseName = useMemo(() => {
@@ -198,12 +218,12 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
   const outgoingLinks = useMemo(
     () =>
       computeOutgoingLinks({
-        fileContent,
+        fileContent: debouncedFileContent,
         notesContentMap,
         fileTree,
         activeVault,
       }),
-    [fileContent, notesContentMap, fileTree, activeVault]
+    [debouncedFileContent, notesContentMap, fileTree, activeVault]
   );
 
   // Empty states embed a styled <code> element: split the sentence around the placeholder
@@ -282,7 +302,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
                 key={item.path}
                 data-page-preview-context="search"
                 data-page-preview-target={item.path}
-                onClick={() => onOpenNote(item.path)}
+                onClick={() => openExistingPath(item.path)}
                 className="p-2 rounded-lg bg-urano-bg border border-urano-border hover:border-orange-500/40 cursor-pointer group transition-colors"
               >
                 <div className="flex items-center gap-1.5 text-xs font-medium text-urano-text group-hover:text-orange-300">
@@ -308,7 +328,9 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
               key={item.targetName}
               data-page-preview-context="search"
               data-page-preview-target={item.resolvedPath || item.targetName}
-              onClick={() => onOpenNote(item.resolvedPath || item.targetName)}
+              onClick={() =>
+                item.resolvedPath ? openExistingPath(item.resolvedPath) : onOpenNote(item.targetName)
+              }
               className="flex items-center justify-between p-2 rounded-lg bg-urano-bg border border-urano-border hover:border-orange-500/40 cursor-pointer text-xs transition-colors"
             >
               <div className="flex items-center gap-2 truncate">
