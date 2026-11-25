@@ -10,6 +10,7 @@ import { isImagePath } from '../../services/storageAdapter';
 import { resolveImageBlobUrl } from '../../editor/imageExtension';
 import { CanvasMarkdown } from './CanvasMarkdown';
 import { CanvasFloatingMenu } from './CanvasFloatingMenu';
+import { findNoteContentInMap, resolveCanvasVaultFile } from './canvasOperations';
 import { useT } from '../../stores/localeStore';
 
 interface CanvasNodeViewProps {
@@ -77,6 +78,7 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
   onStartConnect,
   onUpdateText,
   onUpdateGroupLabel,
+  onOpenFile,
   onOpenLink,
   isEditingText: parentIsEditing,
   setIsEditingText: parentSetIsEditing,
@@ -98,7 +100,7 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
   const [isEditingGroupLabel, setIsEditingGroupLabel] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { notesContentMap, updateNoteContent } = useVaultStore();
+  const { notesContentMap, updateNoteContent, fileTree, files, activeVault } = useVaultStore();
 
   // Un nodo sin color propio usa el estilo por defecto de Urano:
   // borde `1px solid #3a3a3a` y fondo `#1e1e1e` (definidos en canvasStyles.css).
@@ -110,6 +112,9 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
   const isFileNode = node.type === 'file';
   const isTextNode = node.type === 'text';
   const filePath = isFileNode ? node.file : '';
+  const resolvedFilePath = isFileNode
+    ? resolveCanvasVaultFile(filePath, fileTree, files, activeVault)
+    : '';
   const textContent = isTextNode ? node.text : '';
   const isImageFile = isFileNode && isImagePath(filePath);
   const isNoteFile = isFileNode && !isImageFile;
@@ -122,19 +127,21 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
   useEffect(() => {
     let cancelled = false;
     if (isImageFile) {
-      resolveImageBlobUrl(filePath).then((url) => {
+      resolveImageBlobUrl(resolvedFilePath || filePath).then((url) => {
         if (!cancelled) setFileImageUrl(url);
       });
     }
     return () => {
       cancelled = true;
     };
-  }, [filePath, isImageFile]);
+  }, [filePath, resolvedFilePath, isImageFile]);
 
   /* ---------------------------------------------------------------- */
   /* Contenido de la nota del vault                                    */
   /* ---------------------------------------------------------------- */
-  const noteContent = isNoteFile ? notesContentMap[filePath] ?? '' : '';
+  const noteContent = isNoteFile
+    ? findNoteContentInMap(notesContentMap, resolvedFilePath, filePath)
+    : '';
   const [noteDraft, setNoteDraft] = useState<string>('');
   const noteDraftRef = useRef<string>('');
 
@@ -166,10 +173,11 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
 
   const handleNoteBlur = useCallback(() => {
     setIsEditing(false);
-    if (isNoteFile && noteDraftRef.current !== noteContent) {
-      updateNoteContent(filePath, noteDraftRef.current);
+    const targetNotePath = resolvedFilePath || filePath;
+    if (isNoteFile && targetNotePath && noteDraftRef.current !== noteContent) {
+      updateNoteContent(targetNotePath, noteDraftRef.current);
     }
-  }, [isNoteFile, filePath, noteContent, updateNoteContent]);
+  }, [isNoteFile, resolvedFilePath, filePath, noteContent, updateNoteContent, setIsEditing]);
 
   const handleGroupLabelBlur = () => {
     setIsEditingGroupLabel(false);
@@ -377,7 +385,19 @@ export const CanvasNodeView: React.FC<CanvasNodeViewProps> = ({
     >
       {/* Etiqueta del archivo FUERA de la tarjeta, sobre la esquina superior izquierda */}
       {isFileNode && cardLabelMode !== 'never' && (
-        <div className="canvas-node-label" onDoubleClick={(e) => e.stopPropagation()}>
+        <div
+          className="canvas-node-label"
+          onClick={(e) => {
+            if (e.ctrlKey || e.metaKey) {
+              e.stopPropagation();
+              onOpenFile?.(resolvedFilePath || filePath);
+            }
+          }}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            onOpenFile?.(resolvedFilePath || filePath);
+          }}
+        >
           {baseName(filePath)}
         </div>
       )}

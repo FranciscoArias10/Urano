@@ -51,12 +51,18 @@ import { CanvasEdgeView } from './CanvasEdgeView';
 import { VaultFileModal, VaultFileModalMode } from './VaultFileModal';
 import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { isImagePath, toUint8Array } from '../../services/storageAdapter';
-import { resolveImageBlobUrl, saveClipboardImageToVault } from '../../editor/imageExtension';
+import {
+  resolveImageBlobUrl,
+  resolveVaultImagePath,
+  saveClipboardImageToVault,
+} from '../../editor/imageExtension';
 import { isSamePath } from '../../utils/pathUtils';
 import {
   appendNodeWithPendingEdge,
   parseCanvasContent,
+  resolveCanvasVaultFile,
   resolveContextMenuSelection,
+  toCanvasVaultPath,
 } from './canvasOperations';
 import './canvasStyles.css';
 
@@ -1182,8 +1188,17 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
       let width = DEFAULT_FILE_NODE_SIZE.width;
       let height = DEFAULT_FILE_NODE_SIZE.height;
 
-      if (isImagePath(targetFilePath)) {
-        const url = await resolveImageBlobUrl(targetFilePath);
+      const { fileTree: currentTree, files: currentFiles, activeVault: currentVault } =
+        useVaultStore.getState();
+      const resolvedOsPath = resolveCanvasVaultFile(
+        targetFilePath,
+        currentTree,
+        currentFiles,
+        currentVault
+      );
+
+      if (isImagePath(resolvedOsPath || targetFilePath)) {
+        const url = await resolveImageBlobUrl(resolvedOsPath || targetFilePath);
         const natural = await getImageNaturalSize(url);
         if (natural && natural.width > 0 && natural.height > 0) {
           // Respeta la proporción original de la imagen al insertarla
@@ -1197,10 +1212,12 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         }
       }
 
+      const portableFileRef = toCanvasVaultPath(resolvedOsPath || targetFilePath, currentVault);
+
       const newNode: CanvasNode = {
         id,
         type: 'file',
-        file: targetFilePath,
+        file: portableFileRef,
         x: pos.x - width / 2,
         y: pos.y - height / 2,
         width,
@@ -1345,19 +1362,22 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
 
   // Convert selected text card to real Markdown note in vault
   const handleConvertTextCardToFile = async (node: CanvasNode) => {
-    if (node.type !== 'text') return;
+    if (node.type !== 'text' || !activeVault) return;
     const noteName = prompt(t('canvas.prompts.noteName'), t('canvas.prompts.noteNameDefault'));
     if (!noteName) return;
 
     try {
-      const cleanName = noteName.endsWith('.md') ? noteName : `${noteName}.md`;
-      const fullPath = `${activeVault}/${cleanName}`.replace(/\/+/g, '/');
+      const cleanName = noteName.trim().endsWith('.md') ? noteName.trim() : `${noteName.trim()}.md`;
+      const separator = activeVault.includes('\\') ? '\\' : '/';
+      const cleanVault = activeVault.replace(/[\\/]+$/, '');
+      const fullPath = `${cleanVault}${separator}${cleanName.replace(/[\\/]+/g, separator)}`;
+      const portableRef = toCanvasVaultPath(fullPath, activeVault);
 
       await invoke('create_file', { filePath: fullPath });
       await invoke('write_file', { filePath: fullPath, content: node.text });
       await refreshTree();
 
-      // Transform node to file type
+      // Transform node to file type using portable JSON Canvas 1.0 relative path
       applyChange((prev) => ({
         ...prev,
         nodes: prev.nodes.map((n) =>
@@ -1365,7 +1385,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
             ? {
                 id: n.id,
                 type: 'file',
-                file: fullPath,
+                file: portableRef,
                 x: n.x,
                 y: n.y,
                 width: Math.max(350, n.width),
@@ -1876,16 +1896,16 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
   /* Arrastrar y soltar (Explorador lateral -> Canvas)                    */
   /* ------------------------------------------------------------------ */
 
-  /** Busca una ruta del vault en el árbol (coincidencia exacta o por sufijo). */
+  /** Busca una ruta del vault en el árbol o en la lista completa de archivos. */
   const resolveVaultPath = useCallback(
     (rawPath: string): string | null => {
       if (!rawPath) return null;
-      const normalized = rawPath.replace(/\\/g, '/');
+      const normalized = rawPath.replace(/\\/g, '/').toLowerCase();
       let found: string | null = null;
       const traverse = (items: typeof fileTree) => {
         for (const item of items) {
           if (!item.isDir) {
-            const itemPath = item.path.replace(/\\/g, '/');
+            const itemPath = item.path.replace(/\\/g, '/').toLowerCase();
             if (itemPath === normalized || itemPath.endsWith(`/${normalized}`)) {
               found = item.path;
               return;
@@ -1898,6 +1918,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         }
       };
       traverse(fileTree);
+      if (!found) {
+        traverse(useVaultStore.getState().files);
+      }
       return found;
     },
     [fileTree]
@@ -1984,10 +2007,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
         e.preventDefault();
         const savedName = await saveClipboardImageToVault(file);
         if (!savedName) return;
-        const { activeVault: vault } = useVaultStore.getState();
-        const separator = vault?.includes('\\') ? '\\' : '/';
-        const cleanVault = vault ? vault.replace(/[\\/]+$/, '') : '';
-        const fullPath = cleanVault ? `${cleanVault}${separator}${savedName}` : savedName;
+        const fullPath = resolveVaultImagePath(savedName);
         await createFileNode(fullPath, getVisibleCenter());
         showNotice(t('canvas.notices.imageAdded', { name: savedName }), 2500, 'success');
         return;
@@ -2009,10 +2029,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
           const nativeFile = new File([nativeBytes], 'pasted_image.png', { type: 'image/png' });
           const savedName = await saveClipboardImageToVault(nativeFile);
           if (!savedName) return;
-          const { activeVault: vault } = useVaultStore.getState();
-          const separator = vault?.includes('\\') ? '\\' : '/';
-          const cleanVault = vault ? vault.replace(/[\\/]+$/, '') : '';
-          const fullPath = cleanVault ? `${cleanVault}${separator}${savedName}` : savedName;
+          const fullPath = resolveVaultImagePath(savedName);
           await createFileNode(fullPath, getVisibleCenter());
         }
       } catch {

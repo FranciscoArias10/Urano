@@ -7,7 +7,6 @@ import {
 import { FileItem } from '../../types';
 import { isImagePath } from '../../services/storageAdapter';
 import {
-  getRelativeVaultPath,
   isSamePath,
   normalizePath,
   resolveFilePathInVault,
@@ -45,15 +44,22 @@ export function parseCanvasContent(raw: string): {
 }
 
 /**
- * Converts a vault file path to a portable JSON Canvas 1.0 forward-slash vault-relative path.
+ * Converts a vault file path to a portable JSON Canvas 1.0 forward-slash vault-relative path,
+ * preserving the full file extension (e.g. `Docs/Roadmap.md`, `Assets/diagram.png`).
  */
 export function toCanvasVaultPath(filePath: string, activeVault?: string | null): string {
   if (!filePath) return '';
+  const normFile = normalizePath(filePath);
   if (activeVault) {
-    const rel = getRelativeVaultPath(filePath, activeVault);
-    if (rel) return normalizePath(rel).replace(/^\/+/, '');
+    const normVault = normalizePath(activeVault);
+    if (normVault) {
+      const lowerPrefix = `${normVault.toLowerCase()}/`;
+      if (normFile.toLowerCase().startsWith(lowerPrefix)) {
+        return normFile.slice(normVault.length + 1);
+      }
+    }
   }
-  return normalizePath(filePath);
+  return normFile.replace(/^\/+/, '');
 }
 
 /**

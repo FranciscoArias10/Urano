@@ -4,6 +4,8 @@ import { useVaultStore } from '../../stores/vaultStore';
 import { FileItem } from '../../types';
 import { isImagePath } from '../../services/storageAdapter';
 import { useT } from '../../stores/localeStore';
+import { normalizePath } from '../../utils/pathUtils';
+import { toCanvasVaultPath } from './canvasOperations';
 
 export type VaultFileModalMode = 'note' | 'image';
 
@@ -26,36 +28,64 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
   onSelectFile,
 }) => {
   const t = useT();
-  const { fileTree } = useVaultStore();
+  const { fileTree, files: allVaultFiles, activeVault } = useVaultStore();
   const [search, setSearch] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Collect markdown files or images from fileTree
+  // Collect markdown files or images from both fileTree and full vault files list
   const files = useMemo(() => {
-    const collected: { path: string; name: string }[] = [];
+    const collected: { path: string; name: string; folder: string }[] = [];
+    const seen = new Set<string>();
+
+    const computeFolderLabel = (fullPath: string): string => {
+      const rel = toCanvasVaultPath(fullPath, activeVault);
+      const parts = normalizePath(rel).split('/').filter(Boolean);
+      parts.pop();
+      return parts.join('/') || t('canvas.vaultModal.root');
+    };
+
     const collect = (items: FileItem[]) => {
       for (const item of items) {
         if (!item.isDir) {
-          const isNote = item.name.toLowerCase().endsWith('.md');
-          const isImg = isImagePath(item.name);
-          if (mode === 'note' && isNote) {
-            collected.push({ path: item.path, name: item.name.replace(/\.md$/i, '') });
-          } else if (mode === 'image' && isImg) {
-            collected.push({ path: item.path, name: item.name });
+          const canon = normalizePath(item.path).toLowerCase();
+          if (!seen.has(canon)) {
+            const isNote = item.name.toLowerCase().endsWith('.md');
+            const isImg = isImagePath(item.name);
+            if (mode === 'note' && isNote) {
+              seen.add(canon);
+              collected.push({
+                path: item.path,
+                name: item.name.replace(/\.md$/i, ''),
+                folder: computeFolderLabel(item.path),
+              });
+            } else if (mode === 'image' && isImg) {
+              seen.add(canon);
+              collected.push({
+                path: item.path,
+                name: item.name,
+                folder: computeFolderLabel(item.path),
+              });
+            }
           }
         }
         if (item.children) collect(item.children);
       }
     };
     collect(fileTree);
+    if (allVaultFiles?.length) {
+      collect(allVaultFiles);
+    }
     return collected;
-  }, [fileTree, mode]);
+  }, [fileTree, allVaultFiles, activeVault, mode, t]);
 
-  const filtered = useMemo(
-    () => files.filter((f) => f.name.toLowerCase().includes(search.toLowerCase())),
-    [files, search]
-  );
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return files;
+    return files.filter(
+      (f) => f.name.toLowerCase().includes(q) || f.folder.toLowerCase().includes(q)
+    );
+  }, [files, search]);
 
   useEffect(() => {
     if (isOpen) {
@@ -149,7 +179,7 @@ export const VaultFileModal: React.FC<VaultFileModalProps> = ({
                 )}
                 <span className="truncate flex-1 font-medium">{file.name}</span>
                 <span className="text-[10px] text-urano-faint truncate max-w-[150px]">
-                  {file.path.split('/').slice(-2, -1)[0] || t('canvas.vaultModal.root')}
+                  {file.folder}
                 </span>
               </div>
             ))
