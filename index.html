@@ -8,26 +8,58 @@
     <style>
       :root {
         color-scheme: dark;
+        --splash-bg: #1e1e1e;
+        --splash-fg: #dcddde;
+        --splash-muted: #888888;
+        --splash-track: #262626;
+        --splash-accent: #e06c1b;
+      }
+      *, *::before, *::after {
+        box-sizing: border-box;
       }
       html, body, #root {
-        background-color: #1e1e1e;
-        color: #dcddde;
+        background-color: var(--splash-bg, #1e1e1e);
+        color: var(--splash-fg, #dcddde);
         margin: 0;
         padding: 0;
         height: 100%;
         width: 100%;
+        overflow: hidden;
+      }
+      #root {
+        display: flex;
+        flex-direction: column;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-button {
+        display: none;
+        width: 0;
+        height: 0;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: rgba(255, 255, 255, 0.15);
+        border-radius: 999px;
+      }
+      html.no-splash #app-splash-screen {
+        display: none !important;
       }
       .progress-bar-container {
-        position: absolute;
-        height: 100vh;
-        width: 100vw;
-        top: 0;
-        inset-inline-start: 0;
-        background-color: #1e1e1e;
+        position: fixed;
+        inset: 0;
+        height: 100%;
+        width: 100%;
+        background-color: var(--splash-bg, #1e1e1e);
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        overflow: hidden;
         z-index: 10000;
         opacity: 1;
         transition: opacity 150ms ease-out;
@@ -40,11 +72,12 @@
         align-items: center;
         padding: 8px;
         width: 100%;
+        max-width: 100%;
       }
       .progress-bar-message {
         margin-bottom: 32px;
-        color: #888888;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Ubuntu, sans-serif;
+        color: var(--splash-muted, #888888);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, sans-serif;
         font-size: 15px;
         font-weight: 500;
         text-align: center;
@@ -56,20 +89,20 @@
         margin: 0 auto;
         width: 90vw;
         max-width: 400px;
-        overflow-x: hidden;
+        overflow: hidden;
         border-radius: 4px;
-        background-color: #262626;
+        background-color: var(--splash-track, #262626);
       }
       .progress-bar-line {
         position: absolute;
         opacity: 0.35;
-        background-color: #e06c1b;
+        background-color: var(--splash-accent, #e06c1b);
         width: 100%;
         height: 8px;
       }
       .progress-bar-subline {
         position: absolute;
-        background-color: #e06c1b;
+        background-color: var(--splash-accent, #e06c1b);
         height: 8px;
         width: 100%;
         transform-origin: left center;
@@ -92,56 +125,65 @@
     <script>
       (function() {
         try {
-          var isSettings = window.location.search.indexOf('window=settings') !== -1;
+          var isSettings =
+            window.location.search.indexOf('window=settings') !== -1 ||
+            window.location.hash.indexOf('window=settings') !== -1;
           var hasVault = Boolean(localStorage.getItem('urano_last_vault'));
           var raw = localStorage.getItem('urano_settings');
           var theme = 'dark';
           var lang = 'es';
+          var accent = '#e06c1b';
+          var zoomLevel = 100;
           if (raw) {
             var parsed = JSON.parse(raw);
             if (parsed && parsed.theme) theme = parsed.theme;
             if (parsed && parsed.language) lang = parsed.language;
+            if (parsed && typeof parsed.accentColor === 'string' && parsed.accentColor.trim()) {
+              accent = parsed.accentColor.trim();
+            }
+            if (parsed && typeof parsed.zoomLevel === 'number') {
+              var zl = parsed.zoomLevel <= 2 ? Math.round(parsed.zoomLevel * 100) : parsed.zoomLevel;
+              zoomLevel = Math.min(150, Math.max(70, Math.round(zl / 5) * 5));
+            }
+          }
+          var root = document.documentElement;
+          if (isSettings || !hasVault) {
+            root.classList.add('no-splash');
           }
           var isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
           var bg = isDark ? '#1e1e1e' : '#ffffff';
           var fg = isDark ? '#dcddde' : '#222222';
-          document.documentElement.style.backgroundColor = bg;
-          document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+          var muted = isDark ? '#888888' : '#666666';
+          var track = isDark ? '#262626' : '#e8e8e8';
+          root.style.setProperty('--splash-bg', bg);
+          root.style.setProperty('--splash-fg', fg);
+          root.style.setProperty('--splash-muted', muted);
+          root.style.setProperty('--splash-track', track);
+          root.style.setProperty('--splash-accent', accent);
+          root.style.backgroundColor = bg;
+          root.style.colorScheme = isDark ? 'dark' : 'light';
+          root.style.zoom = zoomLevel === 100 ? '' : String(zoomLevel / 100);
           if (isDark) {
-            document.documentElement.classList.add('dark');
-            document.addEventListener('DOMContentLoaded', function() {
-              if (document.body) {
-                document.body.classList.add('theme-dark');
-                document.body.style.backgroundColor = bg;
-              }
-              if (isSettings || !hasVault) {
-                var splash = document.getElementById('app-splash-screen');
-                if (splash) splash.style.display = 'none';
-              } else {
-                var msgEl = document.getElementById('app-splash-message');
-                if (msgEl) {
-                  msgEl.textContent = lang === 'en' ? 'Loading Urano...' : 'Cargando Urano...';
-                }
-              }
-            });
+            root.classList.add('dark');
           } else {
-            document.documentElement.classList.remove('dark');
-            document.addEventListener('DOMContentLoaded', function() {
-              if (document.body) {
-                document.body.classList.add('theme-light');
-                document.body.style.backgroundColor = bg;
-              }
-              if (isSettings || !hasVault) {
-                var splash = document.getElementById('app-splash-screen');
-                if (splash) splash.style.display = 'none';
-              } else {
-                var msgEl = document.getElementById('app-splash-message');
-                if (msgEl) {
-                  msgEl.textContent = lang === 'en' ? 'Loading Urano...' : 'Cargando Urano...';
-                }
-              }
-            });
+            root.classList.remove('dark');
           }
+          document.addEventListener('DOMContentLoaded', function() {
+            if (document.body) {
+              document.body.classList.toggle('theme-dark', isDark);
+              document.body.classList.toggle('theme-light', !isDark);
+              document.body.style.backgroundColor = bg;
+            }
+            if (isSettings || !hasVault) {
+              var splash = document.getElementById('app-splash-screen');
+              if (splash) splash.style.display = 'none';
+            } else {
+              var msgEl = document.getElementById('app-splash-message');
+              if (msgEl) {
+                msgEl.textContent = lang === 'en' ? 'Loading Urano...' : 'Cargando Urano...';
+              }
+            }
+          });
         } catch (e) {}
       })();
     </script>
@@ -150,8 +192,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   </head>
-  <body class="overflow-hidden select-none theme-dark" style="background-color: #1e1e1e;">
-    <div id="root" class="h-screen w-screen flex flex-col" style="background-color: #1e1e1e;">
+  <body class="overflow-hidden select-none theme-dark" style="background-color: var(--splash-bg, #1e1e1e);">
+    <div id="root" class="h-full w-full flex flex-col" style="background-color: var(--splash-bg, #1e1e1e);">
       <div id="app-splash-screen" class="progress-bar-container">
         <div class="progress-bar">
           <div class="progress-bar-message" id="app-splash-message">Cargando Urano...</div>
