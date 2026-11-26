@@ -327,13 +327,20 @@ body.theme-light {
     border-color: var(--background-modifier-border);
   }
 
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
   body {
     font-family: var(--font-interface);
     background-color: var(--background-primary);
     color: var(--text-normal);
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
     -webkit-font-smoothing: antialiased;
     user-select: none;
     -webkit-user-select: none;
@@ -4588,11 +4595,10 @@ button.mod-cta-secondary:hover {
    Evidence: REA extraction of /usr/lib/obsidian/app.asar/app.css
    ======================================================== */
 .progress-bar-container {
-  position: absolute;
-  height: 100vh;
-  width: 100vw;
-  top: 0;
-  inset-inline-start: 0;
+  position: fixed;
+  inset: 0;
+  height: 100%;
+  width: 100%;
   background-color: var(--background-primary, #1e1e1e);
   display: flex;
   flex-direction: column;
@@ -4600,6 +4606,8 @@ button.mod-cta-secondary:hover {
   align-items: center;
   padding-left: var(--safe-area-inset-left, 0px);
   padding-right: var(--safe-area-inset-right, 0px);
+  overflow: hidden;
+  box-sizing: border-box;
   z-index: 10000;
   opacity: 1;
   transition: opacity 150ms ease-out;
@@ -4618,6 +4626,8 @@ button.mod-cta-secondary:hover {
   align-items: center;
   padding: 8px;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .progress-bar-message {
