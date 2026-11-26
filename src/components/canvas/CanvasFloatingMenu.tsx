@@ -84,16 +84,16 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
         position: 'absolute',
         ...(isAnchored && position
           ? {
-              left: `${position.x}px`,
-              top: `${position.y}px`,
-              transform: 'translate(-50%, -100%) translateY(-10px)',
-            }
+            left: `${position.x}px`,
+            top: `${position.y}px`,
+            transform: 'translate(-50%, -100%) translateY(-10px)',
+          }
           : {
-              // Barra del nodo: FUERA y ARRIBA de la tarjeta, centrada.
-              bottom: 'calc(100% + 12px)',
-              left: '50%',
-              transform: 'translateX(-50%)',
-            }),
+            // Barra del nodo: FUERA y ARRIBA de la tarjeta, centrada.
+            bottom: 'calc(100% + 12px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+          }),
         display: 'flex',
         alignItems: 'center',
         gap: '4px',
@@ -147,9 +147,8 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
               <button
                 type="button"
                 key={key}
-                className={`canvas-color-picker-item ${
-                  currentColor === key ? 'is-active' : ''
-                }`}
+                className={`canvas-color-picker-item ${currentColor === key ? 'is-active' : ''
+                  }`}
                 style={{ backgroundColor: col.hex }}
                 title={t(col.nameKey)}
                 aria-label={t(col.nameKey)}
@@ -162,9 +161,8 @@ export const CanvasFloatingMenu: React.FC<CanvasFloatingMenuProps> = ({
 
             {/* 8. Rueda de color personalizado */}
             <div
-              className={`canvas-color-picker-item canvas-color-picker-custom ${
-                isCustomColor ? 'is-active' : ''
-              }`}
+              className={`canvas-color-picker-item canvas-color-picker-custom ${isCustomColor ? 'is-active' : ''
+                }`}
               title={t('canvas.colors.customColor')}
               onClick={(e) => {
                 e.stopPropagation();
