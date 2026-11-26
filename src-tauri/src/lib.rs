@@ -14,20 +14,31 @@ pub fn run() {
     let oauth_service = Arc::new(OAuthService::new());
 
     tauri::Builder::default()
+        .manage(commands::window::MainWindowBoundsState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .on_window_event(|window, event| {
             use tauri::Manager;
             if window.label() == "main" {
-                if let tauri::WindowEvent::Destroyed = event {
-                    let app_handle = window.app_handle();
-                    for (label, w) in app_handle.webview_windows() {
-                        if label != "main" {
-                            let _ = w.close();
-                        }
+                match event {
+                    tauri::WindowEvent::Resized(_) | tauri::WindowEvent::Moved(_) => {
+                        commands::window::update_tracked_window_bounds(window);
                     }
-                    app_handle.exit(0);
+                    tauri::WindowEvent::CloseRequested { .. } => {
+                        commands::window::persist_main_window_state(window.app_handle());
+                    }
+                    tauri::WindowEvent::Destroyed => {
+                        let app_handle = window.app_handle();
+                        commands::window::persist_main_window_state(app_handle);
+                        for (label, w) in app_handle.webview_windows() {
+                            if label != "main" {
+                                let _ = w.close();
+                            }
+                        }
+                        app_handle.exit(0);
+                    }
+                    _ => {}
                 }
             }
         })
@@ -52,15 +63,7 @@ pub fn run() {
                 if let Some(icon) = app.default_window_icon() {
                     let _ = window.set_icon(icon.clone());
                 }
-
-                if let Ok(config_dir) = app.path().app_config_dir() {
-                    let style_path = config_dir.join("window_frame_style.txt");
-                    if let Ok(saved) = std::fs::read_to_string(style_path) {
-                        if saved.trim() == "native" {
-                            let _ = window.set_decorations(true);
-                        }
-                    }
-                }
+                commands::window::restore_main_window_state(app.handle(), &window);
             }
 
             // Linux / WebKitGTK: el pellizco del touchpad escala la página entera
