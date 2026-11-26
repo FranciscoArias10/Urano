@@ -788,7 +788,13 @@
     "countOther": "{count} bookmarks",
     "empty": "No bookmarks yet.",
     "emptyHint": "Right-click any note or folder in the file explorer and choose \"Add to bookmarks\".",
-    "remove": "Remove bookmark"
+    "remove": "Remove bookmark",
+    "revealInExplorer": "Reveal in file explorer",
+    "openSearch": "Open in Search",
+    "notices": {
+      "missingFile": "Bookmarked file \"{name}\" was not found.",
+      "missingFolder": "Bookmarked folder \"{name}\" was not found."
+    }
   },
   "canvas": {
     "menu": {
@@ -954,6 +960,9 @@
     },
     "fileRecovery": {
       "open": "File recovery: Open saved snapshots"
+    },
+    "bookmarks": {
+      "open": "Bookmarks: Bookmark or unbookmark current file"
     }
   },
   "fileRecoveryModal": {
@@ -1259,7 +1268,9 @@
     "summary": "{matches} in {files}",
     "emptyHint": "Type to search the content of every note in the vault.",
     "noMatches": "No matches found for \"{query}\".",
-    "lineNumber": "L{line}:"
+    "lineNumber": "L{line}:",
+    "addBookmark": "Bookmark this search",
+    "removeBookmark": "Remove search bookmark"
   },
   "statusBar": {
     "toggleBacklinks": "Toggle backlinks panel",

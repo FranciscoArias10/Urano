@@ -788,7 +788,13 @@
     "countOther": "{count} marcadores",
     "empty": "No hay marcadores aún.",
     "emptyHint": "Haz clic derecho en cualquier nota o carpeta en el explorador de archivos y selecciona \"Añadir a marcadores\".",
-    "remove": "Quitar marcador"
+    "remove": "Quitar marcador",
+    "revealInExplorer": "Mostrar en el explorador de archivos",
+    "openSearch": "Abrir en Búsqueda",
+    "notices": {
+      "missingFile": "No se encontró el archivo marcado \"{name}\".",
+      "missingFolder": "No se encontró la carpeta marcada \"{name}\"."
+    }
   },
   "canvas": {
     "menu": {
@@ -954,6 +960,9 @@
     },
     "fileRecovery": {
       "open": "Recuperación de archivos: Abrir capturas guardadas"
+    },
+    "bookmarks": {
+      "open": "Marcadores: Añadir o quitar marcador de la nota actual"
     }
   },
   "fileRecoveryModal": {
@@ -1259,7 +1268,9 @@
     "summary": "{matches} en {files}",
     "emptyHint": "Escribe para buscar en el contenido de todas las notas de la bóveda.",
     "noMatches": "No se encontraron coincidencias para \"{query}\".",
-    "lineNumber": "L{line}:"
+    "lineNumber": "L{line}:",
+    "addBookmark": "Añadir búsqueda a marcadores",
+    "removeBookmark": "Quitar búsqueda de marcadores"
   },
   "statusBar": {
     "toggleBacklinks": "Alternar panel de Backlinks",
