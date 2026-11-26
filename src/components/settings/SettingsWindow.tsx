@@ -92,7 +92,7 @@ export const SettingsWindow: React.FC = () => {
     const zoomFactor = (settings.zoomLevel || 100) / 100;
     (root.style as CSSStyleDeclaration & { zoom?: string }).zoom =
       settings.zoomLevel === 100 ? '' : String(zoomFactor);
-    document.body.style.zoom = settings.zoomLevel === 100 ? '' : String(zoomFactor);
+    document.body.style.zoom = '';
     document.body.classList.toggle('is-translucent', Boolean(settings.translucentWindow));
     applyBaseTheme(settings.theme);
   }, [settings]);
@@ -250,7 +250,7 @@ export const SettingsWindow: React.FC = () => {
 
   return (
     <div
-      className="urano-app mod-settings-window flex flex-col"
+      className="urano-app mod-settings-window h-full w-full overflow-hidden flex flex-col"
       style={{ backgroundColor: 'var(--background-primary, #1e1e1e)' }}
     >
       {settings.windowFrameStyle !== 'native' && (
