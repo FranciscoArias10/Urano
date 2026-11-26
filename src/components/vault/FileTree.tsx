@@ -29,6 +29,11 @@ import { UranoMenu, MenuItemData } from '../common/UranoMenu';
 import { useNoticeStore } from '../common/Notice';
 import { Tooltip } from '../common/Tooltip';
 import { isSamePath, normalizePath } from '../../utils/pathUtils';
+import { URANO_REVEAL_FOLDER_EVENT } from '../../utils/bookmarksUtils';
+
+function toCollapsedKey(path: string): string {
+  return normalizePath(path).toLowerCase();
+}
 
 export function canMoveToFolder(sourcePath: string, targetFolderPath: string): boolean {
   const normSrc = normalizePath(sourcePath);
@@ -68,6 +73,7 @@ export function getBaseNameAndExt(fileName: string, isDir: boolean): { baseName:
 interface FileTreeContextValue {
   collapsedMap: Record<string, boolean>;
   setFolderOpen: (path: string, isOpen: boolean) => void;
+  revealedPath: string | null;
   renamingPath: string | null;
   setRenamingPath: (path: string | null) => void;
   onOpenInNewTab?: (filePath: string) => void;
@@ -102,11 +108,13 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
   const t = useT();
 
   const [collapsedMap, setCollapsedMap] = useState<Record<string, boolean>>({});
+  const [revealedPath, setRevealedPath] = useState<string | null>(null);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
   const [isRootDragTarget, setIsRootDragTarget] = useState(false);
 
   const [sortMenu, setSortMenu] = useState<{ x: number; y: number } | null>(null);
   const [rootContextMenu, setRootContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const requestFileRename = async (oldPath: string, finalName: string, isDir: boolean) => {
     const normOld = oldPath.replace(/\\/g, '/');
@@ -150,18 +158,74 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
   };
 
   const setFolderOpen = (path: string, isOpen: boolean) => {
+    const key = toCollapsedKey(path);
+    if (!key) return;
     setCollapsedMap((prev) => ({
       ...prev,
-      [path]: !isOpen,
+      [key]: !isOpen,
     }));
   };
+
+  useEffect(() => {
+    if (depth !== 0) return;
+
+    const applyReveal = (rawTargetPath?: string | null) => {
+      if (!rawTargetPath) return;
+      const normTarget = normalizePath(rawTargetPath);
+      const lowerTarget = normTarget.toLowerCase();
+      if (!lowerTarget) return;
+
+      setCollapsedMap((prev) => {
+        const next = { ...prev };
+        const expandMatchingDirs = (list: FileItem[]) => {
+          for (const it of list) {
+            if (it.isDir) {
+              const lowerDir = toCollapsedKey(it.path);
+              if (lowerDir === lowerTarget || lowerTarget.startsWith(`${lowerDir}/`)) {
+                next[lowerDir] = false;
+              }
+              if (it.children?.length) {
+                expandMatchingDirs(it.children);
+              }
+            }
+          }
+        };
+        expandMatchingDirs(useVaultStore.getState().fileTree);
+        return next;
+      });
+
+      setRevealedPath(normTarget);
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+      revealTimerRef.current = setTimeout(() => {
+        setRevealedPath(null);
+      }, 2200);
+    };
+
+    const pending = (window as any).__uranoPendingRevealFolder as string | undefined;
+    if (pending) {
+      delete (window as any).__uranoPendingRevealFolder;
+      applyReveal(pending);
+    }
+
+    const onRevealEvent = (e: Event) => {
+      const detailPath = (e as CustomEvent<{ path?: string }>).detail?.path;
+      delete (window as any).__uranoPendingRevealFolder;
+      applyReveal(detailPath);
+    };
+
+    window.addEventListener(URANO_REVEAL_FOLDER_EVENT, onRevealEvent);
+    return () => {
+      window.removeEventListener(URANO_REVEAL_FOLDER_EVENT, onRevealEvent);
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    };
+  }, [depth]);
 
   // Check if any folder is open
   const areAllCollapsed = () => {
     const checkDir = (list: FileItem[]): boolean => {
       for (const it of list) {
         if (it.isDir) {
-          const isClosed = Boolean(collapsedMap[it.path]);
+          const isClosed = Boolean(collapsedMap[toCollapsedKey(it.path)]);
           if (!isClosed) return false;
           if (it.children && !checkDir(it.children)) return false;
         }
@@ -178,7 +242,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
     const traverse = (list: FileItem[]) => {
       for (const it of list) {
         if (it.isDir) {
-          newMap[it.path] = allCollapsed ? false : true;
+          newMap[toCollapsedKey(it.path)] = allCollapsed ? false : true;
           if (it.children) traverse(it.children);
         }
       }
@@ -244,6 +308,7 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
       value={{
         collapsedMap,
         setFolderOpen,
+        revealedPath,
         renamingPath,
         setRenamingPath,
         onOpenInNewTab,
@@ -442,7 +507,7 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
   const { showNotice } = useNoticeStore();
   const t = useT();
 
-  const isClosed = ctx ? Boolean(ctx.collapsedMap[item.path]) : false;
+  const isClosed = ctx ? Boolean(ctx.collapsedMap[toCollapsedKey(item.path)]) : false;
   const isOpen = !isClosed;
 
   const isRenaming = ctx?.renamingPath ? isSamePath(ctx.renamingPath, item.path) : false;
@@ -457,6 +522,16 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
   } | null>(null);
 
   const isSelected = !item.isDir && Boolean(activeFile) && isSamePath(item.path, activeFile);
+  const isRevealed =
+    Boolean(ctx?.revealedPath) &&
+    toCollapsedKey(ctx!.revealedPath!) === toCollapsedKey(item.path);
+
+  useEffect(() => {
+    if (isRevealed && itemRef.current) {
+      itemRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      itemRef.current.focus({ preventScroll: true });
+    }
+  }, [isRevealed]);
 
   // Auto-reveal: expand parents and scroll into view when active
   useEffect(() => {
@@ -527,7 +602,9 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const bookmarked = isBookmarked(item.path);
+    const itemBookmarkType = item.isDir ? 'folder' : 'file';
+    const bookmarksPluginEnabled = useSettingsStore.getState().settings.corePlugins.bookmarks;
+    const bookmarked = isBookmarked(item.path, itemBookmarkType);
     const items: MenuItemData[] = [];
 
     if (item.isDir) {
@@ -558,18 +635,31 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
             if (path) ctx?.setRenamingPath(path);
           },
         },
-        {
-          title: bookmarked ? t('fileTree.contextMenu.removeBookmark') : t('fileTree.contextMenu.addBookmark'),
-          icon: <Bookmark size={14} className={bookmarked ? 'fill-orange-500 text-orange-500' : ''} />,
-          action: () => {
-            toggleBookmark({ type: 'folder', path: item.path, title: item.name });
-            showNotice(
-              bookmarked ? t('fileTree.notices.bookmarkRemoved') : t('fileTree.notices.bookmarkAdded'),
-              2000,
-              'info'
-            );
-          },
-        },
+        ...(bookmarksPluginEnabled
+          ? [
+              {
+                title: bookmarked
+                  ? t('fileTree.contextMenu.removeBookmark')
+                  : t('fileTree.contextMenu.addBookmark'),
+                icon: (
+                  <Bookmark
+                    size={14}
+                    className={bookmarked ? 'fill-orange-500 text-orange-500' : ''}
+                  />
+                ),
+                action: () => {
+                  toggleBookmark({ type: 'folder', path: item.path, title: item.name });
+                  showNotice(
+                    bookmarked
+                      ? t('fileTree.notices.bookmarkRemoved')
+                      : t('fileTree.notices.bookmarkAdded'),
+                    2000,
+                    'info'
+                  );
+                },
+              },
+            ]
+          : []),
         { type: 'separator' },
         {
           title: t('fileTree.contextMenu.rename'),
@@ -623,22 +713,35 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
             }
           },
         },
-        {
-          title: bookmarked ? t('fileTree.contextMenu.removeBookmark') : t('fileTree.contextMenu.addBookmark'),
-          icon: <Bookmark size={14} className={bookmarked ? 'fill-orange-500 text-orange-500' : ''} />,
-          action: () => {
-            toggleBookmark({
-              type: 'file',
-              path: item.path,
-              title: item.name.replace(/\.(md|canvas|base)$/i, ''),
-            });
-            showNotice(
-              bookmarked ? t('fileTree.notices.bookmarkRemoved') : t('fileTree.notices.bookmarkAdded'),
-              2000,
-              'info'
-            );
-          },
-        },
+        ...(bookmarksPluginEnabled
+          ? [
+              {
+                title: bookmarked
+                  ? t('fileTree.contextMenu.removeBookmark')
+                  : t('fileTree.contextMenu.addBookmark'),
+                icon: (
+                  <Bookmark
+                    size={14}
+                    className={bookmarked ? 'fill-orange-500 text-orange-500' : ''}
+                  />
+                ),
+                action: () => {
+                  toggleBookmark({
+                    type: 'file',
+                    path: item.path,
+                    title: item.name.replace(/\.(md|markdown|canvas|base)$/i, '') || item.name,
+                  });
+                  showNotice(
+                    bookmarked
+                      ? t('fileTree.notices.bookmarkRemoved')
+                      : t('fileTree.notices.bookmarkAdded'),
+                    2000,
+                    'info'
+                  );
+                },
+              },
+            ]
+          : []),
         {
           title: t('fileTree.contextMenu.makeCopy'),
           icon: <Copy size={14} />,
@@ -773,6 +876,8 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
         style={{ paddingLeft: `${depth * 14 + 10}px` }}
         className={`group flex items-center justify-between pr-2.5 py-1 text-xs cursor-pointer transition-colors relative outline-none ${
           isDragTarget ? 'bg-orange-500/20 ring-1 ring-orange-500' : ''
+        } ${
+          isRevealed ? 'bg-orange-500/15 ring-1 ring-inset ring-orange-500/50 rounded-md' : ''
         } ${
           isSelected
             ? 'is-active bg-urano-active text-urano-text font-medium rounded-md'
