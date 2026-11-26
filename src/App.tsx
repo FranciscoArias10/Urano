@@ -46,6 +46,7 @@ import { UpdateLinksModal } from './components/common/UpdateLinksModal';
 import { GlobalSearchPanel } from './components/search/GlobalSearchPanel';
 import { URANO_EDITOR_JUMP_EVENT } from './components/search/searchEngine';
 import { BookmarksPanel } from './components/bookmarks/BookmarksPanel';
+import { URANO_REVEAL_FOLDER_EVENT } from './utils/bookmarksUtils';
 import { Tooltip } from './components/common/Tooltip';
 import { BacklinksPanel } from './components/backlinks/BacklinksPanel';
 import { CommandPalette, CommandItem } from './components/palette/CommandPalette';
@@ -350,6 +351,12 @@ const MainApp: React.FC = () => {
   useEffect(() => {
     clearEmbeddedBacklinksOverrides();
   }, [settings.backlinkInDocument, clearEmbeddedBacklinksOverrides]);
+
+  useEffect(() => {
+    if (!corePlugins.bookmarks && sidebarTab === 'bookmarks') {
+      setSidebarTab('files');
+    }
+  }, [corePlugins.bookmarks, sidebarTab]);
 
   // Community language packs (.urano/locales/*.json) of the active vault
   const loadVaultLocales = useLocaleStore((s) => s.loadVaultLocales);
@@ -1049,7 +1056,11 @@ const MainApp: React.FC = () => {
       }
     };
 
-    const handleUranoSearch = () => {
+    const handleUranoSearch = (e: Event) => {
+      const detailQuery = (e as CustomEvent<{ query?: string }>).detail?.query;
+      if (detailQuery !== undefined) {
+        (window as any).__uranoInitialSearchQuery = detailQuery;
+      }
       setShowLeftSidebar(true);
       setSidebarTab('search');
     };
@@ -1675,6 +1686,30 @@ const MainApp: React.FC = () => {
       icon: <History size={15} />,
       action: () => setShowFileRecoveryModal(true),
     },
+    {
+      id: 'bookmarks:open',
+      name: t('commands.bookmarks.open'),
+      icon: <Bookmark size={15} />,
+      action: () => {
+        const { activeFile: curFile, activeFileName: curName, isBookmarked: checkBm, toggleBookmark: toggleBm } =
+          useVaultStore.getState();
+        if (curFile) {
+          const wasBookmarked = checkBm(curFile, 'file');
+          const cleanName = (curName || '').replace(/\.(md|markdown|canvas|base)$/i, '') || undefined;
+          toggleBm({ type: 'file', path: curFile, title: cleanName });
+          showNotice(
+            wasBookmarked
+              ? t('fileTree.notices.bookmarkRemoved')
+              : t('fileTree.notices.bookmarkAdded'),
+            2000,
+            'info'
+          );
+        } else {
+          setShowLeftSidebar(true);
+          setSidebarTab('bookmarks');
+        }
+      },
+    },
   ].filter((cmd) => {
     // Commands owned by a disabled core plugin disappear (Urano behaviour)
     if (cmd.id.startsWith('canvas:')) return corePlugins.canvas;
@@ -1688,11 +1723,32 @@ const MainApp: React.FC = () => {
     if (cmd.id.startsWith('file-explorer:')) return corePlugins['file-explorer'];
     if (cmd.id.startsWith('note-composer:')) return corePlugins['note-composer'];
     if (cmd.id.startsWith('file-recovery:')) return corePlugins['file-recovery'];
+    if (cmd.id.startsWith('bookmarks:')) return corePlugins.bookmarks;
     if (cmd.id === 'workspace:toggle-backlinks' || cmd.id === 'backlink:toggle-in-document') {
       return corePlugins.backlink;
     }
     return true;
   });
+
+  const handleRevealInExplorer = useCallback((targetPath: string) => {
+    if (!targetPath) return;
+    (window as any).__uranoPendingRevealFolder = targetPath;
+    setShowLeftSidebar(true);
+    setSidebarTab('files');
+    window.dispatchEvent(
+      new CustomEvent(URANO_REVEAL_FOLDER_EVENT, { detail: { path: targetPath } })
+    );
+  }, []);
+
+  const handleOpenBookmarkedSearch = useCallback((searchQuery: string) => {
+    if (!searchQuery) return;
+    (window as any).__uranoInitialSearchQuery = searchQuery;
+    setShowLeftSidebar(true);
+    setSidebarTab('search');
+    window.dispatchEvent(
+      new CustomEvent('urano-search', { detail: { query: searchQuery } })
+    );
+  }, []);
 
   const normActiveFileForBacklinks = activeFile ? normalizePath(activeFile) : '';
   const isActiveMarkdown = Boolean(
@@ -1980,17 +2036,19 @@ const MainApp: React.FC = () => {
                 </Tooltip>
 
                 {/* Marcadores / Bookmarks */}
-                <Tooltip content={t('app.sidebar.bookmarks')} position="bottom">
-                  <button
-                    onClick={() => setSidebarTab('bookmarks')}
-                    className={`clickable-icon nav-action-button p-1 rounded ${
-                      sidebarTab === 'bookmarks' ? 'is-active' : ''
-                    }`}
-                    aria-label={t('app.sidebar.bookmarks')}
-                  >
-                    <Bookmark size={17} />
-                  </button>
-                </Tooltip>
+                {corePlugins.bookmarks && (
+                  <Tooltip content={t('app.sidebar.bookmarks')} position="bottom">
+                    <button
+                      onClick={() => setSidebarTab('bookmarks')}
+                      className={`clickable-icon nav-action-button p-1 rounded ${
+                        sidebarTab === 'bookmarks' ? 'is-active' : ''
+                      }`}
+                      aria-label={t('app.sidebar.bookmarks')}
+                    >
+                      <Bookmark size={17} />
+                    </button>
+                  </Tooltip>
+                )}
               </div>
             </div>
 
@@ -2006,9 +2064,14 @@ const MainApp: React.FC = () => {
                   <GlobalSearchPanel onOpenFile={handleOpenFile} />
                 </div>
               )}
-              {sidebarTab === 'bookmarks' && (
+              {sidebarTab === 'bookmarks' && corePlugins.bookmarks && (
                 <div className="flex-1 overflow-hidden">
-                  <BookmarksPanel onOpenFile={handleOpenFile} />
+                  <BookmarksPanel
+                    onOpenFile={handleOpenFile}
+                    onOpenInNewTab={handleOpenInNewTab}
+                    onRevealFolder={handleRevealInExplorer}
+                    onOpenSearch={handleOpenBookmarkedSearch}
+                  />
                 </div>
               )}
             </div>
@@ -2363,6 +2426,7 @@ const MainApp: React.FC = () => {
                 vaultName: null,
                 fileTree: [],
                 files: [],
+                bookmarks: [],
                 activeFile: null,
                 activeFileName: null,
                 fileContent: '',
