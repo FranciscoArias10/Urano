@@ -845,9 +845,9 @@ if (typeof window !== 'undefined') {
   document.body.classList.toggle('is-frameless', isFrameless);
   document.body.classList.toggle('is-hidden-frameless', initialSettings.windowFrameStyle === 'hidden');
   const zoomFactor = (initialSettings.zoomLevel || 100) / 100;
-  if (initialSettings.zoomLevel !== 100) {
-    document.body.style.zoom = String(zoomFactor);
-  }
+  (document.documentElement.style as CSSStyleDeclaration & { zoom?: string }).zoom =
+    initialSettings.zoomLevel === 100 ? '' : String(zoomFactor);
+  document.body.style.zoom = '';
   document.documentElement.style.setProperty('--editor-tab-size', String(initialSettings.tabSize || 4));
 }
 
@@ -989,9 +989,9 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
 
     if (key === 'zoomLevel' && typeof document !== 'undefined') {
       const zoomFactor = (Number(value) || 100) / 100;
-      document.body.style.zoom = value === 100 ? '' : String(zoomFactor);
       (document.documentElement.style as CSSStyleDeclaration & { zoom?: string }).zoom =
         value === 100 ? '' : String(zoomFactor);
+      document.body.style.zoom = '';
     }
 
     if (key === 'windowFrameStyle') {
@@ -1345,7 +1345,9 @@ if (typeof window !== 'undefined') {
           document.body.classList.toggle('is-frameless', isFrameless);
           document.body.classList.toggle('is-hidden-frameless', merged.windowFrameStyle === 'hidden');
           const zoomFactor = (Number(merged.zoomLevel) || 100) / 100;
-          document.body.style.zoom = merged.zoomLevel === 100 ? '' : String(zoomFactor);
+          (document.documentElement.style as CSSStyleDeclaration & { zoom?: string }).zoom =
+            merged.zoomLevel === 100 ? '' : String(zoomFactor);
+          document.body.style.zoom = '';
         }
       } catch (err) {
         console.error('Error syncing settings from storage event:', err);
