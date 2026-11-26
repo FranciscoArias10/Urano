@@ -429,7 +429,7 @@ export const Editor: React.FC<EditorProps> = ({
   // of this list: pasting an image must keep working in Source Mode.
   const buildLivePreviewExtensions = (mode: typeof editorMode) =>
     mode === 'source'
-      ? []
+      ? [createWikilinksExtension({ onWikilinkClick, sourceMode: true })]
       : [
           liveMarkdownExtension,
           mathExtension, // KaTeX LaTeX math equations
@@ -441,7 +441,7 @@ export const Editor: React.FC<EditorProps> = ({
             onZoomImage: (info, src) => zoomHandlerRef.current(info, src),
           }),
           formattingClickExtension,
-          createWikilinksExtension({ onWikilinkClick }),
+          createWikilinksExtension({ onWikilinkClick, sourceMode: false }),
         ];
 
   // Floating [[ Wikilink suggestion autocompletion state
@@ -2289,21 +2289,26 @@ export const Editor: React.FC<EditorProps> = ({
     let clickedWikilink: string | null = null;
     const wikilinkEl = target.closest('.cm-wikilink');
     if (wikilinkEl && currentView) {
-      try {
-        const pos = currentView.posAtDOM(wikilinkEl);
-        const line = currentView.state.doc.lineAt(pos);
-        const regex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
-        let match: RegExpExecArray | null;
-        while ((match = regex.exec(line.text)) !== null) {
-          const start = line.from + match.index;
-          const end = start + match[0].length;
-          if (pos >= start && pos <= end) {
-            clickedWikilink = match[1].trim();
-            break;
+      const attrTarget = wikilinkEl.getAttribute('data-page-preview-target')?.trim();
+      if (attrTarget) {
+        clickedWikilink = attrTarget;
+      } else {
+        try {
+          const pos = currentView.posAtDOM(wikilinkEl);
+          const line = currentView.state.doc.lineAt(pos);
+          const regex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+          let match: RegExpExecArray | null;
+          while ((match = regex.exec(line.text)) !== null) {
+            const start = line.from + match.index;
+            const end = start + match[0].length;
+            if (pos >= start && pos <= end) {
+              clickedWikilink = match[1].trim();
+              break;
+            }
           }
+        } catch {
+          // Ignorar si posAtDOM no resuelve
         }
-      } catch {
-        // Ignorar si posAtDOM no resuelve
       }
     }
 

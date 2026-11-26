@@ -7,8 +7,59 @@ import {
   WidgetType,
 } from '@codemirror/view';
 import { Range } from '@codemirror/state';
+import { invoke } from '@tauri-apps/api/core';
 import { t } from '../locales/i18n';
 import { getFencedCodeLineSet } from './codeRangeUtils';
+
+export function openExternalUrl(url: string): void {
+  const clean = (url || '').trim();
+  if (!clean) return;
+  invoke('open_path', { path: clean })
+    .catch(() => invoke('open_file_in_default_app', { filePath: clean }))
+    .catch(() => {
+      if (typeof window !== 'undefined' && typeof window.open === 'function') {
+        window.open(clean, '_blank', 'noopener,noreferrer');
+      }
+    });
+}
+
+class ExternalLinkIconWidget extends WidgetType {
+  constructor(readonly url: string) {
+    super();
+  }
+
+  toDOM(): HTMLElement {
+    const span = document.createElement('span');
+    span.className = 'cm-external-link-icon';
+    span.setAttribute('data-external-href', this.url);
+    span.setAttribute('aria-hidden', 'true');
+    span.title = this.url;
+    span.innerHTML =
+      '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>';
+    span.addEventListener('mousedown', (e) => {
+      if (e.button === 0) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+    span.addEventListener('click', (e) => {
+      if (e.button === 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        openExternalUrl(this.url);
+      }
+    });
+    return span;
+  }
+
+  eq(other: ExternalLinkIconWidget): boolean {
+    return other.url === this.url;
+  }
+
+  ignoreEvent(): boolean {
+    return false;
+  }
+}
 
 // Line decorations for Urano-style typography
 const h1Line = Decoration.line({ class: 'cm-h1-line' });
@@ -262,6 +313,58 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
             if (!isOverlapping(s, e)) occupied.push([s, e]);
           }
 
+          // Pre-occupy wikilinks [[...]] so inner underscores/asterisks don't split link syntax
+          const wikiLinkPreRegex = /(?<!\!)\[\[([^\]]+)\]\]/g;
+          let wlPreMatch: RegExpExecArray | null;
+          while ((wlPreMatch = wikiLinkPreRegex.exec(text)) !== null) {
+            const s = line.from + wlPreMatch.index;
+            const e = s + wlPreMatch[0].length;
+            if (!isOverlapping(s, e)) occupied.push([s, e]);
+          }
+
+          // Standard Markdown Links: [label](url)
+          const mdLinkRegex = /(?<!\!)\[([^\]\n]+)\]\(([^)\n]+)\)/g;
+          let mdMatch: RegExpExecArray | null;
+          while ((mdMatch = mdLinkRegex.exec(text)) !== null) {
+            const start = line.from + mdMatch.index;
+            const end = start + mdMatch[0].length;
+            if (isOverlapping(start, end)) continue;
+            occupied.push([start, end]);
+
+            const label = mdMatch[1];
+            const rawDest = mdMatch[2].trim();
+            const url = rawDest.replace(/\s+(?:"[^"]*"|'[^']*')$/, '').trim();
+            const isExternal = /^(?:https?:|mailto:|tel:|obsidian:|urano:)/i.test(url);
+
+            const labelFrom = start + 1;
+            const labelTo = labelFrom + label.length;
+            if (labelFrom >= labelTo) continue;
+
+            const linkDeco = Decoration.mark({
+              class: isExternal ? 'cm-external-link' : 'cm-md-link',
+              attributes: {
+                'data-external-href': isExternal ? url : '',
+                title: url,
+              },
+            });
+
+            if (!isCursorOnLine) {
+              widgets.push(hideDelimiter.range(start, labelFrom));
+              widgets.push(linkDeco.range(labelFrom, labelTo));
+              if (isExternal) {
+                widgets.push(
+                  Decoration.replace({
+                    widget: new ExternalLinkIconWidget(url),
+                  }).range(labelTo, end)
+                );
+              } else {
+                widgets.push(hideDelimiter.range(labelTo, end));
+              }
+            } else {
+              widgets.push(linkDeco.range(labelFrom, labelTo));
+            }
+          }
+
           // 2. Bold: **text** or __text__
           const boldRegex = /(?:\*\*([^\*]+)\*\*|__([^_]+)__)/g;
           let bMatch: RegExpExecArray | null;
@@ -382,7 +485,7 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
 
             const isCursorInside = !sel.empty
               ? sel.from < end && sel.to > start
-              : sel.head > start && sel.head < end;
+              : isCursorOnLine && sel.head >= start && sel.head <= end;
 
             if (isCursorInside) {
               widgets.push(emMark.range(start + 1, end - 1));
@@ -442,5 +545,47 @@ export const liveMarkdownExtension = ViewPlugin.fromClass(
   },
   {
     decorations: (v) => v.decorations,
+    eventHandlers: {
+      mousedown: (e, view) => {
+        if (e.button !== 0) return false;
+        const target = e.target as HTMLElement | null;
+        const extEl = target?.closest('.cm-external-link') as HTMLElement | null;
+        if (!extEl) return false;
+        const href = extEl.getAttribute('data-external-href');
+        if (!href) return false;
+
+        const pos = view.posAtDOM(extEl);
+        const line = view.state.doc.lineAt(pos);
+        const sel = view.state.selection.main;
+        const isCursorOnLine = sel.from <= line.to && sel.to >= line.from;
+
+        if ((e.ctrlKey || e.metaKey) || !isCursorOnLine) {
+          e.preventDefault();
+          return true;
+        }
+        return false;
+      },
+      click: (e, view) => {
+        if (e.button !== 0) return false;
+        const target = e.target as HTMLElement | null;
+        const extEl = target?.closest('.cm-external-link') as HTMLElement | null;
+        if (!extEl) return false;
+        const href = extEl.getAttribute('data-external-href');
+        if (!href) return false;
+
+        const pos = view.posAtDOM(extEl);
+        const line = view.state.doc.lineAt(pos);
+        const sel = view.state.selection.main;
+        const isCursorOnLine = sel.from <= line.to && sel.to >= line.from;
+
+        if ((e.ctrlKey || e.metaKey) || !isCursorOnLine) {
+          e.preventDefault();
+          e.stopPropagation();
+          openExternalUrl(href);
+          return true;
+        }
+        return false;
+      },
+    },
   }
 );

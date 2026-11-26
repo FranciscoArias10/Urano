@@ -152,6 +152,13 @@ body {
   --icon-color: var(--text-muted);
   --icon-color-hover: var(--text-normal);
   --window-control-hover: var(--background-modifier-hover);
+  --link-color: var(--text-accent);
+  --link-color-hover: var(--interactive-accent-hover);
+  --link-unresolved-color: var(--text-accent);
+  --link-unresolved-opacity: 0.7;
+  --link-unresolved-decoration-color: color-mix(in srgb, var(--link-unresolved-color) 40%, transparent);
+  --link-external-color: var(--text-accent);
+  --link-external-color-hover: var(--interactive-accent-hover);
 }
 
 
@@ -1336,21 +1343,80 @@ body .clickable-icon.is-active:hover {
   font-family: var(--font-monospace) !important;
 }
 
-.cm-wikilink {
-  color: #fb923c !important;
-  background-color: rgba(234, 88, 12, 0.14);
-  padding: 1px 6px;
-  border-radius: 4px;
-  text-decoration: underline;
-  text-decoration-color: rgba(251, 146, 60, 0.45);
+.cm-content .cm-line .cm-wikilink,
+.cm-content .cm-line .cm-wikilink span,
+.markdown-rendered .internal-link {
+  color: var(--link-color, var(--text-accent, #e06c1b));
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-color: color-mix(in srgb, var(--link-color, #e06c1b) 55%, transparent);
+  text-underline-offset: 2px;
   cursor: pointer;
-  transition: all 0.15s ease;
-  font-weight: 500;
+  transition: color 0.15s ease, opacity 0.15s ease, text-decoration-color 0.15s ease;
 }
-.cm-wikilink:hover {
-  background-color: rgba(234, 88, 12, 0.28);
-  text-decoration-color: #fb923c;
-  color: #ffedd5 !important;
+
+.cm-content .cm-line .cm-wikilink:hover,
+.cm-content .cm-line .cm-wikilink:hover span,
+.markdown-rendered .internal-link:hover {
+  color: var(--link-color-hover, var(--interactive-accent-hover, #f97316));
+  text-decoration-color: currentColor;
+}
+
+.cm-content .cm-line .cm-wikilink.is-unresolved,
+.cm-content .cm-line .cm-wikilink.is-unresolved span,
+.markdown-rendered .internal-link.is-unresolved {
+  color: var(--link-unresolved-color, var(--text-accent, #e06c1b));
+  opacity: var(--link-unresolved-opacity, 0.7);
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-color: var(--link-unresolved-decoration-color, rgba(224, 108, 27, 0.4));
+  text-underline-offset: 2px;
+}
+
+.cm-content .cm-line .cm-wikilink.is-unresolved span {
+  opacity: 1;
+}
+
+.cm-content .cm-line .cm-wikilink.is-unresolved:hover,
+.markdown-rendered .internal-link.is-unresolved:hover {
+  opacity: 0.92;
+  text-decoration-color: var(--link-unresolved-color, var(--text-accent, #e06c1b));
+}
+
+.cm-content .cm-line .cm-external-link,
+.cm-content .cm-line .cm-external-link span,
+.markdown-rendered .external-link {
+  color: var(--link-external-color, var(--text-accent, #e06c1b));
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-color: color-mix(in srgb, var(--link-external-color, #e06c1b) 65%, transparent);
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.cm-content .cm-line .cm-external-link:hover,
+.cm-content .cm-line .cm-external-link:hover span,
+.markdown-rendered .external-link:hover {
+  color: var(--link-external-color-hover, var(--interactive-accent-hover, #f97316));
+  text-decoration-color: currentColor;
+}
+
+.cm-external-link-icon,
+.markdown-rendered .external-link-icon {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: baseline;
+  margin-left: 2px;
+  color: var(--link-external-color, var(--text-accent, #e06c1b));
+  opacity: 0.85;
+  cursor: pointer;
+  transform: translateY(1px);
+}
+
+.cm-external-link-icon:hover,
+.markdown-rendered .external-link:hover .external-link-icon {
+  opacity: 1;
 }
 
 .cm-strong {
@@ -1358,8 +1424,9 @@ body .clickable-icon.is-active:hover {
   color: #f5f5f4 !important;
 }
 
+.cm-content .cm-line .cm-em,
 .cm-em {
-  font-style: italic !important;
+  font-style: italic;
 }
 
 .cm-strikethrough {

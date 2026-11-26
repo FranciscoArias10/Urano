@@ -18,6 +18,9 @@ import {
   parseAlignments,
   parseTableRowCells,
 } from '../../editor/tableExtension';
+import { openExternalUrl } from '../../editor/liveMarkdown';
+import { useVaultStore } from '../../stores/vaultStore';
+import { resolveVaultLinkTarget } from '../../utils/pathUtils';
 import { useT } from '../../stores/localeStore';
 
 /* ------------------------------------------------------------------ */
@@ -459,6 +462,7 @@ export function parseMarkdownBlocks(source: string, lineOffset = 0): MarkdownBlo
 
 interface InlineContext {
   onWikilinkClick?: (target: string) => void;
+  isWikilinkResolved?: (target: string) => boolean;
   linkContext?: 'preview' | 'properties';
   blockedLinkLabel?: string;
 }
@@ -613,18 +617,20 @@ function renderInline(text: string, ctx: InlineContext, keyPrefix: string): Reac
       // Wikilink: [[note|alias]]
       const inner = token.slice(2, -2);
       const [target, alias] = inner.split('|');
+      const cleanTarget = target.trim();
+      const isResolved = ctx.isWikilinkResolved ? ctx.isWikilinkResolved(cleanTarget) : true;
       nodes.push(
         <a
           key={key}
-          className="internal-link text-orange-400 hover:text-orange-300 underline cursor-pointer"
-          data-page-preview-target={target.trim()}
+          className={isResolved ? 'internal-link' : 'internal-link is-unresolved'}
+          data-page-preview-target={cleanTarget}
           data-page-preview-context={ctx.linkContext ?? 'preview'}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            ctx.onWikilinkClick?.(target.trim());
+            ctx.onWikilinkClick?.(cleanTarget);
           }}
-          title={target.trim()}
+          title={cleanTarget}
         >
           {(alias || target).trim()}
         </a>
@@ -645,10 +651,13 @@ function renderInline(text: string, ctx: InlineContext, keyPrefix: string): Reac
             </span>
           );
         } else if (sanitized.kind === 'internal') {
+          const isResolved = ctx.isWikilinkResolved
+            ? ctx.isWikilinkResolved(sanitized.href)
+            : true;
           nodes.push(
             <a
               key={key}
-              className="internal-link text-orange-400 hover:text-orange-300 underline cursor-pointer"
+              className={isResolved ? 'internal-link' : 'internal-link is-unresolved'}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -663,13 +672,32 @@ function renderInline(text: string, ctx: InlineContext, keyPrefix: string): Reac
           nodes.push(
             <a
               key={key}
-              className="external-link text-orange-400 hover:text-orange-300 underline cursor-pointer"
+              className="external-link"
               href={sanitized.href}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openExternalUrl(sanitized.href);
+              }}
             >
-              {m[1]}
+              <span>{m[1]}</span>
+              <span className="external-link-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="12"
+                  height="12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.1"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M7 17L17 7" />
+                  <path d="M7 7h10v10" />
+                </svg>
+              </span>
             </a>
           );
         }
@@ -784,10 +812,17 @@ export const ReadingView: React.FC<ReadingViewProps> = ({
     [body, bodyStartLineOffset]
   );
 
+  const fileTree = useVaultStore((s) => s.fileTree);
+  const activeVault = useVaultStore((s) => s.activeVault);
   const blockedLinkLabel = t('readingView.blockedLink');
   const ctx: InlineContext = useMemo(
-    () => ({ onWikilinkClick, blockedLinkLabel }),
-    [onWikilinkClick, blockedLinkLabel]
+    () => ({
+      onWikilinkClick,
+      blockedLinkLabel,
+      isWikilinkResolved: (target: string) =>
+        Boolean(activeVault && resolveVaultLinkTarget(target, fileTree, activeVault)),
+    }),
+    [onWikilinkClick, blockedLinkLabel, activeVault, fileTree]
   );
 
   const handleCopyCode = (code: string, key: string) => {

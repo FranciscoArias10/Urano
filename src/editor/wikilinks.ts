@@ -9,6 +9,8 @@ import {
 import { Range } from '@codemirror/state';
 import { isImagePath } from '../services/storageAdapter';
 import { t } from '../locales/i18n';
+import { useVaultStore } from '../stores/vaultStore';
+import { resolveVaultLinkTarget } from '../utils/pathUtils';
 import {
   getFencedCodeLineSet,
   getInlineCodeRangesInLine,
@@ -27,9 +29,11 @@ function escapeHtml(text: string): string {
 
 // Regex for [[Target Note]] or [[Target Note|Display Text]], strictly ignoring ![[Embeds]]
 const WIKILINK_REGEX = /(?<!\!)\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+const hideBracketDeco = Decoration.replace({});
 
 export interface WikilinkHandler {
   onWikilinkClick: (targetNote: string) => void;
+  sourceMode?: boolean;
 }
 
 // Widget for embedded .base files (![[Sin título.base]])
@@ -104,9 +108,38 @@ export function createWikilinksExtension(handler?: WikilinkHandler) {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
+      private unsubscribeVault: (() => void) | null = null;
+      private isDestroyed = false;
 
-      constructor(view: EditorView) {
+      constructor(readonly view: EditorView) {
         this.decorations = this.computeDecorations(view);
+        this.unsubscribeVault = useVaultStore.subscribe((state, prev) => {
+          if (
+            this.isDestroyed ||
+            (state.files === prev.files &&
+              state.fileTree === prev.fileTree &&
+              state.activeVault === prev.activeVault)
+          ) {
+            return;
+          }
+          queueMicrotask(() => {
+            if (this.isDestroyed) return;
+            try {
+              this.decorations = this.computeDecorations(this.view);
+              this.view.dispatch({});
+            } catch {
+              // Ignore if EditorView is mid-update or already disposed
+            }
+          });
+        });
+      }
+
+      destroy() {
+        this.isDestroyed = true;
+        if (this.unsubscribeVault) {
+          this.unsubscribeVault();
+          this.unsubscribeVault = null;
+        }
       }
 
       update(update: ViewUpdate) {
@@ -124,6 +157,7 @@ export function createWikilinksExtension(handler?: WikilinkHandler) {
         const sel = view.state.selection.main;
         const doc = view.state.doc;
         const codeLines = getFencedCodeLineSet(doc);
+        const { fileTree, activeVault } = useVaultStore.getState();
 
         for (const { from, to } of view.visibleRanges) {
           let pos = from;
@@ -140,7 +174,7 @@ export function createWikilinksExtension(handler?: WikilinkHandler) {
 
             // Check if entire line is an embedded .base file: ![[...base]]
             const baseEmbedMatch = text.trim().match(/^!\[\[([^\]|]+)\.base\]\]$/i);
-            if (baseEmbedMatch && !isCursorOnLine && line.from < line.to) {
+            if (baseEmbedMatch && !handler?.sourceMode && !isCursorOnLine && line.from < line.to) {
               const baseName = `${baseEmbedMatch[1].trim()}.base`;
               widgets.push(
                 Decoration.replace({
@@ -170,30 +204,76 @@ export function createWikilinksExtension(handler?: WikilinkHandler) {
               if (isRangeOverlapping(start, end, inlineCodeRanges)) {
                 continue;
               }
-              widgets.push(
-                Decoration.mark({
-                  class: 'cm-wikilink',
-                  attributes: {
-                    'data-page-preview-target': targetNote,
-                    'data-page-preview-context': 'editor',
-                  },
-                }).range(start, end)
+
+              const isResolved = Boolean(
+                activeVault && resolveVaultLinkTarget(targetNote, fileTree, activeVault)
               );
+              const linkClass = isResolved ? 'cm-wikilink' : 'cm-wikilink is-unresolved';
+              const linkDeco = Decoration.mark({
+                class: linkClass,
+                attributes: {
+                  'data-page-preview-target': targetNote,
+                  'data-page-preview-context': 'editor',
+                  'data-wikilink-unresolved': isResolved ? 'false' : 'true',
+                },
+              });
+
+              if (!handler?.sourceMode && !isCursorOnLine) {
+                const pipeIdx = match[2] !== undefined ? match[0].indexOf('|') : -1;
+                const visibleFrom = pipeIdx !== -1 ? start + pipeIdx + 1 : start + 2;
+                const visibleTo = end - 2;
+                if (visibleFrom < visibleTo) {
+                  widgets.push(hideBracketDeco.range(start, visibleFrom));
+                  widgets.push(linkDeco.range(visibleFrom, visibleTo));
+                  widgets.push(hideBracketDeco.range(visibleTo, end));
+                } else {
+                  widgets.push(linkDeco.range(start, end));
+                }
+              } else {
+                widgets.push(linkDeco.range(start, end));
+              }
             }
 
             pos = line.to + 1;
           }
         }
+
+        widgets.sort(
+          (a, b) =>
+            a.from - b.from ||
+            (a.value.startSide ?? 0) - (b.value.startSide ?? 0) ||
+            a.to - b.to
+        );
+
         return Decoration.set(widgets, true);
       }
     },
     {
       decorations: (v) => v.decorations,
       eventHandlers: {
-        click: (e, view) => {
+        mousedown: (e) => {
+          if (e.button !== 0 || !(e.ctrlKey || e.metaKey)) return false;
           const target = e.target as HTMLElement | null;
           const wikilinkEl = target?.closest('.cm-wikilink') as HTMLElement | null;
           if (wikilinkEl) {
+            e.preventDefault();
+            return true;
+          }
+          return false;
+        },
+        click: (e, view) => {
+          if (e.button !== 0 || !(e.ctrlKey || e.metaKey)) return false;
+          const target = e.target as HTMLElement | null;
+          const wikilinkEl = target?.closest('.cm-wikilink') as HTMLElement | null;
+          if (wikilinkEl) {
+            e.preventDefault();
+            e.stopPropagation();
+            const attrTarget = wikilinkEl.getAttribute('data-page-preview-target')?.trim();
+            if (attrTarget) {
+              handler?.onWikilinkClick(attrTarget);
+              return true;
+            }
+
             const pos = view.posAtDOM(wikilinkEl);
             const line = view.state.doc.lineAt(pos);
             const text = line.text;
@@ -208,13 +288,12 @@ export function createWikilinksExtension(handler?: WikilinkHandler) {
               const start = line.from + match.index;
               const end = start + match[0].length;
               if (pos >= start && pos <= end) {
-                if (handler?.onWikilinkClick) {
-                  handler.onWikilinkClick(targetNote);
-                }
-                break;
+                handler?.onWikilinkClick(targetNote);
+                return true;
               }
             }
           }
+          return false;
         },
       },
     }
