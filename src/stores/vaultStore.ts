@@ -35,6 +35,17 @@ import {
   parseDailyNoteDate,
   applyDailyNoteTemplateVariables,
 } from '../utils/dailyNotesUtils';
+import {
+  getDefaultBookmarkTitle,
+  isSameBookmarkTarget,
+  loadVaultBookmarks,
+  normalizeSearchBookmarkQuery,
+  persistVaultBookmarks,
+  pruneBookmarksOnDelete,
+  readVaultBookmarksFromLocalStorage,
+  remapBookmarksOnRename,
+  resolveBookmarkFullPath,
+} from '../utils/bookmarksUtils';
 
 const triggerAutoSync = (vaultPath?: string | null, vaultName?: string | null) => {
   if (vaultPath) {
@@ -237,14 +248,21 @@ function buildPrefixRenamePatch(
   return { notesContentMap: updatedMap };
 }
 
-function readInitialBookmarks(): BookmarkItem[] {
+function safeGetLocalStorage(key: string): string | null {
   try {
-    const raw = localStorage.getItem('urano_bookmarks');
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (typeof localStorage === 'undefined') return null;
+    return localStorage.getItem(key);
   } catch {
-    return [];
+    return null;
+  }
+}
+
+function safeSetLocalStorage(key: string, value: string): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(key, value);
+  } catch {
+    // Ignore storage write errors
   }
 }
 
@@ -524,9 +542,16 @@ interface VaultState {
 
   // Bookmarks
   bookmarks: BookmarkItem[];
-  toggleBookmark: (item: { type: 'file' | 'folder' | 'search'; path: string; title: string; query?: string }) => void;
-  removeBookmark: (path: string) => void;
-  isBookmarked: (path: string) => boolean;
+  toggleBookmark: (item: {
+    type: 'file' | 'folder' | 'search';
+    path: string;
+    title?: string;
+    query?: string;
+  }) => void;
+  removeBookmark: (path: string, type?: BookmarkItem['type']) => void;
+  isBookmarked: (path: string, type?: BookmarkItem['type']) => boolean;
+  remapVaultBookmarks: (oldPath: string, newPath: string) => void;
+  pruneVaultBookmarks: (deletedPath: string) => void;
 
   // Sorting
   sortOrder: SortOrder;
@@ -728,21 +753,28 @@ async function flushDirtyFileToDisk(
 
 function getInitialRecentVaults(): RecentVault[] {
   try {
+    if (typeof localStorage === 'undefined') return [];
     const raw = localStorage.getItem('urano_recent_vaults');
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const valid = parsed.filter(
+          (v): v is RecentVault =>
+            Boolean(v && typeof v === 'object' && typeof v.path === 'string' && typeof v.name === 'string')
+        );
+        if (valid.length > 0) return valid;
+      }
+    }
+    const lastVault = localStorage.getItem('urano_last_vault');
+    if (lastVault) {
+      const parts = lastVault.replace(/\\/g, '/').split('/');
+      const name = parts[parts.length - 1] || 'Vault';
+      const initial = [{ name, path: lastVault }];
+      localStorage.setItem('urano_recent_vaults', JSON.stringify(initial));
+      return initial;
     }
   } catch (e) {
     console.error('Error reading recent vaults:', e);
-  }
-  const lastVault = localStorage.getItem('urano_last_vault');
-  if (lastVault) {
-    const parts = lastVault.replace(/\\/g, '/').split('/');
-    const name = parts[parts.length - 1] || 'Vault';
-    const initial = [{ name, path: lastVault }];
-    localStorage.setItem('urano_recent_vaults', JSON.stringify(initial));
-    return initial;
   }
   return [];
 }
@@ -819,7 +851,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   },
 
   updateRecentVault: (oldPath: string, newPath: string, newName?: string) => {
-    const { recentVaults } = get();
+    const { recentVaults, activeVault, bookmarks } = get();
     const updated = recentVaults.map((v) => {
       if (isSamePath(v.path, oldPath)) {
         return {
@@ -829,49 +861,111 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       }
       return v;
     });
-    localStorage.setItem('urano_recent_vaults', JSON.stringify(updated));
+    safeSetLocalStorage('urano_recent_vaults', JSON.stringify(updated));
+    if (activeVault && isSamePath(activeVault, oldPath)) {
+      const remapped = remapBookmarksOnRename(bookmarks, oldPath, newPath);
+      const configDir = useSettingsStore.getState().settings.configFolderOverride;
+      void persistVaultBookmarks(newPath, remapped.bookmarks, configDir);
+      set({ recentVaults: updated, bookmarks: remapped.bookmarks });
+      return;
+    }
     set({ recentVaults: updated });
   },
 
-  // Bookmarks
-  bookmarks: readInitialBookmarks(),
+  // Bookmarks (isolated per vault in `<configDir>/bookmarks.json` + per-vault localStorage mirror)
+  bookmarks: readVaultBookmarksFromLocalStorage(initialVaultInfo.activeVault),
   toggleBookmark: (item) => {
-    const { bookmarks } = get();
-    const exists = bookmarks.some((b) => isSamePath(b.path, item.path));
+    const { bookmarks, activeVault } = get();
+    if (!activeVault) return;
+    const cleanQuery =
+      item.type === 'search' ? normalizeSearchBookmarkQuery(item.query ?? item.path) : undefined;
+    if (item.type === 'search' && !cleanQuery) return;
+    const resolvedPath = resolveBookmarkFullPath(item.path, item.type, activeVault, cleanQuery);
+    if (!resolvedPath) return;
+
+    const target = { type: item.type, path: resolvedPath, query: cleanQuery };
+    const exists = bookmarks.some((b) => isSameBookmarkTarget(b, target));
     let updated: BookmarkItem[];
     if (exists) {
-      updated = bookmarks.filter((b) => !isSamePath(b.path, item.path));
+      updated = bookmarks.filter((b) => !isSameBookmarkTarget(b, target));
     } else {
+      const title =
+        item.title && item.title.trim()
+          ? item.title.trim()
+          : getDefaultBookmarkTitle(resolvedPath, item.type, cleanQuery);
       updated = [
         ...bookmarks,
-        { ...item, id: `${item.type}-${item.path}-${Date.now()}`, createdAt: Date.now() },
+        {
+          id: `${item.type}-${resolvedPath}-${Date.now()}`,
+          type: item.type,
+          path: resolvedPath,
+          title,
+          ...(cleanQuery !== undefined ? { query: cleanQuery } : {}),
+          createdAt: Date.now(),
+        },
       ];
     }
-    localStorage.setItem('urano_bookmarks', JSON.stringify(updated));
+    const configDir = useSettingsStore.getState().settings.configFolderOverride;
+    void persistVaultBookmarks(activeVault, updated, configDir);
     set({ bookmarks: updated });
   },
-  removeBookmark: (path) => {
-    const { bookmarks } = get();
-    const updated = bookmarks.filter((b) => !isSamePath(b.path, path));
-    localStorage.setItem('urano_bookmarks', JSON.stringify(updated));
+  removeBookmark: (path, type) => {
+    const { bookmarks, activeVault } = get();
+    if (!activeVault) return;
+    const resolvedPath = type
+      ? resolveBookmarkFullPath(path, type, activeVault)
+      : path.startsWith('search:')
+      ? `search:${normalizeSearchBookmarkQuery(path)}`
+      : normalizePath(path);
+    const updated = bookmarks.filter(
+      (b) => !isSameBookmarkTarget(b, { type, path: resolvedPath })
+    );
+    if (updated.length === bookmarks.length) return;
+    const configDir = useSettingsStore.getState().settings.configFolderOverride;
+    void persistVaultBookmarks(activeVault, updated, configDir);
     set({ bookmarks: updated });
   },
-  isBookmarked: (path) => {
-    return get().bookmarks.some((b) => isSamePath(b.path, path));
+  isBookmarked: (path, type) => {
+    const { bookmarks, activeVault } = get();
+    if (!activeVault || !path) return false;
+    const resolvedPath = type
+      ? resolveBookmarkFullPath(path, type, activeVault)
+      : path.startsWith('search:')
+      ? `search:${normalizeSearchBookmarkQuery(path)}`
+      : normalizePath(path);
+    return bookmarks.some((b) => isSameBookmarkTarget(b, { type, path: resolvedPath }));
+  },
+  remapVaultBookmarks: (oldPath, newPath) => {
+    const { bookmarks, activeVault } = get();
+    if (!activeVault || !bookmarks.length) return;
+    const res = remapBookmarksOnRename(bookmarks, oldPath, newPath);
+    if (!res.changed) return;
+    const configDir = useSettingsStore.getState().settings.configFolderOverride;
+    void persistVaultBookmarks(activeVault, res.bookmarks, configDir);
+    set({ bookmarks: res.bookmarks });
+  },
+  pruneVaultBookmarks: (deletedPath) => {
+    const { bookmarks, activeVault } = get();
+    if (!activeVault || !bookmarks.length) return;
+    const res = pruneBookmarksOnDelete(bookmarks, deletedPath);
+    if (!res.changed) return;
+    const configDir = useSettingsStore.getState().settings.configFolderOverride;
+    void persistVaultBookmarks(activeVault, res.bookmarks, configDir);
+    set({ bookmarks: res.bookmarks });
   },
 
   // Sorting
-  sortOrder: (localStorage.getItem('urano_sort_order') as SortOrder) || 'name-asc',
+  sortOrder: (safeGetLocalStorage('urano_sort_order') as SortOrder) || 'name-asc',
   setSortOrder: (order: SortOrder) => {
-    localStorage.setItem('urano_sort_order', order);
+    safeSetLocalStorage('urano_sort_order', order);
     const { fileTree } = get();
     set({ sortOrder: order, fileTree: sortFileTree(fileTree, order) });
   },
 
   // Auto-reveal
-  autoReveal: localStorage.getItem('urano_auto_reveal') !== 'false',
+  autoReveal: safeGetLocalStorage('urano_auto_reveal') !== 'false',
   setAutoReveal: (reveal: boolean) => {
-    localStorage.setItem('urano_auto_reveal', String(reveal));
+    safeSetLocalStorage('urano_auto_reveal', String(reveal));
     set({ autoReveal: reveal });
   },
 
@@ -919,7 +1013,8 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       const shouldCreateWelcome =
         !options?.isStartupRestore && !preWelcomeStatus.welcomeCreated && !hasDocuments;
 
-      localStorage.setItem('urano_last_vault', vaultPath);
+      const vaultBookmarks = await loadVaultBookmarks(vaultPath, configDir);
+      safeSetLocalStorage('urano_last_vault', vaultPath);
 
       if (shouldCreateWelcome) {
         const activeLang = normalizeLanguageCode(
@@ -955,6 +1050,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
           vaultName,
           fileTree: sortFileTree(tree, get().sortOrder),
           files: allFiles,
+          bookmarks: vaultBookmarks,
           notesContentMap: { [welcomePath]: welcomeContent },
           activeFile: null,
           activeFileName: null,
@@ -989,6 +1085,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         vaultName,
         fileTree: sortFileTree(tree, get().sortOrder),
         files: allFiles,
+        bookmarks: vaultBookmarks,
         activeFile: null,
         activeFileName: null,
         fileContent: '',
@@ -1522,6 +1619,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     }
 
     set(buildPrefixRenamePatch(sourcePath, newPath, fileTree, activeFile, notesContentMap));
+    get().remapVaultBookmarks(sourcePath, newPath);
 
     if (scanResult && scanResult.changes.length > 0) {
       await applyLinkChanges(scanResult.changes, movedPairs);
@@ -1788,6 +1886,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
               if (shouldDelete) {
                 for (const att of unlinkedAttachments) {
                   await removeSinglePath(att);
+                  get().pruneVaultBookmarks(att);
                 }
               }
             }
@@ -1800,6 +1899,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
     // Delete the main item
     await removeSinglePath(path);
+    get().pruneVaultBookmarks(path);
 
     const updatedMap: Record<string, string> = {};
     for (const [k, v] of Object.entries(get().notesContentMap)) {
@@ -1852,6 +1952,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     }
 
     set(buildPrefixRenamePatch(oldPath, newPath, fileTree, activeFile, notesContentMap));
+    get().remapVaultBookmarks(oldPath, newPath);
 
     if (scanResult && scanResult.changes.length > 0) {
       await applyLinkChanges(scanResult.changes, movedPairs);
