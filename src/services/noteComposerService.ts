@@ -563,6 +563,9 @@ export async function executeNoteMerge(
   }
   useVaultStore.setState({ notesContentMap: updatedMap });
 
+  // Remap any bookmark pointing to sourcePath onto finalPath before deleting sourcePath
+  useVaultStore.getState().remapVaultBookmarks(sourcePath, finalPath);
+
   // Delete the merged source note and open the destination note
   await useVaultStore.getState().deleteItem(sourcePath);
   await useVaultStore.getState().selectFile(finalPath);
