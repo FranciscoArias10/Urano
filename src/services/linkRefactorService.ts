@@ -628,6 +628,7 @@ async function applyPhysicalRename(oldPath: string, newPath: string): Promise<vo
     notesContentMap: updatedMap,
     ...(isActive ? { activeFile: newPath, activeFileName: newFileName } : {}),
   });
+  useVaultStore.getState().remapVaultBookmarks(oldPath, newPath);
 }
 
 /**
