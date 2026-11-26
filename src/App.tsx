@@ -392,7 +392,7 @@ const MainApp: React.FC = () => {
     const zoomFactor = (settings.zoomLevel || 100) / 100;
     (root.style as CSSStyleDeclaration & { zoom?: string }).zoom =
       settings.zoomLevel === 100 ? '' : String(zoomFactor);
-    document.body.style.zoom = settings.zoomLevel === 100 ? '' : String(zoomFactor);
+    document.body.style.zoom = '';
     document.body.classList.toggle('is-translucent', Boolean(settings.translucentWindow));
     // `lang` / `dir` del documento los gestiona el motor i18n (locales/i18n.ts)
     applyBaseTheme(settings.theme);
@@ -1844,7 +1844,7 @@ const MainApp: React.FC = () => {
   // The main workspace cannot function without a valid vault folder.
   if (!activeVault) {
     return (
-      <div className="urano-app h-screen w-screen overflow-hidden bg-urano-sidebar flex flex-col select-none">
+      <div className="urano-app h-full w-full overflow-hidden bg-urano-sidebar flex flex-col select-none">
         <VaultManagerModal
           isOpen={true}
           standalone={true}
@@ -1861,7 +1861,7 @@ const MainApp: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-urano-bg text-urano-text overflow-hidden select-none">
+    <div className="flex flex-col h-full w-full bg-urano-bg text-urano-text overflow-hidden select-none">
       {/* Urano Custom Frame Titlebar (rendered in 'custom' / 'Marco de Urano' mode) */}
       {settings.windowFrameStyle === 'custom' && (
         <div
