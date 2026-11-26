@@ -1,7 +1,12 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
-import { useVaultStore, isNativeVaultFile } from './stores/vaultStore';
+import {
+  useVaultStore,
+  isNativeVaultFile,
+  VAULT_WELCOME_OPENED_EVENT,
+  VAULT_ITEM_DELETED_EVENT,
+} from './stores/vaultStore';
 import {
   TabHistoryEntry,
   pushHistoryEntry,
@@ -434,7 +439,7 @@ const MainApp: React.FC = () => {
     const lastVault = localStorage.getItem('urano_last_vault');
     if (lastVault) {
       setStartupMessage(t('startUp.loadingVault') || 'Cargando bóveda...');
-      setVault(lastVault)
+      setVault(lastVault, { isStartupRestore: true })
         .catch((e) => {
           console.warn('No se pudo restaurar la última bóveda:', e);
           useVaultStore.setState({ activeVault: null, vaultName: null });
@@ -488,6 +493,61 @@ const MainApp: React.FC = () => {
     return () => window.removeEventListener(FILE_RENAMED_EVENT, onRenamed);
   }, []);
 
+  // Ensure newly initialized welcome note opens in Live Preview mode, and prune tabs when files are deleted
+  useEffect(() => {
+    const onWelcomeOpened = () => {
+      lastEditingModeRef.current = 'live-preview';
+      setViewMode('live-preview');
+    };
+    const onItemDeleted = (e: Event) => {
+      const deletedPath = (e as CustomEvent<{ path?: string }>).detail?.path;
+      if (!deletedPath) return;
+      const normDeleted = normalizePath(deletedPath).toLowerCase();
+      setTabs((prev) => {
+        const isDeletedTab = (fp?: string) => {
+          if (!fp) return false;
+          if (isSamePath(fp, deletedPath)) return true;
+          return normalizePath(fp).toLowerCase().startsWith(`${normDeleted}/`);
+        };
+        if (!prev.some((tab) => isDeletedTab(tab.filePath))) {
+          return prev;
+        }
+        const remaining = prev.filter((tab) => !isDeletedTab(tab.filePath));
+        if (remaining.length === 0) {
+          const emptyId = makeTabId();
+          setActiveTabId(emptyId);
+          setNavHistory({});
+          return [
+            {
+              id: emptyId,
+              type: 'empty',
+              title: t('tabs.newTabLabel') || 'Nueva pestaña',
+            },
+          ];
+        }
+        setNavHistory((hist) => pruneHistoryForTabs(hist, remaining.map((tab) => tab.id)));
+        setActiveTabId((currId) => {
+          if (remaining.some((tab) => tab.id === currId)) return currId;
+          const next = remaining[remaining.length - 1];
+          if (next.filePath && next.type !== 'empty' && next.type !== 'graph') {
+            void selectFile(next.filePath);
+          } else {
+            void closeActiveFile();
+          }
+          return next.id;
+        });
+        return remaining;
+      });
+    };
+
+    window.addEventListener(VAULT_WELCOME_OPENED_EVENT, onWelcomeOpened);
+    window.addEventListener(VAULT_ITEM_DELETED_EVENT, onItemDeleted);
+    return () => {
+      window.removeEventListener(VAULT_WELCOME_OPENED_EVENT, onWelcomeOpened);
+      window.removeEventListener(VAULT_ITEM_DELETED_EVENT, onItemDeleted);
+    };
+  }, [t, selectFile, closeActiveFile]);
+
   // Flush pending dirty edits before closing or unloading the main window
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -538,6 +598,11 @@ const MainApp: React.FC = () => {
   // Restore tabs from localStorage when vault is loaded
   useEffect(() => {
     if (!activeVault) return;
+    const { files: currentVaultFiles, activeFile: currentActiveFile, activeFileName: currentActiveName } =
+      useVaultStore.getState();
+    const fileExistsInVault = (fp?: string) =>
+      Boolean(fp && currentVaultFiles.some((f) => !f.isDir && isSamePath(f.path, fp)));
+
     try {
       const normKey = normalizePath(activeVault);
       const raw =
@@ -546,23 +611,60 @@ const MainApp: React.FC = () => {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setTabs(parsed);
-          const matchingTab = activeFile
-            ? parsed.find((t: TabItem) => isSamePath(t.filePath, activeFile))
-            : undefined;
-          if (matchingTab) {
-            setActiveTabId(matchingTab.id);
-          } else {
-            setActiveTabId(parsed[parsed.length - 1].id);
+          const validTabs: TabItem[] = parsed.filter(
+            (tab: TabItem) =>
+              tab.type === 'empty' || tab.type === 'graph' || fileExistsInVault(tab.filePath)
+          );
+          if (validTabs.length > 0) {
+            setTabs(validTabs);
+            const matchingTab = currentActiveFile
+              ? validTabs.find((tab) => isSamePath(tab.filePath, currentActiveFile))
+              : undefined;
+            if (matchingTab) {
+              setActiveTabId(matchingTab.id);
+            } else {
+              const fallbackTab = validTabs[validTabs.length - 1];
+              setActiveTabId(fallbackTab.id);
+              if (fallbackTab.filePath && fallbackTab.type !== 'empty' && fallbackTab.type !== 'graph') {
+                if (!currentActiveFile || !isSamePath(currentActiveFile, fallbackTab.filePath)) {
+                  void selectFile(fallbackTab.filePath);
+                }
+              } else if (!currentActiveFile) {
+                void closeActiveFile();
+              }
+            }
+            return;
           }
-          return;
         }
       }
     } catch (e) {
       console.warn('Error al restaurar pestañas desde localStorage:', e);
     }
 
-    // Default to an empty in-memory tab if no tabs were saved
+    // If setVault already opened an initial file (e.g. Bienvenido.md / Welcome.md), host it in the active tab
+    if (currentActiveFile && fileExistsInVault(currentActiveFile)) {
+      const fallbackTitle = currentActiveName
+        ? currentActiveName.replace(/\.(md|markdown|canvas|base)$/i, '') || currentActiveName
+        : t('common.untitled');
+      const { type, title } = getTabMetaForPath(currentActiveFile, activeVault, fallbackTitle);
+      const initialTabId = makeTabId();
+      setTabs([
+        {
+          id: initialTabId,
+          type,
+          filePath: currentActiveFile,
+          title,
+          isDirty: false,
+        },
+      ]);
+      setActiveTabId(initialTabId);
+      setNavHistory({
+        [initialTabId]: pushHistoryEntry(undefined, currentActiveFile),
+      });
+      return;
+    }
+
+    // Default to an empty in-memory tab if no tabs were saved ("Nueva pestaña" screensaver)
     const newTabId = makeTabId();
     setTabs([
       {
@@ -1815,15 +1917,18 @@ const MainApp: React.FC = () => {
 
           <div className="flex-1" />
 
-          {/* Settings (Ctrl+,) at Bottom of Ribbon */}
-          <Tooltip content={t('app.ribbon.settings')} shortcut="Ctrl+," position="right">
-            <button
-              onClick={() => openSettings()}
-              className="side-dock-ribbon-action mb-1 text-urano-muted hover:text-urano-text"
-            >
-              <Settings size={18} />
-            </button>
-          </Tooltip>
+          {/* Settings (Ctrl+,) at Bottom of Ribbon — only shown when left sidebar is collapsed */}
+          {!showLeftSidebar && (
+            <Tooltip content={t('app.ribbon.settings')} shortcut="Ctrl+," position="right">
+              <button
+                onClick={() => openSettings()}
+                aria-label={t('app.ribbon.settings')}
+                className="side-dock-ribbon-action mb-1 text-urano-muted hover:text-urano-text"
+              >
+                <Settings size={18} />
+              </button>
+            </Tooltip>
+          )}
         </div>
         )}
 
