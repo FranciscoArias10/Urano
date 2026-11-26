@@ -1,7 +1,23 @@
-use crate::services::vault::{FileItem, VaultService};
+use crate::services::vault::{FileItem, VaultService, VaultWelcomeStatus};
 use std::collections::HashMap;
 use std::path::Path;
 use tauri::ipc::Response;
+
+#[tauri::command]
+pub fn get_vault_welcome_status(
+    vault_path: String,
+    config_dir: Option<String>,
+) -> Result<VaultWelcomeStatus, String> {
+    VaultService::get_vault_welcome_status(Path::new(&vault_path), config_dir.as_deref())
+}
+
+#[tauri::command]
+pub fn mark_vault_welcome_created(
+    vault_path: String,
+    config_dir: Option<String>,
+) -> Result<(), String> {
+    VaultService::mark_vault_welcome_created(Path::new(&vault_path), config_dir.as_deref())
+}
 
 #[tauri::command]
 pub fn open_vault(vault_path: String, detect_all: Option<bool>, config_dir: Option<String>) -> Result<Vec<FileItem>, String> {

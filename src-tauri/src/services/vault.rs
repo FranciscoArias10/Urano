@@ -19,16 +19,18 @@ pub struct FileItem {
     pub size: Option<u64>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct VaultWelcomeStatus {
+    pub welcome_created: bool,
+    pub has_documents: bool,
+}
+
 pub struct VaultService;
 
 impl VaultService {
-    /// Opens a vault and returns the tree of markdown files and directories
-    pub fn open_vault(vault_path: &Path, detect_all: bool, config_dir: Option<&str>) -> Result<Vec<FileItem>, String> {
-        if !vault_path.exists() {
-            return Err("La ruta de la bóveda no existe".to_string());
-        }
-
-        // Ensure active config directory exists (settingsStore.configFolderOverride || ".urano")
+    /// Resolves the vault's hidden configuration directory (defaults to `.urano`).
+    pub fn resolve_config_dir(vault_path: &Path, config_dir: Option<&str>) -> std::path::PathBuf {
         let raw_cfg = config_dir.unwrap_or(".urano");
         let trimmed = raw_cfg.trim();
         let cfg_name = if trimmed.is_empty() {
@@ -38,7 +40,112 @@ impl VaultService {
         } else {
             format!(".{}", trimmed)
         };
-        let target_config_dir = vault_path.join(&cfg_name);
+        vault_path.join(cfg_name)
+    }
+
+    /// Inspects whether the vault has already been initialized for the welcome note
+    /// (`<configDir>/config.json` with `welcomeCreated: true` or existing `<configDir>/settings.json`)
+    /// and whether it already contains any `.md`, `.markdown`, `.canvas`, or `.base` documents.
+    pub fn get_vault_welcome_status(
+        vault_path: &Path,
+        config_dir: Option<&str>,
+    ) -> Result<VaultWelcomeStatus, String> {
+        if !vault_path.exists() {
+            return Err("La ruta de la bóveda no existe".to_string());
+        }
+
+        let target_config_dir = Self::resolve_config_dir(vault_path, config_dir);
+        let config_json_path = target_config_dir.join("config.json");
+        let settings_json_path = target_config_dir.join("settings.json");
+
+        let mut welcome_created = settings_json_path.is_file();
+        if !welcome_created && config_json_path.is_file() {
+            if let Ok(raw) = fs::read_to_string(&config_json_path) {
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&raw) {
+                    if val
+                        .get("welcomeCreated")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(false)
+                    {
+                        welcome_created = true;
+                    }
+                }
+            }
+        }
+
+        let mut has_documents = false;
+        for entry in walkdir::WalkDir::new(vault_path)
+            .into_iter()
+            .filter_entry(|e| {
+                if e.depth() == 0 {
+                    return true;
+                }
+                let name = e.file_name().to_string_lossy();
+                !name.starts_with('.')
+            })
+            .flatten()
+        {
+            let path = entry.path();
+            if path.is_file() {
+                let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+                if ext.eq_ignore_ascii_case("md")
+                    || ext.eq_ignore_ascii_case("markdown")
+                    || ext.eq_ignore_ascii_case("canvas")
+                    || ext.eq_ignore_ascii_case("base")
+                {
+                    has_documents = true;
+                    break;
+                }
+            }
+        }
+
+        Ok(VaultWelcomeStatus {
+            welcome_created,
+            has_documents,
+        })
+    }
+
+    /// Persists `"welcomeCreated": true` inside `<vault_path>/<configDir>/config.json`,
+    /// preserving any other keys already stored in that JSON file.
+    pub fn mark_vault_welcome_created(
+        vault_path: &Path,
+        config_dir: Option<&str>,
+    ) -> Result<(), String> {
+        if !vault_path.exists() {
+            return Err("La ruta de la bóveda no existe".to_string());
+        }
+
+        let target_config_dir = Self::resolve_config_dir(vault_path, config_dir);
+        if !target_config_dir.exists() {
+            fs::create_dir_all(&target_config_dir).map_err(|e| e.to_string())?;
+        }
+
+        let config_json_path = target_config_dir.join("config.json");
+        let mut obj = if config_json_path.is_file() {
+            fs::read_to_string(&config_json_path)
+                .ok()
+                .and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
+                .and_then(|val| val.as_object().cloned())
+                .unwrap_or_default()
+        } else {
+            serde_json::Map::new()
+        };
+
+        obj.insert("welcomeCreated".to_string(), serde_json::Value::Bool(true));
+        let serialized = serde_json::to_string_pretty(&serde_json::Value::Object(obj))
+            .map_err(|e| e.to_string())?;
+        fs::write(&config_json_path, serialized)
+            .map_err(|e| format!("Error al guardar config.json: {}", e))
+    }
+
+    /// Opens a vault and returns the tree of markdown files and directories
+    pub fn open_vault(vault_path: &Path, detect_all: bool, config_dir: Option<&str>) -> Result<Vec<FileItem>, String> {
+        if !vault_path.exists() {
+            return Err("La ruta de la bóveda no existe".to_string());
+        }
+
+        // Ensure active config directory exists (settingsStore.configFolderOverride || ".urano")
+        let target_config_dir = Self::resolve_config_dir(vault_path, config_dir);
         if !target_config_dir.exists() {
             let _ = fs::create_dir_all(&target_config_dir);
         }
@@ -209,5 +316,58 @@ impl VaultService {
             }
         }
         Ok(map)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn make_temp_dir(label: &str) -> std::path::PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("urano_welcome_test_{}_{}", label, nanos));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn welcome_status_detects_empty_and_persists_lock() {
+        let dir = make_temp_dir("empty_lock");
+        let status = VaultService::get_vault_welcome_status(&dir, None).unwrap();
+        assert!(!status.welcome_created);
+        assert!(!status.has_documents);
+
+        // Write welcome note + mark welcomeCreated
+        let welcome_path = dir.join("Bienvenido.md");
+        VaultService::write_file(&welcome_path, "Hola").unwrap();
+        VaultService::mark_vault_welcome_created(&dir, None).unwrap();
+
+        let status_after = VaultService::get_vault_welcome_status(&dir, None).unwrap();
+        assert!(status_after.welcome_created);
+        assert!(status_after.has_documents);
+
+        // Delete welcome note -> welcome_created MUST remain true!
+        VaultService::delete_item(&welcome_path).unwrap();
+        let status_deleted = VaultService::get_vault_welcome_status(&dir, None).unwrap();
+        assert!(status_deleted.welcome_created);
+        assert!(!status_deleted.has_documents);
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn welcome_status_detects_existing_documents() {
+        let dir = make_temp_dir("existing_docs");
+        VaultService::write_file(&dir.join("Existing.md"), "# Note").unwrap();
+
+        let status = VaultService::get_vault_welcome_status(&dir, None).unwrap();
+        assert!(!status.welcome_created);
+        assert!(status.has_documents);
+
+        let _ = fs::remove_dir_all(&dir);
     }
 }

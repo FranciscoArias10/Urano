@@ -1485,6 +1485,10 @@
     "untitledFolder": "Untitled",
     "defaultVaultName": "Vault",
     "defaultNoteName": "Note",
+    "welcome": {
+      "fileName": "Welcome.md",
+      "content": "This is your new *vault*.\n\nMake a note of something, [[create a link]], or try [the Importer](https://urano.app/import)!\n\nWhen you're ready, delete this note and make the vault your own."
+    },
     "dailyNoteBody": "# {date}\n\n## Goals for the day\n- [ ] \n\n## Notes\n\n",
     "confirmDeleteUnlinkedAttachments": "This note contains {count} unlinked attachment(s) not used in any other note. Do you want to delete them as well?",
     "errors": {

@@ -77,6 +77,8 @@ pub fn run() {
         })
         .manage(oauth_service)
         .invoke_handler(tauri::generate_handler![
+            commands::vault::get_vault_welcome_status,
+            commands::vault::mark_vault_welcome_created,
             commands::vault::open_vault,
             commands::vault::list_vault_files,
             commands::vault::read_file,

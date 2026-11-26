@@ -6,7 +6,8 @@ import { renameImageInCache, clearImageBlobUrlCache } from '../editor/imageExten
 import { useSettingsStore, resolveNewFileDir, resolveNewCanvasDir } from './settingsStore';
 import { useSyncStore } from './syncStore';
 import { useNoticeStore } from '../components/common/Notice';
-import { t } from '../locales/i18n';
+import { t, getLanguageCode, setLanguage } from '../locales/i18n';
+import { normalizeLanguageCode } from '../locales/languages';
 import { defaultBaseConfig, serializeBaseConfig } from '../components/base/baseConfig';
 import {
   scanAffectedLinks,
@@ -537,7 +538,7 @@ interface VaultState {
   setLoadingMessage: (msg: string) => void;
 
   // Actions
-  setVault: (vaultPath: string) => Promise<void>;
+  setVault: (vaultPath: string, options?: { isStartupRestore?: boolean }) => Promise<void>;
   refreshTree: () => Promise<void>;
   selectFile: (filePath: string) => Promise<void>;
   openFile: (filePath: string) => Promise<void>;
@@ -584,6 +585,127 @@ export function isNativeVaultFile(filePath: string): boolean {
     lower.endsWith('.base') ||
     isImagePath(filePath)
   );
+}
+
+export const VAULT_WELCOME_OPENED_EVENT = 'urano:vault-welcome-opened';
+export const VAULT_ITEM_DELETED_EVENT = 'urano:vault-item-deleted';
+export const URANO_INITIALIZED_VAULTS_KEY = 'urano_initialized_vaults';
+
+function getNormalizedVaultRegistryKey(vaultPath: string): string {
+  return normalizePath(vaultPath).replace(/\/+$/, '').toLowerCase();
+}
+
+function isVaultMarkedInLocalStorage(vaultPath: string): boolean {
+  try {
+    if (typeof localStorage === 'undefined') return false;
+    const raw = localStorage.getItem(URANO_INITIALIZED_VAULTS_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return false;
+    const key = getNormalizedVaultRegistryKey(vaultPath);
+    return parsed.some(
+      (entry) => typeof entry === 'string' && getNormalizedVaultRegistryKey(entry) === key
+    );
+  } catch {
+    return false;
+  }
+}
+
+function markVaultInLocalStorage(vaultPath: string): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const key = getNormalizedVaultRegistryKey(vaultPath);
+    if (!key) return;
+    const raw = localStorage.getItem(URANO_INITIALIZED_VAULTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    const list: string[] = Array.isArray(parsed)
+      ? parsed.filter((x): x is string => typeof x === 'string')
+      : [];
+    if (!list.some((entry) => getNormalizedVaultRegistryKey(entry) === key)) {
+      list.push(key);
+      localStorage.setItem(URANO_INITIALIZED_VAULTS_KEY, JSON.stringify(list));
+    }
+  } catch {
+    // Ignore storage quota / SSR errors
+  }
+}
+
+function resolveVaultConfigFolderName(configDir?: string): string {
+  const trimmed = (configDir || '.urano').trim();
+  if (!trimmed) return '.urano';
+  return trimmed.startsWith('.') ? trimmed : `.${trimmed}`;
+}
+
+function hasVaultDocumentItems(items: FileItem[]): boolean {
+  return items.some((item) => !item.isDir && /\.(md|markdown|canvas|base)$/i.test(item.name));
+}
+
+async function readVaultWelcomeStatus(
+  vaultPath: string,
+  configDir: string
+): Promise<{ welcomeCreated: boolean; hasDocuments: boolean }> {
+  const localMarked = isVaultMarkedInLocalStorage(vaultPath);
+  try {
+    const status = await invoke<{ welcomeCreated?: boolean; hasDocuments?: boolean }>(
+      'get_vault_welcome_status',
+      { vaultPath, configDir }
+    );
+    return {
+      welcomeCreated: Boolean(localMarked || status?.welcomeCreated),
+      hasDocuments: Boolean(status?.hasDocuments),
+    };
+  } catch {
+    // Fallback for test environments where only read_file is mocked
+    const cleanRoot = normalizePath(vaultPath).replace(/\/+$/, '');
+    const cfgName = resolveVaultConfigFolderName(configDir);
+    let diskMarked = false;
+    try {
+      const rawCfg = await invoke<string>('read_file', {
+        filePath: `${cleanRoot}/${cfgName}/config.json`,
+      });
+      const parsed = JSON.parse(rawCfg);
+      if (parsed && parsed.welcomeCreated === true) {
+        diskMarked = true;
+      }
+    } catch {}
+    if (!diskMarked) {
+      try {
+        await invoke<string>('read_file', {
+          filePath: `${cleanRoot}/${cfgName}/settings.json`,
+        });
+        diskMarked = true;
+      } catch {}
+    }
+    return {
+      welcomeCreated: Boolean(localMarked || diskMarked),
+      hasDocuments: false,
+    };
+  }
+}
+
+async function persistVaultWelcomeCreated(vaultPath: string, configDir: string): Promise<void> {
+  markVaultInLocalStorage(vaultPath);
+  try {
+    await invoke('mark_vault_welcome_created', { vaultPath, configDir });
+  } catch {
+    // Fallback for test environments where only read_file / write_file are mocked
+    const cleanRoot = normalizePath(vaultPath).replace(/\/+$/, '');
+    const cfgName = resolveVaultConfigFolderName(configDir);
+    const cfgPath = `${cleanRoot}/${cfgName}/config.json`;
+    let existingObj: Record<string, unknown> = {};
+    try {
+      const raw = await invoke<string>('read_file', { filePath: cfgPath });
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        existingObj = parsed as Record<string, unknown>;
+      }
+    } catch {}
+    existingObj.welcomeCreated = true;
+    await invoke('write_file', {
+      filePath: cfgPath,
+      content: JSON.stringify(existingObj, null, 2),
+    }).catch(() => {});
+  }
 }
 
 let selectFileRequestId = 0;
@@ -757,7 +879,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   setShouldSelectTitleOnOpen: (focus: boolean) => set({ shouldSelectTitleOnOpen: focus }),
   setLoadingMessage: (msg: string) => set({ loadingMessage: msg }),
 
-  setVault: async (vaultPath: string) => {
+  setVault: async (vaultPath: string, options?: { isStartupRestore?: boolean }) => {
     try {
       const prevState = get();
       if (prevState.isDirty && prevState.activeFile) {
@@ -777,24 +899,96 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       const settings = useSettingsStore.getState().settings;
       const detectAll = settings.detectAllFileExtensions;
       const configDir = settings.configFolderOverride || '.urano';
-      const tree = await invoke<FileItem[]>('open_vault', { vaultPath, detectAll, configDir });
-      const allTree = detectAll
+
+      // Inspect welcome-note initialization state BEFORE open_vault creates the config directory
+      const preWelcomeStatus = await readVaultWelcomeStatus(vaultPath, configDir);
+
+      let tree = await invoke<FileItem[]>('open_vault', { vaultPath, detectAll, configDir });
+      let allTree = detectAll
         ? tree
         : await invoke<FileItem[]>('list_vault_files', {
             vaultPath,
             detectAll: true,
             configDir,
           }).catch(() => tree);
+      let allFiles = flattenVaultFiles(allTree);
+
       const parts = vaultPath.replace(/\\/g, '/').split('/');
       const vaultName = parts[parts.length - 1] || t('vault.defaultVaultName');
+      const hasDocuments = preWelcomeStatus.hasDocuments || hasVaultDocumentItems(allFiles);
+      const shouldCreateWelcome =
+        !options?.isStartupRestore && !preWelcomeStatus.welcomeCreated && !hasDocuments;
 
       localStorage.setItem('urano_last_vault', vaultPath);
+
+      if (shouldCreateWelcome) {
+        const activeLang = normalizeLanguageCode(
+          useLocaleStore.getState().language ||
+            useSettingsStore.getState().settings.language ||
+            getLanguageCode() ||
+            'en'
+        );
+        if (getLanguageCode() !== activeLang) {
+          await setLanguage(activeLang);
+        }
+
+        const welcomeFileName = t('vault.welcome.fileName');
+        const welcomeContent = t('vault.welcome.content');
+        const cleanVaultRoot = normalizePath(vaultPath).replace(/\/+$/, '');
+        const welcomePath = `${cleanVaultRoot}/${welcomeFileName}`;
+
+        await invoke('write_file', { filePath: welcomePath, content: welcomeContent });
+        await persistVaultWelcomeCreated(vaultPath, configDir);
+
+        tree = await invoke<FileItem[]>('list_vault_files', { vaultPath, detectAll, configDir });
+        allTree = detectAll
+          ? tree
+          : await invoke<FileItem[]>('list_vault_files', {
+              vaultPath,
+              detectAll: true,
+              configDir,
+            }).catch(() => tree);
+        allFiles = flattenVaultFiles(allTree);
+
+        set({
+          activeVault: vaultPath,
+          vaultName,
+          fileTree: sortFileTree(tree, get().sortOrder),
+          files: allFiles,
+          notesContentMap: { [welcomePath]: welcomeContent },
+          activeFile: null,
+          activeFileName: null,
+          fileContent: '',
+          isDirty: false,
+          autoFocusTitle: false,
+          shouldSelectTitleOnOpen: false,
+          isLoading: false,
+          loadingMessage: '',
+        });
+
+        get().addRecentVault(vaultName, vaultPath);
+        void get().loadAllNotesContent();
+        triggerAutoSync(vaultPath, vaultName);
+
+        await get().openFile(welcomePath);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent(VAULT_WELCOME_OPENED_EVENT, {
+              detail: { vaultPath, filePath: welcomePath },
+            })
+          );
+        }
+        return;
+      }
+
+      // Persist initialization lock so existing vaults or restored vaults never create phantom welcome notes later
+      await persistVaultWelcomeCreated(vaultPath, configDir);
 
       set({
         activeVault: vaultPath,
         vaultName,
         fileTree: sortFileTree(tree, get().sortOrder),
-        files: flattenVaultFiles(allTree),
+        files: allFiles,
         activeFile: null,
         activeFileName: null,
         fileContent: '',
@@ -810,7 +1004,9 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       // Restore file based on Settings → Files and links → "Default file to open"
       const defaultToOpen = useSettingsStore.getState().settings.defaultFileToOpen;
       if (defaultToOpen === 'daily-note') {
-        get().openDailyNote().catch((e) => console.warn('Error opening daily note:', e));
+        await get()
+          .openDailyNote()
+          .catch((e) => console.warn('Error opening daily note:', e));
       } else if (defaultToOpen === 'last-opened') {
         const normKey = normalizePath(vaultPath);
         const lastFile =
@@ -825,7 +1021,9 @@ export const useVaultStore = create<VaultState>((set, get) => ({
             });
           };
           if (resolved && existsInTree(tree, resolved)) {
-            get().selectFile(resolved).catch(() => {});
+            await get()
+              .selectFile(resolved)
+              .catch(() => {});
           } else {
             try {
               localStorage.removeItem(`urano_last_file_${normKey}`);
@@ -1611,6 +1809,19 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     }
 
     const activeDeleted = isPathOrDescendant(activeFile, path);
+    if (activeVault) {
+      try {
+        const normVault = normalizePath(activeVault);
+        const lastSaved =
+          localStorage.getItem(`urano_last_file_${normVault}`) ||
+          localStorage.getItem(`urano_last_file_${activeVault}`);
+        if (lastSaved && isPathOrDescendant(lastSaved, path)) {
+          localStorage.removeItem(`urano_last_file_${normVault}`);
+          localStorage.removeItem(`urano_last_file_${activeVault}`);
+        }
+      } catch {}
+    }
+
     set({
       notesContentMap: updatedMap,
       ...(activeDeleted
@@ -1618,6 +1829,9 @@ export const useVaultStore = create<VaultState>((set, get) => ({
         : {}),
     });
     await refreshTree();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(VAULT_ITEM_DELETED_EVENT, { detail: { path } }));
+    }
     triggerAutoSync(get().activeVault, get().vaultName);
   },
 

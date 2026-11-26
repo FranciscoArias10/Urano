@@ -1485,6 +1485,10 @@
     "untitledFolder": "Carpeta sin título",
     "defaultVaultName": "Bóveda",
     "defaultNoteName": "Nota",
+    "welcome": {
+      "fileName": "Bienvenido.md",
+      "content": "Esta es su nueva *bóveda*.\n\nCree una nota de algo, [[cree un enlace]], o pruebe [el Importador](https://urano.app/import)!\n\nCuando esté listo, borre esta nota y aprópiese de la bóveda"
+    },
     "dailyNoteBody": "# {date}\n\n## Objetivos del día\n- [ ] \n\n## Notas\n\n",
     "confirmDeleteUnlinkedAttachments": "Esta nota contiene {count} adjunto(s) no enlazado(s) en ninguna otra nota. ¿Deseas eliminarlo(s) también?",
     "errors": {
