@@ -13,8 +13,12 @@
     "windows": [
       {
         "title": "Urano",
-        "width": 800,
-        "height": 600,
+        "width": 1200,
+        "height": 800,
+        "minWidth": 600,
+        "minHeight": 450,
+        "center": true,
+        "visible": false,
         "resizable": true,
         "maximizable": true,
         "minimizable": true,
