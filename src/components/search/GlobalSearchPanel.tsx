@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, X, FileText, ChevronRight, ChevronDown } from 'lucide-react';
+import { Search, X, FileText, ChevronRight, ChevronDown, Bookmark } from 'lucide-react';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useT } from '../../stores/localeStore';
+import { useNoticeStore } from '../common/Notice';
 import {
   buildGlobalSearchResults,
   FileSearchResult,
@@ -16,9 +17,23 @@ interface GlobalSearchPanelProps {
 
 export const GlobalSearchPanel: React.FC<GlobalSearchPanelProps> = ({ onOpenFile }) => {
   const t = useT();
-  const { notesContentMap, activeVault, activeFile, fileContent, selectFile } = useVaultStore();
+  const {
+    notesContentMap,
+    activeVault,
+    activeFile,
+    fileContent,
+    selectFile,
+    isBookmarked,
+    toggleBookmark,
+  } = useVaultStore();
+  const { showNotice } = useNoticeStore();
   const userIgnoreFilters = useSettingsStore((s) => s.settings.userIgnoreFilters) || [];
+  const bookmarksEnabled = useSettingsStore((s) => s.settings.corePlugins.bookmarks);
   const [query, setQuery] = useState(() => (window as any).__uranoInitialSearchQuery || '');
+  const trimmedQuery = query.trim();
+  const isCurrentSearchBookmarked = Boolean(
+    trimmedQuery && isBookmarked(`search:${trimmedQuery}`, 'search')
+  );
   const [collapsedFiles, setCollapsedFiles] = useState<Record<string, boolean>>({});
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -90,14 +105,52 @@ export const GlobalSearchPanel: React.FC<GlobalSearchPanelProps> = ({ onOpenFile
             }}
             className="w-full bg-transparent text-urano-text outline-none placeholder-stone-500"
           />
+          {trimmedQuery && bookmarksEnabled && (
+            <button
+              type="button"
+              onClick={() => {
+                const wasBookmarked = isCurrentSearchBookmarked;
+                toggleBookmark({
+                  type: 'search',
+                  path: `search:${trimmedQuery}`,
+                  title: trimmedQuery,
+                  query: trimmedQuery,
+                });
+                showNotice(
+                  wasBookmarked
+                    ? t('fileTree.notices.bookmarkRemoved')
+                    : t('fileTree.notices.bookmarkAdded'),
+                  2000,
+                  'info'
+                );
+              }}
+              title={
+                isCurrentSearchBookmarked ? t('search.removeBookmark') : t('search.addBookmark')
+              }
+              aria-label={
+                isCurrentSearchBookmarked ? t('search.removeBookmark') : t('search.addBookmark')
+              }
+              className={`shrink-0 transition-colors ${
+                isCurrentSearchBookmarked
+                  ? 'text-orange-500 hover:text-orange-400'
+                  : 'text-urano-muted hover:text-urano-text'
+              }`}
+            >
+              <Bookmark
+                size={12}
+                className={isCurrentSearchBookmarked ? 'fill-orange-500' : ''}
+              />
+            </button>
+          )}
           {query && (
             <button
+              type="button"
               onClick={() => {
                 setQuery('');
                 (window as any).__uranoInitialSearchQuery = '';
                 inputRef.current?.focus();
               }}
-              className="text-urano-muted hover:text-urano-text"
+              className="text-urano-muted hover:text-urano-text shrink-0"
             >
               <X size={12} />
             </button>
