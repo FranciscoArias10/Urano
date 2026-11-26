@@ -216,3 +216,4 @@ export function computeJumpSelectionInDoc(
   const head = Math.min(lineObj.to, lineObj.from + endCol);
   return { anchor, head };
 }
+
