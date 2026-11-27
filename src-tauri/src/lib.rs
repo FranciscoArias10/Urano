@@ -3,6 +3,8 @@ pub mod services;
 pub mod spellcheck;
 pub mod storage;
 
+pub use services::vault::validate_vault_path;
+
 use services::oauth::OAuthService;
 use std::sync::Arc;
 
@@ -95,6 +97,7 @@ pub fn run() {
             commands::vault::move_to_system_trash,
             commands::vault::open_file_in_default_app,
             commands::vault::rename_item,
+            commands::vault::rename_file,
             commands::vault::get_vault_notes_content,
             commands::auth::is_authenticated,
             commands::auth::start_oauth_login,

@@ -158,6 +158,11 @@ pub fn rename_item(old_path: String, new_path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
+    VaultService::rename_item(Path::new(&old_path), Path::new(&new_path))
+}
+
+#[tauri::command]
 pub fn get_vault_notes_content(vault_path: String) -> Result<HashMap<String, String>, String> {
     VaultService::get_vault_notes_content(Path::new(&vault_path))
 }
