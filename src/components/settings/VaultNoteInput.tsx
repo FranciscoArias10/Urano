@@ -22,8 +22,9 @@ function collectMarkdownNotes(items: FileItem[], vaultRoot: string, out: string[
     if (normRoot && normItem.toLowerCase().startsWith(`${normRoot.toLowerCase()}/`)) {
       rel = normItem.slice(normRoot.length + 1);
     }
-    // Skip hidden dot-folders / files
-    if (rel.split('/').some((seg) => seg.startsWith('.'))) {
+    // Skip hidden dot-folders and dotfiles (1:1 with Obsidian)
+    const relParts = rel.split('/');
+    if (relParts.some((seg) => seg.startsWith('.'))) {
       continue;
     }
     if (item.isDir) {

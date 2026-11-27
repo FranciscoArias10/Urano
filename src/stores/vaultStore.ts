@@ -46,6 +46,15 @@ import {
   remapBookmarksOnRename,
   resolveBookmarkFullPath,
 } from '../utils/bookmarksUtils';
+import {
+  FORBIDDEN_FILENAME_CHARS_RE,
+  getAvailableUntitledName,
+  normalizeFileNameInput,
+  validateFileName as validateFileNameCentral,
+  validateVaultRelativePath,
+  type FileNameValidationResult,
+  type ValidateFileNameOptions,
+} from '../utils/fileNameValidation';
 
 const triggerAutoSync = (vaultPath?: string | null, vaultName?: string | null) => {
   if (vaultPath) {
@@ -140,10 +149,12 @@ async function createBaseOnDisk(
   let counter = 0;
   let lastError: unknown = null;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++, counter++) {
-    const fileName = counter === 0 ? `${untitled}.base` : `${untitled} ${counter}.base`;
+    const { fullName: fileName, baseName: name } =
+      counter === 0
+        ? getAvailableUntitledName(untitled, existingNames, '.base')
+        : { fullName: `${untitled} ${counter}.base`, baseName: `${untitled} ${counter}` };
     if (existingNames.has(fileName.toLowerCase())) continue;
 
-    const name = fileName.replace(/\.base$/i, '');
     const fullPath = `${normTargetDir}/${fileName}`.replace(/\/+/g, '/');
     try {
       await invoke('create_file', { filePath: fullPath });
@@ -453,22 +464,13 @@ const notifyLinksUpdated = (plan: LinkScanResult) => {
     .showNotice(t(key, { links: plan.totalLinks, files: plan.totalFiles }), 3000, 'success');
 };
 
-// Prohibited characters matching Urano specification: \ / : * ? " < > | # ^ [ ]
-export const ILLEGAL_FILENAME_CHARS = /[\\/:*?"<>|#^[\]]/;
+// Prohibited OS characters matching Obsidian `app.asar` (`s0e` / `Cc`): * " \ / < > : | ?
+export const ILLEGAL_FILENAME_CHARS = FORBIDDEN_FILENAME_CHARS_RE;
 
-export const validateFileName = (name: string): { valid: boolean; error?: string } => {
-  const trimmed = name.trim();
-  if (!trimmed) {
-    return { valid: false, error: t('vault.errors.nameEmpty') };
-  }
-  if (ILLEGAL_FILENAME_CHARS.test(trimmed)) {
-    return {
-      valid: false,
-      error: t('vault.errors.nameInvalidChars'),
-    };
-  }
-  return { valid: true };
-};
+export const validateFileName = (
+  name: string,
+  options?: ValidateFileNameOptions
+): FileNameValidationResult => validateFileNameCentral(name, options);
 
 export function sortFileTree(items: FileItem[], order: SortOrder): FileItem[] {
   const sorted = [...items].map((item) => {
@@ -581,10 +583,10 @@ interface VaultState {
   createUntitledFolder: (parentPath?: string) => Promise<string>;
   moveItem: (sourcePath: string, targetFolderPath: string) => Promise<void>;
   duplicateNote: (filePath: string) => Promise<string>;
-  renameNoteWithLinkRefactor: (
-    oldPath: string,
-    newTitle: string
-  ) => Promise<{ success: boolean; error?: string; newPath?: string; pendingPrompt?: boolean }>;
+    renameNoteWithLinkRefactor: (
+      oldPath: string,
+      newTitle: string
+    ) => Promise<{ success: boolean; error?: string; warning?: string; newPath?: string; pendingPrompt?: boolean }>;
   resolvePendingRename: (mode: 'always' | 'once' | 'skip') => Promise<void>;
   createFolder: (parentPath: string, name: string) => Promise<void>;
   deleteItem: (path: string) => Promise<void>;
@@ -1315,30 +1317,51 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   },
 
   createNote: async (parentPath: string, name: string): Promise<string> => {
-    const { activeVault, activeFile } = get();
-    const cleanInput = normalizePath(name).replace(/^\/+/, '');
-    const cleanName = /\.(md|markdown|canvas|base)$/i.test(cleanInput)
-      ? cleanInput
-      : `${cleanInput}.md`;
+    const { activeVault, activeFile, fileTree } = get();
+    const rawTrimmed = (name ?? '').replace(/\\/g, '/').trim().replace(/^\/+/, '');
 
     let targetDir = normalizePath(parentPath);
     if (
       activeVault &&
       (!targetDir || isSamePath(targetDir, activeVault)) &&
-      !cleanInput.includes('/')
+      !rawTrimmed.includes('/')
     ) {
       targetDir = normalizePath(resolveNewFileDir(activeVault, activeFile));
     }
 
+    const validation = validateVaultRelativePath(rawTrimmed, {
+      baseDir: targetDir,
+      defaultExtension: '.md',
+      existingItems: fileTree,
+    });
+
+    if (!validation.valid) {
+      useNoticeStore
+        .getState()
+        .showNotice(validation.error || t('editor.notices.invalidFileName'), 4000, 'error');
+      return '';
+    }
+
+    if (validation.warning) {
+      useNoticeStore.getState().showNotice(validation.warning, 4000, 'warning');
+    }
+
     const normVault = activeVault ? normalizePath(activeVault) : '';
-    if (targetDir && (!normVault || !isSamePath(targetDir, normVault))) {
+    if (validation.parentDir && (!normVault || !isSamePath(validation.parentDir, normVault))) {
       try {
-        await invoke('create_folder', { folderPath: targetDir });
+        await invoke('create_folder', { folderPath: validation.parentDir });
       } catch {}
     }
 
-    const fullPath = `${targetDir}/${cleanName}`.replace(/\/+/g, '/');
-    await invoke('create_file', { filePath: fullPath });
+    const fullPath = validation.fullPath;
+    try {
+      await invoke('create_file', { filePath: fullPath });
+    } catch (err: any) {
+      useNoticeStore
+        .getState()
+        .showNotice(err?.toString() || t('editor.notices.invalidFileName'), 4000, 'error');
+      return '';
+    }
     await get().refreshTree();
     await get().selectFile(fullPath);
     triggerAutoSync(get().activeVault, get().vaultName);
@@ -1362,16 +1385,14 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       } catch {}
     }
 
-    // Collect all existing names in targetDir
+    // Collect all existing names in targetDir (case-insensitive)
     const existingNames = collectExistingNamesInDir(fileTree, normTargetDir);
-
     const untitled = t('common.untitled');
-    let candidateName = `${untitled}.md`;
-    let counter = 1;
-    while (existingNames.has(candidateName.toLowerCase())) {
-      candidateName = `${untitled} ${counter}.md`;
-      counter++;
-    }
+    const { fullName: candidateName, baseName: cleanUntitledName } = getAvailableUntitledName(
+      untitled,
+      existingNames,
+      '.md'
+    );
 
     const fullPath = `${normTargetDir}/${candidateName}`.replace(/\/+/g, '/');
     const initialContent = '';
@@ -1386,7 +1407,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     set({ autoFocusTitle: true, shouldSelectTitleOnOpen: true });
     triggerAutoSync(get().activeVault, get().vaultName);
 
-    return { path: fullPath, name: candidateName.replace(/\.md$/, '') };
+    return { path: fullPath, name: cleanUntitledName };
   },
 
   // Urano Canvas creation (.canvas JSON format)
@@ -1408,14 +1429,12 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     }
 
     const existingNames = collectExistingNamesInDir(fileTree, normTargetDir);
-
     const untitled = t('common.untitled');
-    let candidateName = `${untitled}.canvas`;
-    let counter = 1;
-    while (existingNames.has(candidateName.toLowerCase())) {
-      candidateName = `${untitled} ${counter}.canvas`;
-      counter++;
-    }
+    const { fullName: candidateName, baseName: cleanUntitledName } = getAvailableUntitledName(
+      untitled,
+      existingNames,
+      '.canvas'
+    );
 
     const fullPath = `${normTargetDir}/${candidateName}`.replace(/\/+/g, '/');
     const initialCanvas = JSON.stringify(
@@ -1434,7 +1453,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     await selectFile(fullPath);
     set({ autoFocusTitle: true, shouldSelectTitleOnOpen: true });
 
-    return { path: fullPath, name: candidateName.replace(/\.canvas$/, '') };
+    return { path: fullPath, name: cleanUntitledName };
   },
 
   // Urano Base creation (.base format)
@@ -1494,9 +1513,29 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       return fullPath;
     }
 
-    // Create intermediate subfolders automatically (e.g. dailyNotesFolder or slashes in format like YYYY/MM/DD)
-    const parentDir = fullPath.substring(0, fullPath.lastIndexOf('/'));
+    // Validate generated daily note relative path before creating folders/files
     const cleanRoot = normalizePath(activeVault).replace(/\/+$/, '');
+    const relDailyPath = fullPath.toLowerCase().startsWith(`${cleanRoot.toLowerCase()}/`)
+      ? fullPath.slice(cleanRoot.length + 1)
+      : fullPath;
+    const dailyValidation = validateVaultRelativePath(relDailyPath, {
+      baseDir: cleanRoot,
+      defaultExtension: '.md',
+      existingItems: fileTree,
+      allowExistingTarget: true,
+    });
+    if (!dailyValidation.valid) {
+      useNoticeStore
+        .getState()
+        .showNotice(dailyValidation.error || t('editor.notices.invalidFileName'), 4000, 'error');
+      return '';
+    }
+    if (dailyValidation.warning) {
+      useNoticeStore.getState().showNotice(dailyValidation.warning, 4000, 'warning');
+    }
+
+    // Create intermediate subfolders automatically (e.g. dailyNotesFolder or slashes in format like YYYY/MM/DD)
+    const parentDir = dailyValidation.parentDir;
     if (parentDir && parentDir !== cleanRoot) {
       await invoke('create_folder', { folderPath: parentDir }).catch(() => {});
     }
@@ -1640,12 +1679,7 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     const existingNames = collectExistingNamesInDir(fileTree, normTargetDir);
 
     const untitledFolder = t('vault.untitledFolder');
-    let candidateName = untitledFolder;
-    let counter = 1;
-    while (existingNames.has(candidateName.toLowerCase())) {
-      candidateName = `${untitledFolder} ${counter}`;
-      counter++;
-    }
+    const { fullName: candidateName } = getAvailableUntitledName(untitledFolder, existingNames);
 
     const fullPath = `${normTargetDir}/${candidateName}`.replace(/\/+/g, '/');
     await invoke('create_folder', { folderPath: fullPath });
@@ -1688,51 +1722,48 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   renameNoteWithLinkRefactor: async (
     oldPath: string,
     newTitle: string
-  ): Promise<{ success: boolean; error?: string; newPath?: string; pendingPrompt?: boolean }> => {
+  ): Promise<{ success: boolean; error?: string; warning?: string; newPath?: string; pendingPrompt?: boolean }> => {
     if (!oldPath || !oldPath.trim()) {
       return { success: false, error: 'No active file' };
     }
     const { activeVault, fileTree } = get();
 
-    const validation = validateFileName(newTitle);
-    if (!validation.valid) {
-      return { success: false, error: validation.error };
-    }
-
-    const cleanTitle = newTitle.trim();
     const normOldPath = normalizePath(oldPath);
     const lastSlash = normOldPath.lastIndexOf('/');
     const parentDir = lastSlash !== -1 ? normOldPath.substring(0, lastSlash) : '';
     const oldFileName = lastSlash !== -1 ? normOldPath.substring(lastSlash + 1) : normOldPath;
     const lastDot = oldFileName.lastIndexOf('.');
     const ext = lastDot > 0 ? oldFileName.substring(lastDot) : '.md';
-    const oldBaseName = lastDot > 0 ? oldFileName.substring(0, lastDot) : oldFileName;
-    const newFileName = cleanTitle.toLowerCase().endsWith(ext.toLowerCase())
-      ? cleanTitle
-      : `${cleanTitle}${ext}`;
+
+    const cleanedInput = normalizeFileNameInput(newTitle);
+    const rawBaseTitle =
+      ext &&
+      cleanedInput.length > ext.length &&
+      cleanedInput.toLowerCase().endsWith(ext.toLowerCase())
+        ? cleanedInput.slice(0, -ext.length)
+        : cleanedInput;
+
+    const validation = validateFileNameCentral(rawBaseTitle, {
+      extension: ext,
+      currentPath: oldPath,
+      parentDir,
+      existingItems: fileTree,
+    });
+
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+
+    const newFileName = validation.fullFileName;
     const newPath = (parentDir ? `${parentDir}/${newFileName}` : newFileName).replace(/\/+/g, '/');
 
-    // If name didn't change
-    if (oldBaseName.toLowerCase() === cleanTitle.toLowerCase() && oldFileName === newFileName) {
+    // Exact same file name (including casing) -> no-op
+    if (oldFileName === newFileName) {
       return { success: true, newPath: oldPath };
     }
 
-    // Check collision recursively with another file/folder using normalized paths
-    const hasCollision = (items: FileItem[]): boolean => {
-      for (const item of items) {
-        const normItem = normalizePath(item.path).toLowerCase();
-        if (normItem === newPath.toLowerCase() && normItem !== normOldPath.toLowerCase()) {
-          return true;
-        }
-        if (item.children?.length && hasCollision(item.children)) {
-          return true;
-        }
-      }
-      return false;
-    };
-
-    if (hasCollision(fileTree)) {
-      return { success: false, error: t('vault.errors.nameExists') };
+    if (validation.warning) {
+      useNoticeStore.getState().showNotice(validation.warning, 4000, 'warning');
     }
 
     try {
@@ -1741,16 +1772,16 @@ export const useVaultStore = create<VaultState>((set, get) => ({
 
       if (scanResult.totalLinks === 0) {
         await executeFileRenameOnly(oldPath, newPath);
-        return { success: true, newPath };
+        return { success: true, newPath, warning: validation.warning };
       }
 
       if (alwaysUpdate) {
         await executeLinkRefactor(scanResult, oldPath, newPath);
         notifyLinksUpdated(scanResult);
-        return { success: true, newPath };
+        return { success: true, newPath, warning: validation.warning };
       } else {
         set({ pendingRenamePrompt: { oldPath, newPath, plan: scanResult } });
-        return { success: true, newPath, pendingPrompt: true };
+        return { success: true, newPath, pendingPrompt: true, warning: validation.warning };
       }
     } catch (err: any) {
       console.error('Error durante el renombrado:', err);
@@ -1759,8 +1790,22 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   },
 
   createFolder: async (parentPath: string, name: string) => {
-    const fullPath = `${parentPath}/${name}`.replace(/\/+/g, '/');
-    await invoke('create_folder', { folderPath: fullPath });
+    const validation = validateVaultRelativePath(name, {
+      baseDir: parentPath,
+      defaultExtension: '',
+      knownExtensionsRe: /^$/,
+      existingItems: get().fileTree,
+    });
+    if (!validation.valid) {
+      useNoticeStore
+        .getState()
+        .showNotice(validation.error || t('fileTree.notices.invalidName'), 4000, 'error');
+      throw new Error(validation.error || t('fileTree.notices.invalidName'));
+    }
+    if (validation.warning) {
+      useNoticeStore.getState().showNotice(validation.warning, 4000, 'warning');
+    }
+    await invoke('create_folder', { folderPath: validation.fullPath });
     await get().refreshTree();
     triggerAutoSync(get().activeVault, get().vaultName);
   },
