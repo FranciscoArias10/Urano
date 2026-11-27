@@ -1113,7 +1113,7 @@
       "copyImage": "Copiar imagen"
     },
     "notices": {
-      "nameExists": "Ya existe un archivo o carpeta con ese nombre.",
+      "nameExists": "Ya hay un archivo con ese nombre",
       "renameFolderError": "Error al renombrar carpeta",
       "renameFileError": "Error al renombrar archivo",
       "invalidName": "Nombre inválido",
@@ -1504,8 +1504,13 @@
     "confirmDeleteUnlinkedAttachments": "Esta nota contiene {count} adjunto(s) no enlazado(s) en ninguna otra nota. ¿Deseas eliminarlo(s) también?",
     "errors": {
       "nameEmpty": "El nombre de archivo no puede estar vacío.",
-      "nameInvalidChars": "El nombre de archivo no puede contener ninguno de los siguientes caracteres: * \" \\ / < > : | ? # ^ [ ]",
-      "nameExists": "Ya existe un archivo o carpeta con ese nombre.",
+      "nameBadDotfile": "El nombre de archivo no debe empezar con un punto.",
+      "nameInvalidChars": "El nombre de archivo no puede contener ninguno de los siguientes caracteres: * \" \\ / < > : | ?",
+      "nameUnsafeLinkChars": "Los enlaces no funcionarán con nombres de archivos que contengan estos caracteres: # ^ [ ] |",
+      "nameTrailingDot": "El nombre de archivo no puede terminar con un punto o un espacio.",
+      "nameReserved": "El nombre de archivo no está permitido: {name}",
+      "nameTooLong": "El nombre de archivo no puede superar los {max} caracteres.",
+      "nameExists": "Ya hay un archivo con ese nombre",
       "renameFailed": "Error al renombrar archivo."
     }
   },

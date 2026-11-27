@@ -1113,7 +1113,7 @@
       "copyImage": "Copy image"
     },
     "notices": {
-      "nameExists": "A file or folder with that name already exists.",
+      "nameExists": "There's already a file with the same name",
       "renameFolderError": "Failed to rename folder",
       "renameFileError": "Failed to rename file",
       "invalidName": "Invalid name",
@@ -1504,8 +1504,13 @@
     "confirmDeleteUnlinkedAttachments": "This note contains {count} unlinked attachment(s) not used in any other note. Do you want to delete them as well?",
     "errors": {
       "nameEmpty": "File name cannot be empty.",
-      "nameInvalidChars": "File name cannot contain any of these characters: * \" \\ / < > : | ? # ^ [ ]",
-      "nameExists": "A file or folder with that name already exists.",
+      "nameBadDotfile": "File name must not start with a dot.",
+      "nameInvalidChars": "File name cannot contain any of these characters: * \" \\ / < > : | ?",
+      "nameUnsafeLinkChars": "Links will not work with file names containing any of these characters: # ^ [ ] |",
+      "nameTrailingDot": "File names cannot end with a dot or a space.",
+      "nameReserved": "File name is forbidden: {name}",
+      "nameTooLong": "File name cannot exceed {max} characters.",
+      "nameExists": "There's already a file with the same name",
       "renameFailed": "Failed to rename file."
     }
   },
