@@ -18,7 +18,9 @@ export const QUICK_SWITCHER_ATTACHMENT_EXTENSIONS = new Set([
   'gif',
   'svg',
   'webp',
+  'avif',
   'bmp',
+  'ico',
   'mp4',
   'webm',
   'ogv',
@@ -56,6 +58,26 @@ export interface BuildQuickSwitcherFileEntriesParams {
 }
 
 /**
+ * Returns the vault-relative path preserving file extension (e.g. `Subfolder/Note.md`),
+ * strictly stripping the OS vault root (`C:\Users\...`) with boundary-safe comparison.
+ * Falls back to the bare file name if `vaultPath` is empty or does not match.
+ */
+export function getVaultRelativePathKeepExt(fullPath: string, vaultPath: string): string {
+  if (!fullPath) return '';
+  const normFull = normalizePath(fullPath);
+  const normVault = normalizePath(vaultPath);
+  if (normVault) {
+    const lowerFull = normFull.toLowerCase();
+    const lowerVault = normVault.toLowerCase();
+    if (lowerFull.startsWith(`${lowerVault}/`)) {
+      return normFull.slice(normVault.length + 1).replace(/^\/+/, '');
+    }
+  }
+  const parts = normFull.split('/');
+  return parts[parts.length - 1] || normFull;
+}
+
+/**
  * Filters existing vault files for Quick Switcher (`Ctrl + O`), keeping `.md`,
  * `.canvas`, and `.base` documents always visible and including attachments only
  * when `showAttachments` is enabled.
@@ -71,7 +93,9 @@ export function buildQuickSwitcherFileEntries({
 
   for (const item of files) {
     if (item.isDir) continue;
-    if (isPathExcluded(item.path, userIgnoreFilters)) continue;
+
+    const relWithExt = getVaultRelativePathKeepExt(item.path, vaultPath);
+    if (isPathExcluded(relWithExt, userIgnoreFilters)) continue;
 
     const normKey = normalizePath(item.path).toLowerCase();
     if (seen.has(normKey)) continue;
@@ -87,9 +111,11 @@ export function buildQuickSwitcherFileEntries({
     }
 
     seen.add(normKey);
-    const relPath = vaultPath
-      ? getRelativeVaultPath(item.path, vaultPath)
-      : normalizePath(item.path);
+    const relPath = isDoc
+      ? vaultPath
+        ? getRelativeVaultPath(item.path, vaultPath)
+        : relWithExt.replace(/\.(md|markdown|canvas|base)$/i, '')
+      : relWithExt;
 
     entries.push({
       key: normalizePath(item.path),
@@ -116,6 +142,7 @@ export interface BuildQuickSwitcherEntriesParams {
 /**
  * Combines filtered vault file entries with unresolved `[[Target]]` wikilink
  * candidates when `showExistingOnly` is disabled.
+ * Matches strictly against vault-relative paths and names (never OS paths like `C:\Users\...`).
  */
 export function buildQuickSwitcherEntries({
   fileEntries,
@@ -123,13 +150,12 @@ export function buildQuickSwitcherEntries({
   showExistingOnly,
   query,
 }: BuildQuickSwitcherEntriesParams): QuickSwitcherEntry[] {
-  const q = query.trim().toLowerCase();
+  const q = query.trim().toLowerCase().replace(/\\/g, '/');
   const matchesFile = (f: QuickSwitcherEntry) =>
     !q ||
     f.basename.toLowerCase().includes(q) ||
     f.name.toLowerCase().includes(q) ||
-    f.relPath.toLowerCase().includes(q) ||
-    f.path.toLowerCase().includes(q);
+    f.relPath.toLowerCase().includes(q);
 
   const matchedExisting = fileEntries.filter(matchesFile);
   if (showExistingOnly || unresolvedLinks.length === 0) {

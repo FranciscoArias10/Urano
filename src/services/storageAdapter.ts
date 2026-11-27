@@ -26,8 +26,11 @@ export type ImageExtension = typeof IMAGE_EXTENSIONS[number];
 
 export function isImagePath(filePath: string): boolean {
   if (!filePath) return false;
-  const ext = filePath.split('.').pop()?.toLowerCase();
-  return ext ? (IMAGE_EXTENSIONS as readonly string[]).includes(ext) : false;
+  const base = filePath.replace(/\\/g, '/').split('/').pop() || '';
+  const dot = base.lastIndexOf('.');
+  if (dot <= 0) return false;
+  const ext = base.slice(dot + 1).toLowerCase();
+  return (IMAGE_EXTENSIONS as readonly string[]).includes(ext);
 }
 
 export function getImageMimeType(filePath: string): string {
