@@ -110,7 +110,10 @@ export function isPathExcluded(filePath: string, filters: string[]): boolean {
 
 function extractTrailingExt(normPath: string): string | null {
   const base = normPath.split('/').pop() || '';
-  const match = base.match(FILE_EXT_RE);
+  const lastDot = base.lastIndexOf('.');
+  // A single leading dot (e.g. `[[.net]]`) is part of the base name, not a file extension
+  if (lastDot <= 0) return null;
+  const match = base.slice(lastDot).match(FILE_EXT_RE);
   return match ? match[1] : null;
 }
 
