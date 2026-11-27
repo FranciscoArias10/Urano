@@ -17,7 +17,12 @@ import {
   Merge,
 } from 'lucide-react';
 import { FileItem, SortOrder } from '../../types';
-import { useVaultStore, validateFileName } from '../../stores/vaultStore';
+import { useVaultStore } from '../../stores/vaultStore';
+import {
+  normalizeFileNameInput,
+  stripInlineTitleNewlines,
+  validateFileName,
+} from '../../utils/fileNameValidation';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useT } from '../../stores/localeStore';
 import {
@@ -101,7 +106,6 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
     createUntitledCanvas,
     createUntitledFolder,
     moveItem,
-    fileTree,
   } = useVaultStore();
 
   const { showNotice } = useNoticeStore();
@@ -117,31 +121,32 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const requestFileRename = async (oldPath: string, finalName: string, isDir: boolean) => {
-    const normOld = oldPath.replace(/\\/g, '/');
-    const parentDir = normOld.substring(0, normOld.lastIndexOf('/'));
-    const newPath = `${parentDir}/${finalName}`.replace(/\/+/g, '/');
+    const normOld = normalizePath(oldPath);
+    const lastSlash = normOld.lastIndexOf('/');
+    const parentDir = lastSlash !== -1 ? normOld.substring(0, lastSlash) : '';
+    const newPath = (parentDir ? `${parentDir}/${finalName}` : finalName).replace(/\/+/g, '/');
 
     if (normOld === newPath) {
       return;
     }
 
     if (isDir) {
-      // Sibling collision (case-insensitive, like Urano on case-insensitive filesystems)
-      const target = newPath.toLowerCase();
-      const collides = (items: FileItem[]): boolean =>
-        items.some((f) => {
-          const p = f.path.replace(/\\/g, '/');
-          if (p.toLowerCase() === target && p !== normOld) return true;
-          return f.children ? collides(f.children) : false;
-        });
-      if (collides(fileTree)) {
-        showNotice(t('fileTree.notices.nameExists'), 3000, 'error');
+      const folderValidation = validateFileName(finalName, {
+        currentPath: oldPath,
+        parentDir,
+        existingItems: useVaultStore.getState().fileTree,
+      });
+      if (!folderValidation.valid) {
+        showNotice(folderValidation.error || t('fileTree.notices.nameExists'), 4000, 'error');
         return;
+      }
+      if (folderValidation.warning) {
+        showNotice(folderValidation.warning, 4000, 'warning');
       }
       try {
         await useVaultStore.getState().renameItem(oldPath, newPath);
       } catch (err: any) {
-        showNotice(err?.toString() || t('fileTree.notices.renameFolderError'), 3000, 'error');
+        showNotice(err?.toString() || t('fileTree.notices.renameFolderError'), 4000, 'error');
       }
       return;
     }
@@ -149,11 +154,11 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
     try {
       const res = await useVaultStore.getState().renameNoteWithLinkRefactor(oldPath, finalName);
       if (!res.success) {
-        showNotice(res.error || t('fileTree.notices.renameFileError'), 3000, 'error');
+        showNotice(res.error || t('fileTree.notices.renameFileError'), 4000, 'error');
       }
     } catch (err: any) {
       console.error('Error during rename:', err);
-      showNotice(err?.toString() || t('fileTree.notices.renameFileError'), 3000, 'error');
+      showNotice(err?.toString() || t('fileTree.notices.renameFileError'), 4000, 'error');
     }
   };
 
@@ -408,16 +413,36 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
               const droppedFiles = Array.from(e.dataTransfer.files);
               try {
+                let savedCount = 0;
+                const currentTree = useVaultStore.getState().fileTree;
                 for (const f of droppedFiles) {
-                  const fullPath = `${normalizePath(activeVault)}/${f.name}`.replace(/\/+/g, '/');
+                  const check = validateFileName(f.name, {
+                    parentDir: activeVault,
+                    existingItems: currentTree,
+                  });
+                  if (!check.valid) {
+                    showNotice(
+                      check.error || t('fileTree.notices.invalidName'),
+                      4000,
+                      'error'
+                    );
+                    continue;
+                  }
+                  const fullPath = `${normalizePath(activeVault)}/${check.fullFileName}`.replace(
+                    /\/+/g,
+                    '/'
+                  );
                   await getStorageAdapter().writeBinary(fullPath, f);
+                  savedCount++;
                 }
-                await useVaultStore.getState().refreshTree();
-                showNotice(
-                  t('fileTree.notices.filesSaved', { count: droppedFiles.length }),
-                  2000,
-                  'success'
-                );
+                if (savedCount > 0) {
+                  await useVaultStore.getState().refreshTree();
+                  showNotice(
+                    t('fileTree.notices.filesSaved', { count: savedCount }),
+                    2000,
+                    'success'
+                  );
+                }
               } catch (err: any) {
                 console.error('Error saving dropped files to vault root:', err);
                 showNotice(
@@ -504,8 +529,10 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
     toggleBookmark,
   } = useVaultStore();
 
-  const { showNotice } = useNoticeStore();
+  const { showNotice, upsertNotice, removeNotice } = useNoticeStore();
   const t = useT();
+  const isSubmittingRenameRef = useRef(false);
+  const FILETREE_RENAME_NOTICE_ID = 'filetree-rename-validation';
 
   const isClosed = ctx ? Boolean(ctx.collapsedMap[toCollapsedKey(item.path)]) : false;
   const isOpen = !isClosed;
@@ -576,25 +603,76 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
     }
   };
 
+  const handleRenameInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nextVal = stripInlineTitleNewlines(e.target.value);
+    setRenameValue(nextVal);
+    const { extension: currentExt } = getBaseNameAndExt(item.name, item.isDir);
+    const live = validateFileName(nextVal, {
+      allowEmpty: true,
+      extension: currentExt,
+      currentPath: item.path,
+      existingItems: useVaultStore.getState().fileTree,
+    });
+    if (!live.valid && live.error) {
+      upsertNotice(FILETREE_RENAME_NOTICE_ID, live.error, 4000, 'error');
+    } else if (live.warning) {
+      upsertNotice(FILETREE_RENAME_NOTICE_ID, live.warning, 4000, 'warning');
+    } else {
+      removeNotice(FILETREE_RENAME_NOTICE_ID);
+    }
+  };
+
   const handleRenameSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!isRenaming) return;
+    if (!isRenaming || isSubmittingRenameRef.current) return;
 
-    const trimmed = renameValue.trim();
-    const validation = validateFileName(trimmed);
-    if (!validation.valid) {
-      showNotice(validation.error || t('fileTree.notices.invalidName'), 3000, 'error');
-      setRenameValue(initialBaseName);
+    isSubmittingRenameRef.current = true;
+    try {
+      const trimmed = normalizeFileNameInput(renameValue);
+      // Si el usuario deja el nombre vacío al renombrar, revertir silenciosamente al nombre anterior
+      if (!trimmed) {
+        removeNotice(FILETREE_RENAME_NOTICE_ID);
+        setRenameValue(initialBaseName);
+        ctx?.setRenamingPath(null);
+        return;
+      }
+
+      const { baseName: currentBaseName, extension: currentExt } = getBaseNameAndExt(
+        item.name,
+        item.isDir
+      );
+      if (trimmed === currentBaseName) {
+        removeNotice(FILETREE_RENAME_NOTICE_ID);
+        setRenameValue(initialBaseName);
+        ctx?.setRenamingPath(null);
+        return;
+      }
+
+      const validation = validateFileName(trimmed, {
+        extension: currentExt,
+        currentPath: item.path,
+        existingItems: useVaultStore.getState().fileTree,
+      });
+      if (!validation.valid) {
+        upsertNotice(
+          FILETREE_RENAME_NOTICE_ID,
+          validation.error || t('fileTree.notices.invalidName'),
+          4000,
+          'error'
+        );
+        setRenameValue(initialBaseName);
+        ctx?.setRenamingPath(null);
+        return;
+      }
+
+      if (!validation.warning) {
+        removeNotice(FILETREE_RENAME_NOTICE_ID);
+      }
+
       ctx?.setRenamingPath(null);
-      return;
-    }
-
-    ctx?.setRenamingPath(null);
-
-    const { baseName: currentBaseName, extension: currentExt } = getBaseNameAndExt(item.name, item.isDir);
-    if (trimmed && trimmed !== currentBaseName) {
-      const finalName = currentExt ? `${trimmed}${currentExt}` : trimmed;
-      await ctx?.requestFileRename(item.path, finalName, item.isDir);
+      await ctx?.requestFileRename(item.path, validation.fullFileName, item.isDir);
+    } finally {
+      isSubmittingRenameRef.current = false;
     }
   };
 
@@ -843,13 +921,33 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
           if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             const files = Array.from(e.dataTransfer.files);
             try {
+              let savedCount = 0;
+              const currentTree = useVaultStore.getState().fileTree;
               for (const f of files) {
-                const fullPath = `${normalizePath(item.path)}/${f.name}`.replace(/\/+/g, '/');
+                const check = validateFileName(f.name, {
+                  parentDir: item.path,
+                  existingItems: currentTree,
+                });
+                if (!check.valid) {
+                  showNotice(check.error || t('fileTree.notices.invalidName'), 4000, 'error');
+                  continue;
+                }
+                const fullPath = `${normalizePath(item.path)}/${check.fullFileName}`.replace(
+                  /\/+/g,
+                  '/'
+                );
                 await getStorageAdapter().writeBinary(fullPath, f);
+                savedCount++;
               }
-              ctx?.setFolderOpen(item.path, true);
-              await useVaultStore.getState().refreshTree();
-              showNotice(t('fileTree.notices.filesSaved', { count: files.length }), 2000, 'success');
+              if (savedCount > 0) {
+                ctx?.setFolderOpen(item.path, true);
+                await useVaultStore.getState().refreshTree();
+                showNotice(
+                  t('fileTree.notices.filesSaved', { count: savedCount }),
+                  2000,
+                  'success'
+                );
+              }
             } catch (err: any) {
               console.error('Error saving dropped files to folder:', err);
               showNotice(err?.toString() || t('fileTree.notices.renameFileError'), 3000, 'error');
@@ -912,12 +1010,13 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({ item, depth }) => {
                 value={renameValue}
                 spellCheck={false}
                 autoComplete="off"
-                onChange={(e) => setRenameValue(e.target.value)}
+                onChange={handleRenameInputChange}
                 onBlur={() => handleRenameSubmit()}
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') {
                     e.preventDefault();
                     e.stopPropagation();
+                    removeNotice(FILETREE_RENAME_NOTICE_ID);
                     setRenameValue(initialBaseName);
                     ctx?.setRenamingPath(null);
                   }
