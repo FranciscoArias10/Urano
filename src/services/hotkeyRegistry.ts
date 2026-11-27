@@ -1,5 +1,6 @@
 /**
  * Hotkey Registry & Shortcuts Service for Urano (1:1 with Obsidian)
+ * Every entry in `HOTKEY_CATALOG` maps 1:1 to an executable command registered in `App.tsx`.
  */
 
 export interface HotkeyCommand {
@@ -13,8 +14,8 @@ export interface HotkeyCommand {
 export const HOTKEY_CATALOG: HotkeyCommand[] = [
   {
     id: 'app:open-settings',
-    nameEs: 'Abrir ajustes',
-    nameEn: 'Open settings',
+    nameEs: 'Ajustes: Abrir ajustes',
+    nameEn: 'Settings: Open settings',
     defaultHotkeys: ['Ctrl + ,'],
     section: 'app',
   },
@@ -26,53 +27,18 @@ export const HOTKEY_CATALOG: HotkeyCommand[] = [
     section: 'app',
   },
   {
-    id: 'app:open-test-vault',
-    nameEs: 'Abrir bóveda de prueba',
-    nameEn: 'Open test vault',
-    defaultHotkeys: [],
-    section: 'app',
-  },
-  {
     id: 'app:open-vault',
-    nameEs: 'Abrir bóveda...',
-    nameEn: 'Open vault...',
+    nameEs: 'Bóveda: Abrir otra carpeta de bóveda...',
+    nameEn: 'Vault: Open another vault...',
     defaultHotkeys: [],
     section: 'app',
-  },
-  {
-    id: 'editor:open-link-split',
-    nameEs: 'Abrir el enlace bajo el cursor a la derecha',
-    nameEn: 'Open link under cursor to the right',
-    defaultHotkeys: ['Ctrl + Alt + Enter'],
-    section: 'editor',
-  },
-  {
-    id: 'editor:open-link-in-new-window',
-    nameEs: 'Abrir el enlace bajo el cursor en nueva ventana',
-    nameEn: 'Open link under cursor in new window',
-    defaultHotkeys: ['Ctrl + Alt + Shift + Enter'],
-    section: 'editor',
-  },
-  {
-    id: 'editor:open-link-in-new-tab',
-    nameEs: 'Abrir el enlace bajo el cursor en una nueva pestaña',
-    nameEn: 'Open link under cursor in new tab',
-    defaultHotkeys: ['Ctrl + Enter'],
-    section: 'editor',
   },
   {
     id: 'app:open-in-default-app',
-    nameEs: 'Abrir en la app por defecto',
+    nameEs: 'Abrir en la aplicación predeterminada',
     nameEn: 'Open in default app',
     defaultHotkeys: [],
     section: 'app',
-  },
-  {
-    id: 'workspace:open-in-new-window',
-    nameEs: 'Abrir panel actual en una ventana nueva',
-    nameEn: 'Open current panel in new window',
-    defaultHotkeys: [],
-    section: 'workspace',
   },
   {
     id: 'app:open-external-file',
@@ -103,53 +69,32 @@ export const HOTKEY_CATALOG: HotkeyCommand[] = [
     section: 'app',
   },
   {
-    id: 'editor:toggle-highlight-yellow',
-    nameEs: 'Activar o desactivar el resaltado en amarillo',
-    nameEn: 'Toggle yellow highlight',
-    defaultHotkeys: [],
-    section: 'editor',
+    id: 'app:reload',
+    nameEs: 'Recargar ventana',
+    nameEn: 'Reload app',
+    defaultHotkeys: ['Ctrl + R'],
+    section: 'app',
   },
   {
-    id: 'editor:toggle-highlight-blue',
-    nameEs: 'Activar o desactivar el resaltado en azul',
-    nameEn: 'Toggle blue highlight',
-    defaultHotkeys: [],
-    section: 'editor',
-  },
-  {
-    id: 'markdown:toggle-preview',
-    nameEs: 'Alternar vista de lectura/edición',
-    nameEn: 'Toggle reading view / edit mode',
-    defaultHotkeys: ['Ctrl + E'],
-    section: 'editor',
-  },
-  {
-    id: 'editor:toggle-source',
-    nameEs: 'Alternar código fuente / vista previa en vivo',
-    nameEn: 'Toggle source mode / live preview',
-    defaultHotkeys: [],
-    section: 'editor',
-  },
-  {
-    id: 'global-search:open',
-    nameEs: 'Buscar en todos los archivos',
-    nameEn: 'Search in all files',
-    defaultHotkeys: ['Ctrl + Shift + F'],
+    id: 'app:go-back',
+    nameEs: 'Ir hacia atrás en el historial de navegación',
+    nameEn: 'Navigate back',
+    defaultHotkeys: ['Alt + ←'],
     section: 'workspace',
   },
   {
-    id: 'file-explorer:new-note',
-    nameEs: 'Explorador de archivos: Crear nueva nota',
-    nameEn: 'Files: Create new note',
-    defaultHotkeys: ['Ctrl + N'],
-    section: 'file-explorer',
+    id: 'app:go-forward',
+    nameEs: 'Ir hacia adelante en el historial de navegación',
+    nameEn: 'Navigate forward',
+    defaultHotkeys: ['Alt + →'],
+    section: 'workspace',
   },
   {
-    id: 'quick-switcher:open',
-    nameEs: 'Selector rápido: Abrir selector rápido',
-    nameEn: 'Quick switcher: Open quick switcher',
-    defaultHotkeys: ['Ctrl + O'],
-    section: 'switcher',
+    id: 'app:sync-config',
+    nameEs: 'Ajustes: Configurar cuenta de Google Drive y sincronización',
+    nameEn: 'Settings: Configure Google Drive and sync',
+    defaultHotkeys: [],
+    section: 'sync',
   },
   {
     id: 'command-palette:open',
@@ -159,45 +104,31 @@ export const HOTKEY_CATALOG: HotkeyCommand[] = [
     section: 'command-palette',
   },
   {
-    id: 'workspace:close-tab',
-    nameEs: 'Cerrar pestaña actual',
-    nameEn: 'Close current tab',
-    defaultHotkeys: ['Ctrl + W'],
+    id: 'quick-switcher:open',
+    nameEs: 'Selector rápido: Abrir selector rápido',
+    nameEn: 'Quick switcher: Open quick switcher',
+    defaultHotkeys: ['Ctrl + O'],
+    section: 'switcher',
+  },
+  {
+    id: 'global-search:open',
+    nameEs: 'Búsqueda: Buscar en todos los archivos',
+    nameEn: 'Search: Search in all files',
+    defaultHotkeys: ['Ctrl + Shift + F'],
     section: 'workspace',
-  },
-  {
-    id: 'graph:open',
-    nameEs: 'Vista gráfica: Abrir vista gráfica',
-    nameEn: 'Graph view: Open graph view',
-    defaultHotkeys: ['Ctrl + G'],
-    section: 'graph',
-  },
-  {
-    id: 'workspace:toggle-left-sidebar',
-    nameEs: 'Alternar barra lateral izquierda',
-    nameEn: 'Toggle left sidebar',
-    defaultHotkeys: ['Ctrl + B'],
-    section: 'workspace',
-  },
-  {
-    id: 'workspace:toggle-backlinks',
-    nameEs: 'Enlaces entrantes: Alternar panel de enlaces entrantes',
-    nameEn: 'Backlinks: Toggle backlinks panel',
-    defaultHotkeys: ['Ctrl + Shift + B'],
-    section: 'backlink',
-  },
-  {
-    id: 'backlink:toggle-in-document',
-    nameEs: 'Enlaces entrantes: Alternar enlaces entrantes en el documento',
-    nameEn: 'Backlinks: Toggle backlinks in document',
-    defaultHotkeys: [],
-    section: 'backlink',
   },
   {
     id: 'workspace:new-tab',
     nameEs: 'Nueva pestaña',
     nameEn: 'New tab',
     defaultHotkeys: ['Ctrl + T'],
+    section: 'workspace',
+  },
+  {
+    id: 'workspace:close-tab',
+    nameEs: 'Cerrar pestaña actual',
+    nameEn: 'Close current tab',
+    defaultHotkeys: ['Ctrl + W'],
     section: 'workspace',
   },
   {
@@ -229,10 +160,38 @@ export const HOTKEY_CATALOG: HotkeyCommand[] = [
     section: 'workspace',
   },
   {
-    id: 'file-explorer:rename-file',
-    nameEs: 'Explorador de archivos: Renombrar archivo',
-    nameEn: 'Files: Rename file',
-    defaultHotkeys: ['F2'],
+    id: 'workspace:toggle-left-sidebar',
+    nameEs: 'Espacio de trabajo: Alternar barra lateral izquierda',
+    nameEn: 'Workspace: Toggle left sidebar',
+    defaultHotkeys: ['Ctrl + B'],
+    section: 'workspace',
+  },
+  {
+    id: 'workspace:toggle-backlinks',
+    nameEs: 'Enlaces entrantes: Alternar panel de enlaces entrantes',
+    nameEn: 'Backlinks: Toggle backlinks panel',
+    defaultHotkeys: ['Ctrl + Shift + B'],
+    section: 'backlink',
+  },
+  {
+    id: 'backlink:toggle-in-document',
+    nameEs: 'Enlaces entrantes: Alternar enlaces entrantes en el documento',
+    nameEn: 'Backlinks: Toggle backlinks in document',
+    defaultHotkeys: [],
+    section: 'backlink',
+  },
+  {
+    id: 'outgoing-link:open',
+    nameEs: 'Enlaces salientes: Mostrar enlaces salientes',
+    nameEn: 'Outgoing links: Show outgoing links',
+    defaultHotkeys: [],
+    section: 'outgoing-link',
+  },
+  {
+    id: 'file-explorer:new-note',
+    nameEs: 'Explorador de archivos: Crear nueva nota',
+    nameEn: 'Files: Create new note',
+    defaultHotkeys: ['Ctrl + N'],
     section: 'file-explorer',
   },
   {
@@ -243,11 +202,32 @@ export const HOTKEY_CATALOG: HotkeyCommand[] = [
     section: 'file-explorer',
   },
   {
+    id: 'file-explorer:rename-file',
+    nameEs: 'Explorador de archivos: Renombrar archivo',
+    nameEn: 'Files: Rename file',
+    defaultHotkeys: ['F2'],
+    section: 'file-explorer',
+  },
+  {
     id: 'file-explorer:refresh',
     nameEs: 'Explorador de archivos: Actualizar explorador',
     nameEn: 'Files: Reload vault files',
     defaultHotkeys: [],
     section: 'file-explorer',
+  },
+  {
+    id: 'markdown:toggle-preview',
+    nameEs: 'Markdown: Alternar vista de lectura/edición',
+    nameEn: 'Markdown: Toggle reading view / edit mode',
+    defaultHotkeys: ['Ctrl + E'],
+    section: 'editor',
+  },
+  {
+    id: 'editor:toggle-source',
+    nameEs: 'Editor: Alternar código fuente / vista previa en vivo',
+    nameEn: 'Editor: Toggle source mode / live preview',
+    defaultHotkeys: [],
+    section: 'editor',
   },
   {
     id: 'editor:save-file',
@@ -271,6 +251,20 @@ export const HOTKEY_CATALOG: HotkeyCommand[] = [
     section: 'editor',
   },
   {
+    id: 'editor:toggle-highlight-yellow',
+    nameEs: 'Formato: Resaltado en amarillo',
+    nameEn: 'Formatting: Toggle yellow highlight',
+    defaultHotkeys: [],
+    section: 'editor',
+  },
+  {
+    id: 'editor:toggle-highlight-blue',
+    nameEs: 'Formato: Resaltado en azul',
+    nameEn: 'Formatting: Toggle blue highlight',
+    defaultHotkeys: [],
+    section: 'editor',
+  },
+  {
     id: 'editor:insert-link',
     nameEs: 'Insertar enlace Markdown',
     nameEn: 'Insert Markdown link',
@@ -283,6 +277,27 @@ export const HOTKEY_CATALOG: HotkeyCommand[] = [
     nameEn: 'Delete current line',
     defaultHotkeys: ['Ctrl + D'],
     section: 'editor',
+  },
+  {
+    id: 'editor:open-link-in-new-tab',
+    nameEs: 'Abrir el enlace bajo el cursor en una nueva pestaña',
+    nameEn: 'Open link under cursor in new tab',
+    defaultHotkeys: ['Ctrl + Enter'],
+    section: 'editor',
+  },
+  {
+    id: 'editor:open-link-split',
+    nameEs: 'Abrir el enlace bajo el cursor a la derecha',
+    nameEn: 'Open link under cursor to the right',
+    defaultHotkeys: ['Ctrl + Alt + Enter'],
+    section: 'editor',
+  },
+  {
+    id: 'graph:open',
+    nameEs: 'Vista gráfica: Abrir vista gráfica',
+    nameEn: 'Graph view: Open graph view',
+    defaultHotkeys: ['Ctrl + G'],
+    section: 'graph',
   },
   {
     id: 'canvas:new',
@@ -362,44 +377,9 @@ export const HOTKEY_CATALOG: HotkeyCommand[] = [
     section: 'zk-prefixer',
   },
   {
-    id: 'slides:start',
-    nameEs: 'Diapositivas: Iniciar presentación',
-    nameEn: 'Slides: Start presentation',
-    defaultHotkeys: [],
-    section: 'slides',
-  },
-  {
-    id: 'outgoing-link:open',
-    nameEs: 'Enlaces salientes: Mostrar enlaces salientes',
-    nameEn: 'Outgoing links: Show outgoing links',
-    defaultHotkeys: [],
-    section: 'outgoing-link',
-  },
-  {
-    id: 'workspaces:load',
-    nameEs: 'Espacios de trabajo: Cargar diseño de espacio de trabajo',
-    nameEn: 'Workspaces: Load workspace layout',
-    defaultHotkeys: [],
-    section: 'workspaces',
-  },
-  {
-    id: 'markdown-importer:open',
-    nameEs: 'Formato de importación markdown: Abrir convertidor de formato Markdown',
-    nameEn: 'Format converter: Open Markdown format converter',
-    defaultHotkeys: [],
-    section: 'markdown-importer',
-  },
-  {
-    id: 'audio-recorder:start',
-    nameEs: 'Grabadora de audio: Iniciar/detener grabación',
-    nameEn: 'Audio recorder: Start/stop recording audio',
-    defaultHotkeys: [],
-    section: 'audio-recorder',
-  },
-  {
     id: 'bookmarks:open',
-    nameEs: 'Marcadores: Añadir marcador...',
-    nameEn: 'Bookmarks: Bookmark...',
+    nameEs: 'Marcadores: Añadir o quitar marcador de la nota actual',
+    nameEn: 'Bookmarks: Bookmark or unbookmark current file',
     defaultHotkeys: [],
     section: 'bookmarks',
   },
@@ -424,41 +404,6 @@ export const HOTKEY_CATALOG: HotkeyCommand[] = [
     defaultHotkeys: [],
     section: 'file-recovery',
   },
-  {
-    id: 'tag-pane:open',
-    nameEs: 'Vista de etiquetas: Mostrar panel de etiquetas',
-    nameEn: 'Tags view: Show tags pane',
-    defaultHotkeys: [],
-    section: 'tag-pane',
-  },
-  {
-    id: 'app:sync-config',
-    nameEs: 'Ajustes: Configurar cuenta de Google Drive y sincronización',
-    nameEn: 'Settings: Configure Google Drive and sync',
-    defaultHotkeys: [],
-    section: 'sync',
-  },
-  {
-    id: 'app:reload',
-    nameEs: 'Recargar ventana',
-    nameEn: 'Reload app',
-    defaultHotkeys: ['Ctrl + R'],
-    section: 'app',
-  },
-  {
-    id: 'app:go-back',
-    nameEs: 'Ir hacia atrás en el historial de navegación',
-    nameEn: 'Navigate back',
-    defaultHotkeys: ['Alt + ←'],
-    section: 'workspace',
-  },
-  {
-    id: 'app:go-forward',
-    nameEs: 'Ir hacia adelante en el historial de navegación',
-    nameEn: 'Navigate forward',
-    defaultHotkeys: ['Alt + →'],
-    section: 'workspace',
-  },
 ];
 
 export const DEFAULT_HOTKEYS: Record<string, string[]> = Object.fromEntries(
@@ -466,12 +411,22 @@ export const DEFAULT_HOTKEYS: Record<string, string[]> = Object.fromEntries(
 );
 
 export function parseHotkeyStr(str: string) {
-  const parts = str.split('+').map((s) => s.trim().toLowerCase());
+  const trimmed = str.trim().toLowerCase();
+  const endsWithPlusKey = trimmed === '+' || /\+\s*\+$/.test(trimmed);
+  const withoutTrailingPlus = endsWithPlusKey ? trimmed.replace(/\+\s*\+$/, '').trim() : trimmed;
+  const parts = withoutTrailingPlus
+    ? withoutTrailingPlus
+        .split('+')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
   const hasCtrl = parts.includes('ctrl') || parts.includes('mod');
   const hasAlt = parts.includes('alt');
   const hasShift = parts.includes('shift');
   const hasMeta = parts.includes('meta') || parts.includes('cmd');
-  const keyPart = parts.find((p) => !['ctrl', 'mod', 'alt', 'shift', 'meta', 'cmd'].includes(p)) || '';
+  const keyPart = endsWithPlusKey
+    ? '+'
+    : parts.find((p) => !['ctrl', 'mod', 'alt', 'shift', 'meta', 'cmd'].includes(p)) || '';
   return { hasCtrl, hasAlt, hasShift, hasMeta, keyPart };
 }
 
@@ -481,9 +436,6 @@ export function matchesHotkey(e: KeyboardEvent, hotkeyStr: string): boolean {
   const eCtrl = Boolean(e.ctrlKey || e.metaKey);
   const eAlt = Boolean(e.altKey);
   const eShift = Boolean(e.shiftKey);
-  if (target.hasCtrl !== eCtrl) return false;
-  if (target.hasAlt !== eAlt) return false;
-  if (target.hasShift !== eShift) return false;
 
   let key = (e.key || '').toLowerCase();
   if (e.code === 'Comma' || key === ',') key = ',';
@@ -494,6 +446,22 @@ export function matchesHotkey(e: KeyboardEvent, hotkeyStr: string): boolean {
   else if (key === 'arrowdown') key = '↓';
   else if (key === 'escape') key = 'esc';
   else if (key === ' ') key = 'space';
+
+  // Allow Ctrl + = to also match Ctrl + + (and NumpadAdd) across keyboard layouts
+  if (
+    target.keyPart === '=' &&
+    target.hasCtrl &&
+    !target.hasShift &&
+    eCtrl &&
+    target.hasAlt === eAlt &&
+    (key === '=' || key === '+' || e.code === 'Equal' || e.code === 'NumpadAdd')
+  ) {
+    return true;
+  }
+
+  if (target.hasCtrl !== eCtrl) return false;
+  if (target.hasAlt !== eAlt) return false;
+  if (target.hasShift !== eShift) return false;
 
   return key === target.keyPart;
 }
