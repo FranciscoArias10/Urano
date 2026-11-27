@@ -100,7 +100,27 @@ import {
   Merge,
   History,
   FolderX,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
+  ExternalLink,
+  Bold,
+  Italic,
+  Highlighter,
+  Link,
+  Trash2,
+  Shuffle,
+  Sparkles,
+  SlidersHorizontal,
+  Edit2,
+  PlusCircle,
+  X,
+  Undo2,
+  ArrowLeft,
+  ArrowRight,
+  Save,
 } from 'lucide-react';
+import { isPathExcluded } from './utils/pathUtils';
 
 /** Stable, unique identifier for a workspace leaf (tab). */
 let tabIdCounter = 0;
@@ -153,6 +173,8 @@ const MainApp: React.FC = () => {
 
   // Per tab navigation history (Urano leaf history: historyStack + currentIndex)
   const [navHistory, setNavHistory] = useState<Record<string, TabHistoryEntry>>({});
+  // Stack of recently closed tabs for `workspace:undo-close-tab` (Ctrl+Shift+T)
+  const closedTabsStackRef = useRef<TabItem[]>([]);
 
   // Live Preview / Reading View (Urano "Toggle reading view", Ctrl+E)
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -264,6 +286,7 @@ const MainApp: React.FC = () => {
     activeFileName,
     fileContent,
     fileTree,
+    files: vaultFiles,
     isDirty,
     notesContentMap,
     setVault,
@@ -271,6 +294,7 @@ const MainApp: React.FC = () => {
     selectFile,
     updateContent,
     saveCurrentFile,
+    createNote,
     createUntitledNote,
     createUntitledCanvas,
     createUntitledBase,
@@ -621,7 +645,11 @@ const MainApp: React.FC = () => {
         if (Array.isArray(parsed) && parsed.length > 0) {
           const validTabs: TabItem[] = parsed.filter(
             (tab: TabItem) =>
-              tab.type === 'empty' || tab.type === 'graph' || fileExistsInVault(tab.filePath)
+              tab.type === 'empty' ||
+              tab.type === 'graph' ||
+              (Boolean(tab.filePath) &&
+                isNativeVaultFile(tab.filePath!) &&
+                fileExistsInVault(tab.filePath))
           );
           if (validTabs.length > 0) {
             setTabs(validTabs);
@@ -899,6 +927,10 @@ const MainApp: React.FC = () => {
       if (!res) return;
       const { nextEntry, targetPath } = res;
       const resolved = resolveFilePathInVault(targetPath, fileTree, activeVault) || targetPath;
+      if (!isNativeVaultFile(resolved)) {
+        void selectFile(resolved);
+        return;
+      }
 
       setNavHistory((prev) => ({ ...prev, [activeTabId]: nextEntry }));
       skipHistoryRecordRef.current = true;
@@ -937,6 +969,7 @@ const MainApp: React.FC = () => {
   // Global Keyboard Shortcuts (Urano matching)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
       const target = e.target as HTMLElement | null;
       const isInput =
         target &&
@@ -1207,6 +1240,10 @@ const MainApp: React.FC = () => {
 
   // Close other tabs (Urano keeps pinned tabs open)
   const handleCloseOtherTabs = (tabId: string) => {
+    const closed = tabs.filter((t) => t.id !== tabId && !t.pinned && t.type !== 'empty');
+    if (closed.length > 0) {
+      closedTabsStackRef.current.push(...closed);
+    }
     const remaining = tabs.filter((t) => t.id === tabId || t.pinned);
     setTabs(remaining);
     setNavHistory((prev) => pruneHistoryForTabs(prev, remaining.map((t) => t.id)));
@@ -1225,6 +1262,10 @@ const MainApp: React.FC = () => {
 
   // Close all tabs (Urano keeps pinned tabs open)
   const handleCloseAllTabs = () => {
+    const closed = tabs.filter((t) => !t.pinned && t.type !== 'empty');
+    if (closed.length > 0) {
+      closedTabsStackRef.current.push(...closed);
+    }
     const remaining = tabs.filter((t) => t.pinned);
     if (remaining.length === 0) {
       const newTabId = makeTabId();
@@ -1346,12 +1387,44 @@ const MainApp: React.FC = () => {
     reuseActiveTabRef.current = false;
   };
 
-  // Open note in a new tab (or to the right)
+  // Open note in a new tab (or to the right), delegating non-native files (PDF, audio, video) to OS app without leaving phantom tabs
   const handleOpenInNewTab = (filePathOrName: string) => {
+    if (!filePathOrName || !filePathOrName.trim()) return;
+
+    // 1. Direct match against all indexed vault files (handles attachments not in `fileTree` and filenames containing `#`)
+    const normCandidate = normalizePath(filePathOrName).toLowerCase();
+    const allIndexedFiles = useVaultStore.getState().files;
+    const directExisting = allIndexedFiles.find(
+      (f) => !f.isDir && normalizePath(f.path).toLowerCase() === normCandidate
+    );
+    if (directExisting) {
+      if (!isNativeVaultFile(directExisting.path)) {
+        void selectFile(directExisting.path);
+        return;
+      }
+      const { type, title } = getTabMetaForPath(
+        directExisting.path,
+        activeVault,
+        t('common.untitled')
+      );
+      const tabId = `${directExisting.path}_tab_${Date.now()}`;
+      setTabs((prev) => [
+        ...prev,
+        { id: tabId, type, filePath: directExisting.path, title },
+      ]);
+      recordVisit(tabId, directExisting.path);
+      if (useSettingsStore.getState().settings.alwaysFocusNewTabs) {
+        setActiveTabId(tabId);
+        void selectFile(directExisting.path);
+      }
+      return;
+    }
+
     const parsed = parseLinkTargetParts(filePathOrName);
     if (!parsed.targetPath || parsed.isExternalUrl) return;
 
-    const resolved = resolveVaultLinkTarget(filePathOrName, fileTree, activeVault);
+    const searchPool = allIndexedFiles.length > 0 ? allIndexedFiles : fileTree;
+    const resolved = resolveVaultLinkTarget(filePathOrName, searchPool, activeVault);
     let targetPath = resolved || '';
     let shouldCreateMissing = false;
 
@@ -1365,9 +1438,9 @@ const MainApp: React.FC = () => {
       if (!rel) return;
 
       const base = rel.split('/').pop() || '';
-      const hasExt = base.lastIndexOf('.') > 0 && /\.[a-z][a-z0-9_-]*$/i.test(base);
+      const hasExt = base.lastIndexOf('.') > 0 && /\.[a-z0-9][a-z0-9_-]*$/i.test(base);
       if (hasExt && !isNativeVaultFile(rel)) {
-        const externalTarget = resolveFilePathInVault(rel, fileTree, activeVault);
+        const externalTarget = resolveFilePathInVault(rel, searchPool, activeVault);
         void selectFile(externalTarget);
         return;
       }
@@ -1465,6 +1538,10 @@ const MainApp: React.FC = () => {
     const targetTab = tabs.find((t) => t.id === tabId);
     if (!targetTab || targetTab.pinned) return;
 
+    if (targetTab.type !== 'empty') {
+      closedTabsStackRef.current.push(targetTab);
+    }
+
     const remaining = tabs.filter((t) => t.id !== tabId);
 
     // If no tabs remain, maintain Obsidian's 1:1 behavior: open a "Nueva pestaña"
@@ -1535,8 +1612,197 @@ const MainApp: React.FC = () => {
     return count;
   }, [activeFile, activeFileName, activeTab, notesContentMap]);
 
-  // Registered commands for Command Palette (Ctrl+P) extracted from Urano
+  // Undo Close Tab (Ctrl+Shift+T)
+  const handleUndoCloseTab = () => {
+    const allIndexed = useVaultStore.getState().files;
+    while (closedTabsStackRef.current.length > 0) {
+      const popped = closedTabsStackRef.current.pop()!;
+      if (popped.type === 'graph') {
+        handleOpenGraphTab();
+        return;
+      }
+      if (
+        popped.filePath &&
+        isNativeVaultFile(popped.filePath) &&
+        allIndexed.some((f) => !f.isDir && isSamePath(f.path, popped.filePath))
+      ) {
+        handleOpenFile(popped.filePath);
+        return;
+      }
+    }
+  };
+
+  // Cycle Next / Previous Tab (Ctrl+Tab / Ctrl+Shift+Tab)
+  const handleCycleTab = (delta: 1 | -1) => {
+    if (tabs.length <= 1) return;
+    const currentIdx = tabs.findIndex((t) => t.id === activeTabId);
+    const baseIdx = currentIdx === -1 ? 0 : currentIdx;
+    const nextIdx = (baseIdx + delta + tabs.length) % tabs.length;
+    const target = tabs[nextIdx];
+    if (target) {
+      handleSelectTab(target.id);
+    }
+  };
+
+  // Toggle Fullscreen (F11)
+  const handleToggleFullscreen = async () => {
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const win = getCurrentWindow();
+      const full = await win.isFullscreen();
+      await win.setFullscreen(!full);
+    } catch {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen().catch(() => {});
+      } else {
+        await document.documentElement.requestFullscreen?.().catch(() => {});
+      }
+    }
+  };
+
+  // Zoom In / Out / Reset (Ctrl+= / Ctrl+- / Ctrl+0)
+  const handleAdjustZoom = (mode: 'in' | 'out' | 'reset') => {
+    const store = useSettingsStore.getState();
+    const cur = store.settings.zoomLevel || 100;
+    const next =
+      mode === 'reset'
+        ? 100
+        : mode === 'in'
+        ? Math.min(200, cur + 10)
+        : Math.max(50, cur - 10);
+    store.setSetting('zoomLevel', next);
+  };
+
+  // Open current file (or vault folder) in OS default app
+  const handleOpenInDefaultApp = async () => {
+    const target = activeFile || activeVault;
+    if (!target) return;
+    try {
+      await invoke('open_file_in_default_app', { filePath: target });
+    } catch {
+      await invoke('open_path', { path: target }).catch(() => {});
+    }
+  };
+
+  // Open external file via native dialog
+  const handleOpenExternalFile = async () => {
+    try {
+      const selected = await open({ multiple: false });
+      if (selected && typeof selected === 'string') {
+        const normSel = normalizePath(selected).toLowerCase();
+        const normVault = activeVault ? normalizePath(activeVault).toLowerCase() : '';
+        if (normVault && normSel.startsWith(`${normVault}/`) && isNativeVaultFile(selected)) {
+          handleOpenFile(selected);
+        } else {
+          await invoke('open_file_in_default_app', { filePath: selected });
+        }
+      }
+    } catch (err) {
+      console.error('Error opening external file:', err);
+    }
+  };
+
+  // Start renaming active file (focuses inline-title or triggers FileTree rename)
+  const handleStartRenameActiveFile = () => {
+    if (!activeFile) return;
+    let handledInEditor = false;
+    window.dispatchEvent(
+      new CustomEvent('urano-editor-command', {
+        detail: {
+          command: 'focus-inline-title',
+          onHandled: () => {
+            handledInEditor = true;
+          },
+        },
+      })
+    );
+    if (!handledInEditor) {
+      setShowLeftSidebar(true);
+      setSidebarTab('files');
+      window.dispatchEvent(
+        new CustomEvent('urano:start-rename', { detail: { path: activeFile } })
+      );
+    }
+  };
+
+  // Dispatch editor formatting / line / link command
+  const dispatchEditorCommand = (command: string) => {
+    window.dispatchEvent(new CustomEvent('urano-editor-command', { detail: { command } }));
+  };
+
+  // Open Random Note
+  const handleOpenRandomNote = () => {
+    const ignoreFilters = useSettingsStore.getState().settings.userIgnoreFilters || [];
+    const normRoot = activeVault ? normalizePath(activeVault) : '';
+    const mdNotes = vaultFiles.filter((f) => {
+      if (f.isDir || !/\.(md|markdown)$/i.test(f.name)) return false;
+      const rel =
+        normRoot && normalizePath(f.path).toLowerCase().startsWith(`${normRoot.toLowerCase()}/`)
+          ? normalizePath(f.path).slice(normRoot.length + 1)
+          : f.name;
+      return !isPathExcluded(rel, ignoreFilters);
+    });
+    if (mdNotes.length === 0) {
+      showNotice(t('app.notices.noMarkdownNotes'), 2500, 'info');
+      return;
+    }
+    const pool =
+      mdNotes.length > 1 && activeFile
+        ? mdNotes.filter((f) => !isSamePath(f.path, activeFile))
+        : mdNotes;
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    if (chosen) {
+      handleOpenFile(chosen.path);
+    }
+  };
+
+  // Create Unique Zettelkasten Note (YYYYMMDDHHmm.md)
+  const handleCreateUniqueNote = async () => {
+    if (!activeVault) return;
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const baseStamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(
+      now.getHours()
+    )}${pad(now.getMinutes())}`;
+    const existingLower = new Set(vaultFiles.map((f) => f.name.toLowerCase()));
+    let candidate = `${baseStamp}.md`;
+    let suffix = 1;
+    while (existingLower.has(candidate.toLowerCase())) {
+      candidate = `${baseStamp}-${suffix}.md`;
+      suffix++;
+    }
+    if (!activeTab || !activeTab.filePath || activeTab.type === 'empty') {
+      reuseActiveTabRef.current = true;
+    }
+    const created = await createNote(activeVault, candidate);
+    if (created) {
+      handleOpenFile(created);
+    }
+  };
+
+  // Show File Properties
+  const handleShowProperties = () => {
+    const store = useSettingsStore.getState();
+    if (store.settings.propertiesInDocument === 'hidden') {
+      store.setSetting('propertiesInDocument', 'visible');
+    }
+    if (viewMode === 'reading') {
+      handleChangeViewMode(lastEditingModeRef.current || 'live-preview');
+    }
+  };
+
+  // Registered commands for Command Palette (Ctrl+P), Pinned Commands, and Hotkeys (0 no-ops)
   const paletteCommands: CommandItem[] = [
+    {
+      id: 'command-palette:open',
+      name: t('commands.commandPalette.open'),
+      shortcut: 'Ctrl+P',
+      icon: <Terminal size={15} />,
+      action: () => {
+        setPaletteMode('commands');
+        setPaletteOpen(true);
+      },
+    },
     {
       id: 'file-explorer:new-note',
       name: t('commands.fileExplorer.newNote'),
@@ -1552,6 +1818,16 @@ const MainApp: React.FC = () => {
       action: () => {
         setPaletteMode('files');
         setPaletteOpen(true);
+      },
+    },
+    {
+      id: 'global-search:open',
+      name: t('commands.globalSearch.open'),
+      shortcut: 'Ctrl+Shift+F',
+      icon: <Search size={15} />,
+      action: () => {
+        setShowLeftSidebar(true);
+        setSidebarTab('search');
       },
     },
     {
@@ -1598,6 +1874,48 @@ const MainApp: React.FC = () => {
       action: handleCreateBase,
     },
     {
+      id: 'workspace:new-tab',
+      name: t('commands.workspace.newTab'),
+      shortcut: 'Ctrl+T',
+      icon: <PlusCircle size={15} />,
+      action: () => handleCreateNewTab(),
+    },
+    {
+      id: 'workspace:close-tab',
+      name: t('commands.workspace.closeTab'),
+      shortcut: 'Ctrl+W',
+      icon: <X size={15} />,
+      action: () => handleCloseTab(activeTabId),
+    },
+    {
+      id: 'workspace:undo-close-tab',
+      name: t('commands.workspace.undoCloseTab'),
+      shortcut: 'Ctrl+Shift+T',
+      icon: <Undo2 size={15} />,
+      action: handleUndoCloseTab,
+    },
+    {
+      id: 'workspace:next-tab',
+      name: t('commands.workspace.nextTab'),
+      shortcut: 'Ctrl+Tab',
+      icon: <ArrowRight size={15} />,
+      action: () => handleCycleTab(1),
+    },
+    {
+      id: 'workspace:previous-tab',
+      name: t('commands.workspace.previousTab'),
+      shortcut: 'Ctrl+Shift+Tab',
+      icon: <ArrowLeft size={15} />,
+      action: () => handleCycleTab(-1),
+    },
+    {
+      id: 'workspace:toggle-fullscreen',
+      name: t('commands.workspace.toggleFullscreen'),
+      shortcut: 'F11',
+      icon: <Maximize size={15} />,
+      action: () => void handleToggleFullscreen(),
+    },
+    {
       id: 'workspace:toggle-left-sidebar',
       name: t('commands.workspace.toggleLeftSidebar'),
       shortcut: 'Ctrl+B',
@@ -1621,10 +1939,23 @@ const MainApp: React.FC = () => {
       },
     },
     {
+      id: 'outgoing-link:open',
+      name: t('commands.outgoingLink.open'),
+      icon: <ExternalLink size={15} />,
+      action: () => setShowBacklinks(true),
+    },
+    {
       id: 'file-explorer:new-folder',
       name: t('commands.fileExplorer.newFolder'),
       icon: <FolderPlus size={15} />,
       action: handleCreateRootFolder,
+    },
+    {
+      id: 'file-explorer:rename-file',
+      name: t('commands.fileExplorer.renameFile'),
+      shortcut: 'F2',
+      icon: <Edit2 size={15} />,
+      action: handleStartRenameActiveFile,
     },
     {
       id: 'file-explorer:refresh',
@@ -1654,6 +1985,67 @@ const MainApp: React.FC = () => {
       action: () => openSettings(),
     },
     {
+      id: 'app:open-help',
+      name: t('commands.app.openHelp'),
+      shortcut: 'F1',
+      icon: <HelpCircle size={15} />,
+      action: handleHelpClick,
+    },
+    {
+      id: 'app:open-in-default-app',
+      name: t('commands.app.openInDefaultApp'),
+      icon: <ExternalLink size={15} />,
+      action: () => void handleOpenInDefaultApp(),
+    },
+    {
+      id: 'app:open-external-file',
+      name: t('commands.app.openExternalFile'),
+      icon: <FolderOpen size={15} />,
+      action: () => void handleOpenExternalFile(),
+    },
+    {
+      id: 'app:zoom-in',
+      name: t('commands.app.zoomIn'),
+      shortcut: 'Ctrl+=',
+      icon: <ZoomIn size={15} />,
+      action: () => handleAdjustZoom('in'),
+    },
+    {
+      id: 'app:zoom-out',
+      name: t('commands.app.zoomOut'),
+      shortcut: 'Ctrl+-',
+      icon: <ZoomOut size={15} />,
+      action: () => handleAdjustZoom('out'),
+    },
+    {
+      id: 'app:reset-zoom',
+      name: t('commands.app.resetZoom'),
+      shortcut: 'Ctrl+0',
+      icon: <RotateCw size={15} />,
+      action: () => handleAdjustZoom('reset'),
+    },
+    {
+      id: 'app:reload',
+      name: t('commands.app.reload'),
+      shortcut: 'Ctrl+R',
+      icon: <RotateCw size={15} />,
+      action: () => shortcutsRef.current.reload(),
+    },
+    {
+      id: 'app:go-back',
+      name: t('commands.app.goBack'),
+      shortcut: 'Alt+←',
+      icon: <ArrowLeft size={15} />,
+      action: handleNavigateBack,
+    },
+    {
+      id: 'app:go-forward',
+      name: t('commands.app.goForward'),
+      shortcut: 'Alt+→',
+      icon: <ArrowRight size={15} />,
+      action: handleNavigateForward,
+    },
+    {
       id: 'markdown:toggle-preview',
       name: t('commands.editor.toggleReadingView', { defaultValue: 'Markdown: Alternar vista de lectura' }),
       shortcut: 'Ctrl+E',
@@ -1665,6 +2057,67 @@ const MainApp: React.FC = () => {
       name: t('commands.editor.toggleSourceMode', { defaultValue: 'Editor: Alternar código fuente / vista previa en vivo' }),
       icon: <Code size={15} />,
       action: toggleSourceMode,
+    },
+    {
+      id: 'editor:save-file',
+      name: t('commands.editor.saveFile'),
+      shortcut: 'Ctrl+S',
+      icon: <Save size={15} />,
+      action: () => void saveCurrentFile(),
+    },
+    {
+      id: 'editor:toggle-bold',
+      name: t('commands.editor.toggleBold'),
+      shortcut: 'Ctrl+B',
+      icon: <Bold size={15} />,
+      action: () => dispatchEditorCommand('toggle-bold'),
+    },
+    {
+      id: 'editor:toggle-italics',
+      name: t('commands.editor.toggleItalics'),
+      shortcut: 'Ctrl+I',
+      icon: <Italic size={15} />,
+      action: () => dispatchEditorCommand('toggle-italics'),
+    },
+    {
+      id: 'editor:toggle-highlight-yellow',
+      name: t('commands.editor.toggleHighlightYellow'),
+      icon: <Highlighter size={15} />,
+      action: () => dispatchEditorCommand('toggle-highlight-yellow'),
+    },
+    {
+      id: 'editor:toggle-highlight-blue',
+      name: t('commands.editor.toggleHighlightBlue'),
+      icon: <Highlighter size={15} />,
+      action: () => dispatchEditorCommand('toggle-highlight-blue'),
+    },
+    {
+      id: 'editor:insert-link',
+      name: t('commands.editor.insertLink'),
+      shortcut: 'Ctrl+K',
+      icon: <Link size={15} />,
+      action: () => dispatchEditorCommand('insert-link'),
+    },
+    {
+      id: 'editor:delete-line',
+      name: t('commands.editor.deleteLine'),
+      shortcut: 'Ctrl+D',
+      icon: <Trash2 size={15} />,
+      action: () => dispatchEditorCommand('delete-line'),
+    },
+    {
+      id: 'editor:open-link-in-new-tab',
+      name: t('commands.editor.openLinkInNewTab'),
+      shortcut: 'Ctrl+Enter',
+      icon: <PlusCircle size={15} />,
+      action: () => dispatchEditorCommand('open-link-in-new-tab'),
+    },
+    {
+      id: 'editor:open-link-split',
+      name: t('commands.editor.openLinkSplit'),
+      shortcut: 'Ctrl+Alt+Enter',
+      icon: <ArrowLeftRight size={15} />,
+      action: handleSplitUnavailable,
     },
     {
       id: 'app:sync-config',
@@ -1693,6 +2146,24 @@ const MainApp: React.FC = () => {
           openMergeModalForFile(activeFile);
         }
       },
+    },
+    {
+      id: 'zk-prefixer:open',
+      name: t('commands.zkPrefixer.open'),
+      icon: <Sparkles size={15} />,
+      action: () => void handleCreateUniqueNote(),
+    },
+    {
+      id: 'random-note:open',
+      name: t('commands.randomNote.open'),
+      icon: <Shuffle size={15} />,
+      action: handleOpenRandomNote,
+    },
+    {
+      id: 'properties:open',
+      name: t('commands.properties.open'),
+      icon: <SlidersHorizontal size={15} />,
+      action: handleShowProperties,
     },
     {
       id: 'file-recovery:open',
@@ -1730,12 +2201,17 @@ const MainApp: React.FC = () => {
     if (cmd.id.startsWith('daily-notes:')) return corePlugins['daily-notes'];
     if (cmd.id.startsWith('templates:')) return corePlugins.templates;
     if (cmd.id.startsWith('quick-switcher:')) return corePlugins.switcher;
+    if (cmd.id.startsWith('global-search:')) return corePlugins['global-search'];
     if (cmd.id.startsWith('sync:')) return corePlugins.sync;
     if (cmd.id.startsWith('graph:')) return corePlugins.graph;
     if (cmd.id.startsWith('bases:')) return corePlugins.bases;
     if (cmd.id.startsWith('command-palette:')) return corePlugins['command-palette'];
     if (cmd.id.startsWith('file-explorer:')) return corePlugins['file-explorer'];
     if (cmd.id.startsWith('note-composer:')) return corePlugins['note-composer'];
+    if (cmd.id.startsWith('zk-prefixer:')) return corePlugins['zk-prefixer'];
+    if (cmd.id.startsWith('random-note:')) return corePlugins['random-note'];
+    if (cmd.id.startsWith('properties:')) return corePlugins.properties;
+    if (cmd.id.startsWith('outgoing-link:')) return corePlugins['outgoing-link'] && corePlugins.backlink;
     if (cmd.id.startsWith('file-recovery:')) return corePlugins['file-recovery'];
     if (cmd.id.startsWith('bookmarks:')) return corePlugins.bookmarks;
     if (cmd.id === 'workspace:toggle-backlinks' || cmd.id === 'backlink:toggle-in-document') {
@@ -2181,9 +2657,9 @@ const MainApp: React.FC = () => {
           <div className="flex-1 overflow-hidden relative">
             {activeTabId === 'workspace-graph-view' || activeTab?.type === 'graph' ? (
               <GraphView onSelectNote={handleOpenFile} />
-            ) : activeFile?.endsWith('.canvas') || activeTab?.type === 'canvas' ? (
+            ) : activeFile?.toLowerCase().endsWith('.canvas') || activeTab?.type === 'canvas' ? (
               <CanvasView filePath={activeFile || activeTab?.filePath || ''} />
-            ) : activeFile?.endsWith('.base') || activeTab?.type === 'base' ? (
+            ) : activeFile?.toLowerCase().endsWith('.base') || activeTab?.type === 'base' ? (
               <BaseView filePath={activeFile || activeTab?.filePath || ''} />
             ) : (activeFile && isImagePath(activeFile)) || activeTab?.type === 'image' ? (
               <ImageView filePath={activeFile || activeTab?.filePath || ''} />
