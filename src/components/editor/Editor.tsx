@@ -17,7 +17,14 @@ import {
   DecorationSet,
   ViewUpdate,
 } from '@codemirror/view';
-import { defaultKeymap, history, historyKeymap, indentMore, indentLess } from '@codemirror/commands';
+import {
+  defaultKeymap,
+  history,
+  historyKeymap,
+  indentMore,
+  indentLess,
+  deleteLine,
+} from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
 import { indentUnit, codeFolding, foldGutter, foldService } from '@codemirror/language';
 import { closeBrackets } from '@codemirror/autocomplete';
@@ -2198,6 +2205,92 @@ export const Editor: React.FC<EditorProps> = ({
     extractHeading: handleExtractHeading,
   };
 
+  const findLinkTargetAtCursor = (view: EditorView): string | null => {
+    const pos = view.state.selection.main.head;
+    const line = view.state.doc.lineAt(pos);
+    const rel = pos - line.from;
+
+    const wikiRe = /(?<!!)\[\[([^\]|\r\n]+)(?:\|[^\]\r\n]*)?\]\]/g;
+    let m: RegExpExecArray | null;
+    while ((m = wikiRe.exec(line.text)) !== null) {
+      if (rel >= m.index && rel <= m.index + m[0].length) {
+        return m[1].trim();
+      }
+    }
+
+    const mdRe = /(?<!!)\[[^\]]*\]\(([^)\r\n]+)\)/g;
+    while ((m = mdRe.exec(line.text)) !== null) {
+      if (rel >= m.index && rel <= m.index + m[0].length) {
+        return m[1].trim();
+      }
+    }
+    return null;
+  };
+
+  const editorCommandsRef = useRef<{
+    runCommand: (command: string, onHandled?: () => void) => void;
+  }>({ runCommand: () => {} });
+  editorCommandsRef.current = {
+    runCommand: (command: string, onHandled?: () => void) => {
+      switch (command) {
+        case 'toggle-bold':
+          toggleInlineFormatting('**', '__');
+          onHandled?.();
+          break;
+        case 'toggle-italics':
+          toggleInlineFormatting('*', '_');
+          onHandled?.();
+          break;
+        case 'toggle-highlight-yellow':
+          applyHighlight('yellow');
+          onHandled?.();
+          break;
+        case 'toggle-highlight-blue':
+          applyHighlight('blue');
+          onHandled?.();
+          break;
+        case 'insert-link':
+          handleAddExternalLink();
+          onHandled?.();
+          break;
+        case 'delete-line': {
+          const view = viewRef.current || getActiveEditorView();
+          if (view) {
+            deleteLine(view);
+            const newDoc = view.state.doc.toString();
+            lastDispatchedDocRef.current = newDoc;
+            updateContent(newDoc);
+            view.focus();
+            onHandled?.();
+          }
+          break;
+        }
+        case 'open-link-in-new-tab': {
+          const view = viewRef.current || getActiveEditorView();
+          if (!view) break;
+          const target = findLinkTargetAtCursor(view);
+          if (!target) break;
+          if (/^https?:\/\//i.test(target)) {
+            void invoke('open_file_in_default_app', { filePath: target }).catch(() => {
+              window.open(target, '_blank', 'noopener');
+            });
+          } else {
+            onOpenInNewTab?.(target);
+          }
+          onHandled?.();
+          break;
+        }
+        case 'focus-inline-title':
+          if (editorMode !== 'reading' && showInlineTitle && inlineTitleRef.current) {
+            inlineTitleRef.current.focus();
+            inlineTitleRef.current.select();
+            onHandled?.();
+          }
+          break;
+      }
+    },
+  };
+
   useEffect(() => {
     const onExtractSelectionCommand = () => {
       const view = viewRef.current || getActiveEditorView();
@@ -2215,11 +2308,20 @@ export const Editor: React.FC<EditorProps> = ({
       noteComposerHandlersRef.current.extractHeading();
     };
 
+    const onEditorCommand = (e: Event) => {
+      const detail = (e as CustomEvent<{ command?: string; onHandled?: () => void }>).detail;
+      if (detail?.command) {
+        editorCommandsRef.current.runCommand(detail.command, detail.onHandled);
+      }
+    };
+
     window.addEventListener('urano-note-composer-extract-selection', onExtractSelectionCommand);
     window.addEventListener('urano-note-composer-extract-heading', onExtractHeadingCommand);
+    window.addEventListener('urano-editor-command', onEditorCommand);
     return () => {
       window.removeEventListener('urano-note-composer-extract-selection', onExtractSelectionCommand);
       window.removeEventListener('urano-note-composer-extract-heading', onExtractHeadingCommand);
+      window.removeEventListener('urano-editor-command', onEditorCommand);
     };
   }, [showNotice, t]);
 

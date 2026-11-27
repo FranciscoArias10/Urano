@@ -218,9 +218,18 @@ export const FileTree: React.FC<FileTreeProps> = ({ items, depth = 0, onOpenInNe
       applyReveal(detailPath);
     };
 
+    const onStartRenameEvent = (e: Event) => {
+      const detailPath = (e as CustomEvent<{ path?: string }>).detail?.path;
+      if (!detailPath) return;
+      applyReveal(detailPath);
+      setRenamingPath(detailPath);
+    };
+
     window.addEventListener(URANO_REVEAL_FOLDER_EVENT, onRevealEvent);
+    window.addEventListener('urano:start-rename', onStartRenameEvent);
     return () => {
       window.removeEventListener(URANO_REVEAL_FOLDER_EVENT, onRevealEvent);
+      window.removeEventListener('urano:start-rename', onStartRenameEvent);
       if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     };
   }, [depth]);
