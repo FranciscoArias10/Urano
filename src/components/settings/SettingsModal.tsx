@@ -167,10 +167,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           byId.set(cmd.id, { id: cmd.id, name: cmd.name });
         }
       }
-    }
-    for (const cmd of HOTKEY_CATALOG) {
-      if (!byId.has(cmd.id)) {
-        byId.set(cmd.id, { id: cmd.id, name: isEs ? cmd.nameEs : cmd.nameEn });
+    } else {
+      for (const cmd of HOTKEY_CATALOG) {
+        if (!byId.has(cmd.id)) {
+          byId.set(cmd.id, { id: cmd.id, name: isEs ? cmd.nameEs : cmd.nameEn });
+        }
       }
     }
     return Array.from(byId.values()).sort((a, b) =>

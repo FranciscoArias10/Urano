@@ -7,8 +7,8 @@ import {
   extractUnresolvedWikilinks,
 } from '../../stores/vaultStore';
 import { useSettingsStore } from '../../stores/settingsStore';
-import { useT, useLocaleStore } from '../../stores/localeStore';
-import { HOTKEY_CATALOG, getActiveHotkeys } from '../../services/hotkeyRegistry';
+import { useT } from '../../stores/localeStore';
+import { getActiveHotkeys } from '../../services/hotkeyRegistry';
 import {
   buildQuickSwitcherFileEntries,
   buildQuickSwitcherEntries,
@@ -56,9 +56,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const showExistingOnly = useSettingsStore((s) => s.settings.quickSwitcherShowExistingOnly);
   const pinnedCommandIds = useSettingsStore((s) => s.settings.pinnedCommands) || [];
   const customHotkeys = useSettingsStore((s) => s.settings.hotkeys) || {};
-  const currentLang =
-    useLocaleStore((s) => s.locale) || useSettingsStore((s) => s.settings.language) || 'es';
-  const isEs = currentLang.toLowerCase().startsWith('es');
 
   const sourceFiles = React.useMemo(
     () => (files.length > 0 ? files : flattenVaultFiles(fileTree)),
@@ -98,26 +95,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       }
     }
 
-    const catalogById = new Map(HOTKEY_CATALOG.map((c) => [c.id, c]));
-
     const pinned: CommandItem[] = [];
     const seenIds = new Set<string>();
 
+    // Only surface pinned commands that are actively registered & enabled (never synthesize no-ops)
     for (const pinnedId of pinnedCommandIds) {
       if (seenIds.has(pinnedId)) continue;
-      let resolved = byId.get(pinnedId);
-      if (!resolved) {
-        const hc = catalogById.get(pinnedId);
-        if (hc) {
-          resolved = {
-            id: hc.id,
-            name: isEs ? hc.nameEs : hc.nameEn,
-            shortcut: hc.defaultHotkeys[0],
-            icon: <Command size={15} />,
-            action: () => {},
-          };
-        }
-      }
+      const resolved = byId.get(pinnedId);
       if (resolved) {
         seenIds.add(pinnedId);
         if (matchesQuery(resolved)) {
@@ -140,7 +124,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       unpinnedCommandItems: unpinned,
       orderedCommands: [...pinned, ...unpinned],
     };
-  }, [commands, pinnedCommandIds, pinnedSet, query, isEs]);
+  }, [commands, pinnedCommandIds, pinnedSet, query]);
 
   const unresolvedLinks = React.useMemo(() => {
     if (!isOpen || mode !== 'files' || showExistingOnly) return [];
