@@ -53,6 +53,11 @@ import { themeService } from '../../services/themeService';
 import { invoke } from '@tauri-apps/api/core';
 import { useVaultStore } from '../../stores/vaultStore';
 import { FILE_RENAMED_EVENT } from '../../services/linkRefactorService';
+import {
+  normalizeFileNameInput,
+  stripInlineTitleNewlines,
+  validateFileName,
+} from '../../utils/fileNameValidation';
 import { getHeadingSectionAtPos } from '../../services/noteComposerService';
 import { getRelativeVaultPath, isPathExcluded, isSamePath, normalizePath } from '../../utils/pathUtils';
 import { UranoMenu, MenuItemData } from '../common/UranoMenu';
@@ -481,8 +486,10 @@ export const Editor: React.FC<EditorProps> = ({
       ? embeddedBacklinksOverrides[normActiveFile]
       : backlinkInDocument);
 
-  const { showNotice } = useNoticeStore();
+  const { showNotice, upsertNotice, removeNotice } = useNoticeStore();
   const t = useT();
+  const skipNextTitleBlurRef = useRef(false);
+  const INLINE_TITLE_NOTICE_ID = 'inline-title-validation';
 
   // Synchronize CodeMirror buffer immediately before or upon switching to 'reading' mode,
   // and request a layout measure when switching back to editing mode.
@@ -532,13 +539,24 @@ export const Editor: React.FC<EditorProps> = ({
     return activeFileName ? activeFileName.replace(/\.(md|canvas|base)$/i, '') : t('common.untitled');
   }, [activeFile, activeVault, activeFileName, t]);
 
+  const activeNoteExtension = useMemo(() => {
+    if (!activeFile) return '.md';
+    const norm = normalizePath(activeFile);
+    const last = norm.split('/').pop() || '';
+    const dot = last.lastIndexOf('.');
+    return dot > 0 ? last.slice(dot) : '.md';
+  }, [activeFile]);
+
   // Estado local para edición de título sin renombrar en cada pulsación
   const [draftTitle, setDraftTitle] = useState(cleanTitle);
+  const [hasInlineTitleError, setHasInlineTitleError] = useState(false);
 
-  // Sincronización bidireccional: si el archivo se renombra externamente, actualizar draftTitle
+  // Sincronización bidireccional: si el archivo se renombra o cambia la nota activa, actualizar draftTitle y limpiar avisos
   useEffect(() => {
     setDraftTitle(cleanTitle);
-  }, [cleanTitle]);
+    setHasInlineTitleError(false);
+    removeNotice(INLINE_TITLE_NOTICE_ID);
+  }, [cleanTitle, activeFile, removeNotice]);
 
   // Compute available notes for autocompletion (respecting userIgnoreFilters)
   const userIgnoreFilters = useSettingsStore((s) => s.settings.userIgnoreFilters) || [];
@@ -1142,22 +1160,105 @@ export const Editor: React.FC<EditorProps> = ({
     };
   }, [onOpenInNewTab, deleteItem, showNotice, t]);
 
+  const updateInlineTitleLiveFeedback = (rawVal: string) => {
+    if (!activeFile || !activeFile.trim()) return;
+    const live = validateFileName(rawVal, {
+      allowEmpty: true,
+      extension: activeNoteExtension,
+      currentPath: activeFile,
+      existingItems: fileTree,
+    });
+    if (!live.valid && live.error) {
+      setHasInlineTitleError(true);
+      upsertNotice(INLINE_TITLE_NOTICE_ID, live.error, 4000, 'error');
+    } else if (live.warning) {
+      setHasInlineTitleError(false);
+      upsertNotice(INLINE_TITLE_NOTICE_ID, live.warning, 4000, 'warning');
+    } else {
+      setHasInlineTitleError(false);
+      removeNotice(INLINE_TITLE_NOTICE_ID);
+    }
+  };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nextVal = stripInlineTitleNewlines(e.target.value);
+    setDraftTitle(nextVal);
+    updateInlineTitleLiveFeedback(nextVal);
+  };
+
+  const handleTitlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData?.getData('text/plain') ?? '';
+    if (/[\r\n]/.test(pasted)) {
+      e.preventDefault();
+      const input = e.currentTarget;
+      const start = input.selectionStart ?? draftTitle.length;
+      const end = input.selectionEnd ?? draftTitle.length;
+      const cleanPaste = stripInlineTitleNewlines(pasted);
+      const nextVal = `${draftTitle.slice(0, start)}${cleanPaste}${draftTitle.slice(end)}`;
+      setDraftTitle(nextVal);
+      updateInlineTitleLiveFeedback(nextVal);
+      const caret = start + cleanPaste.length;
+      requestAnimationFrame(() => {
+        input.setSelectionRange(caret, caret);
+      });
+    }
+  };
+
   const commitInlineTitleRename = async (): Promise<boolean> => {
     if (!activeFile || !activeFile.trim() || isRenamingTitleRef.current) return true;
-    const newTitle = draftTitle.trim();
+    const newTitle = normalizeFileNameInput(draftTitle);
+
+    // Si el usuario deja el nombre vacío al renombrar, revertir silenciosamente al nombre anterior
     if (!newTitle) {
+      removeNotice(INLINE_TITLE_NOTICE_ID);
+      setHasInlineTitleError(false);
       setDraftTitle(cleanTitle);
       return true;
     }
-    if (newTitle === cleanTitle) return true;
+
+    if (newTitle === cleanTitle) {
+      removeNotice(INLINE_TITLE_NOTICE_ID);
+      setHasInlineTitleError(false);
+      if (draftTitle !== cleanTitle) {
+        setDraftTitle(cleanTitle);
+      }
+      return true;
+    }
+
+    const preCheck = validateFileName(newTitle, {
+      extension: activeNoteExtension,
+      currentPath: activeFile,
+      existingItems: fileTree,
+    });
+    if (!preCheck.valid) {
+      upsertNotice(
+        INLINE_TITLE_NOTICE_ID,
+        preCheck.error || t('editor.notices.invalidFileName'),
+        4000,
+        'error'
+      );
+      setHasInlineTitleError(false);
+      setDraftTitle(cleanTitle);
+      return false;
+    }
 
     isRenamingTitleRef.current = true;
     try {
       const result = await renameNoteWithLinkRefactor(activeFile, newTitle);
       if (!result.success) {
-        showNotice(result.error || t('editor.notices.invalidFileName'), 4000, 'error');
+        upsertNotice(
+          INLINE_TITLE_NOTICE_ID,
+          result.error || t('editor.notices.invalidFileName'),
+          4000,
+          'error'
+        );
+        setHasInlineTitleError(false);
         setDraftTitle(cleanTitle);
         return false;
+      }
+      setHasInlineTitleError(false);
+      if (!preCheck.warning) {
+        removeNotice(INLINE_TITLE_NOTICE_ID);
       }
       return true;
     } finally {
@@ -1167,13 +1268,14 @@ export const Editor: React.FC<EditorProps> = ({
 
   // Handle .inline-title keyboard events (Enter / Tab / ArrowDown / Escape)
   const handleTitleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!activeFile || !activeFile.trim()) return;
+    if (!activeFile || !activeFile.trim() || e.nativeEvent.isComposing) return;
     if (e.key === 'Enter' || e.key === 'Tab' || e.key === 'ArrowDown') {
       e.preventDefault();
       const ok = await commitInlineTitleRename();
       if (!ok) return;
 
-      // Smoothly transition focus to beginning of CodeMirror 6 editor
+      // Smoothly transition focus to beginning of CodeMirror 6 editor without double-committing on blur
+      skipNextTitleBlurRef.current = true;
       if (viewRef.current) {
         viewRef.current.focus();
         viewRef.current.dispatch({
@@ -1181,15 +1283,32 @@ export const Editor: React.FC<EditorProps> = ({
           scrollIntoView: true,
         });
       }
+      setTimeout(() => {
+        skipNextTitleBlurRef.current = false;
+      }, 0);
     } else if (e.key === 'Escape') {
       e.preventDefault();
+      skipNextTitleBlurRef.current = true;
+      removeNotice(INLINE_TITLE_NOTICE_ID);
+      setHasInlineTitleError(false);
       setDraftTitle(cleanTitle);
-      inlineTitleRef.current?.blur();
+      if (viewRef.current) {
+        viewRef.current.focus();
+      } else {
+        inlineTitleRef.current?.blur();
+      }
+      setTimeout(() => {
+        skipNextTitleBlurRef.current = false;
+      }, 0);
     }
   };
 
-  // Handle .inline-title onBlur (auto-commit rename)
+  // Handle .inline-title onBlur (auto-commit rename or revert cleanly)
   const handleTitleBlur = async () => {
+    if (skipNextTitleBlurRef.current) {
+      skipNextTitleBlurRef.current = false;
+      return;
+    }
     await commitInlineTitleRename();
   };
 
@@ -2854,11 +2973,13 @@ export const Editor: React.FC<EditorProps> = ({
                 type="text"
                 className="inline-title"
                 value={draftTitle}
+                aria-invalid={hasInlineTitleError ? 'true' : undefined}
                 spellCheck={spellcheck}
                 autoCorrect="on"
                 autoCapitalize="on"
                 lang={language}
-                onChange={(e) => setDraftTitle(e.target.value)}
+                onChange={handleTitleChange}
+                onPaste={handleTitlePaste}
                 onKeyDown={handleTitleKeyDown}
                 onBlur={handleTitleBlur}
               />

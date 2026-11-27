@@ -97,7 +97,10 @@ export const ViewHeader: React.FC<ViewHeaderProps> = ({
   const commitRename = () => {
     const next = draft.trim();
     setIsRenaming(false);
-    if (!next || next === title) return;
+    if (!next || next === title) {
+      setDraft(title);
+      return;
+    }
     onRename?.(next);
   };
 
