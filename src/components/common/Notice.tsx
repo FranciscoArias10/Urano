@@ -10,9 +10,12 @@ export interface NoticeItem {
 
 interface NoticeStore {
   notices: NoticeItem[];
-  showNotice: (message: string, duration?: number, type?: NoticeItem['type']) => void;
+  showNotice: (message: string, duration?: number, type?: NoticeItem['type']) => string;
+  upsertNotice: (id: string, message: string, duration?: number, type?: NoticeItem['type']) => void;
   removeNotice: (id: string) => void;
 }
+
+const noticeTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 export const useNoticeStore = create<NoticeStore>((set) => ({
   notices: [],
@@ -23,17 +26,57 @@ export const useNoticeStore = create<NoticeStore>((set) => ({
     }));
 
     if (duration > 0) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        noticeTimers.delete(id);
         set((state) => ({
           notices: state.notices.filter((n) => n.id !== id),
         }));
       }, duration);
+      noticeTimers.set(id, timer);
+    }
+    return id;
+  },
+  upsertNotice: (id: string, message: string, duration = 3500, type = 'info') => {
+    const prevTimer = noticeTimers.get(id);
+    if (prevTimer) {
+      clearTimeout(prevTimer);
+      noticeTimers.delete(id);
+    }
+
+    set((state) => {
+      const exists = state.notices.some((n) => n.id === id);
+      if (exists) {
+        return {
+          notices: state.notices.map((n) =>
+            n.id === id ? { ...n, message, duration, type } : n
+          ),
+        };
+      }
+      return {
+        notices: [...state.notices, { id, message, duration, type }],
+      };
+    });
+
+    if (duration > 0) {
+      const timer = setTimeout(() => {
+        noticeTimers.delete(id);
+        set((state) => ({
+          notices: state.notices.filter((n) => n.id !== id),
+        }));
+      }, duration);
+      noticeTimers.set(id, timer);
     }
   },
-  removeNotice: (id: string) =>
+  removeNotice: (id: string) => {
+    const prevTimer = noticeTimers.get(id);
+    if (prevTimer) {
+      clearTimeout(prevTimer);
+      noticeTimers.delete(id);
+    }
     set((state) => ({
       notices: state.notices.filter((n) => n.id !== id),
-    })),
+    }));
+  },
 }));
 
 export const NoticeContainer: React.FC = () => {
