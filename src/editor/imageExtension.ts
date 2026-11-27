@@ -29,6 +29,7 @@ import {
   resolveVaultLinkTarget,
   parseLinkTargetParts,
 } from '../utils/pathUtils';
+import { sanitizeAutoFileName, validateFileName } from '../utils/fileNameValidation';
 
 /** Resize constraints (pixels) */
 const MIN_IMAGE_WIDTH = 50;
@@ -407,10 +408,13 @@ export function getUniqueAttachmentName(
   existingItems: FileItem[],
   reservedNames?: Set<string>
 ): string {
-  const cleanDesired = desiredFileName.replace(/[\\/:*?"<>|]/g, '_').trim() || 'image.png';
-  const dotIdx = cleanDesired.lastIndexOf('.');
-  const baseName = dotIdx > 0 ? cleanDesired.slice(0, dotIdx) : cleanDesired;
-  const ext = dotIdx > 0 ? cleanDesired.slice(dotIdx) : '';
+  const trimmedDesired = (desiredFileName || '').trim() || 'image.png';
+  const dotIdx = trimmedDesired.lastIndexOf('.');
+  const rawBase = dotIdx > 0 ? trimmedDesired.slice(0, dotIdx) : trimmedDesired;
+  const rawExt = dotIdx > 0 ? trimmedDesired.slice(dotIdx) : '';
+  const baseName = sanitizeAutoFileName(rawBase, 'image');
+  const ext = rawExt.replace(/[\\/:*?"<>|\x00-\x1F\s]/g, '');
+  const cleanDesired = `${baseName}${ext}`;
 
   const normTargetDir = normalizePath(targetDir).toLowerCase();
   const existingLower = new Set<string>();
@@ -1352,13 +1356,25 @@ export function createImageDropPasteHandler() {
         const { activeVault, refreshTree } = useVaultStore.getState();
         if (!activeVault) return true;
 
+        const validImageFiles = imageFiles.filter((file) => {
+          const check = validateFileName(file.name, { checkDuplicates: false });
+          if (!check.valid) {
+            useNoticeStore
+              .getState()
+              .showNotice(check.error || t('imageEmbed.notices.dropSaveFailed'), 4000, 'error');
+            return false;
+          }
+          return true;
+        });
+        if (validImageFiles.length === 0) return true;
+
         const separator = activeVault.includes('\\') ? '\\' : '/';
         const targetDir = resolveAttachmentDir(activeVault, useVaultStore.getState().activeFile);
         const batchReserved = new Set<string>();
         const pendingKeys: string[] = [];
 
         Promise.all(
-          imageFiles.map(async (file) => {
+          validImageFiles.map(async (file) => {
             const { fileName: savedName, fullPath } = allocateUniqueAttachmentTarget(
               targetDir,
               file.name,

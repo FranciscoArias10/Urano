@@ -35,6 +35,7 @@ import {
   parseLinkTargetParts,
   normalizePath,
 } from './utils/pathUtils';
+import { validateVaultRelativePath } from './utils/fileNameValidation';
 import { FILE_RENAMED_EVENT, FileRenamedDetail } from './services/linkRefactorService';
 import { TemplateModal } from './components/templates/TemplateModal';
 import {
@@ -1364,15 +1365,28 @@ const MainApp: React.FC = () => {
       if (!rel) return;
 
       const base = rel.split('/').pop() || '';
-      const hasExt = /\.[a-z][a-z0-9_-]*$/i.test(base);
+      const hasExt = base.lastIndexOf('.') > 0 && /\.[a-z][a-z0-9_-]*$/i.test(base);
       if (hasExt && !isNativeVaultFile(rel)) {
         const externalTarget = resolveFilePathInVault(rel, fileTree, activeVault);
         void selectFile(externalTarget);
         return;
       }
 
-      const relWithExt = /\.(md|markdown|canvas|base)$/i.test(rel) ? rel : `${rel}.md`;
-      targetPath = normVault ? `${normVault}/${relWithExt}`.replace(/\/+/g, '/') : relWithExt;
+      if (!normVault) return;
+      const validation = validateVaultRelativePath(rel, {
+        baseDir: normVault,
+        defaultExtension: '.md',
+        existingItems: fileTree,
+      });
+      if (!validation.valid) {
+        showNotice(validation.error || t('editor.notices.invalidFileName'), 4000, 'error');
+        return;
+      }
+      if (validation.warning) {
+        showNotice(validation.warning, 4000, 'warning');
+      }
+
+      targetPath = validation.fullPath;
       shouldCreateMissing = true;
     }
 

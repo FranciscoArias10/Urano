@@ -10,7 +10,10 @@ import {
   getRelativeVaultPath,
   isPathExcluded,
   isSamePath,
+  normalizePath,
 } from '../../utils/pathUtils';
+import { validateVaultRelativePath } from '../../utils/fileNameValidation';
+import { resolveNewFileDir } from '../../stores/settingsStore';
 import {
   executeNoteExtraction,
   executeNoteMerge,
@@ -148,8 +151,31 @@ export const NoteComposerModal: React.FC<NoteComposerModalProps> = ({ request, o
 
   const fromTitle = getCleanFileName(request.fromPath);
 
+  const validateComposerNewName = (newNoteName?: string): boolean => {
+    if (!newNoteName || !activeVault) return true;
+    const rawInput = newNoteName.replace(/\\/g, '/').trim().replace(/^\/+|\/+$/g, '');
+    const baseDir = rawInput.includes('/')
+      ? normalizePath(activeVault)
+      : normalizePath(resolveNewFileDir(activeVault, request.fromPath));
+    const check = validateVaultRelativePath(rawInput, {
+      baseDir,
+      defaultExtension: '.md',
+      existingItems: fileTree,
+      allowExistingTarget: true,
+    });
+    if (!check.valid) {
+      showNotice(check.error || t('editor.notices.invalidNoteName'), 4000, 'error');
+      return false;
+    }
+    if (check.warning) {
+      showNotice(check.warning, 4000, 'warning');
+    }
+    return true;
+  };
+
   const runExtraction = async (targetPath?: string, newNoteName?: string) => {
     if (isSubmitting) return;
+    if (!targetPath && !validateComposerNewName(newNoteName)) return;
     setIsSubmitting(true);
     try {
       const result = await executeNoteExtraction({
@@ -161,15 +187,17 @@ export const NoteComposerModal: React.FC<NoteComposerModalProps> = ({ request, o
       request.onExtracted?.(result.replacementText, result.targetPath, result.targetTitle);
       showNotice(t('editor.notices.noteExtracted', { name: result.targetTitle }), 2500, 'success');
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error('[NoteComposer] Extract failed:', err);
-      showNotice(t('editor.notices.noteExtractFailed'), 3000, 'error');
+      const errMsg = err instanceof Error && err.message ? err.message : t('editor.notices.noteExtractFailed');
+      showNotice(errMsg, 4000, 'error');
       setIsSubmitting(false);
     }
   };
 
   const runMerge = async (targetPath?: string, newNoteName?: string) => {
     if (isSubmitting) return;
+    if (!targetPath && !validateComposerNewName(newNoteName)) return;
     setIsSubmitting(true);
     try {
       const result = await executeNoteMerge({
@@ -180,14 +208,18 @@ export const NoteComposerModal: React.FC<NoteComposerModalProps> = ({ request, o
       request.onMerged?.(request.fromPath, result.targetPath, result.targetTitle);
       showNotice(t('noteComposer.mergedSuccess', { name: result.targetTitle }), 2500, 'success');
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error('[NoteComposer] Merge failed:', err);
-      showNotice(t('noteComposer.mergeFailed'), 3000, 'error');
+      const errMsg = err instanceof Error && err.message ? err.message : t('noteComposer.mergeFailed');
+      showNotice(errMsg, 4000, 'error');
       setIsSubmitting(false);
     }
   };
 
   const handleChooseOption = (option: PickerOption) => {
+    if (option.kind === 'create' && !validateComposerNewName(option.newNoteName)) {
+      return;
+    }
     if (request.mode === 'extract') {
       if (option.kind === 'existing') {
         void runExtraction(option.path, undefined);

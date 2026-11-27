@@ -13,6 +13,7 @@ import {
   getRelativeVaultPath,
   isSamePath,
 } from '../utils/pathUtils';
+import { validateVaultRelativePath } from '../utils/fileNameValidation';
 
 /**
  * Formats a Date according to Obsidian/Moment-style tokens commonly used in
@@ -322,15 +323,13 @@ export function buildNoteComposerReplacement(
     : `[${targetNoteName}](${encodeURI(targetMd)})`;
 }
 
-const ILLEGAL_NOTE_NAME_CHARS = /[*"\\<>:|?#^\[\]]/g;
-
 async function resolveTargetNoteDestination(params: {
   vaultPath: string;
   sourcePath: string;
   fileTree: FileItem[];
   targetPath?: string;
   newNoteName?: string;
-}): Promise<{ finalPath: string; targetTitle: string; exists: boolean }> {
+}): Promise<{ finalPath: string; targetTitle: string; exists: boolean; warning?: string }> {
   const { vaultPath, sourcePath, fileTree, targetPath, newNoteName } = params;
 
   if (targetPath) {
@@ -341,33 +340,42 @@ async function resolveTargetNoteDestination(params: {
     };
   }
 
-  const rawName = (newNoteName || '').trim().replace(ILLEGAL_NOTE_NAME_CHARS, '').replace(/\.md$/i, '');
-  if (!rawName) {
-    throw new Error('Invalid destination note name');
+  const rawInput = (newNoteName ?? '').replace(/\\/g, '/').trim().replace(/^\/+|\/+$/g, '');
+  const hasSubfolder = rawInput.includes('/');
+  const baseDir = hasSubfolder
+    ? normalizePath(vaultPath)
+    : normalizePath(resolveNewFileDir(vaultPath, sourcePath));
+
+  const validation = validateVaultRelativePath(rawInput, {
+    baseDir,
+    defaultExtension: '.md',
+    existingItems: fileTree,
+    allowExistingTarget: true,
+  });
+
+  if (!validation.valid) {
+    throw new Error(validation.error || 'Invalid destination note name');
   }
 
-  const normalizedRel = normalizePath(rawName).replace(/^\/+|\/+$/g, '');
-  const existingResolved = resolveVaultNotePath(normalizedRel, vaultPath, fileTree);
+  const existingResolved = resolveVaultNotePath(
+    validation.normalizedRelPath.replace(/\.md$/i, ''),
+    vaultPath,
+    fileTree
+  );
   if (existingResolved) {
     return {
       finalPath: existingResolved,
       targetTitle: getCleanFileName(existingResolved),
       exists: true,
+      warning: validation.warning,
     };
   }
 
-  const segments = normalizedRel.split('/').filter(Boolean);
-  const fileBase = segments.pop() || rawName;
-  const subDir = segments.join('/');
-  const baseDir = subDir
-    ? `${normalizePath(vaultPath)}/${subDir}`.replace(/\/+/g, '/')
-    : normalizePath(resolveNewFileDir(vaultPath, sourcePath));
-  const finalPath = `${baseDir}/${fileBase}.md`.replace(/\/+/g, '/');
-
   return {
-    finalPath,
-    targetTitle: fileBase,
+    finalPath: validation.fullPath,
+    targetTitle: validation.baseName,
     exists: false,
+    warning: validation.warning,
   };
 }
 

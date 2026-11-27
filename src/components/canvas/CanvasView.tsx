@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { useVaultStore } from '../../stores/vaultStore';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { validateVaultRelativePath } from '../../utils/fileNameValidation';
+import { normalizePath } from '../../utils/pathUtils';
 import { useNoticeStore } from '../common/Notice';
 import { useT } from '../../stores/localeStore';
 import {
@@ -1390,12 +1392,29 @@ export const CanvasView: React.FC<CanvasViewProps> = ({ filePath }) => {
     if (!noteName) return;
 
     try {
-      const cleanName = noteName.trim().endsWith('.md') ? noteName.trim() : `${noteName.trim()}.md`;
+      const validation = validateVaultRelativePath(noteName, {
+        baseDir: activeVault,
+        defaultExtension: '.md',
+        existingItems: useVaultStore.getState().fileTree,
+      });
+      if (!validation.valid) {
+        showNotice(validation.error || t('canvas.notices.noteCreateError'), 4000, 'error');
+        return;
+      }
+      if (validation.warning) {
+        showNotice(validation.warning, 4000, 'warning');
+      }
+
       const separator = activeVault.includes('\\') ? '\\' : '/';
-      const cleanVault = activeVault.replace(/[\\/]+$/, '');
-      const fullPath = `${cleanVault}${separator}${cleanName.replace(/[\\/]+/g, separator)}`;
+      const fullPath = separator === '\\'
+        ? validation.fullPath.replace(/\//g, '\\')
+        : validation.fullPath;
+      const cleanName = validation.fileName;
       const portableRef = toCanvasVaultPath(fullPath, activeVault);
 
+      if (normalizePath(validation.parentDir).toLowerCase() !== normalizePath(activeVault).toLowerCase()) {
+        await invoke('create_folder', { folderPath: validation.parentDir }).catch(() => {});
+      }
       await invoke('create_file', { filePath: fullPath });
       await invoke('write_file', { filePath: fullPath, content: node.text });
       await refreshTree();

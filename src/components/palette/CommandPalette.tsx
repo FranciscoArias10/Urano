@@ -171,9 +171,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const handleSelectSwitcherEntry = async (
     entry: QuickSwitcherEntry,
     openInNewTab = false
-  ) => {
+  ): Promise<boolean> => {
     if (entry.isUnresolved) {
-      if (!activeVault) return;
+      if (!activeVault) return false;
       const raw = entry.path.replace(/\\/g, '/').replace(/^\/+/, '');
       const hasFolder = raw.includes('/');
       const cleanRoot = activeVault.replace(/[\\/]+$/, '');
@@ -183,11 +183,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       const baseName = hasFolder ? raw.slice(raw.lastIndexOf('/') + 1) : raw;
       const cleanTitle = baseName.toLowerCase().endsWith('.md') ? baseName : `${baseName}.md`;
       const newPath = await createNote(parentDir, cleanTitle);
-      if (newPath) {
-        if (openInNewTab && onOpenInNewTab) onOpenInNewTab(newPath);
-        else onSelectFile(newPath);
-      }
-      return;
+      if (!newPath) return false;
+      if (openInNewTab && onOpenInNewTab) onOpenInNewTab(newPath);
+      else onSelectFile(newPath);
+      return true;
     }
 
     if (openInNewTab && onOpenInNewTab) {
@@ -195,6 +194,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     } else {
       onSelectFile(entry.path);
     }
+    return true;
   };
 
   const handleKeyDown = async (e: React.KeyboardEvent) => {
@@ -222,8 +222,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       if (trimmed && activeVault) {
         const cleanTitle = trimmed.endsWith('.md') ? trimmed : `${trimmed}.md`;
         const newPath = await createNote(activeVault, cleanTitle);
-        onSelectFile(newPath);
-        onClose();
+        if (newPath) {
+          onSelectFile(newPath);
+          onClose();
+        }
         return;
       }
     }
@@ -234,10 +236,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       if (items[selectedIndex]) {
         if (mode === 'commands') {
           (items[selectedIndex] as CommandItem).action();
+          onClose();
         } else {
-          await handleSelectSwitcherEntry(items[selectedIndex] as QuickSwitcherEntry, true);
+          const ok = await handleSelectSwitcherEntry(items[selectedIndex] as QuickSwitcherEntry, true);
+          if (ok) onClose();
         }
-        onClose();
         return;
       }
     }
@@ -248,16 +251,19 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       if (items[selectedIndex]) {
         if (mode === 'commands') {
           (items[selectedIndex] as CommandItem).action();
+          onClose();
         } else {
-          await handleSelectSwitcherEntry(items[selectedIndex] as QuickSwitcherEntry, false);
+          const ok = await handleSelectSwitcherEntry(items[selectedIndex] as QuickSwitcherEntry, false);
+          if (ok) onClose();
         }
-        onClose();
       } else if (mode === 'files' && query.trim() && activeVault) {
         // Fallback: create note if no matches
         const cleanTitle = query.trim().endsWith('.md') ? query.trim() : `${query.trim()}.md`;
         const newPath = await createNote(activeVault, cleanTitle);
-        onSelectFile(newPath);
-        onClose();
+        if (newPath) {
+          onSelectFile(newPath);
+          onClose();
+        }
       }
     }
   };
@@ -268,7 +274,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       onClick={onClose}
     >
       <div
-        className="prompt w-[580px] max-w-[94vw] bg-urano-bg border border-urano-border rounded-xl shadow-2xl shadow-black/90 overflow-hidden flex flex-col"
+        className="prompt w-[680px] max-w-[94vw] bg-urano-bg border border-urano-border rounded-xl shadow-2xl shadow-black/90 overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input Bar */}
@@ -378,8 +384,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 unresolvedHint={t('commandPalette.createUnresolvedHint')}
                 onHover={() => setSelectedIndex(i)}
                 onSelect={async () => {
-                  await handleSelectSwitcherEntry(file, false);
-                  onClose();
+                  const ok = await handleSelectSwitcherEntry(file, false);
+                  if (ok) onClose();
                 }}
               />
             ))
@@ -388,39 +394,29 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
         {/* Bottom Keyboard Instruction Bar (1:1 with Urano) */}
         <div className="prompt-instructions select-none">
-          <span className="flex items-center gap-1">
-            <span className="font-mono bg-[var(--interactive-normal)] text-urano-text px-1 py-0.2 rounded border border-urano-border">
-              ↑↓
-            </span>{' '}
-            {t('commandPalette.toNavigate')}
+          <span className="prompt-instruction">
+            <span className="prompt-instruction-command">↑↓</span>
+            <span>{t('commandPalette.toNavigate')}</span>
           </span>
-          <span className="flex items-center gap-1">
-            <span className="font-mono bg-[var(--interactive-normal)] text-urano-text px-1 py-0.2 rounded border border-urano-border">
-              ↵
-            </span>{' '}
-            {t('commandPalette.toOpen')}
+          <span className="prompt-instruction">
+            <span className="prompt-instruction-command">↵</span>
+            <span>{t('commandPalette.toOpen')}</span>
           </span>
           {mode === 'files' && (
             <>
-              <span className="flex items-center gap-1">
-                <span className="font-mono bg-[var(--interactive-normal)] text-urano-text px-1 py-0.2 rounded border border-urano-border">
-                  Ctrl + ↵
-                </span>{' '}
-                {t('commandPalette.toOpenInNewTab')}
+              <span className="prompt-instruction">
+                <span className="prompt-instruction-command">Ctrl + ↵</span>
+                <span>{t('commandPalette.toOpenInNewTab')}</span>
               </span>
-              <span className="flex items-center gap-1">
-                <span className="font-mono bg-[var(--interactive-normal)] text-urano-text px-1 py-0.2 rounded border border-urano-border">
-                  Shift + ↵
-                </span>{' '}
-                {t('commandPalette.toCreate')}
+              <span className="prompt-instruction">
+                <span className="prompt-instruction-command">Shift + ↵</span>
+                <span>{t('commandPalette.toCreate')}</span>
               </span>
             </>
           )}
-          <span className="flex items-center gap-1">
-            <span className="font-mono bg-[var(--interactive-normal)] text-urano-text px-1 py-0.2 rounded border border-urano-border">
-              Esc
-            </span>{' '}
-            {t('commandPalette.toDismiss')}
+          <span className="prompt-instruction">
+            <span className="prompt-instruction-command">Esc</span>
+            <span>{t('commandPalette.toDismiss')}</span>
           </span>
         </div>
       </div>
