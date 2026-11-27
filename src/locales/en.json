@@ -687,7 +687,8 @@
       "linkCopyFailed": "Could not copy the link",
       "pathCopied": "Path copied to clipboard",
       "pathCopyFailed": "Could not copy the path",
-      "fileDeleted": "File deleted"
+      "fileDeleted": "File deleted",
+      "noMarkdownNotes": "No Markdown notes found in the vault."
     },
     "dialogs": {
       "selectVaultFolder": "Select vault folder for Urano",
@@ -914,10 +915,17 @@
     "fileExplorer": {
       "newNote": "File explorer: Create new note",
       "newFolder": "File explorer: Create new folder in vault root",
+      "renameFile": "File explorer: Rename file",
       "refresh": "File explorer: Reload vault files"
+    },
+    "commandPalette": {
+      "open": "Command palette: Open command palette"
     },
     "quickSwitcher": {
       "open": "Quick switcher: Open quick switcher"
+    },
+    "globalSearch": {
+      "open": "Search: Search in all files"
     },
     "graph": {
       "open": "Graph view: Open graph view"
@@ -937,9 +945,18 @@
       "new": "Bases: Create new base"
     },
     "workspace": {
+      "newTab": "New tab",
+      "closeTab": "Close current tab",
+      "undoCloseTab": "Undo close tab",
+      "nextTab": "Go to next tab",
+      "previousTab": "Go to previous tab",
+      "toggleFullscreen": "Toggle full screen",
       "toggleLeftSidebar": "Workspace: Toggle left sidebar",
       "toggleBacklinks": "Workspace: Toggle backlinks and mentions panel",
       "toggleBacklinksInDocument": "Backlinks: Toggle backlinks in document"
+    },
+    "outgoingLink": {
+      "open": "Outgoing links: Show outgoing links"
     },
     "sync": {
       "now": "Sync: Sync now with Google Drive"
@@ -947,16 +964,43 @@
     "app": {
       "openVault": "Vault: Open another vault...",
       "openSettings": "Settings: Open settings",
+      "openHelp": "Open help",
+      "openInDefaultApp": "Open in default app",
+      "openExternalFile": "Open external file outside vault...",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "resetZoom": "Reset zoom",
+      "reload": "Reload app",
+      "goBack": "Navigate back",
+      "goForward": "Navigate forward",
       "syncConfig": "Settings: Configure Google Drive account and sync"
     },
     "editor": {
       "toggleReadingView": "Markdown: Toggle reading view",
-      "toggleSourceMode": "Editor: Toggle Live Preview / Source mode"
+      "toggleSourceMode": "Editor: Toggle Live Preview / Source mode",
+      "saveFile": "Save current file",
+      "toggleBold": "Formatting: Bold",
+      "toggleItalics": "Formatting: Italic",
+      "toggleHighlightYellow": "Formatting: Toggle yellow highlight",
+      "toggleHighlightBlue": "Formatting: Toggle blue highlight",
+      "insertLink": "Insert Markdown link",
+      "deleteLine": "Delete current line",
+      "openLinkInNewTab": "Open link under cursor in new tab",
+      "openLinkSplit": "Open link under cursor to the right"
     },
     "noteComposer": {
       "extract": "Note composer: Extract current selection...",
       "extractHeading": "Note composer: Extract this heading...",
       "merge": "Note composer: Merge entire file with..."
+    },
+    "zkPrefixer": {
+      "open": "Unique note creator: Create new unique note"
+    },
+    "randomNote": {
+      "open": "Random note: Open random note"
+    },
+    "properties": {
+      "open": "Properties view: Show file properties"
     },
     "fileRecovery": {
       "open": "File recovery: Open saved snapshots"

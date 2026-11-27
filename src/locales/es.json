@@ -687,7 +687,8 @@
       "linkCopyFailed": "No se pudo copiar el enlace",
       "pathCopied": "Ruta copiada al portapapeles",
       "pathCopyFailed": "No se pudo copiar la ruta",
-      "fileDeleted": "Archivo eliminado"
+      "fileDeleted": "Archivo eliminado",
+      "noMarkdownNotes": "No se encontraron notas Markdown en la bóveda."
     },
     "dialogs": {
       "selectVaultFolder": "Seleccionar carpeta de bóveda para Urano",
@@ -914,10 +915,17 @@
     "fileExplorer": {
       "newNote": "Explorador de archivos: Crear nueva nota (sin título)",
       "newFolder": "Explorador de archivos: Nueva carpeta en la raíz",
+      "renameFile": "Explorador de archivos: Renombrar archivo",
       "refresh": "Explorador de archivos: Recargar archivos de la bóveda"
+    },
+    "commandPalette": {
+      "open": "Paleta de comandos: Abrir paleta de comandos"
     },
     "quickSwitcher": {
       "open": "Selector rápido: Buscar nota en la bóveda (Quick Switcher)"
+    },
+    "globalSearch": {
+      "open": "Búsqueda: Buscar en todos los archivos"
     },
     "graph": {
       "open": "Vista gráfica: Abrir vista gráfica interactiva (Graph View)"
@@ -937,9 +945,18 @@
       "new": "Bases: Crear nueva base de datos (.base)"
     },
     "workspace": {
+      "newTab": "Nueva pestaña",
+      "closeTab": "Cerrar pestaña actual",
+      "undoCloseTab": "Reabrir pestaña cerrada",
+      "nextTab": "Ir a la siguiente pestaña",
+      "previousTab": "Ir a la pestaña anterior",
+      "toggleFullscreen": "Alternar pantalla completa",
       "toggleLeftSidebar": "Espacio de trabajo: Alternar barra lateral izquierda",
       "toggleBacklinks": "Espacio de trabajo: Alternar panel de Backlinks y menciones",
       "toggleBacklinksInDocument": "Enlaces entrantes: Alternar enlaces entrantes en el documento"
+    },
+    "outgoingLink": {
+      "open": "Enlaces salientes: Mostrar enlaces salientes"
     },
     "sync": {
       "now": "Sincronización: Sincronizar ahora con Google Drive"
@@ -947,16 +964,43 @@
     "app": {
       "openVault": "Bóveda: Abrir otra carpeta de bóveda...",
       "openSettings": "Ajustes: Abrir ajustes",
+      "openHelp": "Abrir ayuda",
+      "openInDefaultApp": "Abrir en la aplicación predeterminada",
+      "openExternalFile": "Abrir un archivo externo a la bóveda...",
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar",
+      "resetZoom": "Restablecer zoom",
+      "reload": "Recargar ventana",
+      "goBack": "Ir hacia atrás en el historial de navegación",
+      "goForward": "Ir hacia adelante en el historial de navegación",
       "syncConfig": "Ajustes: Configurar cuenta de Google Drive y sincronización"
     },
     "editor": {
       "toggleReadingView": "Markdown: Alternar vista de lectura",
-      "toggleSourceMode": "Editor: Alternar código fuente / vista previa en vivo"
+      "toggleSourceMode": "Editor: Alternar código fuente / vista previa en vivo",
+      "saveFile": "Guardar archivo actual",
+      "toggleBold": "Formato: Negrita",
+      "toggleItalics": "Formato: Cursiva",
+      "toggleHighlightYellow": "Formato: Resaltado en amarillo",
+      "toggleHighlightBlue": "Formato: Resaltado en azul",
+      "insertLink": "Insertar enlace Markdown",
+      "deleteLine": "Eliminar línea actual",
+      "openLinkInNewTab": "Abrir el enlace bajo el cursor en una nueva pestaña",
+      "openLinkSplit": "Abrir el enlace bajo el cursor a la derecha"
     },
     "noteComposer": {
       "extract": "Compositor de notas: Extraer selección actual...",
       "extractHeading": "Compositor de notas: Extraer este encabezado...",
       "merge": "Compositor de notas: Combinar todo el archivo con..."
+    },
+    "zkPrefixer": {
+      "open": "Creador de notas únicas: Crear nueva nota única"
+    },
+    "randomNote": {
+      "open": "Notas aleatorias: Abrir nota aleatoria"
+    },
+    "properties": {
+      "open": "Propiedades: Mostrar propiedades de archivo"
     },
     "fileRecovery": {
       "open": "Recuperación de archivos: Abrir capturas guardadas"
