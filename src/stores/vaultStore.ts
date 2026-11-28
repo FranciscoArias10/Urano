@@ -1101,8 +1101,15 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       triggerAutoSync(vaultPath, vaultName);
 
       // Restore file based on Settings → Files and links → "Default file to open"
-      const defaultToOpen = useSettingsStore.getState().settings.defaultFileToOpen;
-      if (defaultToOpen === 'daily-note') {
+      // or Daily Notes → "Open daily note on startup"
+      const currentSettings = useSettingsStore.getState().settings;
+      const defaultToOpen = currentSettings.defaultFileToOpen;
+      const openDailyOnStartup =
+        defaultToOpen === 'daily-note' ||
+        Boolean(
+          currentSettings.corePlugins['daily-notes'] && currentSettings.dailyNotesOpenOnStartup
+        );
+      if (openDailyOnStartup) {
         await get()
           .openDailyNote()
           .catch((e) => console.warn('Error opening daily note:', e));

@@ -2270,6 +2270,19 @@ export function useSettingTabs(ctx: SettingTabsContext = {}): SettingTabDef[] {
             />
           ),
         },
+        {
+          id: 'daily-notes-open-on-startup',
+          name: t('dailyNotes.openOnStartup'),
+          desc: t('dailyNotes.openOnStartupDesc'),
+          aliases: ['startup', 'inicio', 'iniciar', 'abrir', 'open', 'daily'],
+          control: (
+            <Toggle
+              value={Boolean(settings.dailyNotesOpenOnStartup)}
+              onChange={set('dailyNotesOpenOnStartup')}
+              ariaLabel={t('dailyNotes.openOnStartup')}
+            />
+          ),
+        },
       ],
     },
   ]);
