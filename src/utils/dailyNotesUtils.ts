@@ -102,10 +102,10 @@ export function resolveCalendarLocale(locale?: string): 'es' | 'en' {
   return locale && locale.toLowerCase().startsWith('en') ? 'en' : 'es';
 }
 
-function getDayOfYear(date: Date): number {
-  const start = new Date(date.getFullYear(), 0, 1);
-  const current = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  return Math.floor((current.getTime() - start.getTime()) / 86_400_000) + 1;
+export function getDayOfYear(date: Date): number {
+  const startUtc = Date.UTC(date.getFullYear(), 0, 1);
+  const currentUtc = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.floor((currentUtc - startUtc) / 86_400_000) + 1;
 }
 
 const MOMENT_FORMAT_TOKEN_RE =
