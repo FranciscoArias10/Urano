@@ -1296,7 +1296,12 @@
   "pagePreview": {
     "emptyNote": "This note is empty.",
     "notFound": "Note \"{name}\" has not been created yet.",
-    "openNote": "Open note"
+    "openNote": "Open note",
+    "openFile": "Open file",
+    "canvasSummary": "{nodes} node(s) • {edges} edge(s)",
+    "canvasEmpty": "This canvas is empty.",
+    "baseSummary": "Table view ({columns} columns)",
+    "binaryDesc": "Vault {ext} file"
   },
   "readingView": {
     "properties": "Properties",

@@ -1296,7 +1296,12 @@
   "pagePreview": {
     "emptyNote": "Esta nota está vacía.",
     "notFound": "La nota «{name}» aún no ha sido creada.",
-    "openNote": "Abrir nota"
+    "openNote": "Abrir nota",
+    "openFile": "Abrir archivo",
+    "canvasSummary": "{nodes} nodo(s) • {edges} conexión(es)",
+    "canvasEmpty": "Este lienzo está vacío.",
+    "baseSummary": "Vista de tabla ({columns} columnas)",
+    "binaryDesc": "Archivo {ext} de la bóveda"
   },
   "readingView": {
     "properties": "Propiedades",
