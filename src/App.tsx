@@ -165,6 +165,8 @@ const isSettingsWindow =
 const MainApp: React.FC = () => {
   // Tabs State (Urano Workspace Leaf Tabs)
   const [tabs, setTabs] = useState<TabItem[]>([]);
+  const tabsRef = useRef<TabItem[]>(tabs);
+  tabsRef.current = tabs;
   const [activeTabId, setActiveTabId] = useState<string>('');
   const activeTab = useMemo(
     () => tabs.find((t) => t.id === activeTabId),
@@ -652,20 +654,65 @@ const MainApp: React.FC = () => {
                 fileExistsInVault(tab.filePath))
           );
           if (validTabs.length > 0) {
-            setTabs(validTabs);
-            const matchingTab = currentActiveFile
-              ? validTabs.find((tab) => isSamePath(tab.filePath, currentActiveFile))
-              : undefined;
-            if (matchingTab) {
-              setActiveTabId(matchingTab.id);
+            if (currentActiveFile && fileExistsInVault(currentActiveFile)) {
+              const matchingTab = validTabs.find((tab) =>
+                isSamePath(tab.filePath, currentActiveFile)
+              );
+              if (matchingTab) {
+                setTabs(validTabs);
+                setActiveTabId(matchingTab.id);
+              } else {
+                const fallbackTitle = currentActiveName
+                  ? currentActiveName.replace(/\.(md|markdown|canvas|base)$/i, '') ||
+                    currentActiveName
+                  : t('common.untitled');
+                const { type, title } = getTabMetaForPath(
+                  currentActiveFile,
+                  activeVault,
+                  fallbackTitle
+                );
+                const emptyIdx = validTabs.findIndex(
+                  (tab) => !tab.filePath || tab.type === 'empty'
+                );
+                let targetTabId: string;
+                let updatedTabs: TabItem[];
+                if (emptyIdx !== -1) {
+                  targetTabId = validTabs[emptyIdx].id;
+                  updatedTabs = validTabs.map((tab, idx) =>
+                    idx === emptyIdx
+                      ? { ...tab, type, filePath: currentActiveFile, title, isDirty: false }
+                      : tab
+                  );
+                } else {
+                  targetTabId = makeTabId();
+                  updatedTabs = [
+                    ...validTabs,
+                    {
+                      id: targetTabId,
+                      type,
+                      filePath: currentActiveFile,
+                      title,
+                      isDirty: false,
+                    },
+                  ];
+                }
+                setTabs(updatedTabs);
+                setActiveTabId(targetTabId);
+                setNavHistory({
+                  [targetTabId]: pushHistoryEntry(undefined, currentActiveFile),
+                });
+              }
             } else {
+              setTabs(validTabs);
               const fallbackTab = validTabs[validTabs.length - 1];
               setActiveTabId(fallbackTab.id);
-              if (fallbackTab.filePath && fallbackTab.type !== 'empty' && fallbackTab.type !== 'graph') {
-                if (!currentActiveFile || !isSamePath(currentActiveFile, fallbackTab.filePath)) {
-                  void selectFile(fallbackTab.filePath);
-                }
-              } else if (!currentActiveFile) {
+              if (
+                fallbackTab.filePath &&
+                fallbackTab.type !== 'empty' &&
+                fallbackTab.type !== 'graph'
+              ) {
+                void selectFile(fallbackTab.filePath);
+              } else {
                 void closeActiveFile();
               }
             }
@@ -805,8 +852,8 @@ const MainApp: React.FC = () => {
         return;
       }
 
-      // 1. If already open in an existing tab, focus it and open immediately
-      const existing = tabs.find((t) => isSamePath(t.filePath, resolved));
+      // 1. If already open in an existing tab (checked against live tabsRef), focus it and open immediately
+      const existing = tabsRef.current.find((t) => isSamePath(t.filePath, resolved));
       if (existing) {
         reuseActiveTabRef.current = false;
         setActiveTabId(existing.id);
@@ -830,13 +877,19 @@ const MainApp: React.FC = () => {
       );
 
       if (shouldReuse && activeTab) {
-        setTabs((prev) =>
-          prev.map((t) =>
+        setTabs((prev) => {
+          const already = prev.find((t) => isSamePath(t.filePath, resolved));
+          if (already) {
+            setActiveTabId(already.id);
+            recordVisit(already.id, resolved);
+            return prev;
+          }
+          return prev.map((t) =>
             t.id === activeTab.id
               ? { ...t, filePath: resolved, title: fileName, type, isDirty: false }
               : t
-          )
-        );
+          );
+        });
         setActiveTabId(activeTab.id);
         recordVisit(activeTab.id, resolved);
       } else {
@@ -848,15 +901,23 @@ const MainApp: React.FC = () => {
           title: fileName,
           isDirty: false,
         };
-        setTabs((prev) => [...prev, newTab]);
-        setActiveTabId(newTabId);
-        recordVisit(newTabId, resolved);
+        let targetTabId = newTabId;
+        setTabs((prev) => {
+          const already = prev.find((t) => isSamePath(t.filePath, resolved));
+          if (already) {
+            targetTabId = already.id;
+            return prev;
+          }
+          return [...prev, newTab];
+        });
+        setActiveTabId(targetTabId);
+        recordVisit(targetTabId, resolved);
       }
 
       // 3. Immediately select/open file synchronously
       selectFile(resolved);
     },
-    [tabs, activeTab, activeFile, fileTree, activeVault, t, recordVisit, selectFile]
+    [activeTab, activeFile, fileTree, activeVault, t, recordVisit, selectFile]
   );
 
   // Synchronize tabs when activeFile changes externally (e.g. daily notes, external triggers)
@@ -868,10 +929,13 @@ const MainApp: React.FC = () => {
       : t('common.untitled');
     const { type, title: fileName } = getTabMetaForPath(activeFile, activeVault, fallbackName);
 
-    // Which leaf hosts this file?
-    const existing = tabs.find((t) => isSamePath(t.filePath, activeFile));
-    if (existing && existing.id === activeTabId) {
-      if (existing.title === fileName && existing.isDirty === isDirty && existing.type === type) {
+    const existingInRef = tabsRef.current.find((t) => isSamePath(t.filePath, activeFile));
+    if (existingInRef && existingInRef.id === activeTabId) {
+      if (
+        existingInRef.title === fileName &&
+        existingInRef.isDirty === isDirty &&
+        existingInRef.type === type
+      ) {
         return;
       }
     }
@@ -879,44 +943,47 @@ const MainApp: React.FC = () => {
     const reuseActiveTab = reuseActiveTabRef.current;
     reuseActiveTabRef.current = false;
 
-    const reusable =
-      !existing && (reuseActiveTab || (activeTab && (!activeTab.filePath || activeTab.type === 'empty')))
-        ? tabs.find((t) => t.id === activeTabId)
-        : undefined;
+    let resolvedTargetTabId = '';
+    setTabs((prev) => {
+      const existing = prev.find((t) => isSamePath(t.filePath, activeFile));
+      if (existing) {
+        resolvedTargetTabId = existing.id;
+        return prev.map((t) =>
+          t.id === existing.id ? { ...t, title: fileName, type, isDirty } : t
+        );
+      }
 
-    let nextTabs: TabItem[];
-    let targetTabId: string;
+      const curTab = prev.find((t) => t.id === activeTabId);
+      const reusable =
+        reuseActiveTab || (curTab && (!curTab.filePath || curTab.type === 'empty'))
+          ? curTab
+          : undefined;
+      if (reusable) {
+        resolvedTargetTabId = reusable.id;
+        return prev.map((t) =>
+          t.id === reusable.id
+            ? { ...t, filePath: activeFile, title: fileName, type, isDirty }
+            : t
+        );
+      }
 
-    if (existing) {
-      targetTabId = existing.id;
-      nextTabs = tabs.map((t) =>
-        t.id === existing.id ? { ...t, title: fileName, type, isDirty } : t
-      );
-    } else if (reusable) {
-      // Urano navigates the leaf in place (wikilinks, quick switcher)
-      targetTabId = reusable.id;
-      nextTabs = tabs.map((t) =>
-        t.id === reusable.id
-          ? { ...t, filePath: activeFile, title: fileName, type, isDirty }
-          : t
-      );
-    } else {
-      targetTabId = makeTabId();
-      nextTabs = [
-        ...tabs,
+      resolvedTargetTabId = makeTabId();
+      return [
+        ...prev,
         {
-          id: targetTabId,
+          id: resolvedTargetTabId,
           type,
           filePath: activeFile,
           title: fileName,
           isDirty,
         },
       ];
-    }
+    });
 
-    setTabs(nextTabs);
-    setActiveTabId(targetTabId);
-    recordVisit(targetTabId, activeFile);
+    if (resolvedTargetTabId) {
+      setActiveTabId(resolvedTargetTabId);
+      recordVisit(resolvedTargetTabId, activeFile);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFile, activeFileName, isDirty]);
 
@@ -1168,9 +1235,12 @@ const MainApp: React.FC = () => {
     }
   };
 
-  // Open today's daily note (or previous/next existing daily note)
+  // Open today's daily note (or previous/next existing daily note) without duplicate tabs
   const handleOpenDailyNote = async () => {
     if (!activeVault) return;
+    if (!activeTab || !activeTab.filePath || activeTab.type === 'empty') {
+      reuseActiveTabRef.current = true;
+    }
     const path = await openTodayDailyNote();
     if (path) {
       handleOpenFile(path);
@@ -1179,6 +1249,9 @@ const MainApp: React.FC = () => {
 
   const handleOpenPrevDailyNote = async () => {
     if (!activeVault) return;
+    if (!activeTab || !activeTab.filePath || activeTab.type === 'empty') {
+      reuseActiveTabRef.current = true;
+    }
     const path = await openAdjacentDailyNote('prev');
     if (path) {
       handleOpenFile(path);
@@ -1187,6 +1260,9 @@ const MainApp: React.FC = () => {
 
   const handleOpenNextDailyNote = async () => {
     if (!activeVault) return;
+    if (!activeTab || !activeTab.filePath || activeTab.type === 'empty') {
+      reuseActiveTabRef.current = true;
+    }
     const path = await openAdjacentDailyNote('next');
     if (path) {
       handleOpenFile(path);
